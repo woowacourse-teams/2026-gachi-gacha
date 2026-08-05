@@ -1,0 +1,12 @@
+node_modules/
+dist/
+storybook-static/
+coverage/
+
+.env
+.env.*
+!.env.example
+
+*.log
+.DS_Store
+Thumbs.db
