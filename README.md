@@ -63,15 +63,10 @@
 
 ## 멤버 소개
 
-### Frontend
-| 비비빙(이병관) | 코브(윤태훈) |
-| :---: | :---: |
-| <a href="https://github.com/binggwa"><img src="https://avatars.githubusercontent.com/binggwa" width="150"/></a> | <a href="https://github.com/TH-97"><img src="https://avatars.githubusercontent.com/TH-97" width="150"/></a> |
-
-### Backend
-| 로지(이지현) | 벨로(박준태) | 한다(한다현) |
-| :---: | :---: | :---: |
-| <a href="https://github.com/Jihyun3478"><img src="https://avatars.githubusercontent.com/Jihyun3478" width="150"/></a> | <a href="https://github.com/juntae6942"><img src="https://avatars.githubusercontent.com/juntae6942" width="150"/></a> | <a href="https://github.com/dahxxn"><img src="https://avatars.githubusercontent.com/dahxxn" width="150"/></a> |
+| 비비빙(이병관) | 코브(윤태훈) | 로지(이지현) | 벨로(박준태) | 한다(한다현) |
+| :---: | :---: | :---: | :---: | :---: |
+| Frontend | Frontend | Backend | Backend | Backend |
+| <a href="https://github.com/binggwa"><img src="https://avatars.githubusercontent.com/binggwa" width="150"/></a> | <a href="https://github.com/TH-97"><img src="https://avatars.githubusercontent.com/TH-97" width="150"/></a> | <a href="https://github.com/Jihyun3478"><img src="https://avatars.githubusercontent.com/Jihyun3478" width="150"/></a> | <a href="https://github.com/juntae6942"><img src="https://avatars.githubusercontent.com/juntae6942" width="150"/></a> | <a href="https://github.com/dahxxn"><img src="https://avatars.githubusercontent.com/dahxxn" width="150"/></a> |
 
 ## 기술 스택
 ### Frontend
