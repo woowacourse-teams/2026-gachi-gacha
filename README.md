@@ -1,9 +1,10 @@
 <img width="2816" height="1536" alt="Gemini_Generated_Image_2ob1cy2ob1cy2ob1" src="https://github.com/user-attachments/assets/a55145ff-45ff-4b86-b229-e7c72f0e51b8" />
 
-# 가치가챠 - 원하는 가챠, 지도로 찾는 서비스
+# 가치가챠 
+> 원하는 가챠를 지도에서 한 눈에 찾는 서비스
 
 원하는 가챠샵을 지도에서 빠르게 찾을 수 있는 가챠 탐색 서비스입니다.
-매장마다 다른 인스타그램과 오픈채팅을 뒤지는 대신, 검색 한 번으로 원하는 가챠를 만나보세요.
+매장마다 다른 문의 수단 때문에, SNS와 오픈채팅을 뒤지는 대신, 클릭 한 번으로 원하는 가챠를 만나보세요.
 
 **가챠를 좋아하는 사람들을 위한 위치 탐색 플랫폼**, 가치가챠(Gachi-Gacha)가 여러분의 발걸음을 이어드립니다.
 
@@ -76,27 +77,26 @@
 
 ## 기술 스택
 ### Frontend
-| **구분** | **사용 기술** |
-| --- | --- |
-| **Runtime** | Node 24.19.0 (LTS) |
-| **Language** | TypeScript 6.0.3 |
-| **Library** | React 19.2.8 |
-| **Build Tool** | Webpack 5 |
-| **Loader** | ts-loader |
-| **Lint** | ESLint |
-| **Format** | Prettier |
-| **CI** | GitHub Actions |
+![Node.js](https://img.shields.io/badge/Node.js-24.19.0-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-6.0.3-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19.2.8-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Webpack](https://img.shields.io/badge/Webpack-5-8DD6F9?style=for-the-badge&logo=webpack&logoColor=black)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white) ![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=black)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 
 ### Backend
-| **구분** | **사용 기술** |
-| --- | --- |
-| **Language / Framework** | Java 21, Spring Boot |
-| **Library** | JPA, Lombok, OAuth |
-| **Database** | H2 |
-| **Map / Tile** | Planetiler, tileserver-gl (OpenStreetMap 기반 타일 생성·서빙) |
-| **Infra** | Docker |
-| **Build Tool** | Gradle |
-| **CI/CD** | GitHub Actions |
+![Java](https://img.shields.io/badge/Java-21-007396?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.0-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white)
+![JPA](https://img.shields.io/badge/Spring_Data_JPA-4.1.0-59666C?style=for-the-badge)
+![Lombok](https://img.shields.io/badge/Lombok-1.18.32-BC4521?style=for-the-badge)
+![OAuth2](https://img.shields.io/badge/OAuth2-4.1.0-EB5424?style=for-the-badge)
+![H2](https://img.shields.io/badge/H2-2.2.224-4479A1?style=for-the-badge)
+![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=for-the-badge&logo=openstreetmap&logoColor=white) 
+![Planetiler](https://img.shields.io/badge/Planetiler-white?style=for-the-badge&color=808080) 
+![tileserver-gl](https://img.shields.io/badge/tileserver-gl-white?style=for-the-badge&color=808080)
+![Docker](https://img.shields.io/badge/Docker-24.0.5-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Gradle](https://img.shields.io/badge/Gradle-8.7-02303A?style=for-the-badge&logo=gradle&logoColor=white)
+![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-v4-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)
 
 ## Document
 가치가챠 팀에 대한 자세한 정보(_기술 스택, 그라운드 룰, 코드 컨벤션 등_)는 아래 링크에 모두 정리되어 있습니다
