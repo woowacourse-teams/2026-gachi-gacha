@@ -20,3 +20,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+url:
+  gacha: "/gachas/"
