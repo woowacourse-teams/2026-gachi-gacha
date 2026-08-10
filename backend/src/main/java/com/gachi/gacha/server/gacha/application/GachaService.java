@@ -14,7 +14,7 @@ public class GachaService {
     private final GachaJpaRepository gachaRepository;
 
     @Transactional
-    public Long createGacha(GachaCreateRequest request) {
+    public Long addGacha(GachaCreateRequest request) {
         Gacha gacha = request.toEntity();
         Gacha savedGacha = gachaRepository.save(gacha);
         return savedGacha.getId();
