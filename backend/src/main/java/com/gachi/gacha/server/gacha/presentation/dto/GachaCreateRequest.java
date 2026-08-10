@@ -4,7 +4,8 @@ import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import jakarta.validation.constraints.NotBlank;
 
 public record GachaCreateRequest(
-    @NotBlank String name,
+    @NotBlank(message = "가챠 이름은 필수입니다.")
+    String name,
     String caption,
     String thumbnailUrl
 ) {
