@@ -18,6 +18,6 @@ public class GachaController {
 
     @PostMapping
     public ResponseEntity<Long> createGacha(@RequestBody GachaCreateRequest request) {
-        return ResponseEntity.ok(gachaService.createGacha(request));
+        return ResponseEntity.ok(gachaService.addGacha(request));
     }
 }
