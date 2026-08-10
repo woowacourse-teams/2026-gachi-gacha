@@ -26,6 +26,7 @@ public class StoreInfo extends BaseTimeEntity {
     private String paymentMethod;
     private String phone;
     private String facilities;
+    private String instagramId;
 
     private Integer machineAmount;
     private Integer kujiAmount;
