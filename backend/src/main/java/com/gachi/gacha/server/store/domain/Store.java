@@ -16,6 +16,6 @@ public class Store extends BaseTimeEntity {
     private Long id;
 
     private String thumbnailUrl;
-    private Long latitude;
-    private Long longitude;
+    private Double latitude;
+    private Double longitude;
 }
