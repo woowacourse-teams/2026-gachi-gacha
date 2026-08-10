@@ -1,0 +1,8 @@
+engineStrict: true
+saveExact: true
+strictPeerDependencies: true
+autoInstallPeers: false
+allowBuilds:
+  esbuild: true
+  msw: false
+  unrs-resolver: true
