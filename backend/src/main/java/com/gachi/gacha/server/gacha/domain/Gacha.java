@@ -23,6 +23,5 @@ public class Gacha extends BaseTimeEntity {
 
     private String name;
     private String caption;
-    private String description;
     private String thumbnailUrl;
 }
