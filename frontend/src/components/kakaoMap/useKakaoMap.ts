@@ -13,6 +13,7 @@ interface UseKakaoMapParams {
 export function useKakaoMap({ center, level }: UseKakaoMapParams) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<kakao.maps.Map | null>(null);
+  const initialViewRef = useRef({ center, level });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -24,14 +25,20 @@ export function useKakaoMap({ center, level }: UseKakaoMapParams) {
       );
     }
 
+    const { center: initialCenter, level: initialLevel } =
+      initialViewRef.current;
+
     let cancelled = false;
 
     window.kakao.maps.load(() => {
       if (cancelled) return;
 
       mapRef.current = new window.kakao.maps.Map(container, {
-        center: new window.kakao.maps.LatLng(center.lat, center.lng),
-        level,
+        center: new window.kakao.maps.LatLng(
+          initialCenter.lat,
+          initialCenter.lng,
+        ),
+        level: initialLevel,
       });
     });
 
@@ -40,7 +47,7 @@ export function useKakaoMap({ center, level }: UseKakaoMapParams) {
       mapRef.current = null;
       container.innerHTML = '';
     };
-  }, [center.lat, center.lng, level]);
+  }, []);
 
   return { containerRef, mapRef };
 }
