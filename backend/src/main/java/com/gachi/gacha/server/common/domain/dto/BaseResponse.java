@@ -19,24 +19,8 @@ public record BaseResponse<T>(
         return of(BaseCode.SUCCESS, null);
     }
 
-    public static <T> ResponseEntity<BaseResponse<T>> created(final URI location) {
-        return created(location, null);
-    }
-
     public static <T> ResponseEntity<BaseResponse<T>> created(final URI location, final T data) {
         return created(BaseCode.CREATED, location, data);
-    }
-
-    public static <T> ResponseEntity<BaseResponse<T>> created(final String location) {
-        return created(URI.create(location));
-    }
-
-    public static <T> ResponseEntity<BaseResponse<T>> created(final String location, final T data) {
-        return created(URI.create(location), data);
-    }
-
-    public static <T> ResponseEntity<BaseResponse<T>> created(final BaseCode code, final String location, final T data) {
-        return created(code, URI.create(location), data);
     }
 
     public static <T> BaseResponse<T> updated(final T data) {
