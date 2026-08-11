@@ -12,11 +12,11 @@ public record ErrorResponse(
         List<FieldErrorDetail> errors
 ) {
 
-    public static ErrorResponse of(ErrorCode errorCode) {
+    public static ErrorResponse of(final ErrorCode errorCode) {
         return new ErrorResponse(errorCode.getCode(), errorCode.getMessage(), List.of());
     }
 
-    public static ErrorResponse of(ErrorCode errorCode, BindingResult bindingResult) {
+    public static ErrorResponse of(final ErrorCode errorCode, final BindingResult bindingResult) {
         return new ErrorResponse(
                 errorCode.getCode(),
                 errorCode.getMessage(),
@@ -29,7 +29,7 @@ public record ErrorResponse(
             String value,
             String reason
     ) {
-        public static List<FieldErrorDetail> from(BindingResult bindingResult) {
+        public static List<FieldErrorDetail> from(final BindingResult bindingResult) {
             return bindingResult.getFieldErrors().stream()
                     .map(error -> new FieldErrorDetail(
                             error.getField(),

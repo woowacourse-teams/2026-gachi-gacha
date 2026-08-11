@@ -10,15 +10,17 @@ public record GachaInfo(
         String name,
         String caption,
         String thumbnailUrl,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
-    public static GachaInfo from(Gacha gacha) {
+    public static GachaInfo from(final Gacha gacha) {
         return GachaInfo.builder()
                 .gachaId(gacha.getId())
                 .name(gacha.getName())
                 .caption(gacha.getCaption())
                 .thumbnailUrl(gacha.getThumbnailUrl())
                 .createdAt(gacha.getCreatedAt())
+                .updatedAt(gacha.getUpdatedAt())
                 .build();
     }
 }
