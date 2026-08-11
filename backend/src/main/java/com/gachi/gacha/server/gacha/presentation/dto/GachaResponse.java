@@ -12,7 +12,7 @@ public record GachaResponse(
         String thumbnailUrl,
         LocalDateTime createdAt
 ) {
-    public static GachaResponse from(GachaInfo gachaInfo) {
+    public static GachaResponse from(final GachaInfo gachaInfo) {
         return GachaResponse.builder()
                 .gachaId(gachaInfo.gachaId())
                 .name(gachaInfo.name())
