@@ -32,7 +32,7 @@ public class StoreImage {
     @Column(nullable = false)
     private String imageUrl;
 
-    public StoreImage(Store store, String imageUrl) {
+    public StoreImage(final Store store, final String imageUrl) {
         this.store = store;
         this.imageUrl = imageUrl;
     }

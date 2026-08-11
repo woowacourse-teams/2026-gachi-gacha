@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -52,19 +53,19 @@ public class Store extends BaseTimeEntity {
     )
     private List<StoreImage> storeImages = new ArrayList<>();
 
-    public void registerDetail(StoreDetail storeDetail) {
+    public void registerDetail(final StoreDetail storeDetail) {
         this.storeDetail = storeDetail;
         storeDetail.assignStore(this);
     }
 
-    public void addStoreImage(String imageUrl) {
+    public void addStoreImage(final String imageUrl) {
         this.storeImages.add(new StoreImage(this, imageUrl));
     }
 
     public void modify(
-            String thumbnailUrl,
-            Double latitude,
-            Double longitude
+            final String thumbnailUrl,
+            final Double latitude,
+            final Double longitude
     ) {
         Double nextLatitude = latitude == null ? this.latitude : latitude;
         Double nextLongitude = longitude == null ? this.longitude : longitude;
@@ -75,10 +76,25 @@ public class Store extends BaseTimeEntity {
         }
         this.latitude = nextLatitude;
         this.longitude = nextLongitude;
-        markUpdated();
     }
 
-    private void validateCoordinates(Double latitude, Double longitude) {
+    public LocalDateTime getAggregateUpdatedAt() {
+        LocalDateTime storeUpdatedAt = getUpdatedAt();
+        LocalDateTime detailUpdatedAt = storeDetail.getUpdatedAt();
+
+        if (storeUpdatedAt == null) {
+            return detailUpdatedAt;
+        }
+        if (detailUpdatedAt == null) {
+            return storeUpdatedAt;
+        }
+        if (storeUpdatedAt.isAfter(detailUpdatedAt)) {
+            return storeUpdatedAt;
+        }
+        return detailUpdatedAt;
+    }
+
+    private void validateCoordinates(final Double latitude, final Double longitude) {
         if (latitude == null || latitude < -90 || latitude > 90) {
             throw new InvalidStoreException();
         }

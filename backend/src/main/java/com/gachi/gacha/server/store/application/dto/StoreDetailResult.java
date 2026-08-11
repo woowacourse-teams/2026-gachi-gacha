@@ -34,7 +34,7 @@ public record StoreDetailResult(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreDetailResult from(Store store) {
+    public static StoreDetailResult from(final Store store) {
         List<StoreImageInfo> images = store.getStoreImages().stream()
                 .map(StoreImageInfo::from)
                 .toList();
@@ -65,7 +65,7 @@ public record StoreDetailResult(
                 store.getStoreDetail().getHasRandomBox(),
                 0L,
                 store.getCreatedAt(),
-                store.getUpdatedAt()
+                store.getAggregateUpdatedAt()
         );
     }
 
@@ -74,7 +74,7 @@ public record StoreDetailResult(
             String imageUrl
     ) {
 
-        private static StoreImageInfo from(StoreImage storeImage) {
+        private static StoreImageInfo from(final StoreImage storeImage) {
             return new StoreImageInfo(
                     storeImage.getId(),
                     storeImage.getImageUrl()

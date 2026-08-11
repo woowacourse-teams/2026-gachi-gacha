@@ -31,7 +31,7 @@ public record StoreUpdateCommand(
         facilities = copyIfPresent(facilities);
     }
 
-    private static <T> List<T> copyIfPresent(List<T> values) {
+    private static <T> List<T> copyIfPresent(final List<T> values) {
         if (values == null) {
             return null;
         }

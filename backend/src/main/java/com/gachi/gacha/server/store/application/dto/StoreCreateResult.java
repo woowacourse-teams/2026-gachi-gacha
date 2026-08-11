@@ -8,7 +8,7 @@ public record StoreCreateResult(
         LocalDateTime createdAt
 ) {
 
-    public static StoreCreateResult from(Store store) {
+    public static StoreCreateResult from(final Store store) {
         return new StoreCreateResult(store.getId(), store.getCreatedAt());
     }
 }

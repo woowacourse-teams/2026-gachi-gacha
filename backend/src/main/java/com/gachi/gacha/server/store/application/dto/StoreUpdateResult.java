@@ -8,7 +8,7 @@ public record StoreUpdateResult(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreUpdateResult from(Store store) {
-        return new StoreUpdateResult(store.getId(), store.getUpdatedAt());
+    public static StoreUpdateResult from(final Store store) {
+        return new StoreUpdateResult(store.getId(), store.getAggregateUpdatedAt());
     }
 }

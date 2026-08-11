@@ -3,6 +3,7 @@ package com.gachi.gacha.server.store.presentation;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.store.application.StoreService;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
+import com.gachi.gacha.server.store.application.dto.StoreDeleteResult;
 import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
 import com.gachi.gacha.server.store.application.dto.StoreListResult;
 import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
@@ -39,9 +40,9 @@ public class StoreController {
 
     @GetMapping("/nearby")
     public ResponseEntity<BaseResponse<StoreNearbyResponse>> readNearbyStores(
-            @RequestParam(required = false) Double latitude,
-            @RequestParam(required = false) Double longitude,
-            @RequestParam(defaultValue = "3000") Integer radius
+            @RequestParam(required = false) final Double latitude,
+            @RequestParam(required = false) final Double longitude,
+            @RequestParam(defaultValue = "3000") final Integer radius
     ) {
         StoreNearbyResult result = storeService.findNearbyStores(latitude, longitude, radius);
 
@@ -50,8 +51,8 @@ public class StoreController {
 
     @GetMapping
     public ResponseEntity<BaseResponse<StoreListResponse>> readStores(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "0") final int page,
+            @RequestParam(defaultValue = "20") final int size
     ) {
         StoreListResult result = storeService.findStores(page, size);
         return ResponseEntity.ok(BaseResponse.ok(StoreListResponse.from(result)));
@@ -59,7 +60,7 @@ public class StoreController {
 
     @GetMapping("/{storeId}")
     public ResponseEntity<BaseResponse<StoreDetailResponse>> readStore(
-            @PathVariable Long storeId
+            @PathVariable final Long storeId
     ) {
         StoreDetailResult result = storeService.getStore(storeId);
         return ResponseEntity.ok(BaseResponse.ok(StoreDetailResponse.from(result)));
@@ -67,7 +68,7 @@ public class StoreController {
 
     @PostMapping
     public ResponseEntity<BaseResponse<StoreCreateResponse>> createStore(
-            @Valid @RequestBody StoreCreateRequest request
+            @Valid @RequestBody final StoreCreateRequest request
     ) {
         StoreCreateResult result = storeService.addStore(request.toCommand());
         StoreCreateResponse response = StoreCreateResponse.from(result);
@@ -81,21 +82,21 @@ public class StoreController {
     }
 
     @PatchMapping("/{storeId}")
-    public ResponseEntity<BaseResponse<StoreUpdateResponse>> updateStore(
-            @PathVariable Long storeId,
-            @Valid @RequestBody StoreUpdateRequest request
+    public BaseResponse<StoreUpdateResponse> updateStore(
+            @PathVariable final Long storeId,
+            @Valid @RequestBody final StoreUpdateRequest request
     ) {
         StoreUpdateResult result = storeService.modifyStore(storeId, request.toCommand());
 
-        return ResponseEntity.ok(BaseResponse.ok(StoreUpdateResponse.from(result)));
+        return BaseResponse.updated(StoreUpdateResponse.from(result));
     }
 
     @DeleteMapping("/{storeId}")
-    public ResponseEntity<BaseResponse<StoreDeleteResponse>> deleteStore(
-            @PathVariable Long storeId
+    public BaseResponse<StoreDeleteResponse> deleteStore(
+            @PathVariable final Long storeId
     ) {
-        Long deletedStoreId = storeService.removeStore(storeId);
+        StoreDeleteResult result = storeService.removeStore(storeId);
 
-        return ResponseEntity.ok(BaseResponse.ok(StoreDeleteResponse.from(deletedStoreId)));
+        return BaseResponse.deleted(StoreDeleteResponse.from(result));
     }
 }

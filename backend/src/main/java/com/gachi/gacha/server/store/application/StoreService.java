@@ -4,6 +4,7 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
 import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
+import com.gachi.gacha.server.store.application.dto.StoreDeleteResult;
 import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
 import com.gachi.gacha.server.store.application.dto.StoreListResult;
 import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
@@ -12,7 +13,6 @@ import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreDetailUpdate;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
-import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class StoreService {
 
@@ -33,8 +34,11 @@ public class StoreService {
 
     private final StoreJpaRepository storeJpaRepository;
 
-    @Transactional(readOnly = true)
-    public StoreNearbyResult findNearbyStores(Double latitude, Double longitude, Integer radius) {
+    public StoreNearbyResult findNearbyStores(
+            final Double latitude,
+            final Double longitude,
+            final Integer radius
+    ) {
         validateNearbyRequest(latitude, longitude, radius);
 
         double latitudeDelta = radius / METERS_PER_LATITUDE_DEGREE;
@@ -53,7 +57,11 @@ public class StoreService {
         return StoreNearbyResult.of(latitude, longitude, radius, stores);
     }
 
-    private void validateNearbyRequest(Double latitude, Double longitude, Integer radius) {
+    private void validateNearbyRequest(
+            final Double latitude,
+            final Double longitude,
+            final Integer radius
+    ) {
         if (latitude == null || !Double.isFinite(latitude) || latitude < -90 || latitude > 90) {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -65,7 +73,11 @@ public class StoreService {
         }
     }
 
-    private StoreDistance createStoreDistance(Store store, Double latitude, Double longitude) {
+    private StoreDistance createStoreDistance(
+            final Store store,
+            final Double latitude,
+            final Double longitude
+    ) {
         double distance = calculateDistance(
                 latitude,
                 longitude,
@@ -76,10 +88,10 @@ public class StoreService {
     }
 
     private double calculateDistance(
-            Double originLatitude,
-            Double originLongitude,
-            Double targetLatitude,
-            Double targetLongitude
+            final Double originLatitude,
+            final Double originLongitude,
+            final Double targetLatitude,
+            final Double targetLongitude
     ) {
         double latitudeDistance = Math.toRadians(targetLatitude - originLatitude);
         double longitudeDistance = Math.toRadians(targetLongitude - originLongitude);
@@ -99,8 +111,7 @@ public class StoreService {
         return EARTH_RADIUS_METERS * angularDistance;
     }
 
-    @Transactional(readOnly = true)
-    public StoreListResult findStores(int page, int size) {
+    public StoreListResult findStores(final int page, final int size) {
         validatePageRequest(page, size);
 
         PageRequest pageRequest = PageRequest.of(
@@ -113,31 +124,28 @@ public class StoreService {
         return StoreListResult.from(stores);
     }
 
-    private void validatePageRequest(int page, int size) {
+    private void validatePageRequest(final int page, final int size) {
         if (page < 0 || size <= 0) {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
 
-    @Transactional(readOnly = true)
-    public StoreDetailResult getStore(Long storeId) {
-        Store store = storeJpaRepository.findById(storeId)
-                .orElseThrow(StoreNotFoundException::new);
+    public StoreDetailResult getStore(final Long storeId) {
+        Store store = storeJpaRepository.getById(storeId);
 
         return StoreDetailResult.from(store);
     }
 
     @Transactional
-    public StoreCreateResult addStore(StoreCreateCommand command) {
+    public StoreCreateResult addStore(final StoreCreateCommand command) {
         Store store = command.toEntity();
         Store savedStore = storeJpaRepository.save(store);
         return StoreCreateResult.from(savedStore);
     }
 
     @Transactional
-    public StoreUpdateResult modifyStore(Long storeId, StoreUpdateCommand command) {
-        Store store = storeJpaRepository.findById(storeId)
-                .orElseThrow(StoreNotFoundException::new);
+    public StoreUpdateResult modifyStore(final Long storeId, final StoreUpdateCommand command) {
+        Store store = storeJpaRepository.getById(storeId);
 
         store.modify(
                 command.thumbnailUrl(),
@@ -150,7 +158,7 @@ public class StoreService {
         return StoreUpdateResult.from(store);
     }
 
-    private StoreDetailUpdate createStoreDetailUpdate(StoreUpdateCommand command) {
+    private StoreDetailUpdate createStoreDetailUpdate(final StoreUpdateCommand command) {
         return new StoreDetailUpdate(
                 command.name(),
                 command.address(),
@@ -174,13 +182,12 @@ public class StoreService {
     }
 
     @Transactional
-    public Long removeStore(Long storeId) {
-        Store store = storeJpaRepository.findById(storeId)
-                .orElseThrow(StoreNotFoundException::new);
+    public StoreDeleteResult removeStore(final Long storeId) {
+        Store store = storeJpaRepository.getById(storeId);
 
-        storeJpaRepository.delete(store);
+        storeJpaRepository.deleteById(storeId);
 
-        return storeId;
+        return StoreDeleteResult.from(store);
     }
 
     private record StoreDistance(

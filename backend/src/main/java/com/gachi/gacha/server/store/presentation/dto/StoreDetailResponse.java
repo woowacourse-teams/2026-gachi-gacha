@@ -33,7 +33,7 @@ public record StoreDetailResponse(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreDetailResponse from(StoreDetailResult result) {
+    public static StoreDetailResponse from(final StoreDetailResult result) {
         List<StoreImageResponse> images = result.images().stream()
                 .map(StoreImageResponse::from)
                 .toList();
@@ -73,7 +73,7 @@ public record StoreDetailResponse(
             String imageUrl
     ) {
 
-        private static StoreImageResponse from(StoreDetailResult.StoreImageInfo image) {
+        private static StoreImageResponse from(final StoreDetailResult.StoreImageInfo image) {
             return new StoreImageResponse(
                     image.storeImageId(),
                     image.imageUrl()

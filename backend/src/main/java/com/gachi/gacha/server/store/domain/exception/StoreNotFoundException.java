@@ -5,7 +5,7 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 
 public class StoreNotFoundException extends EntityNotFoundException {
 
-    public StoreNotFoundException() {
-        super(ErrorCode.STORE_NOT_FOUND);
+    public StoreNotFoundException(final ErrorCode errorCode) {
+        super(errorCode);
     }
 }

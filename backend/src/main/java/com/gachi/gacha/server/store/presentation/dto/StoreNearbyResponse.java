@@ -9,7 +9,7 @@ public record StoreNearbyResponse(
         List<StoreItemResponse> stores
 ) {
 
-    public static StoreNearbyResponse from(StoreNearbyResult result) {
+    public static StoreNearbyResponse from(final StoreNearbyResult result) {
         List<StoreItemResponse> stores = result.stores().stream()
                 .map(StoreItemResponse::from)
                 .toList();
@@ -26,7 +26,7 @@ public record StoreNearbyResponse(
             Double longitude
     ) {
 
-        private static CenterResponse from(StoreNearbyResult.CenterInfo center) {
+        private static CenterResponse from(final StoreNearbyResult.CenterInfo center) {
             return new CenterResponse(center.latitude(), center.longitude());
         }
     }
@@ -39,7 +39,7 @@ public record StoreNearbyResponse(
             long distance
     ) {
 
-        private static StoreItemResponse from(StoreNearbyResult.StoreInfo store) {
+        private static StoreItemResponse from(final StoreNearbyResult.StoreInfo store) {
             return new StoreItemResponse(
                     store.storeId(),
                     store.thumbnailUrl(),

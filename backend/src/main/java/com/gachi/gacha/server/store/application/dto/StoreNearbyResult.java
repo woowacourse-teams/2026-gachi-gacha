@@ -10,10 +10,10 @@ public record StoreNearbyResult(
 ) {
 
     public static StoreNearbyResult of(
-            Double latitude,
-            Double longitude,
-            int radius,
-            List<StoreInfo> stores
+            final Double latitude,
+            final Double longitude,
+            final int radius,
+            final List<StoreInfo> stores
     ) {
         return new StoreNearbyResult(
                 new CenterInfo(latitude, longitude),
@@ -36,7 +36,7 @@ public record StoreNearbyResult(
             long distance
     ) {
 
-        public static StoreInfo of(Store store, long distance) {
+        public static StoreInfo of(final Store store, final long distance) {
             return new StoreInfo(
                     store.getId(),
                     store.getThumbnailUrl(),

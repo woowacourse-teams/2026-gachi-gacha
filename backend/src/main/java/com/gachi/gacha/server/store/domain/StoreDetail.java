@@ -78,11 +78,11 @@ public class StoreDetail extends BaseTimeEntity {
     private Boolean hasRandomBox;
     private Boolean hasSelectGacha;
 
-    protected void assignStore(Store store) {
+    protected void assignStore(final Store store) {
         this.store = store;
     }
 
-    public void modify(StoreDetailUpdate update) {
+    public void modify(final StoreDetailUpdate update) {
         validate(update);
 
         this.name = valueOrCurrent(update.name(), name);
@@ -105,7 +105,7 @@ public class StoreDetail extends BaseTimeEntity {
         replaceIfPresent(facilities, update.facilities());
     }
 
-    private void validate(StoreDetailUpdate update) {
+    private void validate(final StoreDetailUpdate update) {
         String nextName = valueOrCurrent(update.name(), name);
         String nextAddress = valueOrCurrent(update.address(), address);
         Integer nextMachineAmount = valueOrCurrent(update.machineAmount(), machineAmount);
@@ -127,13 +127,17 @@ public class StoreDetail extends BaseTimeEntity {
         validatePriceRange(nextSelectMinPrice, nextSelectMaxPrice);
     }
 
-    private void validateNonNegative(Integer machineAmount, Integer kujiAmount, Long coinPrice) {
+    private void validateNonNegative(
+            final Integer machineAmount,
+            final Integer kujiAmount,
+            final Long coinPrice
+    ) {
         if (isNegative(machineAmount) || isNegative(kujiAmount) || isNegative(coinPrice)) {
             throw new InvalidStoreException();
         }
     }
 
-    private void validatePriceRange(Long minPrice, Long maxPrice) {
+    private void validatePriceRange(final Long minPrice, final Long maxPrice) {
         if (isNegative(minPrice) || isNegative(maxPrice)) {
             throw new InvalidStoreException();
         }
@@ -142,15 +146,15 @@ public class StoreDetail extends BaseTimeEntity {
         }
     }
 
-    private boolean isNegative(Number value) {
+    private boolean isNegative(final Number value) {
         return value != null && value.longValue() < 0;
     }
 
-    private <T> T valueOrCurrent(T value, T current) {
+    private <T> T valueOrCurrent(final T value, final T current) {
         return value == null ? current : value;
     }
 
-    private <T> void replaceIfPresent(List<T> current, List<T> values) {
+    private <T> void replaceIfPresent(final List<T> current, final List<T> values) {
         if (values == null) {
             return;
         }

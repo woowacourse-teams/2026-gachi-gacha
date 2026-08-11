@@ -12,7 +12,7 @@ public record StoreListResponse(
         boolean hasNext
 ) {
 
-    public static StoreListResponse from(StoreListResult result) {
+    public static StoreListResponse from(final StoreListResult result) {
         List<StoreItemResponse> items = result.items().stream()
                 .map(StoreItemResponse::from)
                 .toList();
@@ -37,7 +37,7 @@ public record StoreListResponse(
             Integer gachaMachineCount
     ) {
 
-        private static StoreItemResponse from(StoreListResult.StoreInfo item) {
+        private static StoreItemResponse from(final StoreListResult.StoreInfo item) {
             return new StoreItemResponse(
                     item.storeId(),
                     item.name(),

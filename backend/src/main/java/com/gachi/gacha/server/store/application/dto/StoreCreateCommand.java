@@ -74,7 +74,7 @@ public record StoreCreateCommand(
                 .build();
     }
 
-    private static <T> List<T> copyOrEmpty(List<T> values) {
+    private static <T> List<T> copyOrEmpty(final List<T> values) {
         if (values == null) {
             return List.of();
         }

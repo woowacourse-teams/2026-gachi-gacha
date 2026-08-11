@@ -8,7 +8,7 @@ public record StoreUpdateResponse(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreUpdateResponse from(StoreUpdateResult result) {
+    public static StoreUpdateResponse from(final StoreUpdateResult result) {
         return new StoreUpdateResponse(
                 result.storeId(),
                 result.updatedAt()
