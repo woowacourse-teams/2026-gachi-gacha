@@ -2,6 +2,8 @@ const path = require('node:path');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
+process.loadEnvFile(path.resolve(__dirname, '.env'));
+
 /** @type {import('webpack').ConfigurationFactory} */
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
@@ -49,6 +51,9 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'public/index.html'),
+        templateParameters: {
+          KAKAO_MAP_KEY: process.env.KAKAO_MAP_KEY,
+        },
       }),
     ],
 
