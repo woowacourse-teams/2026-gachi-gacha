@@ -35,21 +35,21 @@ public record BaseResponse<T>(
         return created(URI.create(location), data);
     }
 
-    public static <T> ResponseEntity<BaseResponse<T>> created(BaseCode baseCode, String location, T data) {
-        return created(baseCode, URI.create(location), data);
+    public static <T> ResponseEntity<BaseResponse<T>> created(BaseCode code, String location, T data) {
+        return created(code, URI.create(location), data);
     }
 
     public static <T> BaseResponse<T> of(BaseCode code, T data) {
         return new BaseResponse<>(code.getCode(), code.getMessage(), data);
     }
 
-    public static <T> BaseResponse<T> of(BaseCode baseCode) {
-        return of(baseCode, null);
+    public static <T> BaseResponse<T> of(BaseCode code) {
+        return of(code, null);
     }
 
-    private static <T> ResponseEntity<BaseResponse<T>> created(BaseCode baseCode, URI location, T data) {
+    private static <T> ResponseEntity<BaseResponse<T>> created(BaseCode code, URI location, T data) {
         return ResponseEntity
                 .created(location)
-                .body(of(baseCode, data));
+                .body(of(code, data));
     }
 }
