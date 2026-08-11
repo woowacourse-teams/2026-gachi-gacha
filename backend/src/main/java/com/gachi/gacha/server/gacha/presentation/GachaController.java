@@ -1,11 +1,12 @@
 package com.gachi.gacha.server.gacha.presentation;
 
-import com.gachi.gacha.server.common.domain.BaseCode;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.gacha.application.GachaService;
+import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
 import com.gachi.gacha.server.gacha.application.dto.GachaResult;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaCreateRequest;
+import com.gachi.gacha.server.gacha.presentation.dto.GachaDeleteResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaUpdateRequest;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaUpdateResponse;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -50,7 +52,13 @@ public class GachaController {
     @PatchMapping("/{gachaId}")
     public BaseResponse<GachaUpdateResponse> updateGacha(@PathVariable Long gachaId, @Valid @RequestBody GachaUpdateRequest request) {
         GachaResult result = gachaService.modify(gachaId, request.toCommand());
-        return BaseResponse.of(BaseCode.UPDATED, GachaUpdateResponse.from(result));
+        return BaseResponse.updated(GachaUpdateResponse.from(result));
+    }
+
+    @DeleteMapping("/{gachaId}")
+    public BaseResponse<GachaDeleteResponse> deleteGacha(@PathVariable Long gachaId) {
+        GachaDeleteResult result = gachaService.remove(gachaId);
+        return BaseResponse.deleted(GachaDeleteResponse.from(result));
     }
 
     @GetMapping

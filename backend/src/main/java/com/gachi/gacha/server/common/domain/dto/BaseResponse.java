@@ -39,6 +39,14 @@ public record BaseResponse<T>(
         return created(code, URI.create(location), data);
     }
 
+    public static <T> BaseResponse<T> updated(T data) {
+        return of(BaseCode.UPDATED, data);
+    }
+
+    public static <T> BaseResponse<T> deleted(T data) {
+        return of(BaseCode.DELETED, data);
+    }
+
     public static <T> BaseResponse<T> of(BaseCode code, T data) {
         return new BaseResponse<>(code.getCode(), code.getMessage(), data);
     }
@@ -48,8 +56,7 @@ public record BaseResponse<T>(
     }
 
     private static <T> ResponseEntity<BaseResponse<T>> created(BaseCode code, URI location, T data) {
-        return ResponseEntity
-                .created(location)
+        return ResponseEntity.created(location)
                 .body(of(code, data));
     }
 }

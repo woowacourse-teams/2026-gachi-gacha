@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.gacha.application;
 
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
+import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
 import com.gachi.gacha.server.gacha.application.dto.GachaResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaUpdateCommand;
@@ -46,5 +47,12 @@ public class GachaService {
 
     public GachaInfo findGachaById(final Long gachaId) {
         return GachaInfo.from(gachaRepository.getById(gachaId));
+    }
+
+    @Transactional
+    public GachaDeleteResult remove(Long gachaId) {
+        Gacha gacha = gachaRepository.getById(gachaId);
+        gachaRepository.deleteById(gachaId);
+        return GachaDeleteResult.from(gacha);
     }
 }
