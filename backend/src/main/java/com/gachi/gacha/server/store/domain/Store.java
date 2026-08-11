@@ -13,9 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Builder
 @Entity
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -41,6 +43,7 @@ public class Store extends BaseTimeEntity {
     )
     private StoreInfo storeInfo;
 
+    @Builder.Default
     @OneToMany(
             mappedBy = "store",
             cascade = CascadeType.ALL,
