@@ -1,0 +1,26 @@
+import type { StoreDetailDto } from '../api/storeDetail.dto';
+
+export const mockStoreDetail: StoreDetailDto = {
+  storeId: 1,
+  name: '가챠스테이션 홍대점',
+  address: '서울 마포구 홍익로 25 2층',
+  businessHours: '매일 11:00 - 22:00\n연중무휴',
+  thumbnailUrl: null,
+  imageUrls: [],
+  phone: '02-1234-5678',
+  instagramId: 'gacha_station_hongdae',
+  paymentMethods: ['현금', '카드', '계좌이체'],
+  facilities: ['주차 가능', '화장실', '엘리베이터'],
+  machineAmount: 42,
+  kujiAmount: 8,
+  coinPrice: 500,
+  gachaMinPrice: 3_000,
+  gachaMaxPrice: 10_000,
+  kujiMinPrice: 8_000,
+  kujiMaxPrice: 12_000,
+  selectGachaMinPrice: null,
+  selectGachaMaxPrice: null,
+  hasRandomBox: true,
+  hasSelectGacha: false,
+  updatedAt: '2026-08-10T09:30:00+09:00',
+};
