@@ -6,6 +6,7 @@ import com.gachi.gacha.server.store.application.dto.StoreData;
 import com.gachi.gacha.server.store.application.dto.StoreInfoData;
 import com.gachi.gacha.server.store.application.dto.StoreListData;
 import com.gachi.gacha.server.store.presentation.dto.StoreCreateRequest;
+import com.gachi.gacha.server.store.presentation.dto.StoreDeleteResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreDetailResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreListResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreResponse;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,5 +74,14 @@ public class StoreController {
         StoreData storeData = storeService.modifyStore(storeId, request.toCommand());
 
         return ResponseEntity.ok(BaseResponse.ok(StoreUpdateResponse.from(storeData)));
+    }
+
+    @DeleteMapping("/{storeId}")
+    public ResponseEntity<BaseResponse<StoreDeleteResponse>> deleteStore(
+            @PathVariable Long storeId
+    ) {
+        Long deletedStoreId = storeService.removeStore(storeId);
+
+        return ResponseEntity.ok(BaseResponse.ok(StoreDeleteResponse.from(deletedStoreId)));
     }
 }

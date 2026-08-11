@@ -96,4 +96,14 @@ public class StoreService {
                 command.hasSelectGacha()
         );
     }
+
+    @Transactional
+    public Long removeStore(Long storeId) {
+        Store store = storeJpaRepository.findById(storeId)
+                .orElseThrow(StoreNotFoundException::new);
+
+        storeJpaRepository.delete(store);
+
+        return storeId;
+    }
 }
