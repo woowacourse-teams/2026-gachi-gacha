@@ -2,6 +2,8 @@ package com.gachi.gacha.server.gacha.application;
 
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
+import com.gachi.gacha.server.gacha.application.dto.GachaResult;
+import com.gachi.gacha.server.gacha.application.dto.GachaUpdateCommand;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,14 @@ public class GachaService {
         Gacha gacha = command.toEntity();
         Gacha savedGacha = gachaRepository.save(gacha);
         return GachaInfo.from(savedGacha);
+    }
+
+    @Transactional
+    public GachaResult modify(Long gachaId, GachaUpdateCommand command) {
+        Gacha gacha = gachaRepository.getById(gachaId);
+        gacha.update(command.name(), command.caption(), command.thumbnailUrl());
+        Gacha saved = gachaRepository.save(gacha);
+        return GachaResult.from(saved);
     }
 
     public Page<GachaInfo> findAllGacha(@Nullable final String keyword, final Pageable pageable) {

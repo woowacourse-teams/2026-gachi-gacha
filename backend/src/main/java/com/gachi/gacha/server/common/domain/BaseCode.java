@@ -7,7 +7,8 @@ import org.springframework.http.HttpStatus;
 public enum BaseCode {
 
     SUCCESS(HttpStatus.OK, "C000", "정상"),
-    CREATED(HttpStatus.CREATED, "C001", "정상 생성");
+    CREATED(HttpStatus.CREATED, "C001", "정상 생성"),
+    UPDATED(HttpStatus.NO_CONTENT, "C002", "정상 수정");
 
     private final HttpStatus status;
     private final String code;

@@ -1,10 +1,14 @@
 package com.gachi.gacha.server.gacha.presentation;
 
+import com.gachi.gacha.server.common.domain.BaseCode;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.gacha.application.GachaService;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
+import com.gachi.gacha.server.gacha.application.dto.GachaResult;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaCreateRequest;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
+import com.gachi.gacha.server.gacha.presentation.dto.GachaUpdateRequest;
+import com.gachi.gacha.server.gacha.presentation.dto.GachaUpdateResponse;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +19,7 @@ import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,6 +45,12 @@ public class GachaController {
                 .toUri();
 
         return BaseResponse.created(location, gachaResponse);
+    }
+
+    @PatchMapping("/{gachaId}")
+    public BaseResponse<GachaUpdateResponse> updateGacha(@PathVariable Long gachaId, @Valid @RequestBody GachaUpdateRequest request) {
+        GachaResult result = gachaService.modify(gachaId, request.toCommand());
+        return BaseResponse.of(BaseCode.UPDATED, GachaUpdateResponse.from(result));
     }
 
     @GetMapping
