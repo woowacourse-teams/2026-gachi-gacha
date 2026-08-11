@@ -36,4 +36,9 @@ public class StoreImage {
         this.store = store;
         this.imageUrl = imageUrl;
     }
+
+    public void changeImageUrl(final String newImageUrl) {
+        Objects.requireNonNull(newImageUrl, "이미지 URL은 필수값입니다.");
+        this.imageUrl = newImageUrl;
+    }
 }
