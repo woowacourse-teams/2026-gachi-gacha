@@ -1,6 +1,19 @@
+import { Global, css } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import MapPage from './pages/Map';
+
+const globalStyle = css`
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+  }
+`;
 
 const MobileLayout = styled.div`
   width: 100%;
@@ -11,8 +24,11 @@ const MobileLayout = styled.div`
 
 export default function App() {
   return (
-    <MobileLayout>
-      <MapPage />
-    </MobileLayout>
+    <>
+      <Global styles={globalStyle} />
+      <MobileLayout>
+        <MapPage />
+      </MobileLayout>
+    </>
   );
 }
