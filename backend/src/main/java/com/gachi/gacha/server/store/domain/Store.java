@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 
 @Entity
@@ -16,6 +17,10 @@ public class Store extends BaseTimeEntity {
     private Long id;
 
     private String thumbnailUrl;
+
+    @NotNull
     private Double latitude;
+
+    @NotNull
     private Double longitude;
 }
