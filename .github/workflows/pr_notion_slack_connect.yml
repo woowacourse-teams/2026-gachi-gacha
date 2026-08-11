@@ -1,0 +1,189 @@
+name: PR Notion 연결 & Slack 알림
+
+on:
+  pull_request:
+    types: [opened, closed]
+
+jobs:
+  # PR이 새로 열렸을 때: 이슈 번호 추출 -> Notion 연결 -> Slack 알림
+  notify-opened:
+    if: github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 연결된 이슈 번호 추출
+        id: extract-issue
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          ISSUE_NUM=$(echo "$BODY" | grep -oiE "closes #[0-9]+" | grep -oE "[0-9]+" | head -n 1)
+          echo "issue_num=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Notion 태스크에 PR 링크 연결
+        id: notion-update
+        if: steps.extract-issue.outputs.issue_num != ''
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          ISSUE_NUM: ${{ steps.extract-issue.outputs.issue_num }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          QUERY_RESULT=$(curl -s -X POST "https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query" \
+            -H "Authorization: Bearer ${NOTION_API_KEY}" \
+            -H "Notion-Version: 2022-06-28" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"filter\": {
+                \"property\": \"이슈 번호\",
+                \"number\": { \"equals\": ${ISSUE_NUM} }
+              }
+            }")
+
+          PAGE_ID=$(echo "$QUERY_RESULT" | jq -r '.results[0].id // empty')
+
+          if [ -z "$PAGE_ID" ]; then
+            echo "notion_status=태스크를 찾지 못함 (이슈 번호: ${ISSUE_NUM})" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          curl -s -X PATCH "https://api.notion.com/v1/pages/${PAGE_ID}" \
+            -H "Authorization: Bearer ${NOTION_API_KEY}" \
+            -H "Notion-Version: 2022-06-28" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"properties\": {
+                \"GitHub P.R.\": { \"url\": \"${PR_URL}\" }
+              }
+            }" > /dev/null
+
+          echo "notion_status=Notion 태스크에 연결 완료 (이슈 번호: ${ISSUE_NUM})" >> "$GITHUB_OUTPUT"
+
+      - name: Slack 메시지 전송 (PR 열림)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          ISSUE_TEXT="${{ steps.extract-issue.outputs.issue_num }}"
+          if [ -z "$ISSUE_TEXT" ]; then
+            ISSUE_TEXT="연결된 이슈 없음"
+          else
+            ISSUE_TEXT="#${ISSUE_TEXT}"
+          fi
+
+          NOTION_TEXT="${{ steps.notion-update.outputs.notion_status }}"
+          if [ -z "$NOTION_TEXT" ]; then
+            NOTION_TEXT="연결된 이슈가 없어 Notion 연동을 건너뜀"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"blocks\": [
+              {
+                \"type\": \"section\",
+                \"text\": {
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"*🔔 새 PR이 열렸습니다*\n*<${{ github.event.pull_request.html_url }}|${{ github.event.pull_request.title }}>*\"
+                }
+              },
+              {
+                \"type\": \"section\",
+                \"fields\": [
+                  { \"type\": \"mrkdwn\", \"text\": \"*작성자:*\n${{ github.event.pull_request.user.login }}\" },
+                  { \"type\": \"mrkdwn\", \"text\": \"*브랜치:*\n${{ github.event.pull_request.head.ref }}\" },
+                  { \"type\": \"mrkdwn\", \"text\": \"*대상 브랜치:*\n${{ github.event.pull_request.base.ref }}\" },
+                  { \"type\": \"mrkdwn\", \"text\": \"*연결된 이슈:*\n$ISSUE_TEXT\" }
+                ]
+              },
+              {
+                \"type\": \"context\",
+                \"elements\": [
+                  { \"type\": \"mrkdwn\", \"text\": \"📝 $NOTION_TEXT\" }
+                ]
+              }
+            ]
+          }" \
+          "$SLACK_WEBHOOK_URL"
+
+  # PR이 머지됐을 때(닫힘 이벤트 중 merged=true인 경우만): Notion 상태 업데이트 + Slack 알림
+  notify-merged:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: 연결된 이슈 번호 추출
+        id: extract-issue
+        run: |
+          BODY="${{ github.event.pull_request.body }}"
+          ISSUE_NUM=$(echo "$BODY" | grep -oiE "closes #[0-9]+" | grep -oE "[0-9]+" | head -n 1)
+          echo "issue_num=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Notion 태스크 상태를 완료로 변경
+        id: notion-complete
+        if: steps.extract-issue.outputs.issue_num != ''
+        env:
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          ISSUE_NUM: ${{ steps.extract-issue.outputs.issue_num }}
+        run: |
+          QUERY_RESULT=$(curl -s -X POST "https://api.notion.com/v1/databases/${NOTION_DATABASE_ID}/query" \
+            -H "Authorization: Bearer ${NOTION_API_KEY}" \
+            -H "Notion-Version: 2022-06-28" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"filter\": {
+                \"property\": \"이슈 번호\",
+                \"number\": { \"equals\": ${ISSUE_NUM} }
+              }
+            }")
+
+          PAGE_ID=$(echo "$QUERY_RESULT" | jq -r '.results[0].id // empty')
+
+          if [ -z "$PAGE_ID" ]; then
+            echo "notion_status=태스크를 찾지 못함 (이슈 번호: ${ISSUE_NUM})" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          curl -s -X PATCH "https://api.notion.com/v1/pages/${PAGE_ID}" \
+            -H "Authorization: Bearer ${NOTION_API_KEY}" \
+            -H "Notion-Version: 2022-06-28" \
+            -H "Content-Type: application/json" \
+            --data "{
+              \"properties\": {
+                \"상태\": { \"select\": { \"name\": \"완료\" } }
+              }
+            }" > /dev/null
+
+          echo "notion_status=Notion 상태를 완료로 변경함 (이슈 번호: ${ISSUE_NUM})" >> "$GITHUB_OUTPUT"
+
+      - name: Slack 메시지 전송 (PR 머지됨)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          NOTION_TEXT="${{ steps.notion-complete.outputs.notion_status }}"
+          if [ -z "$NOTION_TEXT" ]; then
+            NOTION_TEXT="연결된 이슈가 없어 Notion 상태 변경을 건너뜀"
+          fi
+
+          curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"blocks\": [
+              {
+                \"type\": \"section\",
+                \"text\": {
+                  \"type\": \"mrkdwn\",
+                  \"text\": \"*✅ PR이 머지됐습니다*\n*<${{ github.event.pull_request.html_url }}|${{ github.event.pull_request.title }}>*\"
+                }
+              },
+              {
+                \"type\": \"section\",
+                \"fields\": [
+                  { \"type\": \"mrkdwn\", \"text\": \"*작성자:*\n${{ github.event.pull_request.user.login }}\" },
+                  { \"type\": \"mrkdwn\", \"text\": \"*머지한 사람:*\n${{ github.event.pull_request.merged_by.login }}\" },
+                  { \"type\": \"mrkdwn\", \"text\": \"*브랜치:*\n${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}\" }
+                ]
+              },
+              {
+                \"type\": \"context\",
+                \"elements\": [
+                  { \"type\": \"mrkdwn\", \"text\": \"📝 $NOTION_TEXT\" }
+                ]
+              }
+            ]
+          }" \
+          "$SLACK_WEBHOOK_URL"
