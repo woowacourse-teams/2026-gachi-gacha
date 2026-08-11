@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import styled from '@emotion/styled';
 
+import { KakaoMapContext } from './KakaoMapContext';
 import { useKakaoMap, type LatLngLiteral } from './useKakaoMap';
 
 interface KakaoMapProps {
@@ -14,12 +15,16 @@ export default function KakaoMap({
   level = 4,
   children,
 }: KakaoMapProps) {
-  const { containerRef } = useKakaoMap({ center, level });
+  const { containerRef, map } = useKakaoMap({ center, level });
 
   return (
     <MapArea>
       <MapCanvas ref={containerRef} />
-      {children}
+      {map && (
+        <KakaoMapContext.Provider value={map}>
+          {children}
+        </KakaoMapContext.Provider>
+      )}
     </MapArea>
   );
 }
