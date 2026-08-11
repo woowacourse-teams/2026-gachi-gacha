@@ -36,6 +36,13 @@ public class GachaService {
         return GachaResult.from(saved);
     }
 
+    @Transactional
+    public GachaDeleteResult remove(Long gachaId) {
+        Gacha gacha = gachaRepository.getById(gachaId);
+        gachaRepository.deleteById(gachaId);
+        return GachaDeleteResult.from(gacha);
+    }
+
     public Page<GachaInfo> findAllGacha(@Nullable final String keyword, final Pageable pageable) {
         if (keyword == null) {
             return gachaRepository.findAll(pageable)
@@ -47,12 +54,5 @@ public class GachaService {
 
     public GachaInfo findGachaById(final Long gachaId) {
         return GachaInfo.from(gachaRepository.getById(gachaId));
-    }
-
-    @Transactional
-    public GachaDeleteResult remove(Long gachaId) {
-        Gacha gacha = gachaRepository.getById(gachaId);
-        gachaRepository.deleteById(gachaId);
-        return GachaDeleteResult.from(gacha);
     }
 }
