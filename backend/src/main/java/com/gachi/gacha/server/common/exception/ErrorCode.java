@@ -14,8 +14,8 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "CE003", "서버 내부 오류가 발생했습니다."),
 
     // Gacha
-    GACHA_NOT_FOUND(HttpStatus.NOT_FOUND, "G001", "존재하지 않는 가챠입니다."),
-    INVALID_GACHA_POLICY(HttpStatus.BAD_REQUEST, "G002", "유효하지 않은 가챠 정책입니다.");
+    GACHA_NOT_FOUND(HttpStatus.NOT_FOUND, "GE001", "존재하지 않는 가챠입니다."),
+    INVALID_GACHA_POLICY(HttpStatus.BAD_REQUEST, "GE002", "유효하지 않은 가챠 정책입니다.");
 
     private final HttpStatus status;
     private final String code;
