@@ -42,7 +42,7 @@ public class Store extends BaseTimeEntity {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private StoreInfo storeInfo;
+    private StoreDetail storeDetail;
 
     @Builder.Default
     @OneToMany(
@@ -52,9 +52,9 @@ public class Store extends BaseTimeEntity {
     )
     private List<StoreImage> storeImages = new ArrayList<>();
 
-    public void registerInfo(StoreInfo storeInfo) {
-        this.storeInfo = storeInfo;
-        storeInfo.assignStore(this);
+    public void registerDetail(StoreDetail storeDetail) {
+        this.storeDetail = storeDetail;
+        storeDetail.assignStore(this);
     }
 
     public void addStoreImage(String imageUrl) {

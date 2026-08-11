@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.store.presentation.dto;
 
-import com.gachi.gacha.server.store.application.dto.StoreData;
+import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
 import java.time.LocalDateTime;
 
 public record StoreUpdateResponse(
@@ -8,10 +8,10 @@ public record StoreUpdateResponse(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreUpdateResponse from(StoreData storeData) {
+    public static StoreUpdateResponse from(StoreUpdateResult result) {
         return new StoreUpdateResponse(
-                storeData.storeId(),
-                storeData.updatedAt()
+                result.storeId(),
+                result.updatedAt()
         );
     }
 }

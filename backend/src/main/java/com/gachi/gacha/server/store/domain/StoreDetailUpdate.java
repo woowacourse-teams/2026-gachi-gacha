@@ -2,7 +2,7 @@ package com.gachi.gacha.server.store.domain;
 
 import java.util.List;
 
-public record StoreInfoUpdate(
+public record StoreDetailUpdate(
         String name,
         String address,
         String businessHours,
@@ -23,7 +23,7 @@ public record StoreInfoUpdate(
         Boolean hasSelectGacha
 ) {
 
-    public StoreInfoUpdate {
+    public StoreDetailUpdate {
         paymentMethods = copyIfPresent(paymentMethods);
         facilities = copyIfPresent(facilities);
     }

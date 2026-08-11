@@ -2,14 +2,17 @@ package com.gachi.gacha.server.store.presentation;
 
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.store.application.StoreService;
-import com.gachi.gacha.server.store.application.dto.StoreData;
-import com.gachi.gacha.server.store.application.dto.StoreInfoData;
-import com.gachi.gacha.server.store.application.dto.StoreListData;
+import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
+import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
+import com.gachi.gacha.server.store.application.dto.StoreListResult;
+import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
+import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
 import com.gachi.gacha.server.store.presentation.dto.StoreCreateRequest;
+import com.gachi.gacha.server.store.presentation.dto.StoreCreateResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreDeleteResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreDetailResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreListResponse;
-import com.gachi.gacha.server.store.presentation.dto.StoreResponse;
+import com.gachi.gacha.server.store.presentation.dto.StoreNearbyResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreUpdateRequest;
 import com.gachi.gacha.server.store.presentation.dto.StoreUpdateResponse;
 import jakarta.validation.Valid;
@@ -34,12 +37,23 @@ public class StoreController {
 
     private final StoreService storeService;
 
+    @GetMapping("/nearby")
+    public ResponseEntity<BaseResponse<StoreNearbyResponse>> readNearbyStores(
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(defaultValue = "3000") Integer radius
+    ) {
+        StoreNearbyResult result = storeService.findNearbyStores(latitude, longitude, radius);
+
+        return ResponseEntity.ok(BaseResponse.ok(StoreNearbyResponse.from(result)));
+    }
+
     @GetMapping
     public ResponseEntity<BaseResponse<StoreListResponse>> readStores(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        StoreListData result = storeService.findAllStore(page, size);
+        StoreListResult result = storeService.findStores(page, size);
         return ResponseEntity.ok(BaseResponse.ok(StoreListResponse.from(result)));
     }
 
@@ -47,23 +61,23 @@ public class StoreController {
     public ResponseEntity<BaseResponse<StoreDetailResponse>> readStore(
             @PathVariable Long storeId
     ) {
-        StoreInfoData result = storeService.getStore(storeId);
+        StoreDetailResult result = storeService.getStore(storeId);
         return ResponseEntity.ok(BaseResponse.ok(StoreDetailResponse.from(result)));
     }
 
     @PostMapping
-    public ResponseEntity<BaseResponse<StoreResponse>> createStore(
+    public ResponseEntity<BaseResponse<StoreCreateResponse>> createStore(
             @Valid @RequestBody StoreCreateRequest request
     ) {
-        StoreData storeCreateResult = storeService.addStore(request.toCommand());
-        StoreResponse storeResponse = StoreResponse.from(storeCreateResult);
+        StoreCreateResult result = storeService.addStore(request.toCommand());
+        StoreCreateResponse response = StoreCreateResponse.from(result);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
-                .buildAndExpand(storeResponse.storeId())
+                .buildAndExpand(response.storeId())
                 .toUri();
 
-        return BaseResponse.created(location, storeResponse);
+        return BaseResponse.created(location, response);
     }
 
     @PatchMapping("/{storeId}")
@@ -71,9 +85,9 @@ public class StoreController {
             @PathVariable Long storeId,
             @Valid @RequestBody StoreUpdateRequest request
     ) {
-        StoreData storeData = storeService.modifyStore(storeId, request.toCommand());
+        StoreUpdateResult result = storeService.modifyStore(storeId, request.toCommand());
 
-        return ResponseEntity.ok(BaseResponse.ok(StoreUpdateResponse.from(storeData)));
+        return ResponseEntity.ok(BaseResponse.ok(StoreUpdateResponse.from(result)));
     }
 
     @DeleteMapping("/{storeId}")

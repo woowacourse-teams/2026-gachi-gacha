@@ -24,7 +24,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class StoreInfo extends BaseTimeEntity {
+public class StoreDetail extends BaseTimeEntity {
 
     @Id
     private Long id;
@@ -82,7 +82,7 @@ public class StoreInfo extends BaseTimeEntity {
         this.store = store;
     }
 
-    public void modify(StoreInfoUpdate update) {
+    public void modify(StoreDetailUpdate update) {
         validate(update);
 
         this.name = valueOrCurrent(update.name(), name);
@@ -105,7 +105,7 @@ public class StoreInfo extends BaseTimeEntity {
         replaceIfPresent(facilities, update.facilities());
     }
 
-    private void validate(StoreInfoUpdate update) {
+    private void validate(StoreDetailUpdate update) {
         String nextName = valueOrCurrent(update.name(), name);
         String nextAddress = valueOrCurrent(update.address(), address);
         Integer nextMachineAmount = valueOrCurrent(update.machineAmount(), machineAmount);

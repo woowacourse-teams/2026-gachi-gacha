@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.store.domain.Store;
-import com.gachi.gacha.server.store.domain.StoreInfo;
+import com.gachi.gacha.server.store.domain.StoreDetail;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -45,14 +45,14 @@ public record StoreCreateCommand(
                 .latitude(latitude)
                 .build();
 
-        store.registerInfo(createStoreInfo());
+        store.registerDetail(createStoreDetail());
         imageUrls.forEach(store::addStoreImage);
 
         return store;
     }
 
-    private StoreInfo createStoreInfo() {
-        return StoreInfo.builder()
+    private StoreDetail createStoreDetail() {
+        return StoreDetail.builder()
                 .name(name)
                 .address(address)
                 .businessHours(businessHours)

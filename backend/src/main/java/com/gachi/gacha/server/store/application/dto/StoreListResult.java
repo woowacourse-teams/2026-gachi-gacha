@@ -4,8 +4,8 @@ import com.gachi.gacha.server.store.domain.Store;
 import java.util.List;
 import org.springframework.data.domain.Page;
 
-public record StoreListData(
-        List<StoreItem> items,
+public record StoreListResult(
+        List<StoreInfo> items,
         int page,
         int size,
         long totalElements,
@@ -13,12 +13,12 @@ public record StoreListData(
         boolean hasNext
 ) {
 
-    public static StoreListData from(Page<Store> stores) {
-        List<StoreItem> items = stores.getContent().stream()
-                .map(StoreItem::from)
+    public static StoreListResult from(Page<Store> stores) {
+        List<StoreInfo> items = stores.getContent().stream()
+                .map(StoreInfo::from)
                 .toList();
 
-        return new StoreListData(
+        return new StoreListResult(
                 items,
                 stores.getNumber(),
                 stores.getSize(),
@@ -28,7 +28,7 @@ public record StoreListData(
         );
     }
 
-    public record StoreItem(
+    public record StoreInfo(
             Long storeId,
             String name,
             String thumbnailUrl,
@@ -38,15 +38,15 @@ public record StoreListData(
             Integer gachaMachineCount
     ) {
 
-        private static StoreItem from(Store store) {
-            return new StoreItem(
+        private static StoreInfo from(Store store) {
+            return new StoreInfo(
                     store.getId(),
-                    store.getStoreInfo().getName(),
+                    store.getStoreDetail().getName(),
                     store.getThumbnailUrl(),
-                    store.getStoreInfo().getAddress(),
+                    store.getStoreDetail().getAddress(),
                     store.getLatitude(),
                     store.getLongitude(),
-                    store.getStoreInfo().getMachineAmount()
+                    store.getStoreDetail().getMachineAmount()
             );
         }
     }
