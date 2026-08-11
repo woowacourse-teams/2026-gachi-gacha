@@ -15,7 +15,10 @@ public enum ErrorCode {
 
     // Gacha
     GACHA_NOT_FOUND(HttpStatus.NOT_FOUND, "G001", "존재하지 않는 가챠입니다."),
-    INVALID_GACHA_POLICY(HttpStatus.BAD_REQUEST, "G002", "유효하지 않은 가챠 정책입니다.");
+    INVALID_GACHA_POLICY(HttpStatus.BAD_REQUEST, "G002", "유효하지 않은 가챠 정책입니다."),
+
+    // Store
+    STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "S001", "존재하지 않는 매장입니다.");
 
     private final HttpStatus status;
     private final String code;

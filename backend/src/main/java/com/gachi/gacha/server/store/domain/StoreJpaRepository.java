@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.store.domain;
 
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -12,4 +13,8 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
     @Override
     @EntityGraph(attributePaths = "storeInfo")
     Page<Store> findAll(Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"storeInfo", "storeImages"})
+    Optional<Store> findById(Long id);
 }
