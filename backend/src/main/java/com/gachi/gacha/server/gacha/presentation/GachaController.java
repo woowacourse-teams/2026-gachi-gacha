@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.gacha.presentation;
 
+import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.gacha.application.GachaService;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaCreateRequest;
@@ -22,7 +23,7 @@ public class GachaController {
     private final GachaService gachaService;
 
     @PostMapping
-    public ResponseEntity<GachaResponse> createGacha(@Valid @RequestBody GachaCreateRequest request) {
+    public ResponseEntity<BaseResponse<GachaResponse>> createGacha(@Valid @RequestBody GachaCreateRequest request) {
         GachaInfo gachaInfo = gachaService.addGacha(request.toCommand());
         GachaResponse gachaResponse = GachaResponse.from(gachaInfo);
 
@@ -31,6 +32,6 @@ public class GachaController {
                 .buildAndExpand(gachaResponse.gachaId())
                 .toUri();
 
-        return ResponseEntity.created(location).body(gachaResponse);
+        return BaseResponse.created(location, gachaResponse);
     }
 }
