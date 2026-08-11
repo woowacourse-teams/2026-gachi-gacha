@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.store.presentation.dto;
 
-import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
+import com.gachi.gacha.server.store.application.dto.StoreInfoData;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,7 +33,7 @@ public record StoreDetailResponse(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreDetailResponse from(StoreDetailResult result) {
+    public static StoreDetailResponse from(StoreInfoData result) {
         List<StoreImageResponse> images = result.images().stream()
                 .map(StoreImageResponse::from)
                 .toList();
@@ -73,7 +73,7 @@ public record StoreDetailResponse(
             String imageUrl
     ) {
 
-        private static StoreImageResponse from(StoreDetailResult.StoreImageItem image) {
+        private static StoreImageResponse from(StoreInfoData.StoreImageItem image) {
             return new StoreImageResponse(
                     image.storeImageId(),
                     image.imageUrl()

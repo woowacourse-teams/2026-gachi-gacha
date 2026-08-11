@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.store.domain;
 
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
+import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -58,5 +59,31 @@ public class Store extends BaseTimeEntity {
 
     public void addStoreImage(String imageUrl) {
         this.storeImages.add(new StoreImage(this, imageUrl));
+    }
+
+    public void modify(
+            String thumbnailUrl,
+            Double latitude,
+            Double longitude
+    ) {
+        Double nextLatitude = latitude == null ? this.latitude : latitude;
+        Double nextLongitude = longitude == null ? this.longitude : longitude;
+        validateCoordinates(nextLatitude, nextLongitude);
+
+        if (thumbnailUrl != null) {
+            this.thumbnailUrl = thumbnailUrl;
+        }
+        this.latitude = nextLatitude;
+        this.longitude = nextLongitude;
+        markUpdated();
+    }
+
+    private void validateCoordinates(Double latitude, Double longitude) {
+        if (latitude == null || latitude < -90 || latitude > 90) {
+            throw new InvalidStoreException();
+        }
+        if (longitude == null || longitude < -180 || longitude > 180) {
+            throw new InvalidStoreException();
+        }
     }
 }

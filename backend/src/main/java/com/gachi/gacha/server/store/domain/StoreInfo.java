@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.store.domain;
 
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
+import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -79,5 +80,81 @@ public class StoreInfo extends BaseTimeEntity {
 
     protected void assignStore(Store store) {
         this.store = store;
+    }
+
+    public void modify(StoreInfoUpdate update) {
+        validate(update);
+
+        this.name = valueOrCurrent(update.name(), name);
+        this.address = valueOrCurrent(update.address(), address);
+        this.businessHours = valueOrCurrent(update.businessHours(), businessHours);
+        this.phone = valueOrCurrent(update.phone(), phone);
+        this.instagramId = valueOrCurrent(update.instagramId(), instagramId);
+        this.machineAmount = valueOrCurrent(update.machineAmount(), machineAmount);
+        this.kujiAmount = valueOrCurrent(update.kujiAmount(), kujiAmount);
+        this.coinPrice = valueOrCurrent(update.coinPrice(), coinPrice);
+        this.gachaMinPrice = valueOrCurrent(update.gachaMinPrice(), gachaMinPrice);
+        this.gachaMaxPrice = valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice);
+        this.kujiMinPrice = valueOrCurrent(update.kujiMinPrice(), kujiMinPrice);
+        this.kujiMaxPrice = valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice);
+        this.selectGachaMinPrice = valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice);
+        this.selectGachaMaxPrice = valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice);
+        this.hasRandomBox = valueOrCurrent(update.hasRandomBox(), hasRandomBox);
+        this.hasSelectGacha = valueOrCurrent(update.hasSelectGacha(), hasSelectGacha);
+        replaceIfPresent(paymentMethods, update.paymentMethods());
+        replaceIfPresent(facilities, update.facilities());
+    }
+
+    private void validate(StoreInfoUpdate update) {
+        String nextName = valueOrCurrent(update.name(), name);
+        String nextAddress = valueOrCurrent(update.address(), address);
+        Integer nextMachineAmount = valueOrCurrent(update.machineAmount(), machineAmount);
+        Integer nextKujiAmount = valueOrCurrent(update.kujiAmount(), kujiAmount);
+        Long nextCoinPrice = valueOrCurrent(update.coinPrice(), coinPrice);
+        Long nextGachaMinPrice = valueOrCurrent(update.gachaMinPrice(), gachaMinPrice);
+        Long nextGachaMaxPrice = valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice);
+        Long nextKujiMinPrice = valueOrCurrent(update.kujiMinPrice(), kujiMinPrice);
+        Long nextKujiMaxPrice = valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice);
+        Long nextSelectMinPrice = valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice);
+        Long nextSelectMaxPrice = valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice);
+
+        if (nextName == null || nextName.isBlank() || nextAddress == null || nextAddress.isBlank()) {
+            throw new InvalidStoreException();
+        }
+        validateNonNegative(nextMachineAmount, nextKujiAmount, nextCoinPrice);
+        validatePriceRange(nextGachaMinPrice, nextGachaMaxPrice);
+        validatePriceRange(nextKujiMinPrice, nextKujiMaxPrice);
+        validatePriceRange(nextSelectMinPrice, nextSelectMaxPrice);
+    }
+
+    private void validateNonNegative(Integer machineAmount, Integer kujiAmount, Long coinPrice) {
+        if (isNegative(machineAmount) || isNegative(kujiAmount) || isNegative(coinPrice)) {
+            throw new InvalidStoreException();
+        }
+    }
+
+    private void validatePriceRange(Long minPrice, Long maxPrice) {
+        if (isNegative(minPrice) || isNegative(maxPrice)) {
+            throw new InvalidStoreException();
+        }
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            throw new InvalidStoreException();
+        }
+    }
+
+    private boolean isNegative(Number value) {
+        return value != null && value.longValue() < 0;
+    }
+
+    private <T> T valueOrCurrent(T value, T current) {
+        return value == null ? current : value;
+    }
+
+    private <T> void replaceIfPresent(List<T> current, List<T> values) {
+        if (values == null) {
+            return;
+        }
+        current.clear();
+        current.addAll(values);
     }
 }

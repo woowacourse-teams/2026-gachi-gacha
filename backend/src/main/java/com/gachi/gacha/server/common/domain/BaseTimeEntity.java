@@ -18,4 +18,8 @@ public abstract class BaseTimeEntity {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    protected void markUpdated() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

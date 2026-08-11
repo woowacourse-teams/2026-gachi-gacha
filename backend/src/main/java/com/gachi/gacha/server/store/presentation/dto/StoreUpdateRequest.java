@@ -1,29 +1,26 @@
 package com.gachi.gacha.server.store.presentation.dto;
 
-import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
+import com.gachi.gacha.server.store.application.dto.StoreUpdateCommand;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
-
-public record StoreCreateRequest(
-        @NotBlank(message = "매장 이름은 필수입니다.")
+public record StoreUpdateRequest(
         @Size(max = 255, message = "매장 이름은 255자를 초과할 수 없습니다.")
+        @Pattern(regexp = ".*\\S.*", message = "매장 이름은 공백일 수 없습니다.")
         String name,
 
         @Size(max = 255, message = "썸네일 URL은 255자를 초과할 수 없습니다.")
         String thumbnailUrl,
 
-        @NotNull(message = "위도는 필수입니다.")
         @DecimalMin(value = "-90.0", message = "위도는 -90 이상이어야 합니다.")
         @DecimalMax(value = "90.0", message = "위도는 90 이하여야 합니다.")
         Double latitude,
 
-        @NotNull(message = "경도는 필수입니다.")
         @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
         @DecimalMax(value = "180.0", message = "경도는 180 이하여야 합니다.")
         Double longitude,
@@ -34,8 +31,8 @@ public record StoreCreateRequest(
         @Size(max = 255, message = "인스타그램 ID는 255자를 초과할 수 없습니다.")
         String instagramId,
 
-        @NotBlank(message = "매장 주소는 필수입니다.")
         @Size(max = 255, message = "매장 주소는 255자를 초과할 수 없습니다.")
+        @Pattern(regexp = ".*\\S.*", message = "매장 주소는 공백일 수 없습니다.")
         String address,
 
         @Size(max = 255, message = "영업시간은 255자를 초과할 수 없습니다.")
@@ -66,47 +63,40 @@ public record StoreCreateRequest(
 
         Boolean hasSelectGacha,
 
-        @PositiveOrZero(message = "선택 가챠 최소 가격은 0 이상이어야 합니다.")
+        @PositiveOrZero(message = "셀렉트 가챠 최소 가격은 0 이상이어야 합니다.")
         Long selectGachaPriceMin,
 
-        @PositiveOrZero(message = "선택 가챠 최대 가격은 0 이상이어야 합니다.")
+        @PositiveOrZero(message = "셀렉트 가챠 최대 가격은 0 이상이어야 합니다.")
         Long selectGachaPriceMax,
 
         List<@NotBlank(message = "편의시설은 빈 값일 수 없습니다.") String> facilities,
 
-        Boolean hasRandomBox,
-
-        List<
-                @NotBlank(message = "이미지 URL은 빈 값일 수 없습니다.")
-                @Size(max = 255, message = "이미지 URL은 255자를 초과할 수 없습니다.")
-                        String> imageUrls
+        Boolean hasRandomBox
 ) {
 
-    public StoreCreateCommand toCommand() {
-        return StoreCreateCommand.builder()
-                .name(name)
-                .thumbnailUrl(thumbnailUrl)
-                .latitude(latitude)
-                .longitude(longitude)
-                .phoneNumber(phoneNumber)
-                .instagramId(instagramId)
-                .address(address)
-                .businessHours(businessHours)
-                .paymentMethods(paymentMethods)
-                .gachaMachineCount(gachaMachineCount)
-                .coinPrice(coinPrice)
-                .gachaPriceMin(gachaPriceMin)
-                .gachaPriceMax(gachaPriceMax)
-                .kujiCount(kujiCount)
-                .kujiPriceMin(kujiPriceMin)
-                .kujiPriceMax(kujiPriceMax)
-                .hasSelectGacha(hasSelectGacha)
-                .selectGachaPriceMin(selectGachaPriceMin)
-                .selectGachaPriceMax(selectGachaPriceMax)
-                .facilities(facilities)
-                .hasRandomBox(hasRandomBox)
-                .imageUrls(imageUrls)
-                .build();
+    public StoreUpdateCommand toCommand() {
+        return new StoreUpdateCommand(
+                name,
+                thumbnailUrl,
+                latitude,
+                longitude,
+                phoneNumber,
+                instagramId,
+                address,
+                businessHours,
+                paymentMethods,
+                gachaMachineCount,
+                coinPrice,
+                gachaPriceMin,
+                gachaPriceMax,
+                kujiCount,
+                kujiPriceMin,
+                kujiPriceMax,
+                hasSelectGacha,
+                selectGachaPriceMin,
+                selectGachaPriceMax,
+                facilities,
+                hasRandomBox
+        );
     }
-
 }

@@ -3,10 +3,12 @@ package com.gachi.gacha.server.store.application;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
 import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
-import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
-import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
-import com.gachi.gacha.server.store.application.dto.StoreListResult;
+import com.gachi.gacha.server.store.application.dto.StoreData;
+import com.gachi.gacha.server.store.application.dto.StoreInfoData;
+import com.gachi.gacha.server.store.application.dto.StoreListData;
+import com.gachi.gacha.server.store.application.dto.StoreUpdateCommand;
 import com.gachi.gacha.server.store.domain.Store;
+import com.gachi.gacha.server.store.domain.StoreInfoUpdate;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class StoreService {
     private final StoreJpaRepository storeJpaRepository;
 
     @Transactional(readOnly = true)
-    public StoreListResult findAllStore(int page, int size) {
+    public StoreListData findAllStore(int page, int size) {
         validatePageRequest(page, size);
 
         PageRequest pageRequest = PageRequest.of(
@@ -32,7 +34,7 @@ public class StoreService {
         );
         Page<Store> stores = storeJpaRepository.findAll(pageRequest);
 
-        return StoreListResult.from(stores);
+        return StoreListData.from(stores);
     }
 
     private void validatePageRequest(int page, int size) {
@@ -42,17 +44,56 @@ public class StoreService {
     }
 
     @Transactional(readOnly = true)
-    public StoreDetailResult getStore(Long storeId) {
+    public StoreInfoData getStore(Long storeId) {
         Store store = storeJpaRepository.findById(storeId)
                 .orElseThrow(StoreNotFoundException::new);
 
-        return StoreDetailResult.from(store);
+        return StoreInfoData.from(store);
     }
 
     @Transactional
-    public StoreCreateResult addStore(StoreCreateCommand command) {
+    public StoreData addStore(StoreCreateCommand command) {
         Store store = command.toEntity();
         Store savedStore = storeJpaRepository.save(store);
-        return StoreCreateResult.from(savedStore);
+        return StoreData.from(savedStore);
+    }
+
+    @Transactional
+    public StoreData modifyStore(Long storeId, StoreUpdateCommand command) {
+        Store store = storeJpaRepository.findById(storeId)
+                .orElseThrow(StoreNotFoundException::new);
+
+        store.modify(
+                command.thumbnailUrl(),
+                command.latitude(),
+                command.longitude()
+        );
+        store.getStoreInfo().modify(createStoreInfoUpdate(command));
+        storeJpaRepository.flush();
+
+        return StoreData.from(store);
+    }
+
+    private StoreInfoUpdate createStoreInfoUpdate(StoreUpdateCommand command) {
+        return new StoreInfoUpdate(
+                command.name(),
+                command.address(),
+                command.businessHours(),
+                command.paymentMethods(),
+                command.phoneNumber(),
+                command.facilities(),
+                command.instagramId(),
+                command.gachaMachineCount(),
+                command.kujiCount(),
+                command.coinPrice(),
+                command.gachaPriceMin(),
+                command.gachaPriceMax(),
+                command.kujiPriceMin(),
+                command.kujiPriceMax(),
+                command.selectGachaPriceMin(),
+                command.selectGachaPriceMax(),
+                command.hasRandomBox(),
+                command.hasSelectGacha()
+        );
     }
 }

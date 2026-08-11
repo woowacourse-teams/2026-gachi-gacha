@@ -5,14 +5,16 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 
 @Builder
-public record StoreCreateResult(
+public record StoreData(
         Long storeId,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
-    public static StoreCreateResult from(Store store) {
-        return StoreCreateResult.builder()
+    public static StoreData from(Store store) {
+        return StoreData.builder()
                 .storeId(store.getId())
                 .createdAt(store.getCreatedAt())
+                .updatedAt(store.getUpdatedAt())
                 .build();
     }
 }

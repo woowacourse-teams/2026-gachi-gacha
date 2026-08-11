@@ -5,7 +5,7 @@ import com.gachi.gacha.server.store.domain.StoreImage;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record StoreDetailResult(
+public record StoreInfoData(
         Long storeId,
         String name,
         String thumbnailUrl,
@@ -34,12 +34,12 @@ public record StoreDetailResult(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreDetailResult from(Store store) {
+    public static StoreInfoData from(Store store) {
         List<StoreImageItem> images = store.getStoreImages().stream()
                 .map(StoreImageItem::from)
                 .toList();
 
-        return new StoreDetailResult(
+        return new StoreInfoData(
                 store.getId(),
                 store.getStoreInfo().getName(),
                 store.getThumbnailUrl(),

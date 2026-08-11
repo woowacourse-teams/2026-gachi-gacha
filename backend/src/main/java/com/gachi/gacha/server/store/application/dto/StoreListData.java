@@ -4,7 +4,7 @@ import com.gachi.gacha.server.store.domain.Store;
 import java.util.List;
 import org.springframework.data.domain.Page;
 
-public record StoreListResult(
+public record StoreListData(
         List<StoreItem> items,
         int page,
         int size,
@@ -13,12 +13,12 @@ public record StoreListResult(
         boolean hasNext
 ) {
 
-    public static StoreListResult from(Page<Store> stores) {
+    public static StoreListData from(Page<Store> stores) {
         List<StoreItem> items = stores.getContent().stream()
                 .map(StoreItem::from)
                 .toList();
 
-        return new StoreListResult(
+        return new StoreListData(
                 items,
                 stores.getNumber(),
                 stores.getSize(),

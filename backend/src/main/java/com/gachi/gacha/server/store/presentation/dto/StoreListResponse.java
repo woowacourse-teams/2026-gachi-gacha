@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.store.presentation.dto;
 
-import com.gachi.gacha.server.store.application.dto.StoreListResult;
+import com.gachi.gacha.server.store.application.dto.StoreListData;
 import java.util.List;
 
 public record StoreListResponse(
@@ -12,7 +12,7 @@ public record StoreListResponse(
         boolean hasNext
 ) {
 
-    public static StoreListResponse from(StoreListResult result) {
+    public static StoreListResponse from(StoreListData result) {
         List<StoreItemResponse> items = result.items().stream()
                 .map(StoreItemResponse::from)
                 .toList();
@@ -37,7 +37,7 @@ public record StoreListResponse(
             Integer gachaMachineCount
     ) {
 
-        private static StoreItemResponse from(StoreListResult.StoreItem item) {
+        private static StoreItemResponse from(StoreListData.StoreItem item) {
             return new StoreItemResponse(
                     item.storeId(),
                     item.name(),

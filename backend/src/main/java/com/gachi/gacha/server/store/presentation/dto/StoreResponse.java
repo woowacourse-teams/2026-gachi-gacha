@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.store.presentation.dto;
 
-import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
+import com.gachi.gacha.server.store.application.dto.StoreData;
 import java.time.LocalDateTime;
 import lombok.Builder;
 
@@ -9,7 +9,7 @@ public record StoreResponse(
         Long storeId,
         LocalDateTime createdAt
 ) {
-    public static StoreResponse from(StoreCreateResult storeCreateResult) {
+    public static StoreResponse from(StoreData storeCreateResult) {
         return StoreResponse.builder()
                 .storeId(storeCreateResult.storeId())
                 .createdAt(storeCreateResult.createdAt())
