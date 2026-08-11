@@ -17,11 +17,11 @@ public record StoreCreateCommand(
         String address,
         String businessHours,
         List<String> paymentMethods,
-        Integer gachaMachineCount,
+        Integer gachaMachineAmount,
         Long coinPrice,
         Long gachaPriceMin,
         Long gachaPriceMax,
-        Integer kujiCount,
+        Integer kujiAmount,
         Long kujiPriceMin,
         Long kujiPriceMax,
         Boolean hasSelectGacha,
@@ -60,8 +60,8 @@ public record StoreCreateCommand(
                 .phone(phoneNumber)
                 .facilities(new ArrayList<>(facilities))
                 .instagramId(instagramId)
-                .machineAmount(gachaMachineCount)
-                .kujiAmount(kujiCount)
+                .machineAmount(gachaMachineAmount)
+                .kujiAmount(kujiAmount)
                 .coinPrice(coinPrice)
                 .gachaMinPrice(gachaPriceMin)
                 .gachaMaxPrice(gachaPriceMax)

@@ -50,11 +50,11 @@ public record StoreDetailResponse(
                 result.address(),
                 result.businessHours(),
                 result.paymentMethods(),
-                result.gachaMachineCount(),
+                result.gachaMachineAmount(),
                 result.coinPrice(),
                 result.gachaPriceMin(),
                 result.gachaPriceMax(),
-                result.kujiCount(),
+                result.kujiAmount(),
                 result.kujiPriceMin(),
                 result.kujiPriceMax(),
                 result.hasSelectGacha(),
@@ -62,7 +62,7 @@ public record StoreDetailResponse(
                 result.selectGachaPriceMax(),
                 result.facilities(),
                 result.hasRandomBox(),
-                result.ownedGachaCount(),
+                result.ownedGachaAmount(),
                 result.createdAt(),
                 result.updatedAt()
         );

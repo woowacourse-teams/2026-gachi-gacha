@@ -44,7 +44,7 @@ public record StoreCreateRequest(
         List<@NotBlank(message = "결제 방법은 빈 값일 수 없습니다.") String> paymentMethods,
 
         @PositiveOrZero(message = "가챠 기계 수는 0 이상이어야 합니다.")
-        Integer gachaMachineCount,
+        Integer gachaMachineAmount,
 
         @PositiveOrZero(message = "동전 가격은 0 이상이어야 합니다.")
         Long coinPrice,
@@ -56,7 +56,7 @@ public record StoreCreateRequest(
         Long gachaPriceMax,
 
         @PositiveOrZero(message = "쿠지 수는 0 이상이어야 합니다.")
-        Integer kujiCount,
+        Integer kujiAmount,
 
         @PositiveOrZero(message = "쿠지 최소 가격은 0 이상이어야 합니다.")
         Long kujiPriceMin,
@@ -93,11 +93,11 @@ public record StoreCreateRequest(
                 .address(address)
                 .businessHours(businessHours)
                 .paymentMethods(paymentMethods)
-                .gachaMachineCount(gachaMachineCount)
+                .gachaMachineAmount(gachaMachineAmount)
                 .coinPrice(coinPrice)
                 .gachaPriceMin(gachaPriceMin)
                 .gachaPriceMax(gachaPriceMax)
-                .kujiCount(kujiCount)
+                .kujiAmount(kujiAmount)
                 .kujiPriceMin(kujiPriceMin)
                 .kujiPriceMax(kujiPriceMax)
                 .hasSelectGacha(hasSelectGacha)
