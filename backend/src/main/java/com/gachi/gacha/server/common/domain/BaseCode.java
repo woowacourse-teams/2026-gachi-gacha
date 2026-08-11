@@ -15,12 +15,6 @@ public enum BaseCode {
     private final String code;
     private final String message;
 
-    BaseCode(String message) {
-        this.status = HttpStatus.OK;
-        this.code = "C000";
-        this.message = message;
-    }
-
     BaseCode(HttpStatus status, String code, String message) {
         this.status = status;
         this.code = code;
