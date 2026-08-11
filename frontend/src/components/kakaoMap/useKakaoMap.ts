@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface LatLngLiteral {
   lat: number;
@@ -13,6 +13,7 @@ interface UseKakaoMapParams {
 export function useKakaoMap({ center, level }: UseKakaoMapParams) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<kakao.maps.Map | null>(null);
+  const [map, setMap] = useState<kakao.maps.Map | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -29,10 +30,13 @@ export function useKakaoMap({ center, level }: UseKakaoMapParams) {
     window.kakao.maps.load(() => {
       if (cancelled) return;
 
-      mapRef.current = new window.kakao.maps.Map(container, {
+      const nextMap = new window.kakao.maps.Map(container, {
         center: new window.kakao.maps.LatLng(center.lat, center.lng),
         level,
       });
+
+      mapRef.current = nextMap;
+      setMap(nextMap);
     });
 
     return () => {
@@ -42,5 +46,5 @@ export function useKakaoMap({ center, level }: UseKakaoMapParams) {
     };
   }, [center.lat, center.lng, level]);
 
-  return { containerRef, mapRef };
+  return { containerRef, map, mapRef };
 }

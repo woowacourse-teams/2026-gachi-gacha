@@ -13,6 +13,20 @@ declare namespace kakao.maps {
   class Map {
     constructor(container: HTMLElement, options: MapOptions);
   }
+
+  interface CustomOverlayOptions {
+    clickable?: boolean;
+    content: HTMLElement;
+    position: LatLng;
+    xAnchor?: number;
+    yAnchor?: number;
+    zIndex?: number;
+  }
+
+  class CustomOverlay {
+    constructor(options: CustomOverlayOptions);
+    setMap(map: Map | null): void;
+  }
 }
 
 interface Window {
