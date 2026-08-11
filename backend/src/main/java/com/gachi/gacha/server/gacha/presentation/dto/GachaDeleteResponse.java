@@ -7,7 +7,7 @@ import lombok.Builder;
 public record GachaDeleteResponse(
         Long gachaId
 ) {
-    public static GachaDeleteResponse from(GachaDeleteResult result) {
+    public static GachaDeleteResponse from(final GachaDeleteResult result) {
         return GachaDeleteResponse.builder()
                 .gachaId(result.gachaId())
                 .build();

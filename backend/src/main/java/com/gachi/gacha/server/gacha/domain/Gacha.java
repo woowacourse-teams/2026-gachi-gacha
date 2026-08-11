@@ -27,7 +27,7 @@ public class Gacha extends BaseTimeEntity {
     private String caption;
     private String thumbnailUrl;
 
-    public void update(String name, String caption, String thumbnailUrl) {
+    public void update(final String name, final String caption, final String thumbnailUrl) {
         this.name = name;
         this.caption = caption;
         this.thumbnailUrl = thumbnailUrl;

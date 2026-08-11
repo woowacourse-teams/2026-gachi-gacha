@@ -9,7 +9,7 @@ public record GachaUpdateResponse(
         Long gachaId,
         LocalDateTime updatedAt
 ) {
-    public static GachaUpdateResponse from(GachaResult gachaResult) {
+    public static GachaUpdateResponse from(final GachaResult gachaResult) {
         return GachaUpdateResponse.builder()
                 .gachaId(gachaResult.gachaId())
                 .updatedAt(gachaResult.updatedAt())

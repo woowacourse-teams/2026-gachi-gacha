@@ -15,7 +15,7 @@ public enum BaseCode {
     private final String code;
     private final String message;
 
-    BaseCode(HttpStatus status, String code, String message) {
+    BaseCode(final HttpStatus status, final String code, final String message) {
         this.status = status;
         this.code = code;
         this.message = message;

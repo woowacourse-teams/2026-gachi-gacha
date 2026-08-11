@@ -29,7 +29,7 @@ public class GachaService {
     }
 
     @Transactional
-    public GachaResult modify(Long gachaId, GachaUpdateCommand command) {
+    public GachaResult modify(final Long gachaId, final GachaUpdateCommand command) {
         Gacha gacha = gachaRepository.getById(gachaId);
         gacha.update(command.name(), command.caption(), command.thumbnailUrl());
         Gacha saved = gachaRepository.save(gacha);
@@ -37,7 +37,7 @@ public class GachaService {
     }
 
     @Transactional
-    public GachaDeleteResult remove(Long gachaId) {
+    public GachaDeleteResult remove(final Long gachaId) {
         Gacha gacha = gachaRepository.getById(gachaId);
         gachaRepository.deleteById(gachaId);
         return GachaDeleteResult.from(gacha);

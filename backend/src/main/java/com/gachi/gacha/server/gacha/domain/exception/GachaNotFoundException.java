@@ -4,7 +4,7 @@ import com.gachi.gacha.server.common.exception.EntityNotFoundException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 
 public class GachaNotFoundException extends EntityNotFoundException {
-    public GachaNotFoundException(ErrorCode errorCode) {
+    public GachaNotFoundException(final ErrorCode errorCode) {
         super(errorCode);
     }
 }
