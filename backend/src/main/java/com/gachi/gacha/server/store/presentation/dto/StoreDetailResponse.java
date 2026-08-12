@@ -15,7 +15,7 @@ public record StoreDetailResponse(
         String instagramId,
         String address,
         String businessHours,
-        List<String> paymentMethods,
+        String paymentMethods,
         Integer gachaMachineAmount,
         Long coinPrice,
         Long gachaPriceMin,

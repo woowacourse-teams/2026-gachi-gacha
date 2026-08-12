@@ -38,7 +38,8 @@ public record StoreUpdateRequest(
         @Size(max = 255, message = "영업시간은 255자를 초과할 수 없습니다.")
         String businessHours,
 
-        List<@NotBlank(message = "결제 방법은 빈 값일 수 없습니다.") String> paymentMethods,
+        @Size(max = 255, message = "결제 방법은 255자를 초과할 수 없습니다.")
+        String paymentMethods,
 
         @PositiveOrZero(message = "가챠 기계 수는 0 이상이어야 합니다.")
         Integer gachaMachineAmount,

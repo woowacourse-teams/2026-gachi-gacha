@@ -13,7 +13,7 @@ public record StoreUpdateCommand(
         String instagramId,
         String address,
         String businessHours,
-        List<String> paymentMethods,
+        String paymentMethods,
         Integer gachaMachineAmount,
         Long coinPrice,
         Long gachaPriceMin,
@@ -29,7 +29,6 @@ public record StoreUpdateCommand(
 ) {
 
     public StoreUpdateCommand {
-        paymentMethods = copyIfPresent(paymentMethods);
         facilities = copyIfPresent(facilities);
     }
 }

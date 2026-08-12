@@ -124,6 +124,7 @@ class StoreControllerTest {
             assertThat(response.jsonPath().getLong("data.storeId")).isEqualTo(storeId);
             assertThat(response.jsonPath().getString("data.name")).isEqualTo(STORE_NAME);
             assertThat(response.jsonPath().getString("data.address")).isEqualTo(STORE_ADDRESS);
+            assertThat(response.jsonPath().getString("data.paymentMethods")).isEqualTo("현금, 카드");
             assertThat(response.jsonPath().getInt("data.gachaMachineAmount")).isEqualTo(10);
             assertThat(response.jsonPath().getInt("data.kujiAmount")).isEqualTo(5);
         }
@@ -312,7 +313,7 @@ class StoreControllerTest {
         request.put("instagramId", "test_store");
         request.put("address", STORE_ADDRESS);
         request.put("businessHours", "매일 10:00-22:00");
-        request.put("paymentMethods", List.of("현금", "카드"));
+        request.put("paymentMethods", "현금, 카드");
         request.put("gachaMachineAmount", 10);
         request.put("coinPrice", 500);
         request.put("gachaPriceMin", 3_000);

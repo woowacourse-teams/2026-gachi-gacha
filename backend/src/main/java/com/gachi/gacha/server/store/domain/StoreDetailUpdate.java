@@ -7,7 +7,7 @@ public record StoreDetailUpdate(
         String name,
         String address,
         String businessHours,
-        List<String> paymentMethods,
+        String paymentMethods,
         String phone,
         List<String> facilities,
         String instagramId,
@@ -25,7 +25,6 @@ public record StoreDetailUpdate(
 ) {
 
     public StoreDetailUpdate {
-        paymentMethods = BaseUtils.copyIfPresent(paymentMethods);
         facilities = BaseUtils.copyIfPresent(facilities);
     }
 }

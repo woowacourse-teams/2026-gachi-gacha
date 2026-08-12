@@ -42,14 +42,7 @@ public class StoreDetail extends BaseTimeEntity {
 
     private String businessHours;
 
-    @Builder.Default
-    @ElementCollection
-    @CollectionTable(
-            name = "store_payment_method",
-            joinColumns = @JoinColumn(name = "store_id")
-    )
-    @Column(name = "payment_method")
-    private List<String> paymentMethods = new ArrayList<>();
+    private String paymentMethods;
 
     private String phone;
 
@@ -97,7 +90,7 @@ public class StoreDetail extends BaseTimeEntity {
         this.selectGachaMaxPrice = valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice);
         this.hasRandomBox = valueOrCurrent(update.hasRandomBox(), hasRandomBox);
         this.hasSelectGacha = valueOrCurrent(update.hasSelectGacha(), hasSelectGacha);
-        replaceIfPresent(paymentMethods, update.paymentMethods());
+        this.paymentMethods = valueOrCurrent(update.paymentMethods(), paymentMethods);
         replaceIfPresent(facilities, update.facilities());
     }
 

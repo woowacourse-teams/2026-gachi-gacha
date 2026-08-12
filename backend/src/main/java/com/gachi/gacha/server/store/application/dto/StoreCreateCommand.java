@@ -19,7 +19,7 @@ public record StoreCreateCommand(
         String instagramId,
         String address,
         String businessHours,
-        List<String> paymentMethods,
+        String paymentMethods,
         Integer gachaMachineAmount,
         Long coinPrice,
         Long gachaPriceMin,
@@ -36,7 +36,6 @@ public record StoreCreateCommand(
 ) {
 
     public StoreCreateCommand {
-        paymentMethods = copyOrEmpty(paymentMethods);
         facilities = copyOrEmpty(facilities);
         imageUrls = copyOrEmpty(imageUrls);
     }
@@ -55,7 +54,7 @@ public record StoreCreateCommand(
                 .name(name)
                 .address(address)
                 .businessHours(businessHours)
-                .paymentMethods(new ArrayList<>(paymentMethods))
+                .paymentMethods(paymentMethods)
                 .phone(phoneNumber)
                 .facilities(new ArrayList<>(facilities))
                 .instagramId(instagramId)
