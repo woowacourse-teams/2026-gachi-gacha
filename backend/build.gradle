@@ -24,6 +24,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'net.sf.geographiclib:GeographicLib-Java:2.1'
+    implementation 'software.amazon.awssdk:s3:2.25.0'
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -42,6 +43,24 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+def loadDotEnv = { task ->
+    def envFile = rootProject.file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            line = line.trim()
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def (key, value) = line.split('=', 2)
+                task.environment(key.trim(), value.trim())
+            }
+        }
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
+    doFirst { loadDotEnv(it) }
+}
+
+tasks.named('bootRun') {
+    doFirst { loadDotEnv(it) }
 }

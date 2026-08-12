@@ -30,7 +30,7 @@ spring:
 
 cloud:
   aws:
-    region: ${AWS_REGION}
+    region: test
     s3:
-      bucket: ${AWS_S3_BUCKET}
-      folder: ${AWS_S3_FOLDER}
+      bucket: test-bucket
+      folder: test
