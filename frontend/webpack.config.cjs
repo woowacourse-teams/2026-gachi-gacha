@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 const envPath = path.resolve(__dirname, '.env');
 
@@ -67,6 +68,10 @@ module.exports = (_env, argv) => {
         templateParameters: {
           KAKAO_MAP_KEY,
         },
+      }),
+
+      new webpack.DefinePlugin({
+        __IS_DEV__: JSON.stringify(!isProduction),
       }),
     ],
 
