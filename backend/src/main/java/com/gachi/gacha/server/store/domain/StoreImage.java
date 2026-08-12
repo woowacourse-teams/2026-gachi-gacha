@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.store.domain;
 
+import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.common.exception.InvalidValueException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -38,7 +40,9 @@ public class StoreImage {
     }
 
     public void changeImageUrl(final String newImageUrl) {
-        Objects.requireNonNull(newImageUrl, "이미지 URL은 필수값입니다.");
+        if (newImageUrl == null) {
+            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+        }
         this.imageUrl = newImageUrl;
     }
 }
