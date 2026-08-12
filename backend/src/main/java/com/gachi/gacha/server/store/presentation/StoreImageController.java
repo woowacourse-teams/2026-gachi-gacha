@@ -1,6 +1,5 @@
 package com.gachi.gacha.server.store.presentation;
 
-import com.gachi.gacha.server.common.domain.BaseCode;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.store.application.StoreImageService;
 import com.gachi.gacha.server.store.application.dto.StoreImageInfo;
@@ -15,8 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,12 +30,12 @@ public class StoreImageController {
     private final StoreImageService storeImageService;
 
     @GetMapping
-    public ResponseEntity<BaseResponse<StoreImageListResponse>> findImages(@PathVariable final Long storeId) {
+    public BaseResponse<StoreImageListResponse> findImages(@PathVariable final Long storeId) {
         final List<StoreImageResponse> responses = storeImageService.findImages(storeId).stream()
                 .map(StoreImageResponse::from)
                 .toList();
 
-        return ResponseEntity.ok(BaseResponse.ok(StoreImageListResponse.from(responses)));
+        return BaseResponse.ok(StoreImageListResponse.from(responses));
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -55,8 +54,8 @@ public class StoreImageController {
         return BaseResponse.created(location, response);
     }
 
-    @PatchMapping(path = "/{storeImageId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<StoreImageResponse>> modifyImage(
+    @PutMapping(path = "/{storeImageId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<StoreImageResponse> modifyImage(
             @PathVariable final Long storeId,
             @PathVariable final Long storeImageId,
             @RequestParam("image") final MultipartFile image
@@ -64,18 +63,16 @@ public class StoreImageController {
         final StoreImageInfo storeImageInfo = storeImageService.modifyImage(storeId, storeImageId, image);
         final StoreImageResponse response = StoreImageResponse.from(storeImageInfo);
 
-        return ResponseEntity.status(BaseCode.UPDATED.getStatus())
-                .body(BaseResponse.of(BaseCode.UPDATED, response));
+        return BaseResponse.updated(response);
     }
 
     @DeleteMapping("/{storeImageId}")
-    public ResponseEntity<BaseResponse<StoreImageDeleteResponse>> removeImage(
+    public BaseResponse<StoreImageDeleteResponse> removeImage(
             @PathVariable final Long storeId,
             @PathVariable final Long storeImageId
     ) {
         final Long deletedId = storeImageService.removeImage(storeId, storeImageId);
 
-        return ResponseEntity.status(BaseCode.DELETED.getStatus())
-                .body(BaseResponse.of(BaseCode.DELETED, StoreImageDeleteResponse.from(deletedId)));
+        return BaseResponse.deleted(StoreImageDeleteResponse.from(deletedId));
     }
 }
