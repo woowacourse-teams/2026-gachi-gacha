@@ -30,7 +30,7 @@ spring:
 
 cloud:
   aws:
-    region: ap-northeast-2
+    region: test
     s3:
       bucket: test-bucket
       folder: test
