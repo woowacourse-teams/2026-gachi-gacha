@@ -97,6 +97,7 @@ class StoreControllerTest {
             assertThat(response.jsonPath().getInt("data.number")).isZero();
             assertThat(response.jsonPath().getInt("data.size")).isEqualTo(20);
             assertThat(response.jsonPath().getInt("data.pageable.pageNumber")).isZero();
+            assertThat(response.jsonPath().getInt("data.content[0].gachaMachineAmount")).isEqualTo(10);
         }
     }
 
@@ -123,6 +124,8 @@ class StoreControllerTest {
             assertThat(response.jsonPath().getLong("data.storeId")).isEqualTo(storeId);
             assertThat(response.jsonPath().getString("data.name")).isEqualTo(STORE_NAME);
             assertThat(response.jsonPath().getString("data.address")).isEqualTo(STORE_ADDRESS);
+            assertThat(response.jsonPath().getInt("data.gachaMachineAmount")).isEqualTo(10);
+            assertThat(response.jsonPath().getInt("data.kujiAmount")).isEqualTo(5);
         }
 
         @Test
@@ -310,11 +313,11 @@ class StoreControllerTest {
         request.put("address", STORE_ADDRESS);
         request.put("businessHours", "매일 10:00-22:00");
         request.put("paymentMethods", List.of("현금", "카드"));
-        request.put("gachaMachineCount", 10);
+        request.put("gachaMachineAmount", 10);
         request.put("coinPrice", 500);
         request.put("gachaPriceMin", 3_000);
         request.put("gachaPriceMax", 5_000);
-        request.put("kujiCount", 5);
+        request.put("kujiAmount", 5);
         request.put("kujiPriceMin", 5_000);
         request.put("kujiPriceMax", 10_000);
         request.put("hasSelectGacha", true);

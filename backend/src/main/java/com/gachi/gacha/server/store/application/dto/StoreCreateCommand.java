@@ -2,6 +2,7 @@ package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreDetail;
+import com.gachi.gacha.server.store.domain.StoreImage;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -38,21 +39,17 @@ public record StoreCreateCommand(
         imageUrls = copyOrEmpty(imageUrls);
     }
 
-    public Store toEntity() {
-        Store store = Store.builder()
+    public Store toStore() {
+        return Store.builder()
                 .thumbnailUrl(thumbnailUrl)
                 .longitude(longitude)
                 .latitude(latitude)
                 .build();
-
-        store.registerDetail(createStoreDetail());
-        imageUrls.forEach(store::addStoreImage);
-
-        return store;
     }
 
-    private StoreDetail createStoreDetail() {
+    public StoreDetail toStoreDetail(final Store store) {
         return StoreDetail.builder()
+                .store(store)
                 .name(name)
                 .address(address)
                 .businessHours(businessHours)
@@ -72,6 +69,12 @@ public record StoreCreateCommand(
                 .hasRandomBox(hasRandomBox)
                 .hasSelectGacha(hasSelectGacha)
                 .build();
+    }
+
+    public List<StoreImage> toStoreImages(final Store store) {
+        return imageUrls.stream()
+                .map(imageUrl -> new StoreImage(store, imageUrl))
+                .toList();
     }
 
     private static <T> List<T> copyOrEmpty(final List<T> values) {

@@ -19,7 +19,10 @@ public enum ErrorCode {
 
     // Store
     STORE_NOT_FOUND(HttpStatus.NOT_FOUND, "SE001", "존재하지 않는 매장입니다."),
-    INVALID_STORE_POLICY(HttpStatus.BAD_REQUEST, "SE002", "유효하지 않은 매장 정보입니다.");
+    INVALID_STORE_POLICY(HttpStatus.BAD_REQUEST, "SE002", "유효하지 않은 매장 정보입니다."),
+
+    // Store Image
+    STORE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "SIE001", "존재하지 않는 매장 사진입니다.");
 
     private final HttpStatus status;
     private final String code;

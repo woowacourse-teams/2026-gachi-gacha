@@ -11,10 +11,17 @@ import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
 import com.gachi.gacha.server.store.application.dto.StoreUpdateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
 import com.gachi.gacha.server.store.domain.Store;
+import com.gachi.gacha.server.store.domain.StoreDetail;
+import com.gachi.gacha.server.store.domain.StoreDetailJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreDetailUpdate;
+import com.gachi.gacha.server.store.domain.StoreImage;
+import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
+import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.sf.geographiclib.Geodesic;
 import net.sf.geographiclib.GeodesicData;
@@ -33,6 +40,8 @@ public class StoreService {
     private static final int MAX_SEARCH_RADIUS = 20_000;
 
     private final StoreJpaRepository storeJpaRepository;
+    private final StoreDetailJpaRepository storeDetailJpaRepository;
+    private final StoreImageJpaRepository storeImageJpaRepository;
 
     public StoreNearbyResult findNearbyStores(
             final Double latitude,
@@ -107,8 +116,27 @@ public class StoreService {
     public Page<StoreListResult> findStores(final Pageable pageable) {
         validatePageRequest(pageable);
 
-        return storeJpaRepository.findAll(pageable)
-                .map(StoreListResult::from);
+        Page<Store> stores = storeJpaRepository.findAll(pageable);
+        Map<Long, StoreDetail> storeDetails = findStoreDetails(stores);
+
+        return stores.map(store -> StoreListResult.of(store, getStoreDetail(storeDetails, store.getId())));
+    }
+
+    private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {
+        List<Long> storeIds = stores.stream()
+                .map(Store::getId)
+                .toList();
+
+        return storeDetailJpaRepository.findAllById(storeIds).stream()
+                .collect(Collectors.toMap(StoreDetail::getId, storeDetail -> storeDetail));
+    }
+
+    private StoreDetail getStoreDetail(final Map<Long, StoreDetail> storeDetails, final Long storeId) {
+        StoreDetail storeDetail = storeDetails.get(storeId);
+        if (storeDetail == null) {
+            throw new StoreNotFoundException(ErrorCode.STORE_NOT_FOUND);
+        }
+        return storeDetail;
     }
 
     private void validatePageRequest(final Pageable pageable) {
@@ -119,30 +147,36 @@ public class StoreService {
 
     public StoreDetailResult getStore(final Long storeId) {
         Store store = storeJpaRepository.getById(storeId);
+        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
+        List<StoreImage> storeImages = storeImageJpaRepository.findAllByStoreId(storeId);
 
-        return StoreDetailResult.from(store);
+        return StoreDetailResult.of(store, storeDetail, storeImages);
     }
 
     @Transactional
     public StoreCreateResult addStore(final StoreCreateCommand command) {
-        Store store = command.toEntity();
+        Store store = command.toStore();
         Store savedStore = storeJpaRepository.save(store);
+        storeDetailJpaRepository.save(command.toStoreDetail(savedStore));
+        storeImageJpaRepository.saveAll(command.toStoreImages(savedStore));
+
         return StoreCreateResult.from(savedStore);
     }
 
     @Transactional
     public StoreUpdateResult modifyStore(final Long storeId, final StoreUpdateCommand command) {
         Store store = storeJpaRepository.getById(storeId);
+        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
 
         store.modify(
                 command.thumbnailUrl(),
                 command.latitude(),
                 command.longitude()
         );
-        store.getStoreDetail().modify(createStoreDetailUpdate(command));
+        storeDetail.modify(createStoreDetailUpdate(command));
         storeJpaRepository.flush();
 
-        return StoreUpdateResult.from(store);
+        return StoreUpdateResult.of(store, storeDetail);
     }
 
     private StoreDetailUpdate createStoreDetailUpdate(final StoreUpdateCommand command) {
@@ -171,8 +205,11 @@ public class StoreService {
     @Transactional
     public StoreDeleteResult removeStore(final Long storeId) {
         Store store = storeJpaRepository.getById(storeId);
+        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
 
-        storeJpaRepository.deleteById(storeId);
+        storeImageJpaRepository.deleteAllByStoreId(storeId);
+        storeDetailJpaRepository.delete(storeDetail);
+        storeJpaRepository.delete(store);
 
         return StoreDeleteResult.from(store);
     }

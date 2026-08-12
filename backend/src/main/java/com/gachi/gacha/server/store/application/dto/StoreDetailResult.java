@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.store.domain.Store;
+import com.gachi.gacha.server.store.domain.StoreDetail;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,39 +35,56 @@ public record StoreDetailResult(
         LocalDateTime updatedAt
 ) {
 
-    public static StoreDetailResult from(final Store store) {
-        List<StoreImageInfo> images = store.getStoreImages().stream()
+    public static StoreDetailResult of(
+            final Store store,
+            final StoreDetail storeDetail,
+            final List<StoreImage> storeImages
+    ) {
+        List<StoreImageInfo> images = storeImages.stream()
                 .map(StoreImageInfo::from)
                 .toList();
 
         return new StoreDetailResult(
                 store.getId(),
-                store.getStoreDetail().getName(),
+                storeDetail.getName(),
                 store.getThumbnailUrl(),
                 images,
                 store.getLatitude(),
                 store.getLongitude(),
-                store.getStoreDetail().getPhone(),
-                store.getStoreDetail().getInstagramId(),
-                store.getStoreDetail().getAddress(),
-                store.getStoreDetail().getBusinessHours(),
-                List.copyOf(store.getStoreDetail().getPaymentMethods()),
-                store.getStoreDetail().getMachineAmount(),
-                store.getStoreDetail().getCoinPrice(),
-                store.getStoreDetail().getGachaMinPrice(),
-                store.getStoreDetail().getGachaMaxPrice(),
-                store.getStoreDetail().getKujiAmount(),
-                store.getStoreDetail().getKujiMinPrice(),
-                store.getStoreDetail().getKujiMaxPrice(),
-                store.getStoreDetail().getHasSelectGacha(),
-                store.getStoreDetail().getSelectGachaMinPrice(),
-                store.getStoreDetail().getSelectGachaMaxPrice(),
-                List.copyOf(store.getStoreDetail().getFacilities()),
-                store.getStoreDetail().getHasRandomBox(),
+                storeDetail.getPhone(),
+                storeDetail.getInstagramId(),
+                storeDetail.getAddress(),
+                storeDetail.getBusinessHours(),
+                List.copyOf(storeDetail.getPaymentMethods()),
+                storeDetail.getMachineAmount(),
+                storeDetail.getCoinPrice(),
+                storeDetail.getGachaMinPrice(),
+                storeDetail.getGachaMaxPrice(),
+                storeDetail.getKujiAmount(),
+                storeDetail.getKujiMinPrice(),
+                storeDetail.getKujiMaxPrice(),
+                storeDetail.getHasSelectGacha(),
+                storeDetail.getSelectGachaMinPrice(),
+                storeDetail.getSelectGachaMaxPrice(),
+                List.copyOf(storeDetail.getFacilities()),
+                storeDetail.getHasRandomBox(),
                 0L,
                 store.getCreatedAt(),
-                store.getAggregateUpdatedAt()
+                getUpdatedAt(store, storeDetail)
         );
+    }
+
+    private static LocalDateTime getUpdatedAt(final Store store, final StoreDetail storeDetail) {
+        LocalDateTime storeUpdatedAt = store.getUpdatedAt();
+        LocalDateTime detailUpdatedAt = storeDetail.getUpdatedAt();
+
+        if (storeUpdatedAt == null) {
+            return detailUpdatedAt;
+        }
+        if (detailUpdatedAt == null || storeUpdatedAt.isAfter(detailUpdatedAt)) {
+            return storeUpdatedAt;
+        }
+        return detailUpdatedAt;
     }
 
     public record StoreImageInfo(

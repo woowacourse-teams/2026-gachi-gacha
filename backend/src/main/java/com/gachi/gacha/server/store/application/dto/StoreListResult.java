@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.store.domain.Store;
+import com.gachi.gacha.server.store.domain.StoreDetail;
 
 public record StoreListResult(
         Long storeId,
@@ -9,18 +10,18 @@ public record StoreListResult(
         String address,
         Double latitude,
         Double longitude,
-        Integer gachaMachineCount
+        Integer gachaMachineAmount
 ) {
 
-    public static StoreListResult from(final Store store) {
+    public static StoreListResult of(final Store store, final StoreDetail storeDetail) {
         return new StoreListResult(
                 store.getId(),
-                store.getStoreDetail().getName(),
+                storeDetail.getName(),
                 store.getThumbnailUrl(),
-                store.getStoreDetail().getAddress(),
+                storeDetail.getAddress(),
                 store.getLatitude(),
                 store.getLongitude(),
-                store.getStoreDetail().getMachineAmount()
+                storeDetail.getMachineAmount()
         );
     }
 }

@@ -9,7 +9,7 @@ public record StoreListResponse(
         String address,
         Double latitude,
         Double longitude,
-        Integer gachaMachineCount
+        Integer gachaMachineAmount
 ) {
 
     public static StoreListResponse from(final StoreListResult result) {
@@ -20,7 +20,7 @@ public record StoreListResponse(
                 result.address(),
                 result.latitude(),
                 result.longitude(),
-                result.gachaMachineCount()
+                result.gachaMachineAmount()
         );
     }
 }

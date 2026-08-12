@@ -78,10 +78,6 @@ public class StoreDetail extends BaseTimeEntity {
     private Boolean hasRandomBox;
     private Boolean hasSelectGacha;
 
-    protected void assignStore(final Store store) {
-        this.store = store;
-    }
-
     public void modify(final StoreDetailUpdate update) {
         validate(update);
 

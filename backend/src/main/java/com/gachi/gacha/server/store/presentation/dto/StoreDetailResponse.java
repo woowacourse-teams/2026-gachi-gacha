@@ -16,11 +16,11 @@ public record StoreDetailResponse(
         String address,
         String businessHours,
         List<String> paymentMethods,
-        Integer gachaMachineCount,
+        Integer gachaMachineAmount,
         Long coinPrice,
         Long gachaPriceMin,
         Long gachaPriceMax,
-        Integer kujiCount,
+        Integer kujiAmount,
         Long kujiPriceMin,
         Long kujiPriceMax,
         Boolean hasSelectGacha,
@@ -28,7 +28,7 @@ public record StoreDetailResponse(
         Long selectGachaPriceMax,
         List<String> facilities,
         Boolean hasRandomBox,
-        long ownedGachaCount,
+        long ownedGachaAmount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
