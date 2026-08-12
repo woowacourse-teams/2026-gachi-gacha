@@ -1,49 +1,33 @@
 const SDK_SCRIPT_ID = 'kakao-map-sdk';
 const SDK_TIMEOUT_MS = 10_000;
-
-const LOAD_FAILED_MESSAGE =
-  '카카오 지도를 불러오지 못했습니다. 앱키와 네트워크 상태를 확인해주세요.';
-const TIMEOUT_MESSAGE =
-  '카카오 지도 응답이 없습니다. 네트워크 상태를 확인해주세요.';
+const SDK_SRC = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${__KAKAO_MAP_KEY__}&autoload=false`;
 
 let sdkPromise: Promise<void> | null = null;
 
-function findSdkScript() {
-  const element = document.getElementById(SDK_SCRIPT_ID);
-
-  return element instanceof HTMLScriptElement ? element : null;
-}
-
-function hasScriptSettled(script: HTMLScriptElement) {
-  return !script.async && !script.defer && document.readyState !== 'loading';
-}
-
-function waitForScriptLoad(script: HTMLScriptElement) {
+function appendSdkScript() {
   return new Promise<void>((resolve, reject) => {
-    function cleanup() {
-      script.removeEventListener('load', handleLoad);
-      script.removeEventListener('error', handleError);
-    }
+    document.getElementById(SDK_SCRIPT_ID)?.remove();
 
-    function handleLoad() {
-      cleanup();
-      resolve();
-    }
+    const script = document.createElement('script');
 
-    function handleError() {
-      cleanup();
-      reject(new Error(LOAD_FAILED_MESSAGE));
-    }
+    script.id = SDK_SCRIPT_ID;
+    script.src = SDK_SRC;
+    script.async = true;
+    script.addEventListener('load', () => resolve(), { once: true });
+    script.addEventListener(
+      'error',
+      () => reject(new Error('kakao-sdk/load-failed')),
+      { once: true },
+    );
 
-    script.addEventListener('load', handleLoad);
-    script.addEventListener('error', handleError);
+    document.head.appendChild(script);
   });
 }
 
 function withTimeout(task: Promise<void>) {
   return new Promise<void>((resolve, reject) => {
     const timeoutId = window.setTimeout(() => {
-      reject(new Error(TIMEOUT_MESSAGE));
+      reject(new Error('kakao-sdk/timeout'));
     }, SDK_TIMEOUT_MS);
 
     task.then(resolve, reject).finally(() => window.clearTimeout(timeoutId));
@@ -52,23 +36,11 @@ function withTimeout(task: Promise<void>) {
 
 async function resolveKakaoSdk() {
   if (!window.kakao?.maps) {
-    const script = findSdkScript();
-
-    if (!script) {
-      throw new Error(
-        `카카오 지도 SDK 스크립트(#${SDK_SCRIPT_ID})를 찾을 수 없습니다.`,
-      );
-    }
-
-    if (hasScriptSettled(script)) {
-      throw new Error(LOAD_FAILED_MESSAGE);
-    }
-
-    await waitForScriptLoad(script);
+    await appendSdkScript();
   }
 
   if (!window.kakao?.maps) {
-    throw new Error(LOAD_FAILED_MESSAGE);
+    throw new Error('kakao-sdk/load-failed');
   }
 
   await new Promise<void>((resolve) => window.kakao.maps.load(resolve));

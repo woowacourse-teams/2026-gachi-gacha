@@ -65,13 +65,11 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'public/index.html'),
-        templateParameters: {
-          KAKAO_MAP_KEY,
-        },
       }),
 
       new webpack.DefinePlugin({
         __IS_DEV__: JSON.stringify(!isProduction),
+        __KAKAO_MAP_KEY__: JSON.stringify(KAKAO_MAP_KEY),
       }),
     ],
 

@@ -20,10 +20,6 @@ const config: StorybookConfig = {
     name: '@storybook/react-webpack5',
     options: {},
   },
-  previewHead: (head) =>
-    kakaoMapKey
-      ? `${head}\n<script id="kakao-map-sdk" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoMapKey}&autoload=false"></script>`
-      : head,
   webpackFinal: async (webpackConfig) => {
     webpackConfig.module ??= { rules: [] };
     webpackConfig.module.rules ??= [];
@@ -57,6 +53,7 @@ const config: StorybookConfig = {
     webpackConfig.plugins.push(
       new webpack.DefinePlugin({
         __IS_DEV__: JSON.stringify(true),
+        __KAKAO_MAP_KEY__: JSON.stringify(kakaoMapKey ?? ''),
       }),
     );
 

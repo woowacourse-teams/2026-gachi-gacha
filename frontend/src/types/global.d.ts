@@ -1,4 +1,5 @@
 declare const __IS_DEV__: boolean;
+declare const __KAKAO_MAP_KEY__: string;
 
 declare module '*.png' {
   const src: string;
