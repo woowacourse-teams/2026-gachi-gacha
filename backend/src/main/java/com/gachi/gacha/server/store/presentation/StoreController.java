@@ -5,17 +5,22 @@ import com.gachi.gacha.server.store.application.StoreService;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
 import com.gachi.gacha.server.store.application.dto.StoreDeleteResult;
 import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
+import com.gachi.gacha.server.store.application.dto.StoreGachaInfo;
 import com.gachi.gacha.server.store.application.dto.StoreListResult;
 import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
 import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
+import com.gachi.gacha.server.store.presentation.dto.GachaSummaryResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreCreateRequest;
 import com.gachi.gacha.server.store.presentation.dto.StoreCreateResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreDeleteResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreDetailResponse;
+import com.gachi.gacha.server.store.presentation.dto.StoreGachaResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreListResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreNearbyResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreUpdateRequest;
 import com.gachi.gacha.server.store.presentation.dto.StoreUpdateResponse;
+import com.gachi.gacha.server.usecase.StoreGachaFacade;
+import com.gachi.gacha.server.usecase.application.dto.GachaSummaryInfo;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +46,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class StoreController {
 
     private final StoreService storeService;
+    private final StoreGachaFacade storeGachaFacade;
 
     @GetMapping("/nearby")
     public ResponseEntity<BaseResponse<StoreNearbyResponse>> readNearbyStores(
@@ -101,5 +107,31 @@ public class StoreController {
         StoreDeleteResult result = storeService.removeStore(storeId);
 
         return BaseResponse.deleted(StoreDeleteResponse.from(result));
+    }
+
+    @PostMapping("/{storeId}/gachas/{gachaId}")
+    public ResponseEntity<BaseResponse<StoreGachaResponse>> createNearbyStores(
+            @PathVariable Long storeId,
+            @PathVariable Long gachaId
+    ) {
+        StoreGachaInfo storeGachaInfo = storeGachaFacade.addStoreGacha(storeId, gachaId);
+        StoreGachaResponse response = StoreGachaResponse.from(storeGachaInfo);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{storeId}/gachas/{gachaId}")
+                .buildAndExpand(response.storeId(), response.gachaId())
+                .toUri();
+        return BaseResponse.created(location, response);
+    }
+
+    @GetMapping("/{storeId}/gachas")
+    public BaseResponse<Page<GachaSummaryResponse>> readStoreGachas(@PathVariable Long storeId, Pageable pageable) {
+        Page<GachaSummaryInfo> gachaSummaryInfos = storeGachaFacade.getGachas(storeId, pageable);
+        return BaseResponse.ok(gachaSummaryInfos.map(GachaSummaryResponse::from));
+    }
+
+    @DeleteMapping("/{storeId}/gachas/{gachaId}")
+    public BaseResponse<StoreGachaResponse> deleteStoreGachas(@PathVariable Long storeId, @PathVariable Long gachaId) {
+        StoreGachaInfo storeGachaInfo = storeGachaFacade.removeStoreGacha(storeId, gachaId);
+        return BaseResponse.deleted(StoreGachaResponse.from(storeGachaInfo));
     }
 }
