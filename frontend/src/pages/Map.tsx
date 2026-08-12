@@ -1,10 +1,13 @@
-import { useState } from 'react';
 import styled from '@emotion/styled';
 
 import type { NearbyStoresFailure } from '@/apis/store';
 import ErrorNotice from '@/components/ErrorNotice';
 import KakaoMap from '@/components/kakaoMap/KakaoMap';
 import StoreMarker from '@/components/kakaoMap/StoreMarker';
+import {
+  StoreDetailSheetContainer,
+  useStoreDetailSheet,
+} from '@/features/storeDetail';
 import { useNearbyStores } from '@/hooks/useNearbyStores';
 
 const DEFAULT_CENTER = { lat: 37.5550659903951, lng: 126.925097731352 };
@@ -19,13 +22,10 @@ export default function MapPage() {
     latitude: DEFAULT_CENTER.lat,
     longitude: DEFAULT_CENTER.lng,
   });
-  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+  const { closeStoreDetail, openStoreDetail, selection, setState, state } =
+    useStoreDetailSheet();
 
   const stores = nearbyStores.status === 'success' ? nearbyStores.data : [];
-
-  const toggleStore = (storeId: number) => {
-    setSelectedStoreId((current) => (current === storeId ? null : storeId));
-  };
 
   return (
     <PageLayout>
@@ -34,8 +34,15 @@ export default function MapPage() {
           <StoreMarker
             key={store.storeId}
             position={{ lat: store.latitude, lng: store.longitude }}
-            isSelected={store.storeId === selectedStoreId}
-            onClick={() => toggleStore(store.storeId)}
+            isSelected={
+              state !== 'closed' && selection?.storeId === store.storeId
+            }
+            onClick={() =>
+              openStoreDetail({
+                storeId: store.storeId,
+                distanceMeters: store.distance,
+              })
+            }
           />
         ))}
       </KakaoMap>
@@ -54,6 +61,14 @@ export default function MapPage() {
       {nearbyStores.status === 'success' && stores.length === 0 && (
         <StatusBar>주변에 매장이 없습니다.</StatusBar>
       )}
+
+      <StoreDetailSheetContainer
+        distanceMeters={selection?.distanceMeters}
+        state={state}
+        storeId={selection?.storeId ?? null}
+        onClose={closeStoreDetail}
+        onStateChange={setState}
+      />
     </PageLayout>
   );
 }
@@ -62,6 +77,7 @@ const PageLayout = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 `;
 
 const floatingBar = `
