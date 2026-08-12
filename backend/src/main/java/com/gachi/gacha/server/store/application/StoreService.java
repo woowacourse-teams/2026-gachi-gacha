@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.store.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.common.exception.InvalidValueException;
+import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
 import com.gachi.gacha.server.store.application.dto.StoreDeleteResult;
@@ -73,13 +73,13 @@ public class StoreService {
             final Integer radius
     ) {
         if (latitude == null || !Double.isFinite(latitude) || latitude < -90 || latitude > 90) {
-            throw new InvalidNearbyRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
         }
         if (longitude == null || !Double.isFinite(longitude) || longitude < -180 || longitude > 180) {
-            throw new InvalidNearbyRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
         }
         if (radius == null || radius < MIN_SEARCH_RADIUS || radius > MAX_SEARCH_RADIUS) {
-            throw new InvalidNearbyRequestException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
         }
     }
 
@@ -142,7 +142,7 @@ public class StoreService {
 
     private void validatePageRequest(final Pageable pageable) {
         if (pageable.getPageNumber() < 0 || pageable.getPageSize() <= 0) {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidPageRequestException(ErrorCode.INVALID_PAGE_REQUEST);
         }
     }
 

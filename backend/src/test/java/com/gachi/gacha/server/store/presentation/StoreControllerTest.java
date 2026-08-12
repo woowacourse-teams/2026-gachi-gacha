@@ -193,7 +193,7 @@ class StoreControllerTest {
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
-            assertThat(response.jsonPath().getString("code")).isEqualTo("CE001");
+            assertThat(response.jsonPath().getString("code")).isEqualTo("SE003");
         }
     }
 
