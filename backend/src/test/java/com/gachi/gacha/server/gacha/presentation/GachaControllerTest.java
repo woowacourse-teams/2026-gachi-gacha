@@ -82,7 +82,7 @@ class GachaControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /gachas/{gachaId} - 가챠 수정 API")
+    @DisplayName("PATCH /gachas/{gachaId} - 가챠 수정 API")
     class UpdateGacha {
 
         @Test
