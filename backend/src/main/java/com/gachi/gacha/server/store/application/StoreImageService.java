@@ -10,6 +10,7 @@ import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.infra.config.ImageUploader;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,11 +20,14 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class StoreImageService {
 
-    private static final String IMAGE_PATH = "gachi-gacha/store";
+    private static final String STORE_IMAGE_FOLDER = "store";
 
     private final ImageUploader imageUploader;
     private final StoreJpaRepository storeRepository;
     private final StoreImageJpaRepository storeImageRepository;
+
+    @Value("${cloud.aws.s3.folder}")
+    private String s3RootFolder;
 
     public List<StoreImageInfo> findImages(final Long storeId) {
         Store store = storeRepository.findById(storeId)
@@ -39,7 +43,7 @@ public class StoreImageService {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.STORE_NOT_FOUND));
 
-        String imageUrl = imageUploader.upload(file, IMAGE_PATH);
+        String imageUrl = imageUploader.upload(file, imagePath());
         StoreImage storeImage = new StoreImage(store, imageUrl);
         StoreImage savedStoreImage = storeImageRepository.save(storeImage);
 
@@ -51,7 +55,7 @@ public class StoreImageService {
         StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
 
         String oldImageUrl = storeImage.getImageUrl();
-        String newImageUrl = imageUploader.upload(file, IMAGE_PATH);
+        String newImageUrl = imageUploader.upload(file, imagePath());
 
         storeImage.changeImageUrl(newImageUrl);
         imageUploader.delete(oldImageUrl);
@@ -67,5 +71,9 @@ public class StoreImageService {
         storeImageRepository.delete(storeImage);
 
         return storeImage.getId();
+    }
+
+    private String imagePath() {
+        return "%s/%s".formatted(s3RootFolder, STORE_IMAGE_FOLDER);
     }
 }
