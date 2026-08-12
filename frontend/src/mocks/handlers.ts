@@ -6,6 +6,8 @@ import {
   type NearbyStore,
   type NearbyStoresData,
 } from '@/apis/store';
+import type { StoreDetailDto } from '@/features/storeDetail/api/storeDetail.dto';
+import { mockStoreDetail } from '@/features/storeDetail/mocks/storeDetail.mock';
 
 export const mockNearbyStores: NearbyStore[] = [
   {
@@ -31,6 +33,22 @@ export const mockNearbyStores: NearbyStore[] = [
   },
 ];
 
+const mockStoreDetails: Record<number, StoreDetailDto> = {
+  1: mockStoreDetail,
+  2: {
+    ...mockStoreDetail,
+    storeId: 2,
+    name: '가챠스테이션 홍대입구점',
+    address: '서울 마포구 양화로 160',
+  },
+  3: {
+    ...mockStoreDetail,
+    storeId: 3,
+    name: '가챠스테이션 연남점',
+    address: '서울 마포구 동교로 242',
+  },
+};
+
 export const handlers = [
   http.get('/api/v1/stores/nearby', ({ request }) => {
     const params = new URL(request.url).searchParams;
@@ -46,6 +64,26 @@ export const handlers = [
         radius,
         stores: mockNearbyStores.filter((store) => store.distance <= radius),
       },
+    });
+  }),
+  http.get('/api/v1/stores/:storeId', ({ params }) => {
+    const storeId = Number(params.storeId);
+    const storeDetail = mockStoreDetails[storeId];
+
+    if (!storeDetail) {
+      return HttpResponse.json(
+        {
+          code: 'STORE_NOT_FOUND',
+          message: '매장을 찾을 수 없습니다.',
+        },
+        { status: 404 },
+      );
+    }
+
+    return HttpResponse.json<ApiResponse<StoreDetailDto>>({
+      code: 'SUCCESS',
+      message: '요청이 성공했습니다.',
+      data: storeDetail,
     });
   }),
 ];
