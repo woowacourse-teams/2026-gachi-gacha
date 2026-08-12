@@ -14,7 +14,7 @@ export function useStoreDetailSheet() {
   const openStoreDetail = useCallback((nextSelection: StorePinSelection) => {
     setSelection(nextSelection);
     setState('closed');
-    requestAnimationFrame(() => setState('full'));
+    requestAnimationFrame(() => setState('summary'));
   }, []);
 
   const closeStoreDetail = useCallback(() => {
