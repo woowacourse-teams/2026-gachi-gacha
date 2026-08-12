@@ -8,13 +8,13 @@ import {
   type ReactNode,
 } from 'react';
 
-import coinPriceIcon from '@/temp/coin_price_icon.svg';
-import facilitiesIcon from '@/temp/facilities_icon.svg';
-import gachaCapsuleIcon from '@/temp/gacha_capsule_icon.svg';
-import gachaMachineCountIcon from '@/temp/gacha_machine_count_icon.svg';
-import kujiIcon from '@/temp/kuji_icon.svg';
-import paymentsIcon from '@/temp/payments_icon.svg';
-import snsIcon from '@/temp/sns_icon.svg';
+import coinPriceIcon from '@/assets/coin_price_icon.svg';
+import facilitiesIcon from '@/assets/facilities_icon.svg';
+import gachaCapsuleIcon from '@/assets/gacha_capsule_icon.svg';
+import gachaMachineCountIcon from '@/assets/gacha_machine_count_icon.svg';
+import kujiIcon from '@/assets/kuji_icon.svg';
+import paymentsIcon from '@/assets/payments_icon.svg';
+import snsIcon from '@/assets/sns_icon.svg';
 
 import * as S from './StoreDetailSheet.styles';
 import { useBottomSheetDrag } from '../hooks/useBottomSheetDrag';
