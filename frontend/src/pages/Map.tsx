@@ -1,11 +1,18 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import type { NearbyStoresFailure } from '@/apis/store';
+import ErrorNotice from '@/components/ErrorNotice';
 import KakaoMap from '@/components/kakaoMap/KakaoMap';
 import StoreMarker from '@/components/kakaoMap/StoreMarker';
 import { useNearbyStores } from '@/hooks/useNearbyStores';
 
 const DEFAULT_CENTER = { lat: 37.5550659903951, lng: 126.925097731352 };
+
+const STORE_ERROR_MESSAGE: Record<NearbyStoresFailure, string> = {
+  offline: '인터넷 연결을 확인해주세요.',
+  server: '매장 정보를 불러오지 못했습니다.',
+};
 
 export default function MapPage() {
   const nearbyStores = useNearbyStores({
@@ -14,7 +21,7 @@ export default function MapPage() {
   });
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
 
-  const stores = nearbyStores.status === 'success' ? nearbyStores.stores : [];
+  const stores = nearbyStores.status === 'success' ? nearbyStores.data : [];
 
   const toggleStore = (storeId: number) => {
     setSelectedStoreId((current) => (current === storeId ? null : storeId));
@@ -38,13 +45,15 @@ export default function MapPage() {
       )}
 
       {nearbyStores.status === 'error' && (
-        <StatusBar role="alert">{nearbyStores.error.message}</StatusBar>
+        <StoreErrorNotice
+          message={STORE_ERROR_MESSAGE[nearbyStores.error]}
+          onRetry={nearbyStores.retry}
+        />
       )}
 
-      {nearbyStores.status === 'success' &&
-        nearbyStores.stores.length === 0 && (
-          <StatusBar>주변에 매장이 없습니다.</StatusBar>
-        )}
+      {nearbyStores.status === 'success' && stores.length === 0 && (
+        <StatusBar>주변에 매장이 없습니다.</StatusBar>
+      )}
     </PageLayout>
   );
 }
@@ -55,17 +64,26 @@ const PageLayout = styled.div`
   height: 100%;
 `;
 
-const StatusBar = styled.p`
+const floatingBar = `
   position: absolute;
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  margin: 0;
-  padding: 8px 16px;
   border-radius: 20px;
   background-color: rgb(0 0 0 / 70%);
   color: #fff;
   font-size: 13px;
   white-space: nowrap;
+`;
+
+const StatusBar = styled.p`
+  ${floatingBar}
+  margin: 0;
+  padding: 8px 16px;
+`;
+
+const StoreErrorNotice = styled(ErrorNotice)`
+  ${floatingBar}
+  padding: 6px 6px 6px 16px;
 `;

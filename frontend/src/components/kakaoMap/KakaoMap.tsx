@@ -1,8 +1,12 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import styled from '@emotion/styled';
 
+import ErrorNotice from '@/components/ErrorNotice';
+
 import { KakaoMapContext } from './KakaoMapContext';
 import { useKakaoMap, type LatLngLiteral } from './useKakaoMap';
+
+const MAP_ERROR_MESSAGE = '지도를 불러오지 못했습니다.';
 
 interface KakaoMapProps {
   defaultCenter: LatLngLiteral;
@@ -17,10 +21,8 @@ export default function KakaoMap({
   onMapReady,
   children,
 }: KakaoMapProps) {
-  const { containerRef, map, status, error } = useKakaoMap({
-    defaultCenter,
-    defaultLevel,
-  });
+  const kakaoMap = useKakaoMap({ defaultCenter, defaultLevel });
+  const map = kakaoMap.status === 'success' ? kakaoMap.data : null;
   const onMapReadyRef = useRef(onMapReady);
 
   useEffect(() => {
@@ -35,12 +37,10 @@ export default function KakaoMap({
 
   return (
     <MapArea>
-      <MapCanvas ref={containerRef} />
+      <MapCanvas ref={kakaoMap.containerRef} />
 
-      {status === 'error' && (
-        <MapFallback role="alert">
-          {error?.message ?? '지도를 불러오지 못했습니다.'}
-        </MapFallback>
+      {kakaoMap.status === 'error' && (
+        <MapErrorNotice message={MAP_ERROR_MESSAGE} onRetry={kakaoMap.retry} />
       )}
 
       {map && (
@@ -63,13 +63,11 @@ const MapCanvas = styled.div`
   height: 100%;
 `;
 
-const MapFallback = styled.p`
+const MapErrorNotice = styled(ErrorNotice)`
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-  margin: 0;
   padding: 24px;
   background-color: #f4f4f5;
   color: #52525b;
