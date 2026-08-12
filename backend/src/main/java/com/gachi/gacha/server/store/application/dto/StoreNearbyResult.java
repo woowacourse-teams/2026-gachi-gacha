@@ -33,10 +33,10 @@ public record StoreNearbyResult(
             String thumbnailUrl,
             Double latitude,
             Double longitude,
-            long distance
+            Double distance
     ) {
 
-        public static StoreInfo of(final Store store, final long distance) {
+        public static StoreInfo of(final Store store, final Double distance) {
             return new StoreInfo(
                     store.getId(),
                     store.getThumbnailUrl(),

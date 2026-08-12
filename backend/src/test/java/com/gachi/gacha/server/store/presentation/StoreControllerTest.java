@@ -173,7 +173,7 @@ class StoreControllerTest {
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
             assertThat(response.jsonPath().getString("code")).isEqualTo("C000");
             assertThat(response.jsonPath().getList("data.stores.storeId", Long.class)).contains(storeId);
-            assertThat(response.jsonPath().getLong("data.stores[0].distance")).isZero();
+            assertThat(response.jsonPath().getDouble("data.stores[0].distance")).isZero();
         }
 
         @Test

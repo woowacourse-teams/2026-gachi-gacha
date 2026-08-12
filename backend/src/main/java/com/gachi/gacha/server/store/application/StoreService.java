@@ -220,7 +220,7 @@ public class StoreService {
     ) {
 
         private StoreNearbyResult.StoreInfo toStoreInfo() {
-            return StoreNearbyResult.StoreInfo.of(store, Math.round(distance));
+            return StoreNearbyResult.StoreInfo.of(store, distance);
         }
     }
 }

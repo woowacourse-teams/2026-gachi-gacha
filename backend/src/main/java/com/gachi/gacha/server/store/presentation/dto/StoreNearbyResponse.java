@@ -36,7 +36,7 @@ public record StoreNearbyResponse(
             String thumbnailUrl,
             Double latitude,
             Double longitude,
-            long distance
+            Double distance
     ) {
 
         private static StoreItemResponse from(final StoreNearbyResult.StoreInfo store) {
