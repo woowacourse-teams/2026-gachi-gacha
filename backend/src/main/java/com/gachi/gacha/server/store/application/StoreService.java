@@ -19,11 +19,13 @@ import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.domain.exception.InvalidNearbyRequestException;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.sf.geographiclib.Geodesic;
 import net.sf.geographiclib.GeodesicData;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -43,6 +46,7 @@ public class StoreService {
     private final StoreJpaRepository storeJpaRepository;
     private final StoreDetailJpaRepository storeDetailJpaRepository;
     private final StoreImageJpaRepository storeImageJpaRepository;
+    private final ImageUploader imageUploader;
 
     public StoreNearbyResult findNearbyStores(
             final Double latitude,
@@ -117,6 +121,7 @@ public class StoreService {
         Store store = storeJpaRepository.getById(storeId);
         StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
 
+        deleteStoreImagesFromS3(storeId);
         storeImageJpaRepository.deleteAllByStoreId(storeId);
         storeDetailJpaRepository.delete(storeDetail);
         storeJpaRepository.delete(store);
@@ -210,7 +215,6 @@ public class StoreService {
             final Double targetLatitude,
             final Double targetLongitude
     ) {
-
         GeodesicData result = Geodesic.WGS84.Inverse(
                 originLatitude,
                 originLongitude,
@@ -219,6 +223,17 @@ public class StoreService {
         );
 
         return result.s12;
+    }
+
+    private void deleteStoreImagesFromS3(final Long storeId) {
+        List<StoreImage> storeImages = storeImageJpaRepository.findAllByStoreId(storeId);
+        for (StoreImage storeImage : storeImages) {
+            try {
+                imageUploader.delete(storeImage.getImageUrl());
+            } catch (RuntimeException e) {
+                log.warn("매장 삭제 중 S3 이미지 삭제에 실패했습니다. storeId={}, imageUrl={}", storeId, storeImage.getImageUrl(), e);
+            }
+        }
     }
 
     private record StoreDistance(
