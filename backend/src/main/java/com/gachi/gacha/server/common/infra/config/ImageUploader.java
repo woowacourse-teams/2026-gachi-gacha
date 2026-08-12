@@ -73,7 +73,7 @@ public class ImageUploader {
      */
     private String validateContentType(final String contentType) {
         if (!ImageType.isAllowedContentType(contentType)) {
-            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+            throw new InvalidValueException(ErrorCode.INVALID_IMAGE_POLICY);
         }
         return contentType;
     }
@@ -84,12 +84,12 @@ public class ImageUploader {
      */
     private String validateExtension(final String originalFileName) {
         if (originalFileName == null || !originalFileName.contains(".")) {
-            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+            throw new InvalidValueException(ErrorCode.INVALID_IMAGE_POLICY);
         }
 
         String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ImageType.isAllowedExtension(extension)) {
-            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+            throw new InvalidValueException(ErrorCode.INVALID_IMAGE_POLICY);
         }
         return extension;
     }
