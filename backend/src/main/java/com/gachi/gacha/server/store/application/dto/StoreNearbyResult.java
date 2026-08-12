@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.store.application.dto;
 
+import com.gachi.gacha.server.common.util.BaseUtils;
 import com.gachi.gacha.server.store.domain.Store;
 import java.util.List;
 
@@ -18,7 +19,7 @@ public record StoreNearbyResult(
         return new StoreNearbyResult(
                 new CenterInfo(latitude, longitude),
                 radius,
-                List.copyOf(stores)
+                BaseUtils.copyOrEmpty(stores)
         );
     }
 
