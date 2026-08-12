@@ -5,7 +5,7 @@ import java.util.List;
 
 public record StoreNearbyResponse(
         CenterResponse center,
-        int radius,
+        Integer radius,
         List<StoreItemResponse> stores
 ) {
 

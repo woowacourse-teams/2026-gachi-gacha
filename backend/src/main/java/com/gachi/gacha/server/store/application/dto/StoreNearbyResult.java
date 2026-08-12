@@ -6,14 +6,14 @@ import java.util.List;
 
 public record StoreNearbyResult(
         CenterInfo center,
-        int radius,
+        Integer radius,
         List<StoreInfo> stores
 ) {
 
     public static StoreNearbyResult of(
             final Double latitude,
             final Double longitude,
-            final int radius,
+            final Integer radius,
             final List<StoreInfo> stores
     ) {
         return new StoreNearbyResult(
