@@ -16,6 +16,8 @@ import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import net.sf.geographiclib.Geodesic;
+import net.sf.geographiclib.GeodesicData;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class StoreService {
 
-    private static final double EARTH_RADIUS_METERS = 6_371_000;
     private static final double METERS_PER_LATITUDE_DEGREE = 111_320;
     private static final int MIN_SEARCH_RADIUS = 100;
     private static final int MAX_SEARCH_RADIUS = 20_000;
@@ -92,22 +93,15 @@ public class StoreService {
             final Double targetLatitude,
             final Double targetLongitude
     ) {
-        double latitudeDistance = Math.toRadians(targetLatitude - originLatitude);
-        double longitudeDistance = Math.toRadians(targetLongitude - originLongitude);
-        double originLatitudeRadian = Math.toRadians(originLatitude);
-        double targetLatitudeRadian = Math.toRadians(targetLatitude);
 
-        double haversine = Math.pow(Math.sin(latitudeDistance / 2), 2)
-                + Math.cos(originLatitudeRadian)
-                * Math.cos(targetLatitudeRadian)
-                * Math.pow(Math.sin(longitudeDistance / 2), 2);
-        double normalizedHaversine = Math.min(1, Math.max(0, haversine));
-        double angularDistance = 2 * Math.atan2(
-                Math.sqrt(normalizedHaversine),
-                Math.sqrt(1 - normalizedHaversine)
+        GeodesicData result = Geodesic.WGS84.Inverse(
+                originLatitude,
+                originLongitude,
+                targetLatitude,
+                targetLongitude
         );
 
-        return EARTH_RADIUS_METERS * angularDistance;
+        return result.s12;
     }
 
     public Page<StoreListResult> findStores(final Pageable pageable) {
