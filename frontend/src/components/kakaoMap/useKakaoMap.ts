@@ -1,50 +1,71 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import type { AsyncState } from '@/types/asyncState';
+
+import { loadKakaoSdk } from './loadKakaoSdk';
 
 export interface LatLngLiteral {
   lat: number;
   lng: number;
 }
 
+export type KakaoMapState = AsyncState<kakao.maps.Map>;
+
 interface UseKakaoMapParams {
-  center: LatLngLiteral;
-  level: number;
+  defaultCenter: LatLngLiteral;
+  defaultLevel: number;
 }
 
-export function useKakaoMap({ center, level }: UseKakaoMapParams) {
+const LOADING_STATE: KakaoMapState = { status: 'loading' };
+
+export function useKakaoMap({
+  defaultCenter,
+  defaultLevel,
+}: UseKakaoMapParams) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<kakao.maps.Map | null>(null);
-  const [map, setMap] = useState<kakao.maps.Map | null>(null);
+  const initialViewRef = useRef({ center: defaultCenter, level: defaultLevel });
+  const [state, setState] = useState<KakaoMapState>(LOADING_STATE);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    if (!window.kakao?.maps) {
-      throw new Error(
-        '카카오 지도 SDK를 불러오지 못했습니다. 앱 키와 등록된 웹 도메인을 확인하세요.',
-      );
-    }
-
     let cancelled = false;
 
-    window.kakao.maps.load(() => {
-      if (cancelled) return;
+    setState(LOADING_STATE);
 
-      const nextMap = new window.kakao.maps.Map(container, {
-        center: new window.kakao.maps.LatLng(center.lat, center.lng),
-        level,
+    loadKakaoSdk()
+      .then(() => {
+        if (cancelled) return;
+
+        const { center, level } = initialViewRef.current;
+
+        setState({
+          status: 'success',
+          data: new window.kakao.maps.Map(container, {
+            center: new window.kakao.maps.LatLng(center.lat, center.lng),
+            level,
+          }),
+        });
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+
+        setState({
+          status: 'error',
+          error:
+            cause instanceof Error ? cause : new Error('kakao-map/unknown'),
+        });
       });
-
-      mapRef.current = nextMap;
-      setMap(nextMap);
-    });
 
     return () => {
       cancelled = true;
-      mapRef.current = null;
       container.innerHTML = '';
     };
-  }, [center.lat, center.lng, level]);
+  }, [attempt]);
 
-  return { containerRef, map, mapRef };
+  const retry = useCallback(() => setAttempt((count) => count + 1), []);
+
+  return { containerRef, retry, ...state };
 }

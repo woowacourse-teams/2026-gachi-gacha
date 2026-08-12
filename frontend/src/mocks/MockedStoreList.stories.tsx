@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import type { MockStore } from './handlers';
+import {
+  DEFAULT_RADIUS,
+  getNearbyStores,
+  type NearbyStore,
+} from '@/apis/store';
 
 function MockedStoreList() {
-  const [stores, setStores] = useState<MockStore[] | null>(null);
+  const [stores, setStores] = useState<NearbyStore[] | null>(null);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    fetch('/api/stores', { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`매장 목록 요청 실패: ${response.status}`);
-        }
-
-        return response.json() as Promise<MockStore[]>;
-      })
-      .then(setStores)
+    getNearbyStores(
+      { latitude: 37.5551, longitude: 126.9251, radius: DEFAULT_RADIUS },
+      controller.signal,
+    )
+      .then((data) => setStores(data.stores))
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
           return;
@@ -41,7 +41,9 @@ function MockedStoreList() {
   return (
     <ul>
       {stores.map((store) => (
-        <li key={store.id}>{store.name}</li>
+        <li key={store.storeId}>
+          {store.storeId}번 매장 · {store.distance}m
+        </li>
       ))}
     </ul>
   );
