@@ -9,7 +9,6 @@ import com.gachi.gacha.server.store.presentation.dto.StoreImageListResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreImageResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -47,7 +46,7 @@ public class StoreImageController {
                 .map(StoreImageResponse::from)
                 .toList();
 
-        return ResponseEntity.status(HttpStatus.CREATED)
+        return ResponseEntity.status(BaseCode.CREATED.getStatus())
                 .body(BaseResponse.of(BaseCode.CREATED, StoreImageListResponse.from(responses)));
     }
 
