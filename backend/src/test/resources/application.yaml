@@ -1,0 +1,36 @@
+server:
+  servlet:
+    context-path: /api/v1
+spring:
+  application:
+    name: backend
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:gacha_db;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    s3:
+      bucket: test-bucket
+      folder: test

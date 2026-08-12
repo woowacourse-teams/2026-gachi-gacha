@@ -1,6 +1,0 @@
-cloud:
-  aws:
-    region: ap-northeast-2
-    s3:
-      bucket: test-bucket
-      folder: test
