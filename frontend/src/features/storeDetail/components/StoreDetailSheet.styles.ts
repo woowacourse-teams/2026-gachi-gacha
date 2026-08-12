@@ -3,6 +3,8 @@ import styled from '@emotion/styled';
 
 import type { BottomSheetState } from '../model/storeDetail';
 
+const CONTENT_CARD_PADDING = '12px 16px';
+
 const shimmer = keyframes`
   from {
     background-position: 100% 0;
@@ -20,7 +22,7 @@ export const StoryFrame = styled.div`
   min-height: 720px;
   margin: 0 auto;
   overflow: hidden;
-  background: #ececf2;
+  background: #f5f5f8;
   font-family:
     Pretendard,
     -apple-system,
@@ -39,7 +41,7 @@ function getSheetTop(state: BottomSheetState, dragOffset: number) {
   const positions: Record<BottomSheetState, string> = {
     closed: `calc(100% + ${dragOffset}px)`,
     collapsed: `calc(100% - 116px + ${dragOffset}px)`,
-    summary: `calc(55% + ${dragOffset}px)`,
+    summary: `calc(47% + ${dragOffset}px)`,
     full: `calc(12px + ${dragOffset}px)`,
   };
 
@@ -56,11 +58,11 @@ export const SheetRoot = styled.section<SheetRootProps>`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: #24222a;
+  color: #2f292c;
   pointer-events: ${({ $state }) => ($state === 'closed' ? 'none' : 'auto')};
   background: #ffffff;
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 36px rgb(35 29 48 / 16%);
+  box-shadow: 0 -8px 36px rgb(73 53 60 / 14%);
   opacity: ${({ $state }) => ($state === 'closed' ? 0 : 1)};
   touch-action: pan-x;
   user-select: ${({ $isDragging }) => ($isDragging ? 'none' : 'auto')};
@@ -105,7 +107,7 @@ export const DragHandleButton = styled.button`
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(116 83 255 / 28%);
+    outline: 3px solid rgb(180 73 113 / 24%);
     outline-offset: -7px;
     border-radius: 14px;
   }
@@ -114,7 +116,7 @@ export const DragHandleButton = styled.button`
 export const Grabber = styled.span`
   width: 44px;
   height: 5px;
-  background: #c5c0ca;
+  background: #cfc4c8;
   border-radius: 999px;
 `;
 
@@ -126,18 +128,18 @@ export const CloseButton = styled.button`
   width: 32px;
   height: 32px;
   padding: 0;
-  color: #35313d;
+  color: #3a3034;
   font-size: 25px;
   line-height: 1;
   cursor: pointer;
   background: rgb(255 255 255 / 92%);
   border: 0;
   border-radius: 50%;
-  box-shadow: 0 2px 10px rgb(38 30 53 / 15%);
+  box-shadow: 0 2px 10px rgb(73 53 60 / 14%);
   place-items: center;
 
   &:focus-visible {
-    outline: 3px solid rgb(116 83 255 / 30%);
+    outline: 3px solid rgb(180 73 113 / 24%);
     outline-offset: 2px;
   }
 `;
@@ -237,15 +239,16 @@ export const DefaultImageMark = styled.div`
   }
 `;
 
-export const Content = styled.div`
+export const Content = styled.div<{ $state: BottomSheetState }>`
   position: relative;
-  padding: 48px 20px calc(36px + env(safe-area-inset-bottom));
+  padding: ${({ $state }) => ($state === 'summary' ? '44px' : '48px')} 20px
+    calc(36px + env(safe-area-inset-bottom));
   background: #ffffff;
 `;
 
-export const Overview = styled.div`
-  padding: 4px 0 18px;
-  border-bottom: 1px solid #efedf2;
+export const Overview = styled.div<{ $state: BottomSheetState }>`
+  padding: ${({ $state }) => ($state === 'summary' ? '0 0 10px' : '4px 0 18px')};
+  border-bottom: 1px solid #f0e8eb;
 `;
 
 export const OverviewHeading = styled.div`
@@ -259,7 +262,7 @@ export const OverviewHeading = styled.div`
 export const StoreAddress = styled.p`
   margin: 5px 0 0;
   overflow: hidden;
-  color: #77717c;
+  color: #7f7478;
   font-size: 13px;
   font-weight: 520;
   line-height: 1.5;
@@ -269,7 +272,7 @@ export const StoreAddress = styled.p`
 
 export const Headline = styled.div`
   padding-bottom: 22px;
-  border-bottom: 1px solid #efedf2;
+  border-bottom: 1px solid #f0e8eb;
 `;
 
 export const DistanceBadge = styled.span`
@@ -278,10 +281,10 @@ export const DistanceBadge = styled.span`
   align-items: center;
   min-height: 26px;
   padding: 4px 10px;
-  color: #6248c8;
+  color: #963c5d;
   font-size: 12px;
   font-weight: 750;
-  background: #f1edff;
+  background: #fde8ef;
   border-radius: 999px;
 `;
 
@@ -289,7 +292,7 @@ export const StoreName = styled.h2`
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: #211f27;
+  color: #2d2729;
   font-size: 22px;
   font-weight: 800;
   line-height: 1.3;
@@ -298,19 +301,77 @@ export const StoreName = styled.h2`
   letter-spacing: -0.035em;
 `;
 
-export const UpdatedAt = styled.p`
+export const UpdatedAt = styled.p<{ $state: BottomSheetState }>`
+  display: ${({ $state }) => ($state === 'summary' ? 'none' : 'block')};
   margin: 6px 0 0;
-  color: #99949f;
+  color: #9b9094;
   font-size: 11px;
   line-height: 1.5;
 `;
 
-export const PhotoSection = styled.section`
-  padding: 24px 0;
-  border-bottom: 1px solid #efedf2;
+export const PhotoSection = styled.section<{ $state: BottomSheetState }>`
+  padding: ${({ $state }) => ($state === 'summary' ? '14px 0' : '24px 0')};
+  border-bottom: 1px solid #f0e8eb;
 `;
 
-export const ThumbnailRail = styled.div`
+export const PhotoTitleRow = styled.div`
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+
+  h3 {
+    margin-bottom: 0;
+  }
+`;
+
+export const GalleryControls = styled.div`
+  display: flex;
+  gap: 7px;
+  align-items: center;
+`;
+
+export const GalleryControl = styled.button`
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0 0 2px;
+  color: #795a67;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+  background: #fff0f5;
+  border: 1px solid #f2d9e2;
+  border-radius: 50%;
+  transition:
+    color 140ms ease,
+    background 140ms ease,
+    opacity 140ms ease;
+  place-items: center;
+
+  &:hover:not(:disabled) {
+    color: #ffffff;
+    background: #ad456d;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.34;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(180 73 113 / 24%);
+    outline-offset: 2px;
+  }
+`;
+
+export const GalleryViewport = styled.div<{ $state: BottomSheetState }>`
+  height: ${({ $state }) => ($state === 'summary' ? '142px' : 'auto')};
+  margin-top: ${({ $state }) => ($state === 'summary' ? '10px' : '15px')};
+  overflow: ${({ $state }) => ($state === 'summary' ? 'hidden' : 'visible')};
+`;
+
+export const ThumbnailRail = styled.div<{ $isDragging: boolean }>`
   display: flex;
   gap: 10px;
   padding-right: 20px;
@@ -318,7 +379,19 @@ export const ThumbnailRail = styled.div`
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
-  scroll-snap-type: x proximity;
+  scroll-behavior: auto;
+  scroll-snap-type: ${({ $isDragging }) =>
+    $isDragging ? 'none' : 'x mandatory'};
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  cursor: default;
+  user-select: none;
+  will-change: scroll-position;
+
+  &,
+  & * {
+    cursor: default;
+  }
 
   &::-webkit-scrollbar {
     display: none;
@@ -329,21 +402,21 @@ export const ThumbnailFrame = styled.div`
   flex: 0 0 76%;
   height: 154px;
   overflow: hidden;
-  background: #f1eff8;
-  border: 1px solid #ece8f2;
+  background: #faf3f5;
+  border: 1px solid #f0e3e7;
   border-radius: 17px;
   scroll-snap-align: start;
-
-  &:nth-of-type(n + 2) {
-    flex-basis: 44%;
-  }
+  scroll-snap-stop: always;
 `;
 
 export const ThumbnailImage = styled.img`
   display: block;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+  user-select: none;
   object-fit: cover;
+  -webkit-user-drag: none;
 `;
 
 export const ThumbnailPlaceholder = styled.div`
@@ -354,9 +427,10 @@ export const ThumbnailPlaceholder = styled.div`
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: #817b8a;
+  color: #85787d;
   font-size: 11px;
   font-weight: 650;
+  pointer-events: none;
   background:
     radial-gradient(
       circle at 15% 16%,
@@ -368,7 +442,7 @@ export const ThumbnailPlaceholder = styled.div`
       rgb(255 255 255 / 52%) 0 16%,
       transparent 17%
     ),
-    linear-gradient(140deg, #f7ebfa, #e9e5fa 52%, #e2edff);
+    linear-gradient(140deg, #fff4f7, #f9e8ee 52%, #f5eee8);
 `;
 
 export const ThumbnailPlaceholderMark = styled.div`
@@ -377,7 +451,7 @@ export const ThumbnailPlaceholderMark = styled.div`
   height: 38px;
   border: 3px solid rgb(255 255 255 / 90%);
   border-radius: 11px;
-  box-shadow: 0 8px 18px rgb(74 55 112 / 10%);
+  box-shadow: 0 8px 18px rgb(108 70 82 / 10%);
 
   &::before {
     position: absolute;
@@ -397,7 +471,7 @@ export const ThumbnailPlaceholderMark = styled.div`
     left: 5px;
     height: 17px;
     content: '';
-    background: linear-gradient(145deg, #a692ef 49%, #8170d0 50%);
+    background: linear-gradient(145deg, #d7a0b3 49%, #bd7d94 50%);
     clip-path: polygon(0 100%, 34% 32%, 53% 62%, 70% 20%, 100% 100%);
     border-radius: 3px;
   }
@@ -405,54 +479,111 @@ export const ThumbnailPlaceholderMark = styled.div`
 
 export const InfoList = styled.dl`
   display: grid;
-  gap: 16px;
+  gap: 10px;
   padding: 22px 0;
   margin: 0;
-  border-bottom: 1px solid #efedf2;
+  border-bottom: 1px solid #f0e8eb;
 `;
 
 export const InfoRow = styled.div`
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr);
+  grid-template-columns: 104px minmax(0, 1fr);
   gap: 12px;
-  align-items: start;
+  align-items: center;
+  min-height: 58px;
+  padding: ${CONTENT_CARD_PADDING};
+  background: #fffdfd;
+  border: 1px solid #f0e7e7;
+  border-radius: 14px;
+  box-shadow: 0 3px 10px rgb(96 70 77 / 6%);
 `;
 
 export const InfoLabel = styled.dt`
-  color: #8c8792;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  color: #73676c;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 700;
   line-height: 1.65;
+`;
+
+export const InfoIcon = styled.img`
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
 `;
 
 export const InfoValue = styled.dd`
   margin: 0;
-  color: #35313b;
+  color: #3a3135;
   font-size: 14px;
   font-weight: 520;
   line-height: 1.65;
   white-space: pre-wrap;
 `;
 
-export const InstagramLink = styled.a`
-  color: #6248c8;
-  font-weight: 650;
+export const SocialLinkList = styled.ul`
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+`;
+
+export const SocialLink = styled.a<{ $platform: 'instagram' | 'kakao' }>`
+  display: grid;
+  width: 40px;
+  height: 40px;
+  color: ${({ $platform }) => ($platform === 'kakao' ? '#251c1c' : '#ffffff')};
   text-decoration: none;
+  background: ${({ $platform }) =>
+    $platform === 'kakao'
+      ? '#fee500'
+      : 'linear-gradient(145deg, #6c45d7, #d83c72 54%, #f1a13f)'};
+  border: 3px solid #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgb(155 48 90 / 22%);
+  transition:
+    box-shadow 140ms ease,
+    transform 140ms ease;
+  place-items: center;
 
   &:hover {
-    text-decoration: underline;
+    box-shadow: 0 5px 14px rgb(155 48 90 / 30%);
+    transform: translateY(-1px);
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(116 83 255 / 25%);
-    outline-offset: 3px;
-    border-radius: 3px;
+    outline: 3px solid rgb(180 73 113 / 25%);
+    outline-offset: 2px;
   }
+`;
+
+export const InstagramIcon = styled.svg`
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.8;
+
+  .instagram-dot {
+    fill: currentcolor;
+    stroke: none;
+  }
+`;
+
+export const KakaoIcon = styled.svg`
+  width: 27px;
+  height: 27px;
+  fill: currentcolor;
 `;
 
 export const Section = styled.section`
   padding: 24px 0;
-  border-bottom: 1px solid #efedf2;
+  border-bottom: 1px solid #f0e8eb;
 
   &:last-child {
     padding-bottom: 0;
@@ -462,10 +593,27 @@ export const Section = styled.section`
 
 export const SectionTitle = styled.h3`
   margin: 0 0 15px;
-  color: #2b2831;
+  color: #342b2f;
   font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.025em;
+`;
+
+export const IconSectionTitle = styled.h3`
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 15px;
+  color: #342b2f;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+`;
+
+export const SectionIcon = styled.img`
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
 `;
 
 export const AmountGrid = styled.div`
@@ -475,62 +623,45 @@ export const AmountGrid = styled.div`
 `;
 
 export const AmountCard = styled.div`
-  padding: 16px;
-  background: #f8f7fa;
-  border: 1px solid #f0eef3;
+  display: flex;
+  gap: 11px;
+  align-items: center;
+  min-width: 0;
+  padding: ${CONTENT_CARD_PADDING};
+  background: #fff9fb;
+  border: 1px solid #f1e2e7;
   border-radius: 15px;
 `;
 
+export const AmountIcon = styled.img`
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+`;
+
+export const AmountText = styled.div`
+  min-width: 0;
+`;
+
 export const AmountLabel = styled.p`
-  margin: 0 0 6px;
-  color: #817c87;
+  margin: 0 0 3px;
+  color: #7c6f74;
   font-size: 12px;
   font-weight: 650;
 `;
 
 export const AmountValue = styled.strong`
-  color: #393440;
+  color: #3d3035;
   font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
 `;
 
-export const AvailabilityList = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 10px;
-`;
-
-export const Availability = styled.div<{ available: boolean }>`
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  min-height: 40px;
-  padding: 8px 12px;
-  color: ${({ available }) => (available ? '#4f389f' : '#918c97')};
-  font-size: 12px;
-  font-weight: 700;
-  background: ${({ available }) => (available ? '#f2eeff' : '#f6f5f7')};
-  border-radius: 12px;
-
-  &::before {
-    display: grid;
-    flex: 0 0 auto;
-    width: 18px;
-    height: 18px;
-    color: ${({ available }) => (available ? '#ffffff' : '#8e8993')};
-    content: '${({ available }) => (available ? '✓' : '–')}';
-    background: ${({ available }) => (available ? '#7960d8' : '#dedbe1')};
-    border-radius: 50%;
-    place-items: center;
-  }
-`;
-
 export const PriceList = styled.dl`
   margin: 0;
   overflow: hidden;
-  border: 1px solid #ece9f0;
+  background: #fffdfd;
+  border: 1px solid #f0e3e7;
   border-radius: 15px;
 `;
 
@@ -539,9 +670,9 @@ export const PriceRow = styled.div`
   gap: 16px;
   align-items: center;
   justify-content: space-between;
-  min-height: 48px;
-  padding: 10px 15px;
-  border-bottom: 1px solid #f0eef3;
+  min-height: 62px;
+  padding: ${CONTENT_CARD_PADDING};
+  border-bottom: 1px solid #f3e9ec;
 
   &:last-child {
     border-bottom: 0;
@@ -549,14 +680,23 @@ export const PriceRow = styled.div`
 `;
 
 export const PriceLabel = styled.dt`
-  color: #6e6974;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  color: #6f6267;
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 700;
+`;
+
+export const PriceIcon = styled.img`
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
 `;
 
 export const PriceValue = styled.dd`
   margin: 0;
-  color: #302c36;
+  color: #3a3034;
   font-size: 14px;
   font-weight: 750;
   text-align: right;
@@ -573,11 +713,11 @@ export const ChipList = styled.ul`
 
 export const Chip = styled.li`
   padding: 8px 12px;
-  color: #5f5767;
+  color: #6d5660;
   font-size: 12px;
-  font-weight: 650;
-  background: #f6f3fa;
-  border: 1px solid #ebe5f1;
+  font-weight: 700;
+  background: #fff0f5;
+  border: 1px solid #f1dce4;
   border-radius: 999px;
 `;
 
@@ -612,7 +752,7 @@ export const CompactTitleGroup = styled.div`
 export const CompactStoreName = styled.h2`
   margin: 0;
   overflow: hidden;
-  color: #28242e;
+  color: #32292d;
   font-size: 19px;
   font-weight: 800;
   line-height: 1.35;
@@ -624,7 +764,7 @@ export const CompactStoreName = styled.h2`
 export const CompactMeta = styled.p`
   margin: 4px 0 0;
   overflow: hidden;
-  color: #8d8792;
+  color: #8d8186;
   font-size: 12px;
   line-height: 1.4;
   text-overflow: ellipsis;
@@ -634,17 +774,17 @@ export const CompactMeta = styled.p`
 export const CompactDistance = styled.span`
   flex: 0 0 auto;
   padding: 5px 9px;
-  color: #6248c8;
+  color: #963c5d;
   font-size: 11px;
   font-weight: 750;
-  background: #f1edff;
+  background: #fde8ef;
   border-radius: 999px;
 `;
 
-export const SummaryDetails = styled.div`
+export const SummaryDetails = styled.div<{ $state: BottomSheetState }>`
   display: grid;
   gap: 14px;
-  padding-top: 18px;
+  padding-top: ${({ $state }) => ($state === 'summary' ? '10px' : '18px')};
 `;
 
 export const SummaryRow = styled.div`
@@ -656,38 +796,52 @@ export const SummaryRow = styled.div`
 `;
 
 export const SummaryLabel = styled.span`
-  color: #918b96;
+  color: #8f8287;
   font-weight: 650;
 `;
 
 export const SummaryValue = styled.span`
   overflow: hidden;
-  color: #433e48;
+  color: #463a3f;
   font-weight: 550;
   text-overflow: ellipsis;
   white-space: pre-line;
 `;
 
-export const SummaryAmounts = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 16px;
+export const CategoryList = styled.ul<{ $state: BottomSheetState }>`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: ${({ $state }) => ($state === 'summary' ? '10px 0 0' : '17px 0 0')};
+  list-style: none;
 `;
 
-export const SummaryAmount = styled.div`
-  min-height: 62px;
-  padding: 11px 14px;
-  color: #77717c;
+export const CategoryChip = styled.li`
+  padding: 7px 12px;
+  color: #7b4d5f;
   font-size: 12px;
-  background: #f8f7fa;
-  border-radius: 13px;
+  font-weight: 750;
+  background: #fde7ef;
+  border: 1px solid #f2d5e0;
+  border-radius: 999px;
 
-  strong {
-    display: block;
-    margin-top: 4px;
-    color: #393440;
-    font-size: 15px;
+  &:nth-of-type(4n + 2) {
+    color: #88492f;
+    background: #fbe9df;
+    border-color: #f2d7c9;
+  }
+
+  &:nth-of-type(4n + 3) {
+    color: #715d35;
+    background: #f5eddc;
+    border-color: #eadfca;
+  }
+
+  &:nth-of-type(4n + 4) {
+    color: #65566c;
+    background: #eee8f0;
+    border-color: #e1d7e5;
   }
 `;
 
@@ -747,10 +901,10 @@ export const DemoPinButton = styled.button`
   color: #ffffff;
   font-size: 18px;
   cursor: pointer;
-  background: #7457d8;
+  background: #a8461c;
   border: 4px solid #ffffff;
   border-radius: 50% 50% 50% 8px;
-  box-shadow: 0 8px 18px rgb(57 42 105 / 28%);
+  box-shadow: 0 8px 18px rgb(111 49 22 / 28%);
   transform: translate(-50%, -50%) rotate(-45deg);
 
   span {
@@ -759,7 +913,7 @@ export const DemoPinButton = styled.button`
   }
 
   &:focus-visible {
-    outline: 4px solid rgb(116 87 216 / 28%);
+    outline: 4px solid rgb(168 70 28 / 25%);
     outline-offset: 4px;
   }
 `;
@@ -814,10 +968,10 @@ export const ErrorMark = styled.div`
   width: 64px;
   height: 64px;
   margin-bottom: 20px;
-  color: #7960d8;
+  color: #a8461c;
   font-size: 30px;
   font-weight: 800;
-  background: #f0ebff;
+  background: #fbe9df;
   border-radius: 22px;
   place-items: center;
 `;
@@ -845,16 +999,16 @@ export const RetryButton = styled.button`
   font-size: 14px;
   font-weight: 750;
   cursor: pointer;
-  background: #6e52d3;
+  background: #a8461c;
   border: 0;
   border-radius: 13px;
 
   &:hover {
-    background: #6046c2;
+    background: #903814;
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(110 82 211 / 28%);
+    outline: 3px solid rgb(168 70 28 / 25%);
     outline-offset: 3px;
   }
 `;
