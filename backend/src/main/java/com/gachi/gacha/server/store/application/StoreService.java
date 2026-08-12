@@ -17,6 +17,7 @@ import com.gachi.gacha.server.store.domain.StoreDetailUpdate;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
+import com.gachi.gacha.server.store.domain.exception.InvalidNearbyRequestException;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import java.util.Comparator;
 import java.util.List;
@@ -72,13 +73,13 @@ public class StoreService {
             final Integer radius
     ) {
         if (latitude == null || !Double.isFinite(latitude) || latitude < -90 || latitude > 90) {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_INPUT_VALUE);
         }
         if (longitude == null || !Double.isFinite(longitude) || longitude < -180 || longitude > 180) {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_INPUT_VALUE);
         }
         if (radius == null || radius < MIN_SEARCH_RADIUS || radius > MAX_SEARCH_RADIUS) {
-            throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
 
