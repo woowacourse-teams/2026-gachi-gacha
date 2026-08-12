@@ -54,7 +54,7 @@ public class StoreImageService {
             return savedStoreImages.stream()
                     .map(StoreImageInfo::from)
                     .toList();
-        } catch (final RuntimeException e) {
+        } catch (RuntimeException e) {
             uploadedImageUrls.forEach(imageUploader::delete);
             throw e;
         }
