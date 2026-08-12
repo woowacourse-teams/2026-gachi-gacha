@@ -2,7 +2,6 @@ package com.gachi.gacha.server.gacha.presentation;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.restassured.http.Method;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,7 +82,7 @@ class GachaControllerTest {
     }
 
     @Nested
-    @DisplayName("PATCH /gachas/{gachaId} - 가챠 수정 API")
+    @DisplayName("PUT /gachas/{gachaId} - 가챠 수정 API")
     class UpdateGacha {
 
         @Test
@@ -102,7 +101,7 @@ class GachaControllerTest {
                     .contentType(ContentType.JSON)
                     .body(updateRequest)
                     .when()
-                    .patch("/api/v1/gachas/{gachaId}", gachaId)
+                    .put("/api/v1/gachas/{gachaId}", gachaId)
                     .then().log().all()
                     .extract();
 
@@ -128,7 +127,7 @@ class GachaControllerTest {
                     .contentType(ContentType.JSON)
                     .body(updateRequest)
                     .when()
-                    .request(Method.PATCH, "/api/v1/gachas/{gachaId}", nonExistentGachaId)
+                    .put("/api/v1/gachas/{gachaId}", nonExistentGachaId)
                     .then().log().all()
                     .extract();
 
