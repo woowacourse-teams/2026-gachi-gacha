@@ -2,9 +2,9 @@ package com.gachi.gacha.server.store.infra.config;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
+import com.gachi.gacha.server.store.domain.ImageType;
 import com.gachi.gacha.server.store.infra.exception.S3Exception;
 import java.io.IOException;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,13 +21,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 @Component
 @RequiredArgsConstructor
 public class ImageUploader {
-
-    private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
-            "image/png", "image/jpeg", "image/gif", "image/webp"
-    );
-    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
-            "png", "jpg", "jpeg", "gif", "webp"
-    );
 
     private final S3Client s3Client;
 
@@ -79,7 +72,7 @@ public class ImageUploader {
      * 검증 없이 저장하면 text/html 등으로 위장한 파일이 스토어드 XSS 벡터가 될 수 있다.
      */
     private String validateContentType(final String contentType) {
-        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+        if (!ImageType.isAllowedContentType(contentType)) {
             throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
         }
         return contentType;
@@ -95,7 +88,7 @@ public class ImageUploader {
         }
 
         String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
-        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+        if (!ImageType.isAllowedExtension(extension)) {
             throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
         }
         return extension;
