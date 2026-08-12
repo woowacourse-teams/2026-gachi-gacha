@@ -1,6 +1,22 @@
+const fs = require('node:fs');
 const path = require('node:path');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
+
+const envPath = path.resolve(__dirname, '.env');
+
+if (fs.existsSync(envPath)) {
+  process.loadEnvFile(envPath);
+}
+
+const KAKAO_MAP_KEY = process.env.KAKAO_MAP_KEY;
+
+if (!KAKAO_MAP_KEY) {
+  throw new Error(
+    'KAKAO_MAP_KEY가 없습니다. `cp .env.example .env` 후 카카오 JavaScript 앱키를 채워주세요.',
+  );
+}
 
 /** @type {import('webpack').ConfigurationFactory} */
 module.exports = (_env, argv) => {
@@ -49,6 +65,11 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'public/index.html'),
+      }),
+
+      new webpack.DefinePlugin({
+        __IS_DEV__: JSON.stringify(!isProduction),
+        __KAKAO_MAP_KEY__: JSON.stringify(KAKAO_MAP_KEY),
       }),
     ],
 
