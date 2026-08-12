@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.store.infra.exception;
+package com.gachi.gacha.server.common.infra.exception;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.ExternalApiException;

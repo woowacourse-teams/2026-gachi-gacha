@@ -5,7 +5,7 @@ import com.gachi.gacha.server.common.exception.InvalidValueException;
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
-import com.gachi.gacha.server.store.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;

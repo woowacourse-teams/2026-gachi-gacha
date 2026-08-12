@@ -1,9 +1,9 @@
-package com.gachi.gacha.server.store.infra.config;
+package com.gachi.gacha.server.common.infra.config;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
-import com.gachi.gacha.server.store.domain.ImageType;
-import com.gachi.gacha.server.store.infra.exception.S3Exception;
+import com.gachi.gacha.server.common.domain.ImageType;
+import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

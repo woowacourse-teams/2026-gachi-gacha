@@ -5,7 +5,7 @@ import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
-import com.gachi.gacha.server.store.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

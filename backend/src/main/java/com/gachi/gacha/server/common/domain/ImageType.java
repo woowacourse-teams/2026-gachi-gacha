@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.store.domain;
+package com.gachi.gacha.server.common.domain;
 
 import java.util.Arrays;
 import lombok.Getter;
