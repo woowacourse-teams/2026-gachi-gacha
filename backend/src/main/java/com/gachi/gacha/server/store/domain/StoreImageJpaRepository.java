@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.store.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.store.domain.exception.StoreImageNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
