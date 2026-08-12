@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +17,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class ImageUploader {
@@ -46,8 +48,10 @@ public class ImageUploader {
         try {
             s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         } catch (final IOException e) {
+            log.error("이미지 파일을 읽는 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_READ_ERROR);
         } catch (final SdkException e) {
+            log.error("이미지 업로드 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR);
         }
 
@@ -65,6 +69,7 @@ public class ImageUploader {
         try {
             s3Client.deleteObject(request);
         } catch (final SdkException e) {
+            log.error("이미지 삭제 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_DELETE_ERROR);
         }
     }
