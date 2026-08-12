@@ -48,14 +48,24 @@ tasks.named('test') {
 }
 
 tasks.named('bootRun') {
+def loadDotEnv = { task ->
 	def envFile = rootProject.file('.env')
 	if (envFile.exists()) {
 		envFile.readLines().each { line ->
 			line = line.trim()
 			if (line && !line.startsWith('#') && line.contains('=')) {
 				def (key, value) = line.split('=', 2)
-				environment(key.trim(), value.trim())
+				task.environment(key.trim(), value.trim())
 			}
 		}
 	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	doFirst { loadDotEnv(it) }
+}
+
+tasks.named('bootRun') {
+	doFirst { loadDotEnv(it) }
 }
