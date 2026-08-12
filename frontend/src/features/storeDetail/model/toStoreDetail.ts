@@ -103,7 +103,7 @@ function createInstagram(instagramId: string | null) {
 function createCategories(dto: StoreDetailDto) {
   const categories: string[] = [];
   const hasGacha =
-    dto.machineAmount !== 0 ||
+    (dto.machineAmount !== null && dto.machineAmount > 0) ||
     dto.gachaMinPrice !== null ||
     dto.gachaMaxPrice !== null;
   const hasKuji =
