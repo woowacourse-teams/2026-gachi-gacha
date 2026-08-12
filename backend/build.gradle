@@ -1,20 +1,20 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version '4.1.0'
-	id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
+    id 'org.springframework.boot' version '4.1.0'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'com.gachi.gacha'
 version = '0.0.1-SNAPSHOT'
 
 java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
-	}
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
 }
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
@@ -43,29 +43,24 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
 }
 
+def loadDotEnv = { task ->
+    def envFile = rootProject.file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            line = line.trim()
+            if (line && !line.startsWith('#') && line.contains('=')) {
+                def (key, value) = line.split('=', 2)
+                task.environment(key.trim(), value.trim())
+            }
+        }
+    }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
+    doFirst { loadDotEnv(it) }
 }
 
 tasks.named('bootRun') {
-def loadDotEnv = { task ->
-	def envFile = rootProject.file('.env')
-	if (envFile.exists()) {
-		envFile.readLines().each { line ->
-			line = line.trim()
-			if (line && !line.startsWith('#') && line.contains('=')) {
-				def (key, value) = line.split('=', 2)
-				task.environment(key.trim(), value.trim())
-			}
-		}
-	}
-}
-
-tasks.named('test') {
-	useJUnitPlatform()
-	doFirst { loadDotEnv(it) }
-}
-
-tasks.named('bootRun') {
-	doFirst { loadDotEnv(it) }
+    doFirst { loadDotEnv(it) }
 }
