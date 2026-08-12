@@ -1,13 +1,12 @@
 package com.gachi.gacha.server.store.application;
 
-import com.gachi.gacha.server.common.exception.EntityNotFoundException;
-import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.store.application.dto.StoreImageInfo;
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.infra.config.ImageUploader;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,8 +29,7 @@ public class StoreImageService {
     private String s3RootFolder;
 
     public List<StoreImageInfo> findImages(final Long storeId) {
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.STORE_NOT_FOUND));
+        Store store = storeRepository.getById(storeId);
 
         return storeImageRepository.findAllByStoreId(store.getId()).stream()
                 .map(StoreImageInfo::from)
@@ -39,15 +37,27 @@ public class StoreImageService {
     }
 
     @Transactional
-    public StoreImageInfo addImage(final Long storeId, final MultipartFile file) {
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new EntityNotFoundException(ErrorCode.STORE_NOT_FOUND));
+    public List<StoreImageInfo> addImage(final Long storeId, final List<MultipartFile> files) {
+        Store store = storeRepository.getById(storeId);
 
-        String imageUrl = imageUploader.upload(file, imagePath());
-        StoreImage storeImage = new StoreImage(store, imageUrl);
-        StoreImage savedStoreImage = storeImageRepository.save(storeImage);
+        List<String> uploadedImageUrls = new ArrayList<>();
+        try {
+            List<StoreImage> storeImages = files.stream()
+                    .map(file -> {
+                        String imageUrl = imageUploader.upload(file, imagePath());
+                        uploadedImageUrls.add(imageUrl);
+                        return new StoreImage(store, imageUrl);
+                    })
+                    .toList();
 
-        return StoreImageInfo.from(savedStoreImage);
+            List<StoreImage> savedStoreImages = storeImageRepository.saveAll(storeImages);
+            return savedStoreImages.stream()
+                    .map(StoreImageInfo::from)
+                    .toList();
+        } catch (final RuntimeException e) {
+            uploadedImageUrls.forEach(imageUploader::delete);
+            throw e;
+        }
     }
 
     @Transactional

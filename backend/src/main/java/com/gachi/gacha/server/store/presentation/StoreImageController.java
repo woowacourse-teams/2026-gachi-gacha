@@ -1,14 +1,15 @@
 package com.gachi.gacha.server.store.presentation;
 
+import com.gachi.gacha.server.common.domain.BaseCode;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.store.application.StoreImageService;
 import com.gachi.gacha.server.store.application.dto.StoreImageInfo;
 import com.gachi.gacha.server.store.presentation.dto.StoreImageDeleteResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreImageListResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreImageResponse;
-import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/stores/{storeId}/images")
@@ -39,19 +39,16 @@ public class StoreImageController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BaseResponse<StoreImageResponse>> addImage(
+    public ResponseEntity<BaseResponse<StoreImageListResponse>> addImage(
             @PathVariable final Long storeId,
-            @RequestParam("image") final MultipartFile image
+            @RequestParam("images") final List<MultipartFile> images
     ) {
-        StoreImageInfo storeImageInfo = storeImageService.addImage(storeId, image);
-        StoreImageResponse response = StoreImageResponse.from(storeImageInfo);
+        List<StoreImageResponse> responses = storeImageService.addImage(storeId, images).stream()
+                .map(StoreImageResponse::from)
+                .toList();
 
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{storeImageId}")
-                .buildAndExpand(response.storeImageId())
-                .toUri();
-
-        return BaseResponse.created(location, response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(BaseResponse.of(BaseCode.CREATED, StoreImageListResponse.from(responses)));
     }
 
     @PutMapping(path = "/{storeImageId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)

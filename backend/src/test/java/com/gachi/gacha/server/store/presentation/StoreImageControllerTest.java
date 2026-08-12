@@ -1,6 +1,9 @@
 package com.gachi.gacha.server.store.presentation;
 
+import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.common.exception.InvalidValueException;
 import com.gachi.gacha.server.store.domain.Store;
+import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.infra.config.ImageUploader;
 import io.restassured.RestAssured;
@@ -15,10 +18,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +35,9 @@ class StoreImageControllerTest {
 
     @Autowired
     private StoreJpaRepository storeRepository;
+
+    @Autowired
+    private StoreImageJpaRepository storeImageRepository;
 
     @MockitoBean
     private ImageUploader imageUploader;
@@ -89,14 +97,14 @@ class StoreImageControllerTest {
     class AddImage {
 
         @Test
-        @DisplayName("이미지 파일을 첨부해 요청하면 201 Created와 Location 헤더를 반환한다.")
+        @DisplayName("이미지 파일 하나를 첨부해 요청하면 201 Created와 등록된 이미지 목록을 반환한다.")
         void addImage_success() {
             // given
             Long storeId = createTargetStore();
 
             // when
             ExtractableResponse<Response> response = RestAssured.given().log().all()
-                    .multiPart("image", "image.png", "dummy-image-content".getBytes(), "image/png")
+                    .multiPart("images", "image.png", "dummy-image-content".getBytes(), "image/png")
                     .when()
                     .post("/api/v1/stores/{storeId}/images", storeId)
                     .then().log().all()
@@ -104,9 +112,57 @@ class StoreImageControllerTest {
 
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
-            assertThat(response.header("Location")).isNotNull();
             assertThat(response.jsonPath().getString("code")).isEqualTo("C001");
-            assertThat(response.jsonPath().getLong("data.storeImageId")).isNotNull();
+            assertThat(response.jsonPath().getList("data.items")).hasSize(1);
+            assertThat(response.jsonPath().getLong("data.items[0].storeImageId")).isNotNull();
+        }
+
+        @Test
+        @DisplayName("이미지 파일 여러 개를 첨부해 요청하면 201 Created와 등록된 이미지 목록을 모두 반환한다.")
+        void addImage_multiple_success() {
+            // given
+            Long storeId = createTargetStore();
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .multiPart("images", "image1.png", "dummy-image-content-1".getBytes(), "image/png")
+                    .multiPart("images", "image2.png", "dummy-image-content-2".getBytes(), "image/png")
+                    .multiPart("images", "image3.png", "dummy-image-content-3".getBytes(), "image/png")
+                    .when()
+                    .post("/api/v1/stores/{storeId}/images", storeId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+            assertThat(response.jsonPath().getList("data.items")).hasSize(3);
+        }
+
+        @Test
+        @DisplayName("업로드 중 하나라도 실패하면 이미 업로드된 이미지도 정리되고 전부 등록되지 않는다.")
+        void addImage_partialFailure_rollsBackAll() {
+            // given
+            Long storeId = createTargetStore();
+
+            // 두 번째 파일 업로드에서만 실패하도록 스텁 (첫 번째는 기본 스텁대로 성공)
+            when(imageUploader.upload(
+                    argThat((MultipartFile file) -> file != null && "invalid.png".equals(file.getOriginalFilename())),
+                    anyString()
+            )).thenThrow(new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY));
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .multiPart("images", "image1.png", "dummy-image-content-1".getBytes(), "image/png")
+                    .multiPart("images", "invalid.png", "dummy-image-content-2".getBytes(), "image/png")
+                    .multiPart("images", "image3.png", "dummy-image-content-3".getBytes(), "image/png")
+                    .when()
+                    .post("/api/v1/stores/{storeId}/images", storeId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+            assertThat(storeImageRepository.findAllByStoreId(storeId)).isEmpty();
         }
 
         @Test
@@ -117,7 +173,7 @@ class StoreImageControllerTest {
 
             // when
             ExtractableResponse<Response> response = RestAssured.given().log().all()
-                    .multiPart("image", "image.png", "dummy-image-content".getBytes(), "image/png")
+                    .multiPart("images", "image.png", "dummy-image-content".getBytes(), "image/png")
                     .when()
                     .post("/api/v1/stores/{storeId}/images", nonExistentStoreId)
                     .then().log().all()
@@ -128,12 +184,12 @@ class StoreImageControllerTest {
         }
 
         @Test
-        @DisplayName("image 파트 없이 요청하면 400 Bad Request를 반환한다.")
+        @DisplayName("images 파트 없이 요청하면 400 Bad Request를 반환한다.")
         void addImage_missingImagePart() {
             // given
             Long storeId = createTargetStore();
 
-            // when - 'image'가 아닌 다른 파트명으로 전송
+            // when - 'images'가 아닌 다른 파트명으로 전송
             ExtractableResponse<Response> response = RestAssured.given().log().all()
                     .multiPart("file", "image.png", "dummy-image-content".getBytes(), "image/png")
                     .when()
@@ -246,10 +302,10 @@ class StoreImageControllerTest {
 
     private Long createTargetStoreImage(final Long storeId) {
         return RestAssured.given()
-                .multiPart("image", "seed-image.png", "seed-dummy-content".getBytes(), "image/png")
+                .multiPart("images", "seed-image.png", "seed-dummy-content".getBytes(), "image/png")
                 .when()
                 .post("/api/v1/stores/{storeId}/images", storeId)
                 .jsonPath()
-                .getLong("data.storeImageId");
+                .getLong("data.items[0].storeImageId");
     }
 }
