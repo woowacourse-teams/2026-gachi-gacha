@@ -168,15 +168,17 @@ public class StoreService {
         Store store = storeJpaRepository.getById(storeId);
         StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
 
-        store.modify(
+        Store patchedStore = store.patch(
                 command.thumbnailUrl(),
                 command.latitude(),
                 command.longitude()
         );
-        storeDetail.modify(createStoreDetailUpdate(command));
+        Store savedStore = storeJpaRepository.save(patchedStore);
+        StoreDetail patchedDetail = storeDetail.patch(createStoreDetailUpdate(command));
+        StoreDetail savedDetail = storeDetailJpaRepository.save(patchedDetail);
         storeJpaRepository.flush();
 
-        return StoreUpdateResult.of(store, storeDetail);
+        return StoreUpdateResult.of(savedStore, savedDetail);
     }
 
     private StoreDetailUpdate createStoreDetailUpdate(final StoreUpdateCommand command) {

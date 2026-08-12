@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.store.domain;
 
+import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
+
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.CollectionTable;
@@ -11,18 +13,16 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
+import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Builder
 @Getter
 @Entity
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class StoreDetail extends BaseTimeEntity {
 
@@ -34,10 +34,10 @@ public class StoreDetail extends BaseTimeEntity {
     @JoinColumn(name = "store_id")
     private Store store;
 
-    @Column(nullable = false)
+    @NotNull
     private String name;
 
-    @Column(nullable = false)
+    @NotNull
     private String address;
 
     private String businessHours;
@@ -46,14 +46,13 @@ public class StoreDetail extends BaseTimeEntity {
 
     private String phone;
 
-    @Builder.Default
     @ElementCollection
     @CollectionTable(
             name = "store_facility",
             joinColumns = @JoinColumn(name = "store_id")
     )
     @Column(name = "facility")
-    private List<String> facilities = new ArrayList<>();
+    private List<String> facilities;
 
     private String instagramId;
 
@@ -71,49 +70,90 @@ public class StoreDetail extends BaseTimeEntity {
     private Boolean hasRandomBox;
     private Boolean hasSelectGacha;
 
-    public void modify(final StoreDetailUpdate update) {
-        validate(update);
+    @Builder
+    private StoreDetail(
+            final Long id,
+            final Store store,
+            final String name,
+            final String address,
+            final String businessHours,
+            final String paymentMethods,
+            final String phone,
+            final List<String> facilities,
+            final String instagramId,
+            final Integer machineAmount,
+            final Integer kujiAmount,
+            final Long coinPrice,
+            final Long gachaMinPrice,
+            final Long gachaMaxPrice,
+            final Long kujiMinPrice,
+            final Long kujiMaxPrice,
+            final Long selectGachaMinPrice,
+            final Long selectGachaMaxPrice,
+            final Boolean hasRandomBox,
+            final Boolean hasSelectGacha
+    ) {
+        validateRequired(name, address);
+        validateNonNegative(machineAmount, kujiAmount, coinPrice);
+        validatePriceRange(gachaMinPrice, gachaMaxPrice);
+        validatePriceRange(kujiMinPrice, kujiMaxPrice);
+        validatePriceRange(selectGachaMinPrice, selectGachaMaxPrice);
 
-        this.name = valueOrCurrent(update.name(), name);
-        this.address = valueOrCurrent(update.address(), address);
-        this.businessHours = valueOrCurrent(update.businessHours(), businessHours);
-        this.phone = valueOrCurrent(update.phone(), phone);
-        this.instagramId = valueOrCurrent(update.instagramId(), instagramId);
-        this.machineAmount = valueOrCurrent(update.machineAmount(), machineAmount);
-        this.kujiAmount = valueOrCurrent(update.kujiAmount(), kujiAmount);
-        this.coinPrice = valueOrCurrent(update.coinPrice(), coinPrice);
-        this.gachaMinPrice = valueOrCurrent(update.gachaMinPrice(), gachaMinPrice);
-        this.gachaMaxPrice = valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice);
-        this.kujiMinPrice = valueOrCurrent(update.kujiMinPrice(), kujiMinPrice);
-        this.kujiMaxPrice = valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice);
-        this.selectGachaMinPrice = valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice);
-        this.selectGachaMaxPrice = valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice);
-        this.hasRandomBox = valueOrCurrent(update.hasRandomBox(), hasRandomBox);
-        this.hasSelectGacha = valueOrCurrent(update.hasSelectGacha(), hasSelectGacha);
-        this.paymentMethods = valueOrCurrent(update.paymentMethods(), paymentMethods);
-        replaceIfPresent(facilities, update.facilities());
+        this.id = id;
+        this.store = store;
+        this.name = name;
+        this.address = address;
+        this.businessHours = businessHours;
+        this.paymentMethods = paymentMethods;
+        this.phone = phone;
+        this.facilities = facilities == null ? new ArrayList<>() : new ArrayList<>(facilities);
+        this.instagramId = instagramId;
+        this.machineAmount = machineAmount;
+        this.kujiAmount = kujiAmount;
+        this.coinPrice = coinPrice;
+        this.gachaMinPrice = gachaMinPrice;
+        this.gachaMaxPrice = gachaMaxPrice;
+        this.kujiMinPrice = kujiMinPrice;
+        this.kujiMaxPrice = kujiMaxPrice;
+        this.selectGachaMinPrice = selectGachaMinPrice;
+        this.selectGachaMaxPrice = selectGachaMaxPrice;
+        this.hasRandomBox = hasRandomBox;
+        this.hasSelectGacha = hasSelectGacha;
     }
 
-    private void validate(final StoreDetailUpdate update) {
-        String nextName = valueOrCurrent(update.name(), name);
-        String nextAddress = valueOrCurrent(update.address(), address);
-        Integer nextMachineAmount = valueOrCurrent(update.machineAmount(), machineAmount);
-        Integer nextKujiAmount = valueOrCurrent(update.kujiAmount(), kujiAmount);
-        Long nextCoinPrice = valueOrCurrent(update.coinPrice(), coinPrice);
-        Long nextGachaMinPrice = valueOrCurrent(update.gachaMinPrice(), gachaMinPrice);
-        Long nextGachaMaxPrice = valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice);
-        Long nextKujiMinPrice = valueOrCurrent(update.kujiMinPrice(), kujiMinPrice);
-        Long nextKujiMaxPrice = valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice);
-        Long nextSelectMinPrice = valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice);
-        Long nextSelectMaxPrice = valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice);
+    public StoreDetail patch(final StoreDetailUpdate update) {
+        return StoreDetail.builder()
+                .id(id)
+                .store(store)
+                .name(valueOrCurrent(update.name(), name))
+                .address(valueOrCurrent(update.address(), address))
+                .businessHours(valueOrCurrent(update.businessHours(), businessHours))
+                .paymentMethods(valueOrCurrent(update.paymentMethods(), paymentMethods))
+                .phone(valueOrCurrent(update.phone(), phone))
+                .facilities(update.facilities() == null ? facilities : update.facilities())
+                .instagramId(valueOrCurrent(update.instagramId(), instagramId))
+                .machineAmount(valueOrCurrent(update.machineAmount(), machineAmount))
+                .kujiAmount(valueOrCurrent(update.kujiAmount(), kujiAmount))
+                .coinPrice(valueOrCurrent(update.coinPrice(), coinPrice))
+                .gachaMinPrice(valueOrCurrent(update.gachaMinPrice(), gachaMinPrice))
+                .gachaMaxPrice(valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice))
+                .kujiMinPrice(valueOrCurrent(update.kujiMinPrice(), kujiMinPrice))
+                .kujiMaxPrice(valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice))
+                .selectGachaMinPrice(valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice))
+                .selectGachaMaxPrice(valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice))
+                .hasRandomBox(valueOrCurrent(update.hasRandomBox(), hasRandomBox))
+                .hasSelectGacha(valueOrCurrent(update.hasSelectGacha(), hasSelectGacha))
+                .build();
+    }
 
-        if (nextName == null || nextName.isBlank() || nextAddress == null || nextAddress.isBlank()) {
+    private void validateRequired(final String name, final String address) {
+        if (isBlank(name) || isBlank(address)) {
             throw new InvalidStoreException();
         }
-        validateNonNegative(nextMachineAmount, nextKujiAmount, nextCoinPrice);
-        validatePriceRange(nextGachaMinPrice, nextGachaMaxPrice);
-        validatePriceRange(nextKujiMinPrice, nextKujiMaxPrice);
-        validatePriceRange(nextSelectMinPrice, nextSelectMaxPrice);
+    }
+
+    private boolean isBlank(final String value) {
+        return value == null || value.isBlank();
     }
 
     private void validateNonNegative(
@@ -137,17 +177,5 @@ public class StoreDetail extends BaseTimeEntity {
 
     private boolean isNegative(final Number value) {
         return value != null && value.longValue() < 0;
-    }
-
-    private <T> T valueOrCurrent(final T value, final T current) {
-        return value == null ? current : value;
-    }
-
-    private <T> void replaceIfPresent(final List<T> current, final List<T> values) {
-        if (values == null) {
-            return;
-        }
-        current.clear();
-        current.addAll(values);
     }
 }

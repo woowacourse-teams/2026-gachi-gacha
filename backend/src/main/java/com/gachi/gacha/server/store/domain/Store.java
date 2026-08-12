@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.store.domain;
 
+import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
+
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.Entity;
@@ -8,15 +10,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Builder
 @Entity
 @Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Store extends BaseTimeEntity {
 
@@ -32,20 +31,33 @@ public class Store extends BaseTimeEntity {
     @NotNull
     private Double longitude;
 
-    public void modify(
+    @Builder
+    private Store(
+            final Long id,
             final String thumbnailUrl,
             final Double latitude,
             final Double longitude
     ) {
-        Double nextLatitude = latitude == null ? this.latitude : latitude;
-        Double nextLongitude = longitude == null ? this.longitude : longitude;
-        validateCoordinates(nextLatitude, nextLongitude);
+        validateCoordinates(latitude, longitude);
 
-        if (thumbnailUrl != null) {
-            this.thumbnailUrl = thumbnailUrl;
-        }
-        this.latitude = nextLatitude;
-        this.longitude = nextLongitude;
+        this.id = id;
+        this.thumbnailUrl = thumbnailUrl;
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
+    public Store patch(
+            final String thumbnailUrl,
+            final Double latitude,
+            final Double longitude
+    ) {
+
+        return Store.builder()
+                .id(id)
+                .thumbnailUrl(valueOrCurrent(thumbnailUrl, this.thumbnailUrl))
+                .latitude(valueOrCurrent(latitude, this.latitude))
+                .longitude(valueOrCurrent(longitude, this.longitude))
+                .build();
     }
 
     private void validateCoordinates(final Double latitude, final Double longitude) {

@@ -20,4 +20,8 @@ public final class BaseUtils {
         }
         return List.copyOf(values);
     }
+
+    public static <T> T valueOrCurrent(final T value, final T current) {
+        return value == null ? current : value;
+    }
 }
