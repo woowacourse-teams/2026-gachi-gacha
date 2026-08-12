@@ -73,6 +73,12 @@ export function useBottomSheetDrag({
   const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (state === 'closed') return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (
+      event.target instanceof Element &&
+      event.target.closest('[data-horizontal-scroll]')
+    ) {
+      return;
+    }
 
     const scrollElement = findScrollElement(event.target, event.currentTarget);
 
@@ -111,6 +117,18 @@ export function useBottomSheetDrag({
     }
 
     updateDragOffset(offset);
+
+    if (offset <= -DRAG_THRESHOLD) {
+      const nextState = getExpandedBottomSheetState(state);
+
+      if (nextState !== state) {
+        onStateChange(nextState);
+        dragStartRef.current = null;
+        dragOffsetRef.current = 0;
+        setDragOffset(0);
+        setIsDragging(false);
+      }
+    }
   };
 
   const handlePointerEnd = (event: ReactPointerEvent<HTMLElement>) => {
