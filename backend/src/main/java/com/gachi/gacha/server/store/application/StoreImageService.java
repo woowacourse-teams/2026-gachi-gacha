@@ -26,7 +26,7 @@ public class StoreImageService {
 
     @Transactional(readOnly = true)
     public List<StoreImageInfo> findImages(final Long storeId) {
-        final Store store = storeRepository.findById(storeId)
+        Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.STORE_NOT_FOUND));
 
         return storeImageRepository.findAllByStoreId(store.getId()).stream()
@@ -36,22 +36,22 @@ public class StoreImageService {
 
     @Transactional
     public StoreImageInfo addImage(final Long storeId, final MultipartFile file) {
-        final Store store = storeRepository.findById(storeId)
+        Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.STORE_NOT_FOUND));
 
-        final String imageUrl = imageUploader.upload(file, IMAGE_PATH);
-        final StoreImage storeImage = new StoreImage(store, imageUrl);
-        final StoreImage savedStoreImage = storeImageRepository.save(storeImage);
+        String imageUrl = imageUploader.upload(file, IMAGE_PATH);
+        StoreImage storeImage = new StoreImage(store, imageUrl);
+        StoreImage savedStoreImage = storeImageRepository.save(storeImage);
 
         return StoreImageInfo.from(savedStoreImage);
     }
 
     @Transactional
     public StoreImageInfo modifyImage(final Long storeId, final Long imageId, final MultipartFile file) {
-        final StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
+        StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
 
-        final String oldImageUrl = storeImage.getImageUrl();
-        final String newImageUrl = imageUploader.upload(file, IMAGE_PATH);
+        String oldImageUrl = storeImage.getImageUrl();
+        String newImageUrl = imageUploader.upload(file, IMAGE_PATH);
 
         storeImage.changeImageUrl(newImageUrl);
         imageUploader.delete(oldImageUrl);
@@ -61,7 +61,7 @@ public class StoreImageService {
 
     @Transactional
     public Long removeImage(final Long storeId, final Long imageId) {
-        final StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
+        StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
 
         imageUploader.delete(storeImage.getImageUrl());
         storeImageRepository.delete(storeImage);

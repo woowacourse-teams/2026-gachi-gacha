@@ -24,7 +24,13 @@ public enum ErrorCode {
     INVALID_NEARBY_REQUEST(HttpStatus.BAD_REQUEST, "SE003", "유효하지 않은 주변 매장 조회 요청입니다."),
 
     // Store Image
-    STORE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "SIE001", "존재하지 않는 매장 사진입니다.");
+    STORE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "SIE01", "존재하지 않는 매장 사진입니다."),
+    INVALID_STORE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "SIE02", "유효하지 않은 매장 사진입니다."),
+
+    // S3
+    S3_IMAGE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E01", "이미지 파일을 읽는 중 오류가 발생했습니다."),
+    S3_IMAGE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E02", "이미지 업로드 중 오류가 발생했습니다."),
+    S3_IMAGE_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E03", "이미지 삭제 중 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;
