@@ -31,7 +31,7 @@ public class StoreImageController {
 
     @GetMapping
     public BaseResponse<StoreImageListResponse> findImages(@PathVariable final Long storeId) {
-        final List<StoreImageResponse> responses = storeImageService.findImages(storeId).stream()
+        List<StoreImageResponse> responses = storeImageService.findImages(storeId).stream()
                 .map(StoreImageResponse::from)
                 .toList();
 
@@ -43,10 +43,10 @@ public class StoreImageController {
             @PathVariable final Long storeId,
             @RequestParam("image") final MultipartFile image
     ) {
-        final StoreImageInfo storeImageInfo = storeImageService.addImage(storeId, image);
-        final StoreImageResponse response = StoreImageResponse.from(storeImageInfo);
+        StoreImageInfo storeImageInfo = storeImageService.addImage(storeId, image);
+        StoreImageResponse response = StoreImageResponse.from(storeImageInfo);
 
-        final URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{storeImageId}")
                 .buildAndExpand(response.storeImageId())
                 .toUri();
@@ -60,8 +60,8 @@ public class StoreImageController {
             @PathVariable final Long storeImageId,
             @RequestParam("image") final MultipartFile image
     ) {
-        final StoreImageInfo storeImageInfo = storeImageService.modifyImage(storeId, storeImageId, image);
-        final StoreImageResponse response = StoreImageResponse.from(storeImageInfo);
+        StoreImageInfo storeImageInfo = storeImageService.modifyImage(storeId, storeImageId, image);
+        StoreImageResponse response = StoreImageResponse.from(storeImageInfo);
 
         return BaseResponse.updated(response);
     }
@@ -71,7 +71,7 @@ public class StoreImageController {
             @PathVariable final Long storeId,
             @PathVariable final Long storeImageId
     ) {
-        final Long deletedId = storeImageService.removeImage(storeId, storeImageId);
+        Long deletedId = storeImageService.removeImage(storeId, storeImageId);
 
         return BaseResponse.deleted(StoreImageDeleteResponse.from(deletedId));
     }
