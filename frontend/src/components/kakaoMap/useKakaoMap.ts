@@ -1,42 +1,66 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { loadKakaoSdk } from './loadKakaoSdk';
+
 export interface LatLngLiteral {
   lat: number;
   lng: number;
 }
 
+export type KakaoMapStatus = 'loading' | 'ready' | 'error';
+
 interface UseKakaoMapParams {
-  center: LatLngLiteral;
-  level: number;
+  defaultCenter: LatLngLiteral;
+  defaultLevel: number;
 }
 
-export function useKakaoMap({ center, level }: UseKakaoMapParams) {
+function resolveStatus(
+  map: kakao.maps.Map | null,
+  error: Error | null,
+): KakaoMapStatus {
+  if (error) return 'error';
+  if (map) return 'ready';
+
+  return 'loading';
+}
+
+export function useKakaoMap({
+  defaultCenter,
+  defaultLevel,
+}: UseKakaoMapParams) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const initialViewRef = useRef({ center, level });
+  const initialViewRef = useRef({ center: defaultCenter, level: defaultLevel });
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !window.kakao?.maps) return;
-
-    const { center: initialCenter, level: initialLevel } =
-      initialViewRef.current;
+    if (!container) return;
 
     let cancelled = false;
 
-    window.kakao.maps.load(() => {
-      if (cancelled) return;
+    loadKakaoSdk()
+      .then(() => {
+        if (cancelled) return;
 
-      setMap(
-        new window.kakao.maps.Map(container, {
-          center: new window.kakao.maps.LatLng(
-            initialCenter.lat,
-            initialCenter.lng,
-          ),
-          level: initialLevel,
-        }),
-      );
-    });
+        const { center, level } = initialViewRef.current;
+
+        setMap(
+          new window.kakao.maps.Map(container, {
+            center: new window.kakao.maps.LatLng(center.lat, center.lng),
+            level,
+          }),
+        );
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+
+        setError(
+          cause instanceof Error
+            ? cause
+            : new Error('지도를 불러오지 못했습니다.'),
+        );
+      });
 
     return () => {
       cancelled = true;
@@ -45,5 +69,5 @@ export function useKakaoMap({ center, level }: UseKakaoMapParams) {
     };
   }, []);
 
-  return { containerRef, map };
+  return { containerRef, map, error, status: resolveStatus(map, error) };
 }
