@@ -6,6 +6,8 @@ export interface ApiResponse<T> {
 
 export const SUCCESS_CODE = 'SUCCESS';
 
+export type NearbyStoresFailure = 'offline' | 'server';
+
 export interface NearbyStore {
   storeId: number;
   thumbnailUrl: string;
@@ -39,6 +41,10 @@ function isApiResponse(body: unknown): body is ApiResponse<unknown> {
   return typeof code === 'string' && typeof message === 'string';
 }
 
+export function toNearbyStoresFailure(cause: unknown): NearbyStoresFailure {
+  return cause instanceof TypeError ? 'offline' : 'server';
+}
+
 export async function getNearbyStores(
   { latitude, longitude, radius }: GetNearbyStoresParams,
   signal: AbortSignal,
@@ -52,17 +58,17 @@ export async function getNearbyStores(
   const response = await fetch(`/api/v1/stores/nearby?${query}`, { signal });
 
   if (!response.ok) {
-    throw new Error(`주변 매장을 불러오지 못했습니다. (${response.status})`);
+    throw new Error(`nearby-stores/http-${response.status}`);
   }
 
   const body: unknown = await response.json();
 
   if (!isApiResponse(body)) {
-    throw new Error('주변 매장 응답 형식이 올바르지 않습니다.');
+    throw new Error('nearby-stores/invalid-response');
   }
 
   if (body.code !== SUCCESS_CODE || body.data == null) {
-    throw new Error(body.message || '주변 매장을 불러오지 못했습니다.');
+    throw new Error(`nearby-stores/${body.code}`);
   }
 
   return body.data as NearbyStoresData;

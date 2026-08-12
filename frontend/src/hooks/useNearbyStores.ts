@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import {
   DEFAULT_RADIUS,
   getNearbyStores,
+  toNearbyStoresFailure,
   type NearbyStore,
+  type NearbyStoresFailure,
 } from '@/apis/store';
+import type { AsyncState } from '@/types/asyncState';
 
-export type NearbyStoresState =
-  | { status: 'loading' }
-  | { status: 'success'; stores: NearbyStore[] }
-  | { status: 'error'; error: Error };
+export type NearbyStoresState = AsyncState<NearbyStore[], NearbyStoresFailure>;
 
 interface UseNearbyStoresParams {
   latitude: number;
@@ -23,8 +23,9 @@ export function useNearbyStores({
   latitude,
   longitude,
   radius = DEFAULT_RADIUS,
-}: UseNearbyStoresParams): NearbyStoresState {
+}: UseNearbyStoresParams) {
   const [state, setState] = useState<NearbyStoresState>(LOADING_STATE);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -35,22 +36,18 @@ export function useNearbyStores({
       .then((data) => {
         if (controller.signal.aborted) return;
 
-        setState({ status: 'success', stores: data.stores });
+        setState({ status: 'success', data: data.stores });
       })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
 
-        setState({
-          status: 'error',
-          error:
-            cause instanceof Error
-              ? cause
-              : new Error('주변 매장을 불러오지 못했습니다.'),
-        });
+        setState({ status: 'error', error: toNearbyStoresFailure(cause) });
       });
 
     return () => controller.abort();
-  }, [latitude, longitude, radius]);
+  }, [latitude, longitude, radius, attempt]);
 
-  return state;
+  const retry = useCallback(() => setAttempt((count) => count + 1), []);
+
+  return { retry, ...state };
 }
