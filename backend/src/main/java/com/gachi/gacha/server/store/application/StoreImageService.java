@@ -16,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StoreImageService {
 
     private static final String IMAGE_PATH = "gachi-gacha/store";
@@ -24,7 +25,6 @@ public class StoreImageService {
     private final StoreJpaRepository storeRepository;
     private final StoreImageJpaRepository storeImageRepository;
 
-    @Transactional(readOnly = true)
     public List<StoreImageInfo> findImages(final Long storeId) {
         Store store = storeRepository.findById(storeId)
                 .orElseThrow(() -> new EntityNotFoundException(ErrorCode.STORE_NOT_FOUND));
