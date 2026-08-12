@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.store.application.dto;
 
+import static com.gachi.gacha.server.common.util.BaseUtils.copyOrEmpty;
+
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreDetail;
 import com.gachi.gacha.server.store.domain.StoreImage;
@@ -77,10 +79,4 @@ public record StoreCreateCommand(
                 .toList();
     }
 
-    private static <T> List<T> copyOrEmpty(final List<T> values) {
-        if (values == null) {
-            return List.of();
-        }
-        return List.copyOf(values);
-    }
 }

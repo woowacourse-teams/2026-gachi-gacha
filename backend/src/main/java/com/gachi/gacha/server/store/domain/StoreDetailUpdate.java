@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.store.domain;
 
+import com.gachi.gacha.server.common.util.BaseUtils;
 import java.util.List;
 
 public record StoreDetailUpdate(
@@ -24,14 +25,7 @@ public record StoreDetailUpdate(
 ) {
 
     public StoreDetailUpdate {
-        paymentMethods = copyIfPresent(paymentMethods);
-        facilities = copyIfPresent(facilities);
-    }
-
-    private static <T> List<T> copyIfPresent(final List<T> values) {
-        if (values == null) {
-            return null;
-        }
-        return List.copyOf(values);
+        paymentMethods = BaseUtils.copyIfPresent(paymentMethods);
+        facilities = BaseUtils.copyIfPresent(facilities);
     }
 }
