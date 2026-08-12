@@ -1,4 +1,8 @@
-import type { StoreDetail, StoreDetailPrice } from './storeDetail';
+import type {
+  StoreDetail,
+  StoreDetailPrice,
+  StoreDetailSocialLink,
+} from './storeDetail';
 import type { StoreDetailDto } from '../api/storeDetail.dto';
 
 interface ToStoreDetailOptions {
@@ -86,14 +90,39 @@ function formatDistance(distanceMeters?: number) {
 }
 
 function createInstagram(instagramId: string | null) {
-  if (!instagramId) return { label: null, url: null };
+  if (!instagramId) return null;
 
   const id = instagramId.replace(/^@/, '');
 
   return {
-    label: `@${id}`,
+    platform: 'instagram',
     url: `https://www.instagram.com/${encodeURIComponent(id)}`,
-  };
+  } satisfies StoreDetailSocialLink;
+}
+
+function createCategories(dto: StoreDetailDto) {
+  const categories: string[] = [];
+  const hasGacha =
+    dto.machineAmount !== 0 ||
+    dto.gachaMinPrice !== null ||
+    dto.gachaMaxPrice !== null;
+  const hasKuji =
+    (dto.kujiAmount !== null && dto.kujiAmount > 0) ||
+    dto.kujiMinPrice !== null ||
+    dto.kujiMaxPrice !== null;
+
+  if (hasGacha) categories.push('가챠');
+  if (hasKuji) categories.push('쿠지');
+  if (dto.hasRandomBox) categories.push('랜덤 가챠');
+  if (
+    dto.hasSelectGacha ||
+    dto.selectGachaMinPrice !== null ||
+    dto.selectGachaMaxPrice !== null
+  ) {
+    categories.push('선택 가챠');
+  }
+
+  return categories;
 }
 
 export function toStoreDetail(
@@ -116,8 +145,8 @@ export function toStoreDetail(
     businessHours: dto.businessHours,
     imageUrls,
     phone: dto.phone,
-    instagramLabel: instagram.label,
-    instagramUrl: instagram.url,
+    socialLinks: instagram ? [instagram] : [],
+    categories: createCategories(dto),
     paymentMethods: [...dto.paymentMethods],
     facilities: [...dto.facilities],
     machineAmount: formatAmountRange(dto.machineAmount, '대'),

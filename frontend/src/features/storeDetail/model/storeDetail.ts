@@ -5,6 +5,11 @@ export interface StoreDetailPrice {
   value: string;
 }
 
+export interface StoreDetailSocialLink {
+  platform: 'instagram' | 'kakao';
+  url: string;
+}
+
 export interface StoreDetail {
   id: number;
   name: string;
@@ -12,8 +17,8 @@ export interface StoreDetail {
   businessHours: string;
   imageUrls: string[];
   phone: string | null;
-  instagramLabel: string | null;
-  instagramUrl: string | null;
+  socialLinks: StoreDetailSocialLink[];
+  categories: string[];
   paymentMethods: string[];
   facilities: string[];
   machineAmount: string;
