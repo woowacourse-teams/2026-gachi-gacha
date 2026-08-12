@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.store.infra.config;
 
-import com.gachi.gacha.server.common.exception.S3Exception;
+import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.store.infra.exception.S3Exception;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +24,9 @@ public class ImageUploader {
     private String bucket;
 
     public String upload(final MultipartFile file, final String path) {
-        final String key = generateUniqueKey(path, file.getOriginalFilename());
+        String key = generateUniqueKey(path, file.getOriginalFilename());
 
-        final PutObjectRequest request = PutObjectRequest.builder()
+        PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .contentType(file.getContentType())
@@ -34,18 +35,18 @@ public class ImageUploader {
         try {
             s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         } catch (final IOException e) {
-            throw new S3Exception("이미지 파일을 읽는 중 오류가 발생했습니다. key=" + key, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_READ_ERROR);
         } catch (final SdkException e) {
-            throw new S3Exception("이미지 업로드 중 오류가 발생했습니다. key=" + key, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR);
         }
 
         return convertToS3Url(key);
     }
 
     public void delete(final String imageUrl) {
-        final String key = extractKeyFromUrl(imageUrl);
+        String key = extractKeyFromUrl(imageUrl);
 
-        final DeleteObjectRequest request = DeleteObjectRequest.builder()
+        DeleteObjectRequest request = DeleteObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .build();
@@ -53,7 +54,7 @@ public class ImageUploader {
         try {
             s3Client.deleteObject(request);
         } catch (final SdkException e) {
-            throw new S3Exception("이미지 삭제 중 오류가 발생했습니다. key=" + key, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_DELETE_ERROR);
         }
     }
 
@@ -76,7 +77,7 @@ public class ImageUploader {
      * S3 URL에서 객체 키만 역추출한다. (삭제 요청 시 필요)
      */
     private String extractKeyFromUrl(final String imageUrl) {
-        final int index = imageUrl.indexOf(".amazonaws.com/");
+        int index = imageUrl.indexOf(".amazonaws.com/");
         return imageUrl.substring(index + ".amazonaws.com/".length());
     }
 }
