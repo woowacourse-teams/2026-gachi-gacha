@@ -92,9 +92,11 @@ class StoreControllerTest {
             // then
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
             assertThat(response.jsonPath().getString("code")).isEqualTo("C000");
-            assertThat(response.jsonPath().getList("data.items")).isNotEmpty();
-            assertThat(response.jsonPath().getList("data.items.storeId", Long.class)).contains(storeId);
-            assertThat(response.jsonPath().getInt("data.page")).isZero();
+            assertThat(response.jsonPath().getList("data.content")).isNotEmpty();
+            assertThat(response.jsonPath().getList("data.content.storeId", Long.class)).contains(storeId);
+            assertThat(response.jsonPath().getInt("data.number")).isZero();
+            assertThat(response.jsonPath().getInt("data.size")).isEqualTo(20);
+            assertThat(response.jsonPath().getInt("data.pageable.pageNumber")).isZero();
         }
     }
 

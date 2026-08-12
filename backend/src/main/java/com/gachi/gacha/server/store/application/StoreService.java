@@ -17,8 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -111,21 +110,15 @@ public class StoreService {
         return EARTH_RADIUS_METERS * angularDistance;
     }
 
-    public StoreListResult findStores(final int page, final int size) {
-        validatePageRequest(page, size);
+    public Page<StoreListResult> findStores(final Pageable pageable) {
+        validatePageRequest(pageable);
 
-        PageRequest pageRequest = PageRequest.of(
-                page,
-                size,
-                Sort.by(Sort.Direction.DESC, "id")
-        );
-        Page<Store> stores = storeJpaRepository.findAll(pageRequest);
-
-        return StoreListResult.from(stores);
+        return storeJpaRepository.findAll(pageable)
+                .map(StoreListResult::from);
     }
 
-    private void validatePageRequest(final int page, final int size) {
-        if (page < 0 || size <= 0) {
+    private void validatePageRequest(final Pageable pageable) {
+        if (pageable.getPageNumber() < 0 || pageable.getPageSize() <= 0) {
             throw new InvalidValueException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
