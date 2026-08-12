@@ -1,8 +1,28 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
+
+import coinPriceIcon from '@/temp/coin_price_icon.svg';
+import facilitiesIcon from '@/temp/facilities_icon.svg';
+import gachaCapsuleIcon from '@/temp/gacha_capsule_icon.svg';
+import gachaMachineCountIcon from '@/temp/gacha_machine_count_icon.svg';
+import kujiIcon from '@/temp/kuji_icon.svg';
+import paymentsIcon from '@/temp/payments_icon.svg';
+import snsIcon from '@/temp/sns_icon.svg';
 
 import * as S from './StoreDetailSheet.styles';
 import { useBottomSheetDrag } from '../hooks/useBottomSheetDrag';
-import type { BottomSheetState, StoreDetail } from '../model/storeDetail';
+import type {
+  BottomSheetState,
+  StoreDetail,
+  StoreDetailSocialLink,
+} from '../model/storeDetail';
 
 interface StoreDetailSheetBaseProps {
   state: BottomSheetState;
@@ -55,6 +75,7 @@ function StoreThumbnail({ imageUrl, index, storeName }: StoreThumbnailProps) {
   return (
     <S.ThumbnailImage
       alt={`${storeName} 매장 사진 ${index + 1}`}
+      draggable={false}
       src={imageUrl}
       onError={() => setHasImageError(true)}
     />
@@ -63,55 +84,238 @@ function StoreThumbnail({ imageUrl, index, storeName }: StoreThumbnailProps) {
 
 interface StoreGalleryProps {
   imageUrls: string[];
+  state: BottomSheetState;
   storeName: string;
 }
 
-function StoreGallery({ imageUrls, storeName }: StoreGalleryProps) {
+interface GalleryDragStart {
+  activeIndex: number;
+  pointerId: number;
+  scrollLeft: number;
+  x: number;
+}
+
+function getFrameScrollLeft(frame: HTMLElement, rail: HTMLElement) {
+  const firstFrame = rail.children.item(0) as HTMLElement | null;
+
+  return frame.offsetLeft - (firstFrame?.offsetLeft ?? 0);
+}
+
+function StoreGallery({ imageUrls, state, storeName }: StoreGalleryProps) {
   const thumbnails = imageUrls.length > 0 ? imageUrls : FALLBACK_THUMBNAILS;
+  const railRef = useRef<HTMLDivElement>(null);
+  const dragStartRef = useRef<GalleryDragStart | null>(null);
+  const dragDistanceRef = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [canSlideLeft, setCanSlideLeft] = useState(false);
+  const [canSlideRight, setCanSlideRight] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const updateSlideControls = useCallback(() => {
+    const rail = railRef.current;
+
+    if (!rail) return;
+
+    const maxScrollLeft = rail.scrollWidth - rail.clientWidth;
+    const frames = Array.from(rail.children) as HTMLElement[];
+    const nextActiveIndex = frames.reduce((closestIndex, frame, index) => {
+      const closestFrame = frames[closestIndex];
+
+      if (!closestFrame) return index;
+
+      return Math.abs(getFrameScrollLeft(frame, rail) - rail.scrollLeft) <
+        Math.abs(getFrameScrollLeft(closestFrame, rail) - rail.scrollLeft)
+        ? index
+        : closestIndex;
+    }, 0);
+
+    setActiveIndex(nextActiveIndex);
+    setCanSlideLeft(rail.scrollLeft > 2);
+    setCanSlideRight(rail.scrollLeft < maxScrollLeft - 2);
+  }, []);
+
+  useEffect(() => {
+    const rail = railRef.current;
+
+    if (!rail) return;
+
+    updateSlideControls();
+
+    const resizeObserver = new ResizeObserver(updateSlideControls);
+
+    resizeObserver.observe(rail);
+
+    return () => resizeObserver.disconnect();
+  }, [thumbnails.length, updateSlideControls]);
+
+  const slide = (direction: -1 | 1) => {
+    const rail = railRef.current;
+
+    if (!rail) return;
+
+    const nextIndex = Math.min(
+      Math.max(activeIndex + direction, 0),
+      thumbnails.length - 1,
+    );
+    const nextFrame = rail.children.item(nextIndex) as HTMLElement | null;
+
+    if (!nextFrame) return;
+
+    rail.scrollTo({
+      behavior: 'smooth',
+      left: getFrameScrollLeft(nextFrame, rail),
+    });
+  };
+
+  const handleGalleryPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    dragStartRef.current = {
+      activeIndex,
+      pointerId: event.pointerId,
+      scrollLeft: event.currentTarget.scrollLeft,
+      x: event.clientX,
+    };
+    dragDistanceRef.current = 0;
+    setIsDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleGalleryPointerMove = (
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    const dragStart = dragStartRef.current;
+
+    if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+
+    const dragDistance = event.clientX - dragStart.x;
+
+    dragDistanceRef.current = dragDistance;
+    event.currentTarget.scrollLeft = dragStart.scrollLeft - dragDistance;
+
+    if (Math.abs(dragDistance) > 4) event.preventDefault();
+  };
+
+  const finishGalleryDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragStart = dragStartRef.current;
+
+    if (!dragStart || dragStart.pointerId !== event.pointerId) return;
+
+    const direction =
+      Math.abs(dragDistanceRef.current) < 36
+        ? 0
+        : dragDistanceRef.current > 0
+          ? -1
+          : 1;
+    const nextIndex = Math.min(
+      Math.max(dragStart.activeIndex + direction, 0),
+      thumbnails.length - 1,
+    );
+    const nextFrame = event.currentTarget.children.item(
+      nextIndex,
+    ) as HTMLElement | null;
+
+    if (nextFrame) {
+      event.currentTarget.scrollTo({
+        behavior: 'smooth',
+        left: getFrameScrollLeft(nextFrame, event.currentTarget),
+      });
+    }
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    dragStartRef.current = null;
+    dragDistanceRef.current = 0;
+    setIsDragging(false);
+  };
 
   return (
-    <S.PhotoSection>
-      <S.SectionTitle>매장 사진</S.SectionTitle>
-      <S.ThumbnailRail aria-label="매장 사진 목록">
-        {thumbnails.map((imageUrl, index) => (
-          <S.ThumbnailFrame key={imageUrl ?? `fallback-${index}`}>
-            <StoreThumbnail
-              imageUrl={imageUrl}
-              index={index}
-              storeName={storeName}
-            />
-          </S.ThumbnailFrame>
-        ))}
-      </S.ThumbnailRail>
+    <S.PhotoSection $state={state}>
+      <S.PhotoTitleRow>
+        <S.SectionTitle>매장 사진</S.SectionTitle>
+        <S.GalleryControls aria-label="매장 사진 이동" role="group">
+          <S.GalleryControl
+            aria-label="이전 매장 사진"
+            disabled={!canSlideLeft}
+            type="button"
+            onClick={() => slide(-1)}
+          >
+            ‹
+          </S.GalleryControl>
+          <S.GalleryControl
+            aria-label="다음 매장 사진"
+            disabled={!canSlideRight}
+            type="button"
+            onClick={() => slide(1)}
+          >
+            ›
+          </S.GalleryControl>
+        </S.GalleryControls>
+      </S.PhotoTitleRow>
+      <S.GalleryViewport $state={state}>
+        <S.ThumbnailRail
+          ref={railRef}
+          $isDragging={isDragging}
+          aria-label="매장 사진 목록"
+          data-horizontal-scroll
+          onPointerCancel={finishGalleryDrag}
+          onPointerDown={handleGalleryPointerDown}
+          onPointerMove={handleGalleryPointerMove}
+          onPointerUp={finishGalleryDrag}
+          onScroll={updateSlideControls}
+        >
+          {thumbnails.map((imageUrl, index) => (
+            <S.ThumbnailFrame key={imageUrl ?? `fallback-${index}`}>
+              <StoreThumbnail
+                imageUrl={imageUrl}
+                index={index}
+                storeName={storeName}
+              />
+            </S.ThumbnailFrame>
+          ))}
+        </S.ThumbnailRail>
+      </S.GalleryViewport>
     </S.PhotoSection>
   );
 }
 
 interface InfoRowProps {
+  icon?: string;
   label: string;
   children: ReactNode;
 }
 
-function InfoRow({ label, children }: InfoRowProps) {
+function InfoRow({ icon, label, children }: InfoRowProps) {
   return (
     <S.InfoRow>
-      <S.InfoLabel>{label}</S.InfoLabel>
+      <S.InfoLabel>
+        {icon && <S.InfoIcon alt="" src={icon} />}
+        <span>{label}</span>
+      </S.InfoLabel>
       <S.InfoValue>{children}</S.InfoValue>
     </S.InfoRow>
   );
 }
 
 interface ChipSectionProps {
+  icon: string;
   title: string;
   chips: string[];
 }
 
-function ChipSection({ title, chips }: ChipSectionProps) {
+function ChipSection({ icon, title, chips }: ChipSectionProps) {
   if (chips.length === 0) return null;
 
   return (
     <S.Section>
-      <S.SectionTitle>{title}</S.SectionTitle>
+      <S.IconSectionTitle>
+        <S.SectionIcon alt="" src={icon} />
+        <span>{title}</span>
+      </S.IconSectionTitle>
       <S.ChipList aria-label={title}>
         {chips.map((chip) => (
           <S.Chip key={chip}>{chip}</S.Chip>
@@ -119,6 +323,37 @@ function ChipSection({ title, chips }: ChipSectionProps) {
       </S.ChipList>
     </S.Section>
   );
+}
+
+function InstagramIcon() {
+  return (
+    <S.InstagramIcon aria-hidden="true" viewBox="0 0 24 24">
+      <rect height="15" rx="4" width="15" x="4.5" y="4.5" />
+      <circle cx="12" cy="12" r="3.25" />
+      <circle className="instagram-dot" cx="16.8" cy="7.3" r="1" />
+    </S.InstagramIcon>
+  );
+}
+
+function KakaoIcon() {
+  return (
+    <S.KakaoIcon aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M12 4.3c-4.8 0-8.7 3.05-8.7 6.82 0 2.42 1.62 4.54 4.06 5.75l-.82 3.02a.35.35 0 0 0 .53.38l3.6-2.39c.43.04.87.07 1.33.07 4.8 0 8.7-3.06 8.7-6.83S16.8 4.3 12 4.3Z" />
+    </S.KakaoIcon>
+  );
+}
+
+function SocialPlatformIcon({
+  platform,
+}: Pick<StoreDetailSocialLink, 'platform'>) {
+  return platform === 'kakao' ? <KakaoIcon /> : <InstagramIcon />;
+}
+
+function getPriceIcon(label: string) {
+  if (label.includes('코인')) return coinPriceIcon;
+  if (label.includes('쿠지')) return kujiIcon;
+
+  return gachaCapsuleIcon;
 }
 
 interface SheetHeaderProps {
@@ -168,8 +403,8 @@ function StoreDetailContent({
       $canScroll={state === 'full'}
       data-sheet-scroll
     >
-      <S.Content>
-        <S.Overview>
+      <S.Content $state={state}>
+        <S.Overview $state={state}>
           <S.OverviewHeading>
             <S.StoreName id={titleId}>{store.name}</S.StoreName>
             {store.distance && (
@@ -177,84 +412,112 @@ function StoreDetailContent({
             )}
           </S.OverviewHeading>
           <S.StoreAddress>{store.address}</S.StoreAddress>
-          <S.UpdatedAt>마지막 업데이트 {store.updatedAt}</S.UpdatedAt>
+          <S.UpdatedAt $state={state}>
+            마지막 업데이트 {store.updatedAt}
+          </S.UpdatedAt>
         </S.Overview>
 
-        <S.SummaryDetails>
+        <S.SummaryDetails $state={state}>
           <S.SummaryRow>
             <S.SummaryLabel>영업시간</S.SummaryLabel>
             <S.SummaryValue>{store.businessHours}</S.SummaryValue>
           </S.SummaryRow>
         </S.SummaryDetails>
 
-        <S.SummaryAmounts>
-          <S.SummaryAmount>
-            가챠 기계
-            <strong>{store.machineAmount}</strong>
-          </S.SummaryAmount>
-          <S.SummaryAmount>
-            쿠지
-            <strong>{store.kujiAmount}</strong>
-          </S.SummaryAmount>
-        </S.SummaryAmounts>
+        {store.categories.length > 0 && (
+          <S.CategoryList $state={state} aria-label="매장 카테고리">
+            {store.categories.map((category) => (
+              <S.CategoryChip key={category}>{category}</S.CategoryChip>
+            ))}
+          </S.CategoryList>
+        )}
 
-        <StoreGallery imageUrls={store.imageUrls} storeName={store.name} />
+        <StoreGallery
+          imageUrls={store.imageUrls}
+          state={state}
+          storeName={store.name}
+        />
 
-        {(store.phone || (store.instagramLabel && store.instagramUrl)) && (
-          <S.InfoList>
-            {store.phone && <InfoRow label="전화번호">{store.phone}</InfoRow>}
-            {store.instagramLabel && store.instagramUrl && (
-              <InfoRow label="인스타그램">
-                <S.InstagramLink
-                  href={store.instagramUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {store.instagramLabel}
-                </S.InstagramLink>
-              </InfoRow>
+        {state === 'full' && (
+          <>
+            {(store.phone || store.socialLinks.length > 0) && (
+              <S.InfoList>
+                {store.phone && (
+                  <InfoRow label="전화번호">{store.phone}</InfoRow>
+                )}
+                {store.socialLinks.length > 0 && (
+                  <InfoRow icon={snsIcon} label="SNS">
+                    <S.SocialLinkList aria-label="매장 SNS 링크">
+                      {store.socialLinks.map((socialLink) => (
+                        <li key={`${socialLink.platform}-${socialLink.url}`}>
+                          <S.SocialLink
+                            $platform={socialLink.platform}
+                            aria-label={`${socialLink.platform === 'kakao' ? '카카오톡' : '인스타그램'} 계정으로 이동`}
+                            href={socialLink.url}
+                            rel="noreferrer"
+                            target="_blank"
+                          >
+                            <SocialPlatformIcon
+                              platform={socialLink.platform}
+                            />
+                          </S.SocialLink>
+                        </li>
+                      ))}
+                    </S.SocialLinkList>
+                  </InfoRow>
+                )}
+              </S.InfoList>
             )}
-          </S.InfoList>
+
+            <S.Section>
+              <S.SectionTitle>기기 및 상품</S.SectionTitle>
+              <S.AmountGrid>
+                <S.AmountCard>
+                  <S.AmountIcon alt="" src={gachaMachineCountIcon} />
+                  <S.AmountText>
+                    <S.AmountLabel>가챠 기계</S.AmountLabel>
+                    <S.AmountValue>{store.machineAmount}</S.AmountValue>
+                  </S.AmountText>
+                </S.AmountCard>
+                <S.AmountCard>
+                  <S.AmountIcon alt="" src={kujiIcon} />
+                  <S.AmountText>
+                    <S.AmountLabel>쿠지</S.AmountLabel>
+                    <S.AmountValue>{store.kujiAmount}</S.AmountValue>
+                  </S.AmountText>
+                </S.AmountCard>
+              </S.AmountGrid>
+            </S.Section>
+
+            {store.prices.length > 0 && (
+              <S.Section>
+                <S.SectionTitle>가격 안내</S.SectionTitle>
+                <S.PriceList>
+                  {store.prices.map((price) => (
+                    <S.PriceRow key={price.label}>
+                      <S.PriceLabel>
+                        <S.PriceIcon alt="" src={getPriceIcon(price.label)} />
+                        <span>{price.label}</span>
+                      </S.PriceLabel>
+                      <S.PriceValue>{price.value}</S.PriceValue>
+                    </S.PriceRow>
+                  ))}
+                </S.PriceList>
+              </S.Section>
+            )}
+
+            <ChipSection
+              chips={store.paymentMethods}
+              icon={paymentsIcon}
+              title="결제 방식"
+            />
+            <ChipSection
+              chips={store.facilities}
+              icon={facilitiesIcon}
+              title="편의시설"
+            />
+          </>
         )}
-
-        <S.Section>
-          <S.SectionTitle>기기 및 상품</S.SectionTitle>
-          <S.AmountGrid>
-            <S.AmountCard>
-              <S.AmountLabel>가챠 기계</S.AmountLabel>
-              <S.AmountValue>{store.machineAmount}</S.AmountValue>
-            </S.AmountCard>
-            <S.AmountCard>
-              <S.AmountLabel>쿠지</S.AmountLabel>
-              <S.AmountValue>{store.kujiAmount}</S.AmountValue>
-            </S.AmountCard>
-          </S.AmountGrid>
-          <S.AvailabilityList>
-            <S.Availability available={store.hasRandomBox}>
-              랜덤박스 {store.hasRandomBox ? '있음' : '없음'}
-            </S.Availability>
-            <S.Availability available={store.hasSelectGacha}>
-              선택 가챠 {store.hasSelectGacha ? '있음' : '없음'}
-            </S.Availability>
-          </S.AvailabilityList>
-        </S.Section>
-
-        {store.prices.length > 0 && (
-          <S.Section>
-            <S.SectionTitle>가격 안내</S.SectionTitle>
-            <S.PriceList>
-              {store.prices.map((price) => (
-                <S.PriceRow key={price.label}>
-                  <S.PriceLabel>{price.label}</S.PriceLabel>
-                  <S.PriceValue>{price.value}</S.PriceValue>
-                </S.PriceRow>
-              ))}
-            </S.PriceList>
-          </S.Section>
-        )}
-
-        <ChipSection chips={store.paymentMethods} title="결제 방식" />
-        <ChipSection chips={store.facilities} title="편의시설" />
       </S.Content>
     </S.ScrollArea>
   );
