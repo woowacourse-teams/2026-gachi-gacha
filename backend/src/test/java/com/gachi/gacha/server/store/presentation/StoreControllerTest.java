@@ -1,7 +1,12 @@
 package com.gachi.gacha.server.store.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.ExtractableResponse;
@@ -16,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -26,12 +32,19 @@ class StoreControllerTest {
     private static final double STORE_LATITUDE = 37.5299;
     private static final double STORE_LONGITUDE = 126.9648;
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @LocalServerPort
     private int port;
+
+    @MockitoBean
+    private ImageUploader imageUploader;
 
     @BeforeEach
     void setUp() {
         RestAssured.port = port;
+        when(imageUploader.upload(any(), anyString()))
+                .thenReturn("https://example.com/stores/test-image.jpg");
     }
 
     @Nested
@@ -475,17 +488,20 @@ class StoreControllerTest {
         request.put("selectGachaPriceMax", 10_000);
         request.put("facilities", List.of("동전교환기"));
         request.put("hasRandomBox", false);
-        request.put("imageUrls", List.of("https://example.com/store-image.png"));
         return request;
     }
 
     private ExtractableResponse<Response> requestCreateStore(final Map<String, Object> request) {
-        return RestAssured.given().log().all()
-                .contentType(ContentType.JSON)
-                .body(request)
-                .when()
-                .post("/api/v1/stores")
-                .then().log().all()
-                .extract();
+        try {
+            return RestAssured.given().log().all()
+                    .multiPart("request", "request.json", OBJECT_MAPPER.writeValueAsBytes(request), "application/json")
+                    .multiPart("images", "store-image.png", "dummy-image-content".getBytes(), "image/png")
+                    .when()
+                    .post("/api/v1/stores")
+                    .then().log().all()
+                    .extract();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

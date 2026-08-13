@@ -4,7 +4,6 @@ import static com.gachi.gacha.server.common.util.BaseUtils.copyOrEmpty;
 
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreDetail;
-import com.gachi.gacha.server.store.domain.StoreImage;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Builder;
@@ -31,13 +30,11 @@ public record StoreCreateCommand(
         Long selectGachaPriceMin,
         Long selectGachaPriceMax,
         List<String> facilities,
-        Boolean hasRandomBox,
-        List<String> imageUrls
+        Boolean hasRandomBox
 ) {
 
     public StoreCreateCommand {
         facilities = copyOrEmpty(facilities);
-        imageUrls = copyOrEmpty(imageUrls);
     }
 
     public Store toStore() {
@@ -70,12 +67,6 @@ public record StoreCreateCommand(
                 .hasRandomBox(hasRandomBox)
                 .hasSelectGacha(hasSelectGacha)
                 .build();
-    }
-
-    public List<StoreImage> toStoreImages(final Store store) {
-        return imageUrls.stream()
-                .map(imageUrl -> new StoreImage(store, imageUrl))
-                .toList();
     }
 
 }

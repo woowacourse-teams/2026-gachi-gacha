@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.store.infra.config;
+package com.gachi.gacha.server.common.infra.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

@@ -1,0 +1,14 @@
+package com.gachi.gacha.server.common.infra.config;
+
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
+public enum ImageType {
+    STORE("매장", "store"),
+    GACHA("가챠", "gacha");
+
+    private final String label;
+    private final String folderName;
+}
