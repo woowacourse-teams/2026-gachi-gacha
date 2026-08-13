@@ -1,0 +1,55 @@
+name: Backend CD Pipeline
+
+on:
+  push:
+    branches:
+      - backend-dev
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Create .env file
+        run: |
+          cd backend
+          echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Build BootJar
+        run: |
+          cd backend
+          chmod +x ./gradlew
+          ./gradlew bootJar -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"
+
+      - name: Deploy Application
+        run: |
+          cd backend
+          APP_PORT=8081
+          CURRENT_PID=$(lsof -t -i:${APP_PORT} || true)
+
+          if [ -n "$CURRENT_PID" ]; then
+            echo "==> 포트 ${APP_PORT}의 기존 프로세스 종료 (PID: $CURRENT_PID)..."
+            kill -15 $CURRENT_PID
+            sleep 5
+          fi
+
+          JAR_PATH=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1)
+          echo "==> 실행할 JAR 파일: $JAR_PATH"
+
+          if [ -f .env ]; then
+            export $(grep -v '^#' .env | xargs)
+          fi
+
+          nohup java -jar $JAR_PATH > app.log 2>&1 &
+          echo "==> Spring Boot 배포 프로세스 완료!"
