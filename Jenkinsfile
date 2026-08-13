@@ -70,7 +70,12 @@ pipeline {
                         JAR_PATH=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1)
                         echo "==> 실행할 JAR 파일: $JAR_PATH"
 
-                        # JENKINS_NODE_COOKIE=dontKillMe 추가하여 빌드 종료 후에도 프로세스 유지
+                        # .env 파일의 환경 변수를 시스템 환경 변수로 불러오기
+                        if [ -f .env ]; then
+                            export $(grep -v '^#' .env | xargs)
+                        fi
+
+                        # 백그라운드 실행
                         JENKINS_NODE_COOKIE=dontKillMe nohup java -jar $JAR_PATH > app.log 2>&1 &
                         echo "==> 배포 프로세스 백그라운드 실행 완료!"
                     '''
