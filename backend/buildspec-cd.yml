@@ -1,0 +1,32 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto21
+
+  pre_build:
+    commands:
+      - cd backend
+      - chmod +x gradlew
+
+  build:
+    commands:
+      - ./gradlew clean build --no-daemon
+
+  post_build:
+    commands:
+      - JAR_FILE="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -print -quit)"
+      - test -n "${JAR_FILE}"
+      - rm -rf build/codedeploy-bundle
+      - mkdir -p build/codedeploy-bundle/scripts
+      - cp deploy/appspec.yml build/codedeploy-bundle/appspec.yml
+      - cp deploy/scripts/*.sh build/codedeploy-bundle/scripts/
+      - cp "${JAR_FILE}" build/codedeploy-bundle/app.jar
+      - chmod +x build/codedeploy-bundle/scripts/*.sh
+      - test -s build/codedeploy-bundle/app.jar
+
+artifacts:
+  base-directory: backend/build/codedeploy-bundle
+  files:
+    - '**/*'
