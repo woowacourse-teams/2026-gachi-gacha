@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 
 import {
   DEFAULT_RADIUS,
+  SUCCESS_CODE,
   type ApiResponse,
   type NearbyStore,
   type NearbyStoresData,
@@ -57,7 +58,7 @@ export const handlers = [
     const radius = Number(params.get('radius') ?? DEFAULT_RADIUS);
 
     return HttpResponse.json<ApiResponse<NearbyStoresData>>({
-      code: 'SUCCESS',
+      code: SUCCESS_CODE,
       message: '요청에 성공했습니다.',
       data: {
         center: { latitude, longitude },
@@ -81,7 +82,7 @@ export const handlers = [
     }
 
     return HttpResponse.json<ApiResponse<StoreDetailDto>>({
-      code: 'SUCCESS',
+      code: SUCCESS_CODE,
       message: '요청이 성공했습니다.',
       data: storeDetail,
     });
