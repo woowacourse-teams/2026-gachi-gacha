@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.store.domain;
+package com.gachi.gacha.server.common.domain;
 
 import java.util.Arrays;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ImageType {
+public enum ImageFormat {
     PNG("image/png", "png"),
     JPG("image/jpeg", "jpg"),
     JPEG("image/jpeg", "jpeg"),

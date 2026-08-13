@@ -1,11 +1,13 @@
 package com.gachi.gacha.server.store.application;
 
+import com.gachi.gacha.server.common.infra.config.ImageType;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.store.application.dto.StoreImageInfo;
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
-import com.gachi.gacha.server.store.infra.config.ImageUploader;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 @Transactional(readOnly = true)
 public class StoreImageService {
 
-    private static final String STORE_IMAGE_FOLDER = "store";
-
     private final ImageUploader imageUploader;
+    private final S3TransactionManager s3TransactionManager;
     private final StoreJpaRepository storeRepository;
     private final StoreImageJpaRepository storeImageRepository;
 
@@ -41,23 +42,20 @@ public class StoreImageService {
         Store store = storeRepository.getById(storeId);
 
         List<String> uploadedImageUrls = new ArrayList<>();
-        try {
-            List<StoreImage> storeImages = files.stream()
-                    .map(file -> {
-                        String imageUrl = imageUploader.upload(file, imagePath());
-                        uploadedImageUrls.add(imageUrl);
-                        return new StoreImage(store, imageUrl);
-                    })
-                    .toList();
+        s3TransactionManager.deleteImagesOnRollback(ImageType.STORE, storeId, uploadedImageUrls);
 
-            List<StoreImage> savedStoreImages = storeImageRepository.saveAll(storeImages);
-            return savedStoreImages.stream()
-                    .map(StoreImageInfo::from)
-                    .toList();
-        } catch (RuntimeException e) {
-            uploadedImageUrls.forEach(imageUploader::delete);
-            throw e;
-        }
+        List<StoreImage> storeImages = files.stream()
+                .map(file -> {
+                    String imageUrl = imageUploader.upload(file, imagePath());
+                    uploadedImageUrls.add(imageUrl);
+                    return new StoreImage(store, imageUrl);
+                })
+                .toList();
+
+        List<StoreImage> savedStoreImages = storeImageRepository.saveAll(storeImages);
+        return savedStoreImages.stream()
+                .map(StoreImageInfo::from)
+                .toList();
     }
 
     @Transactional
@@ -68,7 +66,7 @@ public class StoreImageService {
         String newImageUrl = imageUploader.upload(file, imagePath());
 
         storeImage.changeImageUrl(newImageUrl);
-        imageUploader.delete(oldImageUrl);
+        s3TransactionManager.cleanupAfterImageReplaced(ImageType.STORE, storeId, oldImageUrl, newImageUrl);
 
         return StoreImageInfo.from(storeImage);
     }
@@ -77,13 +75,13 @@ public class StoreImageService {
     public Long removeImage(final Long storeId, final Long imageId) {
         StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
 
-        imageUploader.delete(storeImage.getImageUrl());
         storeImageRepository.delete(storeImage);
+        s3TransactionManager.trashImagesAfterRemoved(ImageType.STORE, storeId, List.of(storeImage.getImageUrl()));
 
         return storeImage.getId();
     }
 
     private String imagePath() {
-        return "%s/%s".formatted(s3RootFolder, STORE_IMAGE_FOLDER);
+        return "%s/%s".formatted(s3RootFolder, ImageType.STORE.getFolderName());
     }
 }

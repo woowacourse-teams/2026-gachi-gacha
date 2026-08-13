@@ -1,11 +1,10 @@
-package com.gachi.gacha.server.usecase;
+package com.gachi.gacha.server.usecase.application;
 
 import com.gachi.gacha.server.gacha.application.GachaService;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.store.application.StoreService;
 import com.gachi.gacha.server.store.application.dto.StoreGachaInfo;
 import com.gachi.gacha.server.store.domain.Store;
-import com.gachi.gacha.server.usecase.application.StoreGachaService;
 import com.gachi.gacha.server.usecase.application.dto.GachaSummaryInfo;
 import com.gachi.gacha.server.usecase.application.dto.StoreGachaCreatCommand;
 import com.gachi.gacha.server.usecase.application.dto.StoreGachaDeleteCommand;

@@ -1,9 +1,9 @@
-package com.gachi.gacha.server.store.infra.config;
+package com.gachi.gacha.server.common.infra.config;
 
+import com.gachi.gacha.server.common.domain.ImageFormat;
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.common.exception.InvalidValueException;
-import com.gachi.gacha.server.store.domain.ImageType;
-import com.gachi.gacha.server.store.infra.exception.S3Exception;
+import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
+import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.io.IOException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -68,12 +69,42 @@ public class ImageUploader {
     }
 
     /**
+     * 이미지를 영구 삭제하지 않고 trash 하위 경로로 이동한다(soft delete).
+     * S3는 원자적인 이동 연산이 없어서 복사 후 원본 삭제로 구현한다.
+     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     */
+    public void moveToTrash(final String imageUrl) {
+        String key = extractKeyFromUrl(imageUrl);
+        String trashKey = generateTrashKey(key);
+
+        CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                .sourceBucket(bucket)
+                .sourceKey(key)
+                .destinationBucket(bucket)
+                .destinationKey(trashKey)
+                .build();
+
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        try {
+            s3Client.copyObject(copyRequest);
+            s3Client.deleteObject(deleteRequest);
+        } catch (final SdkException e) {
+            log.error("이미지를 휴지통으로 이동하는 중 오류가 발생했습니다. key={}, trashKey={}", key, trashKey, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_MOVE_ERROR);
+        }
+    }
+
+    /**
      * 클라이언트가 보낸 Content-Type을 그대로 신뢰하지 않고 화이트리스트로 검증한다.
      * 검증 없이 저장하면 text/html 등으로 위장한 파일이 스토어드 XSS 벡터가 될 수 있다.
      */
     private String validateContentType(final String contentType) {
-        if (!ImageType.isAllowedContentType(contentType)) {
-            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+        if (!ImageFormat.isAllowedContentType(contentType)) {
+            throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
         return contentType;
     }
@@ -84,12 +115,12 @@ public class ImageUploader {
      */
     private String validateExtension(final String originalFileName) {
         if (originalFileName == null || !originalFileName.contains(".")) {
-            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+            throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
 
         String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
-        if (!ImageType.isAllowedExtension(extension)) {
-            throw new InvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
+        if (!ImageFormat.isAllowedExtension(extension)) {
+            throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
         return extension;
     }
@@ -100,6 +131,19 @@ public class ImageUploader {
      */
     private String generateUniqueKey(final String path, final String extension) {
         return "%s/%s.%s".formatted(path, UUID.randomUUID(), extension);
+    }
+
+    /**
+     * 키의 최상위 폴더(root)는 유지하고, 그 다음 위치에 trash를 끼워 넣는다.
+     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     *     gachigacha/gacha/xxx.png -> gachigacha/trash/gacha/xxx.png
+     */
+    private String generateTrashKey(final String key) {
+        int rootFolderEndIndex = key.indexOf('/');
+        String rootFolder = key.substring(0, rootFolderEndIndex);
+        String pathAfterRootFolder = key.substring(rootFolderEndIndex + 1);
+
+        return "%s/trash/%s".formatted(rootFolder, pathAfterRootFolder);
     }
 
     /**

@@ -1,12 +1,17 @@
 package com.gachi.gacha.server.gacha.application;
 
+import com.gachi.gacha.server.common.infra.config.ImageType;
+import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
 import com.gachi.gacha.server.gacha.application.dto.GachaResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaUpdateCommand;
 import com.gachi.gacha.server.gacha.domain.Gacha;
+import com.gachi.gacha.server.gacha.domain.GachaImage;
+import com.gachi.gacha.server.gacha.domain.GachaImageJpaRepository;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
@@ -20,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class GachaService {
 
     private final GachaJpaRepository gachaRepository;
+    private final GachaImageJpaRepository gachaImageRepository;
+    private final S3TransactionManager s3TransactionManager;
 
     @Transactional
     public GachaInfo addGacha(final GachaCreateCommand command) {
@@ -39,7 +46,14 @@ public class GachaService {
     @Transactional
     public GachaDeleteResult remove(final Long gachaId) {
         Gacha gacha = gachaRepository.getById(gachaId);
+        List<GachaImage> gachaImages = gachaImageRepository.findAllByGachaId(gachaId);
+
+        gachaImageRepository.deleteAllByGachaId(gachaId);
         gachaRepository.deleteById(gachaId);
+
+        List<String> imageUrls = gachaImages.stream().map(GachaImage::getImageUrl).toList();
+        s3TransactionManager.trashImagesAfterRemoved(ImageType.GACHA, gachaId, imageUrls);
+
         return GachaDeleteResult.from(gacha);
     }
 
