@@ -48,14 +48,5 @@ public record StoreNearbyResult(
                     distance
             );
         }
-
-        public static StoreInfo from(final Store store) {
-            return StoreInfo.builder()
-                    .storeId(store.getId())
-                    .latitude(store.getLatitude())
-                    .longitude(store.getLongitude())
-                    .thumbnailUrl(store.getThumbnailUrl())
-                    .build();
-        }
     }
 }
