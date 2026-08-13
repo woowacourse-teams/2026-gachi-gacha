@@ -19,7 +19,7 @@ import com.gachi.gacha.server.store.presentation.dto.StoreListResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreNearbyResponse;
 import com.gachi.gacha.server.store.presentation.dto.StoreUpdateRequest;
 import com.gachi.gacha.server.store.presentation.dto.StoreUpdateResponse;
-import com.gachi.gacha.server.usecase.StoreGachaFacade;
+import com.gachi.gacha.server.usecase.application.StoreGachaFacade;
 import com.gachi.gacha.server.usecase.application.dto.GachaSummaryInfo;
 import jakarta.validation.Valid;
 import java.net.URI;
