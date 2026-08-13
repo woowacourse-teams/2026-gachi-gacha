@@ -2,7 +2,6 @@ package com.gachi.gacha.server.common.util;
 
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
-import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -77,8 +76,8 @@ public class S3TransactionManager {
     private void moveImageToTrash(final ImageType imageType, final Long domainId, final String imageUrl) {
         try {
             imageUploader.moveToTrash(imageUrl);
-        } catch (final S3Exception e) {
-            log.warn("{} 이미지를 휴지통으로 이동하는 데 실패했습니다. domainId={}, imageUrl={}",
+        } catch (final RuntimeException e) {
+            log.error("{} 이미지를 휴지통으로 이동하는 데 실패했습니다. domainId={}, imageUrl={}",
                     imageType.getLabel(), domainId, imageUrl, e);
         }
     }
@@ -86,8 +85,8 @@ public class S3TransactionManager {
     private void deleteImage(final ImageType imageType, final Long domainId, final String imageUrl) {
         try {
             imageUploader.delete(imageUrl);
-        } catch (final S3Exception e) {
-            log.warn("{} 이미지 삭제에 실패했습니다. domainId={}, imageUrl={}",
+        } catch (final RuntimeException e) {
+            log.error("{} 이미지 삭제에 실패했습니다. domainId={}, imageUrl={}",
                     imageType.getLabel(), domainId, imageUrl, e);
         }
     }
