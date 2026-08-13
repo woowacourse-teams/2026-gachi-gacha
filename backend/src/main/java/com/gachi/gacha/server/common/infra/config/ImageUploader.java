@@ -75,7 +75,7 @@ public class ImageUploader {
      */
     public void moveToTrash(final String imageUrl) {
         String key = extractKeyFromUrl(imageUrl);
-        String trashKey = buildTrashKey(key);
+        String trashKey = generateTrashKey(key);
 
         CopyObjectRequest copyRequest = CopyObjectRequest.builder()
                 .sourceBucket(bucket)
@@ -96,19 +96,6 @@ public class ImageUploader {
             log.error("이미지를 휴지통으로 이동하는 중 오류가 발생했습니다. key={}, trashKey={}", key, trashKey, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_MOVE_ERROR);
         }
-    }
-
-    /**
-     * 키의 최상위 폴더(root)는 유지하고, 그 다음 위치에 trash를 끼워 넣는다.
-     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
-     *     gachigacha/gacha/xxx.png -> gachigacha/trash/gacha/xxx.png
-     */
-    private String buildTrashKey(final String key) {
-        int rootFolderEndIndex = key.indexOf('/');
-        String rootFolder = key.substring(0, rootFolderEndIndex);
-        String rest = key.substring(rootFolderEndIndex + 1);
-
-        return "%s/trash/%s".formatted(rootFolder, rest);
     }
 
     /**
@@ -144,6 +131,19 @@ public class ImageUploader {
      */
     private String generateUniqueKey(final String path, final String extension) {
         return "%s/%s.%s".formatted(path, UUID.randomUUID(), extension);
+    }
+
+    /**
+     * 키의 최상위 폴더(root)는 유지하고, 그 다음 위치에 trash를 끼워 넣는다.
+     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     *     gachigacha/gacha/xxx.png -> gachigacha/trash/gacha/xxx.png
+     */
+    private String generateTrashKey(final String key) {
+        int rootFolderEndIndex = key.indexOf('/');
+        String rootFolder = key.substring(0, rootFolderEndIndex);
+        String pathAfterRootFolder = key.substring(rootFolderEndIndex + 1);
+
+        return "%s/trash/%s".formatted(rootFolder, pathAfterRootFolder);
     }
 
     /**
