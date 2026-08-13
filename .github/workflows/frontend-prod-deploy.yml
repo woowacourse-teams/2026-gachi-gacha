@@ -3,7 +3,7 @@ name: Frontend PROD Deploy
 on:
   push:
     branches:
-      - feature/20-deployment
+      - main
 
 permissions:
   contents: read
