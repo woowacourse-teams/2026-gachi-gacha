@@ -1,32 +1,28 @@
 package com.gachi.gacha.server.gacha.application;
 
+import com.gachi.gacha.server.common.infra.config.ImageType;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.application.dto.GachaImageInfo;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaImage;
 import com.gachi.gacha.server.gacha.domain.GachaImageJpaRepository;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
-import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class GachaImageService {
 
-    private static final String GACHA_IMAGE_FOLDER = "gacha";
-
     private final ImageUploader imageUploader;
+    private final S3TransactionManager s3TransactionManager;
     private final GachaJpaRepository gachaRepository;
     private final GachaImageJpaRepository gachaImageRepository;
 
@@ -73,7 +69,7 @@ public class GachaImageService {
         String newImageUrl = imageUploader.upload(file, imagePath());
 
         gachaImage.changeImageUrl(newImageUrl);
-        registerImageSwapCleanupAfterCompletion(gachaId, oldImageUrl, newImageUrl);
+        s3TransactionManager.cleanupAfterImageReplaced(ImageType.GACHA, gachaId, oldImageUrl, newImageUrl);
 
         return GachaImageInfo.from(gachaImage);
     }
@@ -89,35 +85,6 @@ public class GachaImageService {
     }
 
     private String imagePath() {
-        return "%s/%s".formatted(s3RootFolder, GACHA_IMAGE_FOLDER);
-    }
-
-    private void registerImageSwapCleanupAfterCompletion(final Long gachaId, final String oldImageUrl, final String newImageUrl) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(final int status) {
-                if (status == TransactionSynchronization.STATUS_COMMITTED) {
-                    moveToTrashQuietly(gachaId, oldImageUrl);
-                } else {
-                    deleteQuietly(gachaId, newImageUrl);
-                }
-            }
-        });
-    }
-
-    private void moveToTrashQuietly(final Long gachaId, final String imageUrl) {
-        try {
-            imageUploader.moveToTrash(imageUrl);
-        } catch (final S3Exception e) {
-            log.warn("가챠 이미지 수정 후 옛 이미지를 휴지통으로 이동하는 데 실패했습니다. gachaId={}, imageUrl={}", gachaId, imageUrl, e);
-        }
-    }
-
-    private void deleteQuietly(final Long gachaId, final String imageUrl) {
-        try {
-            imageUploader.delete(imageUrl);
-        } catch (final S3Exception e) {
-            log.warn("가챠 이미지 수정 롤백 중 새 이미지 삭제에 실패했습니다. gachaId={}, imageUrl={}", gachaId, imageUrl, e);
-        }
+        return "%s/%s".formatted(s3RootFolder, ImageType.GACHA.getFolderName());
     }
 }

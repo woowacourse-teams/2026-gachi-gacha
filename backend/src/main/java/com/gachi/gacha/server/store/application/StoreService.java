@@ -2,7 +2,8 @@ package com.gachi.gacha.server.store.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
-import com.gachi.gacha.server.common.infra.exception.S3Exception;
+import com.gachi.gacha.server.common.infra.config.ImageType;
+import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
 import com.gachi.gacha.server.store.application.dto.StoreDeleteResult;
@@ -20,23 +21,18 @@ import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.domain.exception.InvalidNearbyRequestException;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import net.sf.geographiclib.Geodesic;
 import net.sf.geographiclib.GeodesicData;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -49,7 +45,7 @@ public class StoreService {
     private final StoreJpaRepository storeJpaRepository;
     private final StoreDetailJpaRepository storeDetailJpaRepository;
     private final StoreImageJpaRepository storeImageJpaRepository;
-    private final ImageUploader imageUploader;
+    private final S3TransactionManager s3TransactionManager;
 
     public StoreNearbyResult findNearbyStores(
             final Double latitude,
@@ -129,7 +125,8 @@ public class StoreService {
         storeDetailJpaRepository.delete(storeDetail);
         storeJpaRepository.delete(store);
 
-        registerStoreImageCleanupAfterCommit(storeId, storeImages);
+        List<String> imageUrls = storeImages.stream().map(StoreImage::getImageUrl).toList();
+        s3TransactionManager.deleteImagesAfterRemoved(ImageType.STORE, storeId, imageUrls);
 
         return StoreDeleteResult.from(store);
     }
@@ -228,25 +225,6 @@ public class StoreService {
         );
 
         return result.s12;
-    }
-
-    private void registerStoreImageCleanupAfterCommit(final Long storeId, final List<StoreImage> storeImages) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                for (StoreImage storeImage : storeImages) {
-                    deleteFile(storeId, storeImage);
-                }
-            }
-        });
-    }
-
-    private void deleteFile(final Long storeId, final StoreImage storeImage) {
-        try {
-            imageUploader.delete(storeImage.getImageUrl());
-        } catch (final S3Exception e) {
-            log.warn("매장 삭제 중 S3 이미지 삭제에 실패했습니다. storeId={}, imageUrl={}", storeId, storeImage.getImageUrl(), e);
-        }
     }
 
     private record StoreDistance(
