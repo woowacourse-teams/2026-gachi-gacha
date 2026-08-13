@@ -1,0 +1,64 @@
+name: Frontend PROD Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-deploy-prod:
+    name: Build & Deploy to PROD
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+      - frontend-prod
+
+    environment:
+      name: frontend-production
+      url: ${{ vars.PROD_FRONTEND_URL }}
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    env:
+      DEPLOY_ROOT: /srv/gachi-gacha/frontend-prod
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production artifact
+        env:
+          KAKAO_MAP_KEY: ${{ vars.PROD_KAKAO_MAP_KEY }}
+        run: pnpm build
+
+      - name: Deploy to Nginx Directory
+        shell: bash
+        run: |
+          release_dir="${DEPLOY_ROOT}/releases/${GITHUB_SHA}"
+          mkdir -p "${release_dir}"
+          cp -a dist/. "${release_dir}/"
+          
+          ln -sfn "${release_dir}" "${DEPLOY_ROOT}/current.next"
+          mv -Tf "${DEPLOY_ROOT}/current.next" "${DEPLOY_ROOT}/current"
+          
