@@ -21,8 +21,8 @@ pipeline {
         stage('Compile & Dependencies') {
             steps {
                 dir('backend') {
-                        echo '==> [2/5] 프로젝트 의존성 다운로드 및 소스코드 컴파일'
-                        sh './gradlew compileJava --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"'
+                    echo '==> [2/5] 프로젝트 의존성 다운로드 및 소스코드 컴파일'
+                    sh './gradlew compileJava --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"'
                 }
             }
         }
@@ -51,11 +51,9 @@ pipeline {
                 }
             }
         }
+
         // 5. 서버 프로세스 재시작 및 배포
         stage('Deploy') {
-            when {
-                    expression { env.GIT_BRANCH == 'origin/backend-dev' }
-            }
             steps {
                 dir('backend') {
                     echo '==> [5/5] 애플리케이션 프로세스 종료 및 재배포'
@@ -72,7 +70,8 @@ pipeline {
                         JAR_PATH=$(ls build/libs/*.jar | grep -v 'plain' | head -n 1)
                         echo "==> 실행할 JAR 파일: $JAR_PATH"
 
-                        nohup java -jar $JAR_PATH > app.log 2>&1 &
+                        # JENKINS_NODE_COOKIE=dontKillMe 추가하여 빌드 종료 후에도 프로세스 유지
+                        JENKINS_NODE_COOKIE=dontKillMe nohup java -jar $JAR_PATH > app.log 2>&1 &
                         echo "==> 배포 프로세스 백그라운드 실행 완료!"
                     '''
                 }
