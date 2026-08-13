@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ImageType {
+public enum ImageFormat {
     PNG("image/png", "png"),
     JPG("image/jpeg", "jpg"),
     JPEG("image/jpeg", "jpeg"),

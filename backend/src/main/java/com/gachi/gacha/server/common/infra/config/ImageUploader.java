@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.common.infra.config;
 
-import com.gachi.gacha.server.common.domain.ImageType;
+import com.gachi.gacha.server.common.domain.ImageFormat;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
@@ -103,7 +103,7 @@ public class ImageUploader {
      * 검증 없이 저장하면 text/html 등으로 위장한 파일이 스토어드 XSS 벡터가 될 수 있다.
      */
     private String validateContentType(final String contentType) {
-        if (!ImageType.isAllowedContentType(contentType)) {
+        if (!ImageFormat.isAllowedContentType(contentType)) {
             throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
         return contentType;
@@ -119,7 +119,7 @@ public class ImageUploader {
         }
 
         String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
-        if (!ImageType.isAllowedExtension(extension)) {
+        if (!ImageFormat.isAllowedExtension(extension)) {
             throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
         return extension;
