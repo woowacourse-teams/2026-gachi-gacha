@@ -35,7 +35,7 @@ jobs:
       - name: Deploy Application
         run: |
           cd backend
-          APP_PORT=8081
+          APP_PORT=8080
           CURRENT_PID=$(lsof -t -i:${APP_PORT} || true)
 
           if [ -n "$CURRENT_PID" ]; then
@@ -51,5 +51,6 @@ jobs:
             export $(grep -v '^#' .env | xargs)
           fi
 
-          nohup java -jar $JAR_PATH > app.log 2>&1 &
+          # RUNNER_TRACKING_ID="" 를 사용하여 러너가 백그라운드 프로세스를 강제 종료하지 못하게 방지
+          nohup env RUNNER_TRACKING_ID="" java -jar $JAR_PATH > app.log 2>&1 &
           echo "==> Spring Boot 배포 프로세스 완료!"
