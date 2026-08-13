@@ -68,7 +68,7 @@ public class StoreImageService {
         String newImageUrl = imageUploader.upload(file, imagePath());
 
         storeImage.changeImageUrl(newImageUrl);
-        imageUploader.delete(oldImageUrl);
+        imageUploader.moveToTrash(oldImageUrl);
 
         return StoreImageInfo.from(storeImage);
     }
@@ -77,7 +77,7 @@ public class StoreImageService {
     public Long removeImage(final Long storeId, final Long imageId) {
         StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
 
-        imageUploader.delete(storeImage.getImageUrl());
+        imageUploader.moveToTrash(storeImage.getImageUrl());
         storeImageRepository.delete(storeImage);
 
         return storeImage.getId();

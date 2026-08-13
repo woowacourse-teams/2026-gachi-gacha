@@ -48,6 +48,7 @@ class GachaImageControllerTest {
         when(imageUploader.upload(any(), anyString()))
                 .thenReturn("https://example.com/gachas/test-image.jpg");
         doNothing().when(imageUploader).delete(anyString());
+        doNothing().when(imageUploader).moveToTrash(anyString());
     }
 
     @Nested

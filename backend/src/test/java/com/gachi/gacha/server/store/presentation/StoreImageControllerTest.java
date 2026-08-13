@@ -48,6 +48,7 @@ class StoreImageControllerTest {
         when(imageUploader.upload(any(), anyString()))
                 .thenReturn("https://example.com/stores/test-image.jpg");
         doNothing().when(imageUploader).delete(anyString());
+        doNothing().when(imageUploader).moveToTrash(anyString());
     }
 
     @Nested

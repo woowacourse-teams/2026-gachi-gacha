@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
@@ -65,6 +66,49 @@ public class ImageUploader {
             log.error("이미지 삭제 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_DELETE_ERROR);
         }
+    }
+
+    /**
+     * 이미지를 영구 삭제하지 않고 trash 하위 경로로 이동한다(soft delete).
+     * S3는 원자적인 이동 연산이 없어서 복사 후 원본 삭제로 구현한다.
+     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     */
+    public void moveToTrash(final String imageUrl) {
+        String key = extractKeyFromUrl(imageUrl);
+        String trashKey = buildTrashKey(key);
+
+        CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                .sourceBucket(bucket)
+                .sourceKey(key)
+                .destinationBucket(bucket)
+                .destinationKey(trashKey)
+                .build();
+
+        DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
+
+        try {
+            s3Client.copyObject(copyRequest);
+            s3Client.deleteObject(deleteRequest);
+        } catch (final SdkException e) {
+            log.error("이미지를 휴지통으로 이동하는 중 오류가 발생했습니다. key={}, trashKey={}", key, trashKey, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_MOVE_ERROR);
+        }
+    }
+
+    /**
+     * 키의 최상위 폴더(root)는 유지하고, 그 다음 위치에 trash를 끼워 넣는다.
+     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     *     gachigacha/gacha/xxx.png -> gachigacha/trash/gacha/xxx.png
+     */
+    private String buildTrashKey(final String key) {
+        int rootFolderEndIndex = key.indexOf('/');
+        String rootFolder = key.substring(0, rootFolderEndIndex);
+        String rest = key.substring(rootFolderEndIndex + 1);
+
+        return "%s/trash/%s".formatted(rootFolder, rest);
     }
 
     /**

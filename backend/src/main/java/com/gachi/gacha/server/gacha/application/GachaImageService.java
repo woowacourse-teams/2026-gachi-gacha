@@ -68,7 +68,7 @@ public class GachaImageService {
         String newImageUrl = imageUploader.upload(file, imagePath());
 
         gachaImage.changeImageUrl(newImageUrl);
-        imageUploader.delete(oldImageUrl);
+        imageUploader.moveToTrash(oldImageUrl);
 
         return GachaImageInfo.from(gachaImage);
     }
@@ -77,7 +77,7 @@ public class GachaImageService {
     public Long removeImage(final Long gachaId, final Long imageId) {
         GachaImage gachaImage = gachaImageRepository.getByIdAndGachaId(imageId, gachaId);
 
-        imageUploader.delete(gachaImage.getImageUrl());
+        imageUploader.moveToTrash(gachaImage.getImageUrl());
         gachaImageRepository.delete(gachaImage);
 
         return gachaImage.getId();

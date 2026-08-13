@@ -59,7 +59,7 @@ public class GachaService {
         List<GachaImage> gachaImages = gachaImageRepository.findAllByGachaId(gachaId);
         for (GachaImage gachaImage : gachaImages) {
             try {
-                imageUploader.delete(gachaImage.getImageUrl());
+                imageUploader.moveToTrash(gachaImage.getImageUrl());
             } catch (RuntimeException e) {
                 log.warn("가챠 삭제 중 S3 이미지 삭제에 실패했습니다. gachaId={}, imageUrl={}", gachaId, gachaImage.getImageUrl(), e);
             }
