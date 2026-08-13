@@ -9,10 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-/**
- * S3는 트랜잭션 매니저가 관리하는 리소스가 아니라서, DB 트랜잭션의 커밋/롤백 결과가 확정된 이후에만 S3 작업(휴지통 이동/삭제)이 실행되도록 미루는 역할을 한다. 커밋 전에 S3를 먼저 건드리면, 이후
- * DB 작업이 실패해 롤백될 때 "DB는 되돌아갔는데 S3는 이미 바뀐" 깨진 참조 상태가 생길 수 있다.
- */
 @Slf4j
 @Component
 @RequiredArgsConstructor
