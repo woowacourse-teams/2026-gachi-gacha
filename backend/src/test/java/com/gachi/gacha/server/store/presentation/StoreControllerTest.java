@@ -291,6 +291,128 @@ class StoreControllerTest {
         }
     }
 
+    @Nested
+    @DisplayName("POST /stores/{storeId}/gachas/{gachaId} - 매장 가챠 연결 생성 API")
+    class CreateStoreGacha {
+
+        @Test
+        @DisplayName("존재하는 매장과 가챠를 연결하면 201 Created와 Location 헤더를 반환한다.")
+        void createStoreGacha_success() {
+            // given
+            Long storeId = createTargetStore();
+            Long gachaId = createTargetGacha();
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .when()
+                    .post("/api/v1/stores/{storeId}/gachas/{gachaId}", storeId, gachaId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED.value());
+            assertThat(response.header("Location")).isNotNull();
+            assertThat(response.jsonPath().getString("code")).isEqualTo("C001");
+            assertThat(response.jsonPath().getLong("data.storeId")).isEqualTo(storeId);
+            assertThat(response.jsonPath().getLong("data.gachaId")).isEqualTo(gachaId);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 매장에 가챠를 연결하면 404 Not Found를 반환한다.")
+        void createStoreGacha_storeNotFound() {
+            // given
+            Long nonExistentStoreId = 999_999L;
+            Long gachaId = createTargetGacha();
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .when()
+                    .post("/api/v1/stores/{storeId}/gachas/{gachaId}", nonExistentStoreId, gachaId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
+            assertThat(response.jsonPath().getString("code")).isEqualTo("SE001");
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /stores/{storeId}/gachas - 매장 가챠 목록 조회 API")
+    class ReadStoreGachas {
+
+        @Test
+        @DisplayName("매장에 연결된 가챠를 조회하면 200 OK와 페이징된 목록을 반환한다.")
+        void readStoreGachas_success() {
+            // given
+            Long storeId = createTargetStore();
+            Long gachaId = createTargetGacha();
+            createStoreGacha(storeId, gachaId);
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .param("page", 0)
+                    .param("size", 10)
+                    .when()
+                    .get("/api/v1/stores/{storeId}/gachas", storeId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+            assertThat(response.jsonPath().getString("code")).isEqualTo("C000");
+            assertThat(response.jsonPath().getList("data.content.gachaId", Long.class)).contains(gachaId);
+            assertThat(response.jsonPath().getInt("data.number")).isZero();
+            assertThat(response.jsonPath().getInt("data.size")).isEqualTo(10);
+        }
+    }
+
+    @Nested
+    @DisplayName("DELETE /stores/{storeId}/gachas/{gachaId} - 매장 가챠 연결 해제 API")
+    class DeleteStoreGacha {
+
+        @Test
+        @DisplayName("매장과 가챠의 연결을 해제하면 200 OK를 반환한다.")
+        void deleteStoreGacha_success() {
+            // given
+            Long storeId = createTargetStore();
+            Long gachaId = createTargetGacha();
+            createStoreGacha(storeId, gachaId);
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .when()
+                    .delete("/api/v1/stores/{storeId}/gachas/{gachaId}", storeId, gachaId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+            assertThat(response.jsonPath().getString("code")).isEqualTo("C003");
+            assertThat(response.jsonPath().getLong("data.storeId")).isEqualTo(storeId);
+            assertThat(response.jsonPath().getLong("data.gachaId")).isEqualTo(gachaId);
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 가챠 연결 해제 요청이면 404 Not Found를 반환한다.")
+        void deleteStoreGacha_gachaNotFound() {
+            // given
+            Long storeId = createTargetStore();
+            Long nonExistentGachaId = 999_999L;
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .when()
+                    .delete("/api/v1/stores/{storeId}/gachas/{gachaId}", storeId, nonExistentGachaId)
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.NOT_FOUND.value());
+            assertThat(response.jsonPath().getString("code")).isEqualTo("GE001");
+        }
+    }
+
     private Long createTargetStore() {
         return createTargetStore(STORE_NAME, STORE_LATITUDE, STORE_LONGITUDE);
     }
@@ -298,6 +420,32 @@ class StoreControllerTest {
     private Long createTargetStore(final String name, final double latitude, final double longitude) {
         Map<String, Object> request = createStoreRequest(name, latitude, longitude);
         return requestCreateStore(request).jsonPath().getLong("data.storeId");
+    }
+
+    private Long createTargetGacha() {
+        Map<String, Object> request = Map.of(
+                "name", "테스트 가챠",
+                "caption", "가챠 설명",
+                "thumbnailUrl", "https://example.com/gacha.png"
+        );
+
+        return RestAssured.given().log().all()
+                .contentType(ContentType.JSON)
+                .body(request)
+                .when()
+                .post("/api/v1/gachas")
+                .then().log().all()
+                .extract()
+                .jsonPath()
+                .getLong("data.gachaId");
+    }
+
+    private void createStoreGacha(final Long storeId, final Long gachaId) {
+        RestAssured.given().log().all()
+                .when()
+                .post("/api/v1/stores/{storeId}/gachas/{gachaId}", storeId, gachaId)
+                .then().log().all()
+                .statusCode(HttpStatus.CREATED.value());
     }
 
     private Map<String, Object> createStoreRequest(

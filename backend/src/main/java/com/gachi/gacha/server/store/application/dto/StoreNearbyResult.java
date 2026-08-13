@@ -3,6 +3,7 @@ package com.gachi.gacha.server.store.application.dto;
 import com.gachi.gacha.server.common.util.BaseUtils;
 import com.gachi.gacha.server.store.domain.Store;
 import java.util.List;
+import lombok.Builder;
 
 public record StoreNearbyResult(
         CenterInfo center,
@@ -29,6 +30,7 @@ public record StoreNearbyResult(
     ) {
     }
 
+    @Builder
     public record StoreInfo(
             Long storeId,
             String thumbnailUrl,

@@ -55,4 +55,8 @@ public class GachaService {
     public GachaInfo findGachaById(final Long gachaId) {
         return GachaInfo.from(gachaRepository.getById(gachaId));
     }
+
+    public Gacha findByGachaId(final Long gachaId) {
+        return gachaRepository.getById(gachaId);
+    }
 }

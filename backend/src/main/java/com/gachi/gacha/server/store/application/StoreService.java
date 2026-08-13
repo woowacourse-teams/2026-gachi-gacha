@@ -67,6 +67,113 @@ public class StoreService {
         return StoreNearbyResult.of(latitude, longitude, radius, stores);
     }
 
+    public Page<StoreListResult> findStores(final Pageable pageable) {
+        validatePageRequest(pageable);
+
+        Page<Store> stores = storeJpaRepository.findAll(pageable);
+        Map<Long, StoreDetail> storeDetails = findStoreDetails(stores);
+
+        return stores.map(store -> StoreListResult.of(store, getStoreDetail(storeDetails, store.getId())));
+    }
+
+    public StoreDetailResult getStore(final Long storeId) {
+        Store store = storeJpaRepository.getById(storeId);
+        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
+        List<StoreImage> storeImages = storeImageJpaRepository.findAllByStoreId(storeId);
+
+        return StoreDetailResult.of(store, storeDetail, storeImages);
+    }
+
+    @Transactional
+    public StoreCreateResult addStore(final StoreCreateCommand command) {
+        Store store = command.toStore();
+        Store savedStore = storeJpaRepository.save(store);
+        storeDetailJpaRepository.save(command.toStoreDetail(savedStore));
+        storeImageJpaRepository.saveAll(command.toStoreImages(savedStore));
+
+        return StoreCreateResult.from(savedStore);
+    }
+
+    @Transactional
+    public StoreUpdateResult modifyStore(final Long storeId, final StoreUpdateCommand command) {
+        Store store = storeJpaRepository.getById(storeId);
+        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
+
+        Store patchedStore = store.patch(
+                command.thumbnailUrl(),
+                command.latitude(),
+                command.longitude()
+        );
+        Store savedStore = storeJpaRepository.save(patchedStore);
+        StoreDetail patchedDetail = storeDetail.patch(createStoreDetailUpdate(command));
+        StoreDetail savedDetail = storeDetailJpaRepository.save(patchedDetail);
+        storeJpaRepository.flush();
+
+        return StoreUpdateResult.of(savedStore, savedDetail);
+    }
+
+    @Transactional
+    public StoreDeleteResult removeStore(final Long storeId) {
+        Store store = storeJpaRepository.getById(storeId);
+        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
+
+        storeImageJpaRepository.deleteAllByStoreId(storeId);
+        storeDetailJpaRepository.delete(storeDetail);
+        storeJpaRepository.delete(store);
+
+        return StoreDeleteResult.from(store);
+    }
+
+    public Store findByStoreId(final Long storeId) {
+        return storeJpaRepository.getById(storeId);
+    }
+
+    private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {
+        List<Long> storeIds = stores.stream()
+                .map(Store::getId)
+                .toList();
+
+        return storeDetailJpaRepository.findAllById(storeIds).stream()
+                .collect(Collectors.toMap(StoreDetail::getId, storeDetail -> storeDetail));
+    }
+
+    private StoreDetail getStoreDetail(final Map<Long, StoreDetail> storeDetails, final Long storeId) {
+        StoreDetail storeDetail = storeDetails.get(storeId);
+        if (storeDetail == null) {
+            throw new StoreNotFoundException(ErrorCode.STORE_NOT_FOUND);
+        }
+        return storeDetail;
+    }
+
+    private void validatePageRequest(final Pageable pageable) {
+        if (pageable.getPageNumber() < 0 || pageable.getPageSize() <= 0) {
+            throw new InvalidPageRequestException(ErrorCode.INVALID_PAGE_REQUEST);
+        }
+    }
+
+    private StoreDetailUpdate createStoreDetailUpdate(final StoreUpdateCommand command) {
+        return new StoreDetailUpdate(
+                command.name(),
+                command.address(),
+                command.businessHours(),
+                command.paymentMethods(),
+                command.phoneNumber(),
+                command.facilities(),
+                command.instagramId(),
+                command.gachaMachineAmount(),
+                command.kujiAmount(),
+                command.coinPrice(),
+                command.gachaPriceMin(),
+                command.gachaPriceMax(),
+                command.kujiPriceMin(),
+                command.kujiPriceMax(),
+                command.selectGachaPriceMin(),
+                command.selectGachaPriceMax(),
+                command.hasRandomBox(),
+                command.hasSelectGacha()
+        );
+    }
+
     private void validateNearbyRequest(
             final Double latitude,
             final Double longitude,
@@ -112,109 +219,6 @@ public class StoreService {
         );
 
         return result.s12;
-    }
-
-    public Page<StoreListResult> findStores(final Pageable pageable) {
-        validatePageRequest(pageable);
-
-        Page<Store> stores = storeJpaRepository.findAll(pageable);
-        Map<Long, StoreDetail> storeDetails = findStoreDetails(stores);
-
-        return stores.map(store -> StoreListResult.of(store, getStoreDetail(storeDetails, store.getId())));
-    }
-
-    private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {
-        List<Long> storeIds = stores.stream()
-                .map(Store::getId)
-                .toList();
-
-        return storeDetailJpaRepository.findAllById(storeIds).stream()
-                .collect(Collectors.toMap(StoreDetail::getId, storeDetail -> storeDetail));
-    }
-
-    private StoreDetail getStoreDetail(final Map<Long, StoreDetail> storeDetails, final Long storeId) {
-        StoreDetail storeDetail = storeDetails.get(storeId);
-        if (storeDetail == null) {
-            throw new StoreNotFoundException(ErrorCode.STORE_NOT_FOUND);
-        }
-        return storeDetail;
-    }
-
-    private void validatePageRequest(final Pageable pageable) {
-        if (pageable.getPageNumber() < 0 || pageable.getPageSize() <= 0) {
-            throw new InvalidPageRequestException(ErrorCode.INVALID_PAGE_REQUEST);
-        }
-    }
-
-    public StoreDetailResult getStore(final Long storeId) {
-        Store store = storeJpaRepository.getById(storeId);
-        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
-        List<StoreImage> storeImages = storeImageJpaRepository.findAllByStoreId(storeId);
-
-        return StoreDetailResult.of(store, storeDetail, storeImages);
-    }
-
-    @Transactional
-    public StoreCreateResult addStore(final StoreCreateCommand command) {
-        Store store = command.toStore();
-        Store savedStore = storeJpaRepository.save(store);
-        storeDetailJpaRepository.save(command.toStoreDetail(savedStore));
-        storeImageJpaRepository.saveAll(command.toStoreImages(savedStore));
-
-        return StoreCreateResult.from(savedStore);
-    }
-
-    @Transactional
-    public StoreUpdateResult modifyStore(final Long storeId, final StoreUpdateCommand command) {
-        Store store = storeJpaRepository.getById(storeId);
-        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
-
-        Store patchedStore = store.patch(
-                command.thumbnailUrl(),
-                command.latitude(),
-                command.longitude()
-        );
-        Store savedStore = storeJpaRepository.save(patchedStore);
-        StoreDetail patchedDetail = storeDetail.patch(createStoreDetailUpdate(command));
-        StoreDetail savedDetail = storeDetailJpaRepository.save(patchedDetail);
-        storeJpaRepository.flush();
-
-        return StoreUpdateResult.of(savedStore, savedDetail);
-    }
-
-    private StoreDetailUpdate createStoreDetailUpdate(final StoreUpdateCommand command) {
-        return new StoreDetailUpdate(
-                command.name(),
-                command.address(),
-                command.businessHours(),
-                command.paymentMethods(),
-                command.phoneNumber(),
-                command.facilities(),
-                command.instagramId(),
-                command.gachaMachineAmount(),
-                command.kujiAmount(),
-                command.coinPrice(),
-                command.gachaPriceMin(),
-                command.gachaPriceMax(),
-                command.kujiPriceMin(),
-                command.kujiPriceMax(),
-                command.selectGachaPriceMin(),
-                command.selectGachaPriceMax(),
-                command.hasRandomBox(),
-                command.hasSelectGacha()
-        );
-    }
-
-    @Transactional
-    public StoreDeleteResult removeStore(final Long storeId) {
-        Store store = storeJpaRepository.getById(storeId);
-        StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
-
-        storeImageJpaRepository.deleteAllByStoreId(storeId);
-        storeDetailJpaRepository.delete(storeDetail);
-        storeJpaRepository.delete(store);
-
-        return StoreDeleteResult.from(store);
     }
 
     private record StoreDistance(
