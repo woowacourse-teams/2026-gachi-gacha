@@ -54,7 +54,7 @@ pipeline {
         // 5. 서버 프로세스 재시작 및 배포
         stage('Deploy') {
             when {
-                branch 'backend-dev' // main 브랜치일 때만 배포 실행
+                    expression { env.GIT_BRANCH == 'origin/backend-dev' }
             }
             steps {
                 dir('backend') {
