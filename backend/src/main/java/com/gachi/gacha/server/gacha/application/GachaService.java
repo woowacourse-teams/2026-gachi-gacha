@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.gacha.application;
 
+import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
@@ -18,6 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Service
@@ -47,10 +50,12 @@ public class GachaService {
     @Transactional
     public GachaDeleteResult remove(final Long gachaId) {
         Gacha gacha = gachaRepository.getById(gachaId);
+        List<GachaImage> gachaImages = gachaImageRepository.findAllByGachaId(gachaId);
 
-        deleteGachaImagesFromS3(gachaId);
         gachaImageRepository.deleteAllByGachaId(gachaId);
         gachaRepository.deleteById(gachaId);
+
+        registerGachaImageCleanupAfterCommit(gachaId, gachaImages);
 
         return GachaDeleteResult.from(gacha);
     }
@@ -72,17 +77,21 @@ public class GachaService {
         return gachaRepository.getById(gachaId);
     }
 
-    private void deleteGachaImagesFromS3(final Long gachaId) {
-        List<GachaImage> gachaImages = gachaImageRepository.findAllByGachaId(gachaId);
-        for (GachaImage gachaImage : gachaImages) {
-            moveFileToTrash(gachaId, gachaImage);
-        }
+    private void registerGachaImageCleanupAfterCommit(final Long gachaId, final List<GachaImage> gachaImages) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                for (GachaImage gachaImage : gachaImages) {
+                    moveFileToTrash(gachaId, gachaImage);
+                }
+            }
+        });
     }
 
-    private void moveFileToTrash(Long gachaId, GachaImage gachaImage) {
+    private void moveFileToTrash(final Long gachaId, final GachaImage gachaImage) {
         try {
             imageUploader.moveToTrash(gachaImage.getImageUrl());
-        } catch (RuntimeException e) {
+        } catch (S3Exception e) {
             log.warn("가챠 삭제 중 S3 이미지 삭제에 실패했습니다. gachaId={}, imageUrl={}", gachaId, gachaImage.getImageUrl(), e);
         }
     }

@@ -6,14 +6,19 @@ import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -68,7 +73,7 @@ public class StoreImageService {
         String newImageUrl = imageUploader.upload(file, imagePath());
 
         storeImage.changeImageUrl(newImageUrl);
-        imageUploader.moveToTrash(oldImageUrl);
+        registerImageSwapCleanupAfterCompletion(storeId, oldImageUrl, newImageUrl);
 
         return StoreImageInfo.from(storeImage);
     }
@@ -85,5 +90,34 @@ public class StoreImageService {
 
     private String imagePath() {
         return "%s/%s".formatted(s3RootFolder, STORE_IMAGE_FOLDER);
+    }
+
+    private void registerImageSwapCleanupAfterCompletion(final Long storeId, final String oldImageUrl, final String newImageUrl) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(final int status) {
+                if (status == TransactionSynchronization.STATUS_COMMITTED) {
+                    moveToTrashQuietly(storeId, oldImageUrl);
+                } else {
+                    deleteQuietly(storeId, newImageUrl);
+                }
+            }
+        });
+    }
+
+    private void moveToTrashQuietly(final Long storeId, final String imageUrl) {
+        try {
+            imageUploader.moveToTrash(imageUrl);
+        } catch (final S3Exception e) {
+            log.warn("매장 이미지 수정 후 옛 이미지를 휴지통으로 이동하는 데 실패했습니다. storeId={}, imageUrl={}", storeId, imageUrl, e);
+        }
+    }
+
+    private void deleteQuietly(final Long storeId, final String imageUrl) {
+        try {
+            imageUploader.delete(imageUrl);
+        } catch (final S3Exception e) {
+            log.warn("매장 이미지 수정 롤백 중 새 이미지 삭제에 실패했습니다. storeId={}, imageUrl={}", storeId, imageUrl, e);
+        }
     }
 }
