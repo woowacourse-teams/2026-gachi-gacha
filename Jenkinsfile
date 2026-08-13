@@ -8,7 +8,7 @@ pipeline {
                 dir('backend') {
                     echo '==> [1/5] .env 파일 주입 중...'
                     withCredentials([file(credentialsId: 'gachi-gacha-env', variable: 'ENV_FILE')]) {
-                        sh 'cp $ENV_FILE .env'
+                        sh 'cp "$ENV_FILE" .env'
                     }
                 }
             }
