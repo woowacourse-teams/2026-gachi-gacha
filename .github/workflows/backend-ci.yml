@@ -1,0 +1,47 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches:
+      - backend-dev
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+  push:
+    branches:
+      - backend-dev
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  backend-ci:
+    name: Backend Build and Test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: 1️⃣ Checkout repository
+        uses: actions/checkout@v7
+
+      - name: 2️⃣ Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            backend/*.gradle
+            backend/gradle/wrapper/gradle-wrapper.properties
+
+      - name: 3️⃣ Build and test
+        run: ./gradlew build
