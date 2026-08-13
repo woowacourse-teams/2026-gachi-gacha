@@ -149,20 +149,17 @@ public class StoreService {
         }
 
         List<String> uploadedImageUrls = new ArrayList<>();
-        try {
-            List<StoreImage> storeImages = images.stream()
-                    .map(file -> {
-                        String imageUrl = imageUploader.upload(file, imagePath());
-                        uploadedImageUrls.add(imageUrl);
-                        return new StoreImage(store, imageUrl);
-                    })
-                    .toList();
+        s3TransactionManager.deleteImagesOnRollback(ImageType.STORE, store.getId(), uploadedImageUrls);
 
-            storeImageJpaRepository.saveAll(storeImages);
-        } catch (RuntimeException e) {
-            uploadedImageUrls.forEach(imageUploader::delete);
-            throw e;
-        }
+        List<StoreImage> storeImages = images.stream()
+                .map(file -> {
+                    String imageUrl = imageUploader.upload(file, imagePath());
+                    uploadedImageUrls.add(imageUrl);
+                    return new StoreImage(store, imageUrl);
+                })
+                .toList();
+
+        storeImageJpaRepository.saveAll(storeImages);
     }
 
     private String imagePath() {

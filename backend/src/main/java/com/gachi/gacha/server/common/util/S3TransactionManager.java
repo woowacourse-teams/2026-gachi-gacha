@@ -73,6 +73,25 @@ public class S3TransactionManager {
         });
     }
 
+    /**
+     * 이미지를 새로 등록할 때 사용. 업로드는 먼저 일어나고 DB 저장은 트랜잭션 커밋 시점에야 확정되므로,
+     * 커밋되면 아무 작업도 하지 않고, 롤백되면(메서드 본문 실행 중 실패든, 반환 이후 flush/commit 단계 실패든) 업로드된 이미지를 전부 삭제한다.
+     */
+    public void deleteImagesOnRollback(
+            final ImageType imageType,
+            final Long domainId,
+            final List<String> imageUrls
+    ) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(final int status) {
+                if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                    imageUrls.forEach(imageUrl -> deleteImage(imageType, domainId, imageUrl));
+                }
+            }
+        });
+    }
+
     private void moveImageToTrash(final ImageType imageType, final Long domainId, final String imageUrl) {
         try {
             imageUploader.moveToTrash(imageUrl);

@@ -42,23 +42,20 @@ public class StoreImageService {
         Store store = storeRepository.getById(storeId);
 
         List<String> uploadedImageUrls = new ArrayList<>();
-        try {
-            List<StoreImage> storeImages = files.stream()
-                    .map(file -> {
-                        String imageUrl = imageUploader.upload(file, imagePath());
-                        uploadedImageUrls.add(imageUrl);
-                        return new StoreImage(store, imageUrl);
-                    })
-                    .toList();
+        s3TransactionManager.deleteImagesOnRollback(ImageType.STORE, storeId, uploadedImageUrls);
 
-            List<StoreImage> savedStoreImages = storeImageRepository.saveAll(storeImages);
-            return savedStoreImages.stream()
-                    .map(StoreImageInfo::from)
-                    .toList();
-        } catch (RuntimeException e) {
-            uploadedImageUrls.forEach(imageUploader::delete);
-            throw e;
-        }
+        List<StoreImage> storeImages = files.stream()
+                .map(file -> {
+                    String imageUrl = imageUploader.upload(file, imagePath());
+                    uploadedImageUrls.add(imageUrl);
+                    return new StoreImage(store, imageUrl);
+                })
+                .toList();
+
+        List<StoreImage> savedStoreImages = storeImageRepository.saveAll(storeImages);
+        return savedStoreImages.stream()
+                .map(StoreImageInfo::from)
+                .toList();
     }
 
     @Transactional

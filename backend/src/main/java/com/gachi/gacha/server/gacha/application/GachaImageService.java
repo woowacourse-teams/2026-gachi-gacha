@@ -42,23 +42,20 @@ public class GachaImageService {
         Gacha gacha = gachaRepository.getById(gachaId);
 
         List<String> uploadedImageUrls = new ArrayList<>();
-        try {
-            List<GachaImage> gachaImages = files.stream()
-                    .map(file -> {
-                        String imageUrl = imageUploader.upload(file, imagePath());
-                        uploadedImageUrls.add(imageUrl);
-                        return new GachaImage(gacha, imageUrl);
-                    })
-                    .toList();
+        s3TransactionManager.deleteImagesOnRollback(ImageType.GACHA, gachaId, uploadedImageUrls);
 
-            List<GachaImage> savedGachaImages = gachaImageRepository.saveAll(gachaImages);
-            return savedGachaImages.stream()
-                    .map(GachaImageInfo::from)
-                    .toList();
-        } catch (RuntimeException e) {
-            uploadedImageUrls.forEach(imageUploader::delete);
-            throw e;
-        }
+        List<GachaImage> gachaImages = files.stream()
+                .map(file -> {
+                    String imageUrl = imageUploader.upload(file, imagePath());
+                    uploadedImageUrls.add(imageUrl);
+                    return new GachaImage(gacha, imageUrl);
+                })
+                .toList();
+
+        List<GachaImage> savedGachaImages = gachaImageRepository.saveAll(gachaImages);
+        return savedGachaImages.stream()
+                .map(GachaImageInfo::from)
+                .toList();
     }
 
     @Transactional
