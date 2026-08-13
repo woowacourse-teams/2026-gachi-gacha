@@ -1,8 +1,8 @@
 package com.gachi.gacha.server.common.infra.config;
 
-import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.common.exception.InvalidValueException;
 import com.gachi.gacha.server.common.domain.ImageType;
+import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.io.IOException;
 import java.util.UUID;
@@ -104,7 +104,7 @@ public class ImageUploader {
      */
     private String validateContentType(final String contentType) {
         if (!ImageType.isAllowedContentType(contentType)) {
-            throw new InvalidValueException(ErrorCode.INVALID_IMAGE_POLICY);
+            throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
         return contentType;
     }
@@ -115,12 +115,12 @@ public class ImageUploader {
      */
     private String validateExtension(final String originalFileName) {
         if (originalFileName == null || !originalFileName.contains(".")) {
-            throw new InvalidValueException(ErrorCode.INVALID_IMAGE_POLICY);
+            throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
 
         String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
         if (!ImageType.isAllowedExtension(extension)) {
-            throw new InvalidValueException(ErrorCode.INVALID_IMAGE_POLICY);
+            throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
         return extension;
     }
