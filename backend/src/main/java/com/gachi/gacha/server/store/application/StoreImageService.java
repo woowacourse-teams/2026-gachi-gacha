@@ -78,8 +78,8 @@ public class StoreImageService {
     public Long removeImage(final Long storeId, final Long imageId) {
         StoreImage storeImage = storeImageRepository.getByIdAndStoreId(imageId, storeId);
 
-        imageUploader.moveToTrash(storeImage.getImageUrl());
         storeImageRepository.delete(storeImage);
+        s3TransactionManager.trashImagesAfterRemoved(ImageType.STORE, storeId, List.of(storeImage.getImageUrl()));
 
         return storeImage.getId();
     }

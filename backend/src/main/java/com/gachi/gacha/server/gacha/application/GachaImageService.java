@@ -78,8 +78,8 @@ public class GachaImageService {
     public Long removeImage(final Long gachaId, final Long imageId) {
         GachaImage gachaImage = gachaImageRepository.getByIdAndGachaId(imageId, gachaId);
 
-        imageUploader.moveToTrash(gachaImage.getImageUrl());
         gachaImageRepository.delete(gachaImage);
+        s3TransactionManager.trashImagesAfterRemoved(ImageType.GACHA, gachaId, List.of(gachaImage.getImageUrl()));
 
         return gachaImage.getId();
     }
