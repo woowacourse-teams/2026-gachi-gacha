@@ -4,7 +4,7 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-export const SUCCESS_CODE = 'SUCCESS';
+export const SUCCESS_CODE = 'C000';
 
 export type NearbyStoresFailure = 'offline' | 'server';
 
