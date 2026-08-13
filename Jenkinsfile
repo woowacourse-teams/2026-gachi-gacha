@@ -18,8 +18,8 @@ pipeline {
         stage('Compile & Dependencies') {
             steps {
                 dir('backend') {
-                    echo '==> [2/5] 프로젝트 의존성 다운로드 및 소스코드 컴파일'
-                    sh './gradlew compileJava --no-daemon'
+                        echo '==> [2/5] 프로젝트 의존성 다운로드 및 소스코드 컴파일'
+                        sh './gradlew compileJava --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"'
                 }
             }
         }
@@ -44,11 +44,10 @@ pipeline {
             steps {
                 dir('backend') {
                     echo '==> [4/5] Spring Boot Executable JAR 파일 빌드'
-                    sh './gradlew bootJar -x test --no-daemon'
+                    sh './gradlew bootJar -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"'
                 }
             }
         }
-
         // 5. 서버 프로세스 재시작 및 배포
         stage('Deploy') {
             when {
