@@ -228,11 +228,15 @@ public class StoreService {
     private void deleteStoreImagesFromS3(final Long storeId) {
         List<StoreImage> storeImages = storeImageJpaRepository.findAllByStoreId(storeId);
         for (StoreImage storeImage : storeImages) {
-            try {
-                imageUploader.delete(storeImage.getImageUrl());
-            } catch (RuntimeException e) {
-                log.warn("매장 삭제 중 S3 이미지 삭제에 실패했습니다. storeId={}, imageUrl={}", storeId, storeImage.getImageUrl(), e);
-            }
+            moveFileToTrash(storeId, storeImage);
+        }
+    }
+
+    private void moveFileToTrash(Long storeId, StoreImage storeImage) {
+        try {
+            imageUploader.delete(storeImage.getImageUrl());
+        } catch (RuntimeException e) {
+            log.warn("매장 삭제 중 S3 이미지 삭제에 실패했습니다. storeId={}, imageUrl={}", storeId, storeImage.getImageUrl(), e);
         }
     }
 

@@ -55,17 +55,6 @@ public class GachaService {
         return GachaDeleteResult.from(gacha);
     }
 
-    private void deleteGachaImagesFromS3(final Long gachaId) {
-        List<GachaImage> gachaImages = gachaImageRepository.findAllByGachaId(gachaId);
-        for (GachaImage gachaImage : gachaImages) {
-            try {
-                imageUploader.moveToTrash(gachaImage.getImageUrl());
-            } catch (RuntimeException e) {
-                log.warn("가챠 삭제 중 S3 이미지 삭제에 실패했습니다. gachaId={}, imageUrl={}", gachaId, gachaImage.getImageUrl(), e);
-            }
-        }
-    }
-
     public Page<GachaInfo> findAllGacha(@Nullable final String keyword, final Pageable pageable) {
         if (keyword == null) {
             return gachaRepository.findAll(pageable)
@@ -81,5 +70,20 @@ public class GachaService {
 
     public Gacha findByGachaId(final Long gachaId) {
         return gachaRepository.getById(gachaId);
+    }
+
+    private void deleteGachaImagesFromS3(final Long gachaId) {
+        List<GachaImage> gachaImages = gachaImageRepository.findAllByGachaId(gachaId);
+        for (GachaImage gachaImage : gachaImages) {
+            moveFileToTrash(gachaId, gachaImage);
+        }
+    }
+
+    private void moveFileToTrash(Long gachaId, GachaImage gachaImage) {
+        try {
+            imageUploader.moveToTrash(gachaImage.getImageUrl());
+        } catch (RuntimeException e) {
+            log.warn("가챠 삭제 중 S3 이미지 삭제에 실패했습니다. gachaId={}, imageUrl={}", gachaId, gachaImage.getImageUrl(), e);
+        }
     }
 }
