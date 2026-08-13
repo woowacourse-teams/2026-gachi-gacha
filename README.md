@@ -1,5 +1,5 @@
 <img width="2816" height="1536" alt="Gemini_Generated_Image_2ob1cy2ob1cy2ob1" src="https://github.com/user-attachments/assets/a55145ff-45ff-4b86-b229-e7c72f0e51b8" />
-
+    
 # 가치가챠 
 > 원하는 가챠를 지도에서 한 눈에 찾는 서비스
 
