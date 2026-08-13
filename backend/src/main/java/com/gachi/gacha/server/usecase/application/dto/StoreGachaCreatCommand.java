@@ -9,7 +9,7 @@ public record StoreGachaCreatCommand(
         Store store,
         Gacha gacha
 ) {
-    public static StoreGachaCreatCommand fromCommand(Store store, Gacha gacha) {
+    public static StoreGachaCreatCommand fromCommand(final Store store, final Gacha gacha) {
         return StoreGachaCreatCommand.builder()
                 .store(store)
                 .gacha(gacha)

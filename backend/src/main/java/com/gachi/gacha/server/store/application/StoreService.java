@@ -8,7 +8,6 @@ import com.gachi.gacha.server.store.application.dto.StoreDeleteResult;
 import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
 import com.gachi.gacha.server.store.application.dto.StoreListResult;
 import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
-import com.gachi.gacha.server.store.application.dto.StoreNearbyResult.StoreInfo;
 import com.gachi.gacha.server.store.application.dto.StoreUpdateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
 import com.gachi.gacha.server.store.domain.Store;
@@ -125,7 +124,7 @@ public class StoreService {
         return StoreDeleteResult.from(store);
     }
 
-    public Store findByStoreId(Long storeId) {
+    public Store findByStoreId(final Long storeId) {
         return storeJpaRepository.getById(storeId);
     }
 

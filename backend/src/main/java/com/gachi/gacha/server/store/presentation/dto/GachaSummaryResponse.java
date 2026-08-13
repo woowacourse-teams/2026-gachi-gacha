@@ -8,7 +8,7 @@ public record GachaSummaryResponse(
         Long gachaId,
         String thumbnailUrl
 ) {
-    public static GachaSummaryResponse from(GachaSummaryInfo gachaSummaryInfo) {
+    public static GachaSummaryResponse from(final GachaSummaryInfo gachaSummaryInfo) {
         return GachaSummaryResponse.builder()
                 .gachaId(gachaSummaryInfo.gachaId())
                 .thumbnailUrl(gachaSummaryInfo.thumbnailUrl())

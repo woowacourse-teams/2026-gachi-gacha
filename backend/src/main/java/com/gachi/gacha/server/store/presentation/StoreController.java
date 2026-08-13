@@ -111,8 +111,8 @@ public class StoreController {
 
     @PostMapping("/{storeId}/gachas/{gachaId}")
     public ResponseEntity<BaseResponse<StoreGachaResponse>> createNearbyStores(
-            @PathVariable Long storeId,
-            @PathVariable Long gachaId
+            @PathVariable final Long storeId,
+            @PathVariable final Long gachaId
     ) {
         StoreGachaInfo storeGachaInfo = storeGachaFacade.addStoreGacha(storeId, gachaId);
         StoreGachaResponse response = StoreGachaResponse.from(storeGachaInfo);
@@ -124,13 +124,13 @@ public class StoreController {
     }
 
     @GetMapping("/{storeId}/gachas")
-    public BaseResponse<Page<GachaSummaryResponse>> readStoreGachas(@PathVariable Long storeId, Pageable pageable) {
+    public BaseResponse<Page<GachaSummaryResponse>> readStoreGachas(@PathVariable final Long storeId, final Pageable pageable) {
         Page<GachaSummaryInfo> gachaSummaryInfos = storeGachaFacade.getGachas(storeId, pageable);
         return BaseResponse.ok(gachaSummaryInfos.map(GachaSummaryResponse::from));
     }
 
     @DeleteMapping("/{storeId}/gachas/{gachaId}")
-    public BaseResponse<StoreGachaResponse> deleteStoreGachas(@PathVariable Long storeId, @PathVariable Long gachaId) {
+    public BaseResponse<StoreGachaResponse> deleteStoreGachas(@PathVariable final Long storeId, @PathVariable final Long gachaId) {
         StoreGachaInfo storeGachaInfo = storeGachaFacade.removeStoreGacha(storeId, gachaId);
         return BaseResponse.deleted(StoreGachaResponse.from(storeGachaInfo));
     }

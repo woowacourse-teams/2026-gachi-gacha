@@ -8,7 +8,7 @@ public record StoreGachaResponse(
         Long storeId,
         Long gachaId
 ) {
-    public static StoreGachaResponse from(StoreGachaInfo storeGachaInfo) {
+    public static StoreGachaResponse from(final StoreGachaInfo storeGachaInfo) {
         return StoreGachaResponse.builder()
                 .storeId(storeGachaInfo.storeId())
                 .gachaId(storeGachaInfo.gachaId())

@@ -9,7 +9,7 @@ public record StoreGachaDeleteCommand(
         Store store,
         Gacha gacha
 ) {
-    public static StoreGachaDeleteCommand fromCommand(Store store, Gacha gacha) {
+    public static StoreGachaDeleteCommand fromCommand(final Store store, final Gacha gacha) {
         return StoreGachaDeleteCommand.builder()
                 .store(store)
                 .gacha(gacha)
