@@ -3,6 +3,7 @@ package com.gachi.gacha.server.store.application;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import com.gachi.gacha.server.common.infra.config.ImageType;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;
@@ -21,6 +22,7 @@ import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.domain.exception.InvalidNearbyRequestException;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +30,12 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import net.sf.geographiclib.Geodesic;
 import net.sf.geographiclib.GeodesicData;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @Transactional(readOnly = true)
@@ -46,6 +50,10 @@ public class StoreService {
     private final StoreDetailJpaRepository storeDetailJpaRepository;
     private final StoreImageJpaRepository storeImageJpaRepository;
     private final S3TransactionManager s3TransactionManager;
+    private final ImageUploader imageUploader;
+
+    @Value("${cloud.aws.s3.folder}")
+    private String s3RootFolder;
 
     public StoreNearbyResult findNearbyStores(
             final Double latitude,
@@ -88,11 +96,11 @@ public class StoreService {
     }
 
     @Transactional
-    public StoreCreateResult addStore(final StoreCreateCommand command) {
+    public StoreCreateResult addStore(final StoreCreateCommand command, final List<MultipartFile> images) {
         Store store = command.toStore();
         Store savedStore = storeJpaRepository.save(store);
         storeDetailJpaRepository.save(command.toStoreDetail(savedStore));
-        storeImageJpaRepository.saveAll(command.toStoreImages(savedStore));
+        saveStoreImages(savedStore, images);
 
         return StoreCreateResult.from(savedStore);
     }
@@ -133,6 +141,32 @@ public class StoreService {
 
     public Store findByStoreId(final Long storeId) {
         return storeJpaRepository.getById(storeId);
+    }
+
+    private void saveStoreImages(final Store store, final List<MultipartFile> images) {
+        if (images == null || images.isEmpty()) {
+            return;
+        }
+
+        List<String> uploadedImageUrls = new ArrayList<>();
+        try {
+            List<StoreImage> storeImages = images.stream()
+                    .map(file -> {
+                        String imageUrl = imageUploader.upload(file, imagePath());
+                        uploadedImageUrls.add(imageUrl);
+                        return new StoreImage(store, imageUrl);
+                    })
+                    .toList();
+
+            storeImageJpaRepository.saveAll(storeImages);
+        } catch (RuntimeException e) {
+            uploadedImageUrls.forEach(imageUploader::delete);
+            throw e;
+        }
+    }
+
+    private String imagePath() {
+        return "%s/%s".formatted(s3RootFolder, ImageType.STORE.getFolderName());
     }
 
     private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {

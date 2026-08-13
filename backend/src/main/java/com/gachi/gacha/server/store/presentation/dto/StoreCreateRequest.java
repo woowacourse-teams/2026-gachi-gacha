@@ -75,12 +75,7 @@ public record StoreCreateRequest(
 
         List<@NotBlank(message = "편의시설은 빈 값일 수 없습니다.") String> facilities,
 
-        Boolean hasRandomBox,
-
-        List<
-                @NotBlank(message = "이미지 URL은 빈 값일 수 없습니다.")
-                @Size(max = 255, message = "이미지 URL은 255자를 초과할 수 없습니다.")
-                        String> imageUrls
+        Boolean hasRandomBox
 ) {
 
     public StoreCreateCommand toCommand() {
@@ -106,7 +101,6 @@ public record StoreCreateRequest(
                 .selectGachaPriceMax(selectGachaPriceMax)
                 .facilities(facilities)
                 .hasRandomBox(hasRandomBox)
-                .imageUrls(imageUrls)
                 .build();
     }
 
