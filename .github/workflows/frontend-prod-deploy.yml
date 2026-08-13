@@ -3,7 +3,7 @@ name: Frontend PROD Deploy
 on:
   push:
     branches:
-      - main
+      - feature/20-deployment
 
 permissions:
   contents: read
@@ -61,4 +61,3 @@ jobs:
           
           ln -sfn "${release_dir}" "${DEPLOY_ROOT}/current.next"
           mv -Tf "${DEPLOY_ROOT}/current.next" "${DEPLOY_ROOT}/current"
-          
