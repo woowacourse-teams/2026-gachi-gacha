@@ -1,0 +1,60 @@
+name: Backend CD Pipeline
+
+on:
+  push:
+    branches:
+      - backend-dev
+  workflow_dispatch: # GitHub UI에서 수동 배포 버튼 생성
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Create .env file
+        run: |
+          cd backend
+          cat << 'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
+
+      - name: Build BootJar
+        run: |
+          cd backend
+          chmod +x ./gradlew
+          # JVM 메모리 제한 및 빌드 최적화
+          ./gradlew bootJar -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"
+
+      - name: Deploy via systemd
+        run: |
+          echo "==> Spring Boot 서비스 재시작 중..."
+          sudo systemctl restart gachi-gacha
+          
+          # 재시작 후 Spring Boot가 포트를 잡을 수 있도록 5초 대기
+          sleep 5
+          
+          # 서비스 정상 동작 여부 확인 (실패 시 에러 출력 후 CI 실패 처리)
+          if ! systemctl is-active --quiet gachi-gacha; then
+            echo "==> [ERROR] Spring Boot 서비스 실행 실패!"
+            sudo journalctl -u gachi-gacha -n 50 --no-pager
+            exit 1
+          fi
+          
+          echo "==> Spring Boot 배포 성공!"
+          sudo systemctl status gachi-gacha --no-pager
+
+      - name: Cleanup Gradle Cache (용량 관리)
+        if: always()
+        run: |
+          cd backend
+          ./gradlew --stop || true
+          rm -rf ~/.gradle/caches/
