@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - backend-dev
-    paths:
-      - 'backend/**'
+  workflow_dispatch: # GitHub UI에서 수동 배포 버튼 생성
 
 jobs:
   deploy:
@@ -32,64 +31,30 @@ jobs:
         run: |
           cd backend
           chmod +x ./gradlew
+          # JVM 메모리 제한 및 빌드 최적화
           ./gradlew bootJar -x test --no-daemon -Dorg.gradle.jvmargs="-Xmx512m"
 
-      - name: Deploy Application
+      - name: Deploy via systemd
         run: |
-            cd backend
-            APP_PORT=8080
-            CURRENT_PID=$(lsof -t -i:${APP_PORT} || true)
-            
-            # 1. 기존 프로세스 종료 처리 개선
-            if [ -n "$CURRENT_PID" ]; then
-              echo "==> 포트 ${APP_PORT}의 기존 프로세스 종료 요청 (PID: $CURRENT_PID)..."
-              kill -15 $CURRENT_PID || true
-            
-              # 프로세스가 완전히 종료될 때까지 최대 10초 대기
-              for i in {1..10}; do
-                if ! kill -0 $CURRENT_PID 2>/dev/null; then
-                  echo "==> 기존 프로세스가 정상 종료되었습니다."
-                  break
-                fi
-                sleep 1
-              done
-            
-              # 10초 후에도 안 꺼졌으면 강제 종료
-              if kill -0 $CURRENT_PID 2>/dev/null; then
-                echo "==> 강제 종료 진행 (kill -9)..."
-                kill -9 $CURRENT_PID || true
-                sleep 2
-              fi
-            fi
-            
-            JAR_PATH=$(ls build/libs/*.jar 2>/dev/null | grep -v 'plain' | head -n 1)
-            
-            if [ -z "$JAR_PATH" ]; then
-              echo "==> [ERROR] JAR 파일을 찾을 수 없습니다."
-              exit 1
-            fi
-            
-            echo "==> 실행할 JAR 파일: $JAR_PATH"
-            
-            # 2. .env 안전하게 export 하기 (xargs 제거)
-            if [ -f .env ]; then
-              echo "==> .env 환경변수 로드"
-              set -a
-              source .env
-              set +a
-            fi
-            
-            # 3. 백그라운드 프로세스 실행 및 로그 저장
-            LOG_PATH="$(pwd)/app.log"
-            RUNNER_TRACKING_ID="" setsid nohup java -jar $JAR_PATH > "$LOG_PATH" 2>&1 &
-            
-            # 4. 앱이 즉시 Crash 나는지 3초간 확인
-            sleep 3
-            NEW_PID=$(lsof -t -i:${APP_PORT} || true)
-            if [ -z "$NEW_PID" ]; then
-              echo "==> [ERROR] Spring Boot 실행 실패! app.log를 확인하세요:"
-              cat "$LOG_PATH" | tail -n 30
-              exit 1
-            fi
-            
-            echo "==> Spring Boot 배포 성공! (PID: $NEW_PID)"
+          echo "==> Spring Boot 서비스 재시작 중..."
+          sudo systemctl restart gachi-gacha
+          
+          # 재시작 후 Spring Boot가 포트를 잡을 수 있도록 5초 대기
+          sleep 5
+          
+          # 서비스 정상 동작 여부 확인 (실패 시 에러 출력 후 CI 실패 처리)
+          if ! systemctl is-active --quiet gachi-gacha; then
+            echo "==> [ERROR] Spring Boot 서비스 실행 실패!"
+            sudo journalctl -u gachi-gacha -n 50 --no-pager
+            exit 1
+          fi
+          
+          echo "==> Spring Boot 배포 성공!"
+          sudo systemctl status gachi-gacha --no-pager
+
+      - name: Cleanup Gradle Cache (용량 관리)
+        if: always()
+        run: |
+          cd backend
+          ./gradlew --stop || true
+          rm -rf ~/.gradle/caches/
