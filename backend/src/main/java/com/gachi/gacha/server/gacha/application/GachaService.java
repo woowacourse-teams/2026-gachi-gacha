@@ -2,6 +2,7 @@ package com.gachi.gacha.server.gacha.application;
 
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
+import com.gachi.gacha.server.gacha.application.dto.ApproveGachaCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
@@ -11,6 +12,7 @@ import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaImage;
 import com.gachi.gacha.server.gacha.domain.GachaImageJpaRepository;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
+import com.gachi.gacha.server.gacha.domain.GachaStatus;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -63,7 +65,7 @@ public class GachaService {
                     .map(GachaInfo::from);
         }
         return gachaRepository.findByNameContaining(keyword, pageable)
-                    .map(GachaInfo::from);
+                .map(GachaInfo::from);
     }
 
     public GachaInfo findGachaById(final Long gachaId) {
@@ -72,5 +74,22 @@ public class GachaService {
 
     public Gacha findByGachaId(final Long gachaId) {
         return gachaRepository.getById(gachaId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Gacha> getPendingGachas() {
+        return gachaRepository.findAllByStatus(GachaStatus.PENDING);
+    }
+
+    public void approve(final ApproveGachaCommand command) {
+        Gacha gacha = gachaRepository.getById(command.gachaId());
+
+        gacha.approve(command.name());
+    }
+
+    public void reject(final Long gachaId) {
+        Gacha gacha = gachaRepository.getById(gachaId);
+
+        gacha.reject();
     }
 }

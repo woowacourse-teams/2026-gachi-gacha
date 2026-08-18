@@ -3,7 +3,10 @@ package com.gachi.gacha.server.gacha.domain;
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.common.exception.BusinessException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -29,6 +32,13 @@ public class Gacha extends BaseTimeEntity {
     private String caption;
     private String thumbnailUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private GachaStatus status = GachaStatus.PENDING;
+
+    @Column(unique = true, name = "instagram_media_id")
+    private String instagramMediaId;
+
     public void update(final String name, final String caption, final String thumbnailUrl) {
         validateName(name);
         this.name = name;
@@ -36,8 +46,17 @@ public class Gacha extends BaseTimeEntity {
         this.thumbnailUrl = thumbnailUrl;
     }
 
+    public void approve(String name) {
+        this.status = GachaStatus.APPROVED;
+        this.name = name;
+    }
+
+    public void reject() {
+        this.status = GachaStatus.REJECTED;
+    }
+
     private void validateName(final String name) {
-        if(name == null || name.isBlank()) {
+        if (name == null || name.isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_GACHA_POLICY);
         }
     }
