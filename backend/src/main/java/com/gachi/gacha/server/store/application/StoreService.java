@@ -39,7 +39,6 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class StoreService {
 
-    private static final double METERS_PER_LATITUDE_DEGREE = 111_320;
     private static final int MIN_SEARCH_RADIUS = 100;
     private static final int MAX_SEARCH_RADIUS = 20_000;
 
