@@ -1,43 +1,23 @@
 import { useEffect, useRef } from 'react';
 
-import markerSprite from '@/assets/marker-sprite.png';
-import markerSprite2x from '@/assets/marker-sprite@2x.png';
-import markerSprite3x from '@/assets/marker-sprite@3x.png';
-
 import { useMap } from './KakaoMapContext';
+import { MARKER_ICON } from './markerIcon';
 import type { LatLngLiteral } from './useKakaoMap';
-
-const SPRITE_WIDTH = 86;
-const SPRITE_HEIGHT = 57;
-
-const MARKER_VARIANT = {
-  default: { originX: 0, originY: 0, width: 40, height: 47 },
-  selected: { originX: 40, originY: 0, width: 46, height: 57 },
-} as const;
 
 const MARKER_Z_INDEX = {
   default: 1,
   selected: 10,
 } as const;
 
-function resolveSpriteSrc() {
-  if (window.devicePixelRatio >= 3) return markerSprite3x;
-  if (window.devicePixelRatio >= 2) return markerSprite2x;
-
-  return markerSprite;
-}
-
 function createMarkerImage(isSelected: boolean) {
   const { maps } = window.kakao;
-  const variant = isSelected ? MARKER_VARIANT.selected : MARKER_VARIANT.default;
+  const icon = isSelected ? MARKER_ICON.selected : MARKER_ICON.default;
 
   return new maps.MarkerImage(
-    resolveSpriteSrc(),
-    new maps.Size(variant.width, variant.height),
+    icon.src,
+    new maps.Size(icon.width, icon.height),
     {
-      spriteSize: new maps.Size(SPRITE_WIDTH, SPRITE_HEIGHT),
-      spriteOrigin: new maps.Point(variant.originX, variant.originY),
-      offset: new maps.Point(variant.width / 2, variant.height),
+      offset: new maps.Point(icon.anchorX, icon.anchorY),
     },
   );
 }
