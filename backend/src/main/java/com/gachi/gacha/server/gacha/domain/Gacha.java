@@ -29,9 +29,14 @@ public class Gacha extends BaseTimeEntity {
 
     @NotBlank
     private String name;
+
+    @Column(columnDefinition = "TEXT")
     private String caption;
+
+    @Column(length = 1000)
     private String thumbnailUrl;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GachaStatus status = GachaStatus.PENDING;

@@ -143,6 +143,10 @@ public class StoreService {
         return storeJpaRepository.getById(storeId);
     }
 
+    public List<StoreDetail> findAllStoresWithInstagram() {
+        return storeDetailJpaRepository.findAllByInstagramIdIsNotNull();
+    }
+
     private void saveStoreImages(final Store store, final List<MultipartFile> images) {
         if (images == null || images.isEmpty()) {
             return;
