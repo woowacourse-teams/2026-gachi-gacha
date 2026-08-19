@@ -128,7 +128,6 @@ public class GachaCollectionService {
             String s3ImageUrl = imageUploader.uploadFromUrl(post.imageUrl(), ImageType.GACHA.buildPath(s3RootFolder));
 
             Gacha newGacha = Gacha.builder()
-                    .name("임시이름_수동검수필요")
                     .caption(post.content())
                     .thumbnailUrl(s3ImageUrl)
                     .instagramMediaId(post.originalId())
