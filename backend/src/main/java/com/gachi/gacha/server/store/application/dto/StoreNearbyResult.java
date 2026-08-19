@@ -1,7 +1,6 @@
 package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.common.util.BaseUtils;
-import com.gachi.gacha.server.store.domain.Store;
 import java.util.List;
 import lombok.Builder;
 
