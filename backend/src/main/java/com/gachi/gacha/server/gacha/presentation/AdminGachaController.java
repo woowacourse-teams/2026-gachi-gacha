@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.gacha.presentation;
 
+import com.gachi.gacha.server.collection.application.GachaCollectionFacade;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.gacha.application.GachaService;
 import com.gachi.gacha.server.gacha.application.dto.AdminGachaResult;
@@ -8,7 +9,6 @@ import com.gachi.gacha.server.gacha.presentation.dto.AdminGachaActionResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.AdminGachaApproveRequest;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaCollectResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
-import com.gachi.gacha.server.collection.application.GachaBatchFacade;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -23,18 +23,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminGachaController {
 
     private final GachaService gachaService;
-    private final GachaBatchFacade gachaBatchFacade;
+    private final GachaCollectionFacade gachaCollectionFacade;
 
     public AdminGachaController(
             final GachaService gachaService,
-            final GachaBatchFacade gachaBatchFacade) {
+            final GachaCollectionFacade gachaCollectionFacade) {
         this.gachaService = gachaService;
-        this.gachaBatchFacade = gachaBatchFacade;
+        this.gachaCollectionFacade = gachaCollectionFacade;
     }
 
     @PostMapping("/collect")
     public BaseResponse<GachaCollectResponse> collectGachaDataManually() {
-        int collectedCount = gachaBatchFacade.collectAllGachas();
+        int collectedCount = gachaCollectionFacade.collectAllGachas();
         return BaseResponse.ok(GachaCollectResponse.from(collectedCount));
     }
 

@@ -23,19 +23,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class GachaBatchFacadeTest {
+class GachaCollectionFacadeTest {
 
     @Mock
     private StoreService storeService;
 
     @Mock
-    private GachaBatchService gachaBatchService;
+    private GachaCollectionService gachaCollectionService;
 
     @Mock
     private StoreGachaService storeGachaService;
 
-    private GachaBatchFacade facade() {
-        return new GachaBatchFacade(storeService, gachaBatchService, storeGachaService);
+    private GachaCollectionFacade facade() {
+        return new GachaCollectionFacade(storeService, gachaCollectionService, storeGachaService);
     }
 
     @Test
@@ -48,8 +48,8 @@ class GachaBatchFacadeTest {
 
         Gacha gacha1 = mock(Gacha.class);
         Gacha gacha2 = mock(Gacha.class);
-        when(gachaBatchService.collectPostsForShop("shop1")).thenReturn(List.of(gacha1));
-        when(gachaBatchService.collectPostsForShop("shop2")).thenReturn(List.of(gacha2));
+        when(gachaCollectionService.collectPostsForShop("shop1")).thenReturn(List.of(gacha1));
+        when(gachaCollectionService.collectPostsForShop("shop2")).thenReturn(List.of(gacha2));
 
         // when
         facade().collectAllGachas();
@@ -69,9 +69,9 @@ class GachaBatchFacadeTest {
         StoreDetail store2 = storeDetail(2L, "shop2");
         when(storeService.findAllStoresWithInstagram()).thenReturn(List.of(store1, store2));
 
-        when(gachaBatchService.collectPostsForShop("shop1")).thenThrow(new RuntimeException("크롤링 실패"));
+        when(gachaCollectionService.collectPostsForShop("shop1")).thenThrow(new RuntimeException("크롤링 실패"));
         Gacha gacha2 = mock(Gacha.class);
-        when(gachaBatchService.collectPostsForShop("shop2")).thenReturn(List.of(gacha2));
+        when(gachaCollectionService.collectPostsForShop("shop2")).thenReturn(List.of(gacha2));
 
         // when & then
         assertThatCode(() -> facade().collectAllGachas()).doesNotThrowAnyException();
@@ -89,8 +89,8 @@ class GachaBatchFacadeTest {
 
         Gacha gacha1 = mock(Gacha.class);
         Gacha gacha2 = mock(Gacha.class);
-        when(gachaBatchService.collectPostsForShop("shop1")).thenReturn(List.of(gacha1));
-        when(gachaBatchService.collectPostsForShop("shop2")).thenReturn(List.of(gacha2));
+        when(gachaCollectionService.collectPostsForShop("shop1")).thenReturn(List.of(gacha1));
+        when(gachaCollectionService.collectPostsForShop("shop2")).thenReturn(List.of(gacha2));
 
         StoreGachaCreatCommand store1Command = StoreGachaCreatCommand.builder()
                 .store(store1.getStore()).gacha(gacha1).build();
@@ -113,7 +113,7 @@ class GachaBatchFacadeTest {
         facade().collectAllGachas();
 
         // then
-        verify(gachaBatchService, never()).collectPostsForShop(any());
+        verify(gachaCollectionService, never()).collectPostsForShop(any());
         verify(storeGachaService, never()).addStoreGacha(any());
     }
 

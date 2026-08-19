@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GachaBatchFacade {
+public class GachaCollectionFacade {
 
     private final StoreService storeService;
-    private final GachaBatchService gachaBatchService;
+    private final GachaCollectionService gachaCollectionService;
     private final StoreGachaService storeGachaService;
 
     public int collectAllGachas() {
@@ -30,7 +30,7 @@ public class GachaBatchFacade {
 
             try {
                 Store store = storeDetail.getStore();
-                List<Gacha> collectedGachas = gachaBatchService.collectPostsForShop(storeDetail.getInstagramId());
+                List<Gacha> collectedGachas = gachaCollectionService.collectPostsForShop(storeDetail.getInstagramId());
 
                 for (Gacha gacha : collectedGachas) {
                     StoreGachaCreatCommand command = StoreGachaCreatCommand.builder()

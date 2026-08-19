@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GachaBatchService {
+public class GachaCollectionService {
 
     private static final int MAX_PAGES_PER_SHOP = 5;
 

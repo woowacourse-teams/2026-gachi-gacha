@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.gacha.application.dto;
 
-public record ApproveGachaCommand(
+public record GachaApproveCommand(
         Long gachaId,
         String name
 ) {

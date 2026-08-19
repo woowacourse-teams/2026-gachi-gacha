@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.application.dto.AdminGachaResult;
-import com.gachi.gacha.server.gacha.application.dto.ApproveGachaCommand;
+import com.gachi.gacha.server.gacha.application.dto.GachaApproveCommand;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaImageJpaRepository;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
@@ -49,7 +49,7 @@ class GachaServiceTest {
         when(gachaRepository.save(gacha)).thenReturn(gacha);
 
         // when
-        AdminGachaResult result = service().approve(new ApproveGachaCommand(1L, "정식 상품명"));
+        AdminGachaResult result = service().approve(new GachaApproveCommand(1L, "정식 상품명"));
 
         // then
         assertThat(gacha.getName()).isEqualTo("정식 상품명");

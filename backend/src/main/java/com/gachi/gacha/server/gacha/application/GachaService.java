@@ -3,7 +3,7 @@ package com.gachi.gacha.server.gacha.application;
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.application.dto.AdminGachaResult;
-import com.gachi.gacha.server.gacha.application.dto.ApproveGachaCommand;
+import com.gachi.gacha.server.gacha.application.dto.GachaApproveCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
@@ -83,7 +83,7 @@ public class GachaService {
     }
 
     @Transactional
-    public AdminGachaResult approve(final ApproveGachaCommand command) {
+    public AdminGachaResult approve(final GachaApproveCommand command) {
         Gacha gacha = gachaRepository.getById(command.gachaId());
         gacha.approve(command.name());
         Gacha saved = gachaRepository.save(gacha);

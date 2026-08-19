@@ -1,11 +1,11 @@
 package com.gachi.gacha.server.gacha.presentation.dto;
 
-import com.gachi.gacha.server.gacha.application.dto.ApproveGachaCommand;
+import com.gachi.gacha.server.gacha.application.dto.GachaApproveCommand;
 
 public record AdminGachaApproveRequest(
         String name
 ) {
-    public ApproveGachaCommand toCommand(final Long gachaId) {
-        return new ApproveGachaCommand(gachaId, name);
+    public GachaApproveCommand toCommand(final Long gachaId) {
+        return new GachaApproveCommand(gachaId, name);
     }
 }

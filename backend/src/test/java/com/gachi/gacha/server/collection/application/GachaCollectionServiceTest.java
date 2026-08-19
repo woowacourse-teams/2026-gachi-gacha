@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class GachaBatchServiceTest {
+class GachaCollectionServiceTest {
 
     private static final String UPLOADED_URL = "https://test-bucket.s3.amazonaws.com/gachigacha/gacha/uploaded.jpg";
 
@@ -53,8 +53,8 @@ class GachaBatchServiceTest {
         executorService.shutdownNow();
     }
 
-    private GachaBatchService service(final List<PlatformClient> clients) {
-        GachaBatchService service = new GachaBatchService(clients, gachaRepository, imageUploader, executorService);
+    private GachaCollectionService service(final List<PlatformClient> clients) {
+        GachaCollectionService service = new GachaCollectionService(clients, gachaRepository, imageUploader, executorService);
         ReflectionTestUtils.setField(service, "s3RootFolder", "gachigacha");
         return service;
     }
@@ -66,7 +66,7 @@ class GachaBatchServiceTest {
         PlatformClient client = new StubPlatformClient(
                 new PlatformPostDto("media-1", "그냥 일상 사진입니다", "url1", PlatformType.INSTAGRAM)
         );
-        GachaBatchService service = service(List.of(client));
+        GachaCollectionService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -84,7 +84,7 @@ class GachaBatchServiceTest {
         PlatformClient client = new StubPlatformClient(
                 new PlatformPostDto("media-1", null, "url1", PlatformType.INSTAGRAM)
         );
-        GachaBatchService service = service(List.of(client));
+        GachaCollectionService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -103,7 +103,7 @@ class GachaBatchServiceTest {
                 new PlatformPostDto("media-1", "입고 안내", "url1", PlatformType.INSTAGRAM)
         );
         when(gachaRepository.existsByInstagramMediaId("media-1")).thenReturn(true);
-        GachaBatchService service = service(List.of(client));
+        GachaCollectionService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -125,7 +125,7 @@ class GachaBatchServiceTest {
         when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
         when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = service(List.of(client));
+        GachaCollectionService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -148,7 +148,7 @@ class GachaBatchServiceTest {
         when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
         when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = service(List.of(failingClient, workingClient));
+        GachaCollectionService service = service(List.of(failingClient, workingClient));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -170,7 +170,7 @@ class GachaBatchServiceTest {
         when(imageUploader.uploadFromUrl(eq("url1"), any())).thenThrow(new RuntimeException("업로드 실패"));
         when(imageUploader.uploadFromUrl(eq("url2"), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = service(List.of(client));
+        GachaCollectionService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -195,7 +195,7 @@ class GachaBatchServiceTest {
                 .thenThrow(new RuntimeException("저장 실패"));
         when(gachaRepository.save(argThat(gacha -> gacha != null && "media-2".equals(gacha.getInstagramMediaId()))))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = service(List.of(client));
+        GachaCollectionService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -230,7 +230,7 @@ class GachaBatchServiceTest {
             when(gachaRepository.existsByInstagramMediaId("media-0")).thenReturn(true);
             when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaBatchService service = service(List.of(platformClient));
+            GachaCollectionService service = service(List.of(platformClient));
 
             // when
             List<Gacha> result = service.collectPostsForShop("shop1");
@@ -252,7 +252,7 @@ class GachaBatchServiceTest {
             when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
             when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaBatchService service = service(List.of(platformClient));
+            GachaCollectionService service = service(List.of(platformClient));
 
             // when
             List<Gacha> result = service.collectPostsForShop("shop1");
@@ -277,7 +277,7 @@ class GachaBatchServiceTest {
             when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
             when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaBatchService service = service(List.of(platformClient));
+            GachaCollectionService service = service(List.of(platformClient));
 
             // when
             List<Gacha> result = service.collectPostsForShop("shop1");
