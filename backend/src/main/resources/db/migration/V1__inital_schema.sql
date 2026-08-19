@@ -8,6 +8,7 @@ CREATE TABLE gacha (
                        instagram_media_id VARCHAR(255),
                        created_at TIMESTAMP(6),
                        updated_at TIMESTAMP(6),
+
                        CONSTRAINT uk_gacha_instagram_media_id UNIQUE (instagram_media_id)
 );
 
