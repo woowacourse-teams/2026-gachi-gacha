@@ -316,12 +316,36 @@ export const PhotoSection = styled.section<{ $state: BottomSheetState }>`
 
 export const PhotoTitleRow = styled.div`
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
   justify-content: space-between;
+`;
 
-  h3 {
-    margin-bottom: 0;
+export const GalleryTabs = styled.div`
+  display: flex;
+  min-width: 0;
+  padding: 3px;
+  background: #f8f1f4;
+  border-radius: 12px;
+`;
+
+export const GalleryTab = styled.button<{ $isActive: boolean }>`
+  min-height: 34px;
+  padding: 7px 11px;
+  color: ${({ $isActive }) => ($isActive ? '#7f3150' : '#87777d')};
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  background: ${({ $isActive }) => ($isActive ? '#ffffff' : 'transparent')};
+  border: 0;
+  border-radius: 9px;
+  box-shadow: ${({ $isActive }) =>
+    $isActive ? '0 2px 8px rgb(98 56 71 / 10%)' : 'none'};
+
+  &:focus-visible {
+    outline: 3px solid rgb(180 73 113 / 24%);
+    outline-offset: 1px;
   }
 `;
 
@@ -329,6 +353,33 @@ export const GalleryControls = styled.div`
   display: flex;
   gap: 7px;
   align-items: center;
+`;
+
+export const GalleryViewButton = styled.button`
+  min-height: 32px;
+  padding: 6px 9px;
+  color: #8a4861;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+
+  &:hover:not(:disabled) {
+    background: #fff0f5;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(180 73 113 / 24%);
+    outline-offset: 1px;
+  }
 `;
 
 export const GalleryControl = styled.button`
@@ -407,6 +458,21 @@ export const ThumbnailFrame = styled.div`
   border-radius: 17px;
   scroll-snap-align: start;
   scroll-snap-stop: always;
+`;
+
+export const PhotoGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+`;
+
+export const GridImageFrame = styled.div`
+  overflow: hidden;
+  aspect-ratio: 1;
+  background: #faf3f5;
+  border: 1px solid #f0e3e7;
+  border-radius: 14px;
 `;
 
 export const ThumbnailImage = styled.img`
