@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.common.domain;
 
+import com.gachi.gacha.server.common.exception.BusinessException;
+import com.gachi.gacha.server.common.exception.ErrorCode;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,6 @@ public enum ImageFormat {
         return Arrays.stream(values())
                 .filter(type -> type.contentType.equalsIgnoreCase(contentType))
                 .findFirst()
-                .orElseThrow();
+                .orElseThrow(() -> new BusinessException(ErrorCode.S3_IMAGE_INVALID_POLICY));
     }
 }

@@ -157,17 +157,13 @@ public class StoreService {
 
         List<StoreImage> storeImages = images.stream()
                 .map(file -> {
-                    String imageUrl = imageUploader.upload(file, imagePath());
+                    String imageUrl = imageUploader.upload(file, ImageType.STORE.buildPath(s3RootFolder));
                     uploadedImageUrls.add(imageUrl);
                     return new StoreImage(store, imageUrl);
                 })
                 .toList();
 
         storeImageJpaRepository.saveAll(storeImages);
-    }
-
-    private String imagePath() {
-        return "%s/%s".formatted(s3RootFolder, ImageType.STORE.getFolderName());
     }
 
     private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {

@@ -11,4 +11,8 @@ public enum ImageType {
 
     private final String label;
     private final String folderName;
+
+    public String buildPath(final String s3RootFolder) {
+        return "%s/%s".formatted(s3RootFolder, folderName);
+    }
 }

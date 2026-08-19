@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.collection.application;
 
+import com.gachi.gacha.server.common.exception.BusinessException;
+import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.gacha.domain.Gacha;
@@ -113,15 +115,17 @@ public class GachaCollectionService {
             return savedGachas;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("이미지 업로드 처리 중 인터럽트가 발생했습니다.", e);
+            log.error("이미지 업로드 처리 중 인터럽트가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         } catch (ExecutionException e) {
-            throw new IllegalStateException("이미지 업로드 처리 중 알 수 없는 오류가 발생했습니다.", e);
+            log.error("이미지 업로드 처리 중 알 수 없는 오류가 발생했습니다.", e);
+            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
     private Optional<Gacha> uploadAndSave(final PlatformPostDto post) {
         try {
-            String s3ImageUrl = imageUploader.uploadFromUrl(post.imageUrl(), imagePath());
+            String s3ImageUrl = imageUploader.uploadFromUrl(post.imageUrl(), ImageType.GACHA.buildPath(s3RootFolder));
 
             Gacha newGacha = Gacha.builder()
                     .name("임시이름_수동검수필요")
@@ -135,10 +139,6 @@ public class GachaCollectionService {
             log.error("가챠 이미지 업로드/저장 실패 (미디어 ID: {}): {}", post.originalId(), e.getMessage());
             return Optional.empty();
         }
-    }
-
-    private String imagePath() {
-        return "%s/%s".formatted(s3RootFolder, ImageType.GACHA.getFolderName());
     }
 
     private boolean isGachaKeywordIncluded(final String caption) {
