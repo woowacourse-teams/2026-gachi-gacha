@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.collection.application;
 
-import com.gachi.gacha.server.common.exception.BusinessException;
+import com.gachi.gacha.server.collection.application.exception.GachaCollectionException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
@@ -116,10 +116,10 @@ public class GachaCollectionService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.error("이미지 업로드 처리 중 인터럽트가 발생했습니다.", e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new GachaCollectionException(ErrorCode.GACHA_COLLECTION_FAILED);
         } catch (ExecutionException e) {
             log.error("이미지 업로드 처리 중 알 수 없는 오류가 발생했습니다.", e);
-            throw new BusinessException(ErrorCode.INTERNAL_SERVER_ERROR);
+            throw new GachaCollectionException(ErrorCode.GACHA_COLLECTION_FAILED);
         }
     }
 
