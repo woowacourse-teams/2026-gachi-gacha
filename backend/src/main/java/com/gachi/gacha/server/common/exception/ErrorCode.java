@@ -36,7 +36,8 @@ public enum ErrorCode {
     S3_IMAGE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E02", "이미지 파일을 읽는 중 오류가 발생했습니다."),
     S3_IMAGE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E03", "이미지 업로드 중 오류가 발생했습니다."),
     S3_IMAGE_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E04", "이미지 삭제 중 오류가 발생했습니다."),
-    S3_IMAGE_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E05", "이미지를 휴지통으로 이동하는 중 오류가 발생했습니다.");
+    S3_IMAGE_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E05", "이미지를 휴지통으로 이동하는 중 오류가 발생했습니다."),
+    S3_IMAGE_DOWNLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E06", "원본 이미지를 다운로드하는 중 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;

@@ -31,4 +31,11 @@ public enum ImageFormat {
         return Arrays.stream(values())
                 .anyMatch(type -> type.extension.equalsIgnoreCase(extension));
     }
+
+    public static ImageFormat fromContentType(final String contentType) {
+        return Arrays.stream(values())
+                .filter(type -> type.contentType.equalsIgnoreCase(contentType))
+                .findFirst()
+                .orElseThrow();
+    }
 }
