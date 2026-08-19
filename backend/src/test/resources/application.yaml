@@ -8,26 +8,21 @@ spring:
     multipart:
       max-file-size: 100MB
       max-request-size: 100MB
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-
   datasource:
-    driver-class-name: org.h2.Driver
-    url: jdbc:h2:mem:gacha_db;DB_CLOSE_DELAY=-1;MODE=MySQL
-    username: sa
-    password:
-
+    driver-class-name: org.postgresql.Driver
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-
 cloud:
   aws:
     region: test

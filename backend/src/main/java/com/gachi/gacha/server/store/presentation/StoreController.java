@@ -115,7 +115,7 @@ public class StoreController {
     }
 
     @PostMapping("/{storeId}/gachas/{gachaId}")
-    public ResponseEntity<BaseResponse<StoreGachaResponse>> createNearbyStores(
+    public ResponseEntity<BaseResponse<StoreGachaResponse>> createStoreGachas(
             @PathVariable final Long storeId,
             @PathVariable final Long gachaId
     ) {
