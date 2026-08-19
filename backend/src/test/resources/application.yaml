@@ -34,3 +34,10 @@ cloud:
     s3:
       bucket: test-bucket
       folder: test
+
+
+instagram:
+  api:
+    uri: "https://dummy-uri.com"
+    user-id: "dummy-user-id"
+    access-token: "dummy-access-token"

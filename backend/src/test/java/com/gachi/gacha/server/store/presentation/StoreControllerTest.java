@@ -22,6 +22,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.RestTemplate;
 
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -39,6 +40,9 @@ class StoreControllerTest {
 
     @MockitoBean
     private ImageUploader imageUploader;
+
+    @MockitoBean
+    private RestTemplate restTemplate;
 
     @BeforeEach
     void setUp() {

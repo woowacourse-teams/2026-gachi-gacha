@@ -1,11 +1,18 @@
 package com.gachi.gacha.server.gacha.presentation;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaImageJpaRepository;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
@@ -18,14 +25,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class GachaImageControllerTest {
@@ -41,6 +42,9 @@ class GachaImageControllerTest {
 
     @MockitoBean
     private ImageUploader imageUploader;
+
+    @MockitoBean
+    private RestTemplate restTemplate;
 
     @BeforeEach
     void setUp() {
