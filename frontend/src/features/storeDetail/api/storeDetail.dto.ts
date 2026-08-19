@@ -4,27 +4,32 @@ export interface ApiResponseDto<T> {
   data: T;
 }
 
+export interface StoreImageDto {
+  storeImageId: number;
+  imageUrl: string;
+}
+
 export interface StoreDetailDto {
   storeId: number;
   name: string;
   address: string;
-  businessHours: string;
+  businessHours: string | null;
   thumbnailUrl: string | null;
-  imageUrls: string[];
-  phone: string | null;
+  images: StoreImageDto[];
+  phoneNumber: string | null;
   instagramId: string | null;
-  paymentMethods: string[];
+  paymentMethods: string | null;
   facilities: string[];
-  machineAmount: number | null;
+  gachaMachineAmount: number | null;
   kujiAmount: number | null;
   coinPrice: number | null;
-  gachaMinPrice: number | null;
-  gachaMaxPrice: number | null;
-  kujiMinPrice: number | null;
-  kujiMaxPrice: number | null;
-  selectGachaMinPrice: number | null;
-  selectGachaMaxPrice: number | null;
+  gachaPriceMin: number | null;
+  gachaPriceMax: number | null;
+  kujiPriceMin: number | null;
+  kujiPriceMax: number | null;
+  selectGachaPriceMin: number | null;
+  selectGachaPriceMax: number | null;
   hasRandomBox: boolean;
-  hasSelectGacha: boolean;
+  hasSelectGacha: boolean | null;
   updatedAt: string;
 }

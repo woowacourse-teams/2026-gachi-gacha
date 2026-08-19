@@ -40,14 +40,25 @@ function formatWon(price: number) {
 }
 
 function formatPriceRange(minPrice: number | null, maxPrice: number | null) {
-  if (minPrice === null && maxPrice === null) return null;
-  if (minPrice === null) {
-    return maxPrice === null ? null : `${formatWon(maxPrice)}까지`;
-  }
-  if (maxPrice === null) return `${formatWon(minPrice)}부터`;
-  if (minPrice === maxPrice) return formatWon(minPrice);
+  const normalizedMinPrice =
+    minPrice !== null && minPrice > 0 ? minPrice : null;
+  const normalizedMaxPrice =
+    maxPrice !== null && maxPrice > 0 ? maxPrice : null;
 
-  return `${formatWon(minPrice)} ~ ${formatWon(maxPrice)}`;
+  if (normalizedMinPrice === null && normalizedMaxPrice === null) return null;
+  if (normalizedMinPrice === null) {
+    return normalizedMaxPrice === null
+      ? null
+      : `${formatWon(normalizedMaxPrice)}까지`;
+  }
+  if (normalizedMaxPrice === null) {
+    return `${formatWon(normalizedMinPrice)}부터`;
+  }
+  if (normalizedMinPrice === normalizedMaxPrice) {
+    return formatWon(normalizedMinPrice);
+  }
+
+  return `${formatWon(normalizedMinPrice)} ~ ${formatWon(normalizedMaxPrice)}`;
 }
 
 function createPrice(
@@ -62,12 +73,12 @@ function createPrice(
 
 function createPrices(dto: StoreDetailDto) {
   const prices: Array<StoreDetailPrice | null> = [
-    dto.coinPrice === null
+    dto.coinPrice === null || dto.coinPrice <= 0
       ? null
       : { label: '코인 1개', value: formatWon(dto.coinPrice) },
-    createPrice('가챠', dto.gachaMinPrice, dto.gachaMaxPrice),
-    createPrice('쿠지', dto.kujiMinPrice, dto.kujiMaxPrice),
-    createPrice('선택 가챠', dto.selectGachaMinPrice, dto.selectGachaMaxPrice),
+    createPrice('가챠', dto.gachaPriceMin, dto.gachaPriceMax),
+    createPrice('쿠지', dto.kujiPriceMin, dto.kujiPriceMax),
+    createPrice('선택 가챠', dto.selectGachaPriceMin, dto.selectGachaPriceMax),
   ];
 
   return prices.filter((price): price is StoreDetailPrice => price !== null);
@@ -103,26 +114,35 @@ function createInstagram(instagramId: string | null) {
 function createCategories(dto: StoreDetailDto) {
   const categories: string[] = [];
   const hasGacha =
-    (dto.machineAmount !== null && dto.machineAmount > 0) ||
-    dto.gachaMinPrice !== null ||
-    dto.gachaMaxPrice !== null;
+    (dto.gachaMachineAmount !== null && dto.gachaMachineAmount > 0) ||
+    (dto.gachaPriceMin !== null && dto.gachaPriceMin > 0) ||
+    (dto.gachaPriceMax !== null && dto.gachaPriceMax > 0);
   const hasKuji =
     (dto.kujiAmount !== null && dto.kujiAmount > 0) ||
-    dto.kujiMinPrice !== null ||
-    dto.kujiMaxPrice !== null;
+    (dto.kujiPriceMin !== null && dto.kujiPriceMin > 0) ||
+    (dto.kujiPriceMax !== null && dto.kujiPriceMax > 0);
 
   if (hasGacha) categories.push('가챠');
   if (hasKuji) categories.push('쿠지');
   if (dto.hasRandomBox) categories.push('랜덤 가챠');
   if (
     dto.hasSelectGacha ||
-    dto.selectGachaMinPrice !== null ||
-    dto.selectGachaMaxPrice !== null
+    (dto.selectGachaPriceMin !== null && dto.selectGachaPriceMin > 0) ||
+    (dto.selectGachaPriceMax !== null && dto.selectGachaPriceMax > 0)
   ) {
     categories.push('선택 가챠');
   }
 
   return categories;
+}
+
+function createPaymentMethods(paymentMethods: string | null) {
+  if (!paymentMethods) return [];
+
+  return paymentMethods
+    .split(',')
+    .map((paymentMethod) => paymentMethod.trim())
+    .filter(Boolean);
 }
 
 export function toStoreDetail(
@@ -132,7 +152,7 @@ export function toStoreDetail(
   const instagram = createInstagram(dto.instagramId);
   const imageUrls = Array.from(
     new Set(
-      [dto.thumbnailUrl, ...dto.imageUrls].filter(
+      [dto.thumbnailUrl, ...dto.images.map(({ imageUrl }) => imageUrl)].filter(
         (imageUrl): imageUrl is string => imageUrl !== null,
       ),
     ),
@@ -142,18 +162,18 @@ export function toStoreDetail(
     id: dto.storeId,
     name: dto.name,
     address: dto.address,
-    businessHours: dto.businessHours,
+    businessHours: dto.businessHours ?? '정보 없음',
     imageUrls,
-    phone: dto.phone,
+    phone: dto.phoneNumber,
     socialLinks: instagram ? [instagram] : [],
     categories: createCategories(dto),
-    paymentMethods: [...dto.paymentMethods],
+    paymentMethods: createPaymentMethods(dto.paymentMethods),
     facilities: [...dto.facilities],
-    machineAmount: formatAmountRange(dto.machineAmount, '대'),
+    machineAmount: formatAmountRange(dto.gachaMachineAmount, '대'),
     kujiAmount: formatAmountRange(dto.kujiAmount, '개'),
     prices: createPrices(dto),
     hasRandomBox: dto.hasRandomBox,
-    hasSelectGacha: dto.hasSelectGacha,
+    hasSelectGacha: dto.hasSelectGacha === true,
     updatedAt: formatUpdatedAt(dto.updatedAt),
     distance: formatDistance(options.distanceMeters),
   };
