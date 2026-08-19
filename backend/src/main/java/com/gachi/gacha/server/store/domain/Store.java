@@ -3,6 +3,7 @@ package com.gachi.gacha.server.store.domain;
 import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
 
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
+import com.gachi.gacha.server.common.util.GeometryUtils;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,17 +17,12 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.PrecisionModel;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Store extends BaseTimeEntity {
-
-    private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -56,7 +52,7 @@ public class Store extends BaseTimeEntity {
         this.thumbnailUrl = thumbnailUrl;
         this.latitude = latitude;
         this.longitude = longitude;
-        this.location = createPoint(latitude, longitude);
+        this.location = GeometryUtils.createPoint(latitude, longitude);
     }
 
     public Store patch(
@@ -73,20 +69,11 @@ public class Store extends BaseTimeEntity {
                 .build();
     }
 
-    private Point createPoint(final Double latitude, final Double longitude) {
-        if (latitude == null || longitude == null) {
-            return null;
-        }
-        Point point = GEOMETRY_FACTORY.createPoint(new Coordinate(longitude, latitude));
-        point.setSRID(4326); // WGS84 좌표계 지정
-        return point;
-    }
-
     @PrePersist
     @PreUpdate
     private void updateLocation() {
         if (this.latitude != null && this.longitude != null) {
-            this.location = createPoint(this.latitude, this.longitude);
+            this.location = GeometryUtils.createPoint(this.latitude, this.longitude);
         }
     }
 
