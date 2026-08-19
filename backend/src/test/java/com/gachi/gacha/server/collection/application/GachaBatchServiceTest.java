@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
@@ -17,18 +18,46 @@ import com.gachi.gacha.server.infrastructure.platform.PlatformType;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostPage;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class GachaBatchServiceTest {
 
+    private static final String UPLOADED_URL = "https://test-bucket.s3.amazonaws.com/gachigacha/gacha/uploaded.jpg";
+
     @Mock
     private GachaJpaRepository gachaRepository;
+
+    @Mock
+    private ImageUploader imageUploader;
+
+    private ExecutorService executorService;
+
+    @BeforeEach
+    void setUp() {
+        executorService = Executors.newFixedThreadPool(2);
+    }
+
+    @AfterEach
+    void tearDown() {
+        executorService.shutdownNow();
+    }
+
+    private GachaBatchService service(final List<PlatformClient> clients) {
+        GachaBatchService service = new GachaBatchService(clients, gachaRepository, imageUploader, executorService);
+        ReflectionTestUtils.setField(service, "s3RootFolder", "gachigacha");
+        return service;
+    }
 
     @Test
     @DisplayName("입고 관련 키워드가 없는 게시글은 저장하지 않는다.")
@@ -37,7 +66,7 @@ class GachaBatchServiceTest {
         PlatformClient client = new StubPlatformClient(
                 new PlatformPostDto("media-1", "그냥 일상 사진입니다", "url1", PlatformType.INSTAGRAM)
         );
-        GachaBatchService service = new GachaBatchService(List.of(client), gachaRepository);
+        GachaBatchService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -45,6 +74,7 @@ class GachaBatchServiceTest {
         // then
         assertThat(result).isEmpty();
         verify(gachaRepository, never()).save(any());
+        verify(imageUploader, never()).uploadFromUrl(any(), any());
     }
 
     @Test
@@ -54,7 +84,7 @@ class GachaBatchServiceTest {
         PlatformClient client = new StubPlatformClient(
                 new PlatformPostDto("media-1", null, "url1", PlatformType.INSTAGRAM)
         );
-        GachaBatchService service = new GachaBatchService(List.of(client), gachaRepository);
+        GachaBatchService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -62,6 +92,7 @@ class GachaBatchServiceTest {
         // then
         assertThat(result).isEmpty();
         verify(gachaRepository, never()).save(any());
+        verify(imageUploader, never()).uploadFromUrl(any(), any());
     }
 
     @Test
@@ -72,7 +103,7 @@ class GachaBatchServiceTest {
                 new PlatformPostDto("media-1", "입고 안내", "url1", PlatformType.INSTAGRAM)
         );
         when(gachaRepository.existsByInstagramMediaId("media-1")).thenReturn(true);
-        GachaBatchService service = new GachaBatchService(List.of(client), gachaRepository);
+        GachaBatchService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -80,10 +111,11 @@ class GachaBatchServiceTest {
         // then
         assertThat(result).isEmpty();
         verify(gachaRepository, never()).save(any());
+        verify(imageUploader, never()).uploadFromUrl(any(), any());
     }
 
     @Test
-    @DisplayName("키워드가 포함되고 중복되지 않은 게시글만 저장한다.")
+    @DisplayName("키워드가 포함되고 중복되지 않은 게시글은 S3 업로드 후 저장한다.")
     void collectPostsForShop_savesNewKeywordMatchedPosts() {
         // given
         PlatformClient client = new StubPlatformClient(
@@ -91,8 +123,9 @@ class GachaBatchServiceTest {
                 new PlatformPostDto("media-2", "재입고 되었습니다", "url2", PlatformType.INSTAGRAM)
         );
         when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = new GachaBatchService(List.of(client), gachaRepository);
+        GachaBatchService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -101,6 +134,7 @@ class GachaBatchServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result).extracting(Gacha::getInstagramMediaId)
                 .containsExactlyInAnyOrder("media-1", "media-2");
+        assertThat(result).extracting(Gacha::getThumbnailUrl).containsOnly(UPLOADED_URL);
     }
 
     @Test
@@ -112,8 +146,9 @@ class GachaBatchServiceTest {
                 new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM)
         );
         when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = new GachaBatchService(List.of(failingClient, workingClient), gachaRepository);
+        GachaBatchService service = service(List.of(failingClient, workingClient));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -121,6 +156,29 @@ class GachaBatchServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getInstagramMediaId()).isEqualTo("media-1");
+    }
+
+    @Test
+    @DisplayName("한 게시글의 이미지 업로드가 실패해도 나머지 게시글은 계속 저장된다.")
+    void collectPostsForShop_oneUploadFails_othersStillSaved() {
+        // given
+        PlatformClient client = new StubPlatformClient(
+                new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM),
+                new PlatformPostDto("media-2", "재입고 되었습니다", "url2", PlatformType.INSTAGRAM)
+        );
+        when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(imageUploader.uploadFromUrl(eq("url1"), any())).thenThrow(new RuntimeException("업로드 실패"));
+        when(imageUploader.uploadFromUrl(eq("url2"), any())).thenReturn(UPLOADED_URL);
+        when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        GachaBatchService service = service(List.of(client));
+
+        // when
+        List<Gacha> result = service.collectPostsForShop("shop1");
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getInstagramMediaId()).isEqualTo("media-2");
+        verify(gachaRepository, never()).save(argThat(gacha -> "media-1".equals(gacha.getInstagramMediaId())));
     }
 
     @Test
@@ -132,11 +190,12 @@ class GachaBatchServiceTest {
                 new PlatformPostDto("media-2", "재입고 되었습니다", "url2", PlatformType.INSTAGRAM)
         );
         when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(argThat(gacha -> gacha != null && "media-1".equals(gacha.getInstagramMediaId()))))
                 .thenThrow(new RuntimeException("저장 실패"));
         when(gachaRepository.save(argThat(gacha -> gacha != null && "media-2".equals(gacha.getInstagramMediaId()))))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        GachaBatchService service = new GachaBatchService(List.of(client), gachaRepository);
+        GachaBatchService service = service(List.of(client));
 
         // when
         List<Gacha> result = service.collectPostsForShop("shop1");
@@ -169,8 +228,9 @@ class GachaBatchServiceTest {
             when(platformClient.fetchRecentPosts(eq("shop1"), eq("cursor-1"))).thenReturn(page2);
             when(gachaRepository.existsByInstagramMediaId("media-1")).thenReturn(false);
             when(gachaRepository.existsByInstagramMediaId("media-0")).thenReturn(true);
+            when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaBatchService service = new GachaBatchService(List.of(platformClient), gachaRepository);
+            GachaBatchService service = service(List.of(platformClient));
 
             // when
             List<Gacha> result = service.collectPostsForShop("shop1");
@@ -190,8 +250,9 @@ class GachaBatchServiceTest {
             );
             when(platformClient.fetchRecentPosts(eq("shop1"), isNull())).thenReturn(onlyPage);
             when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+            when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaBatchService service = new GachaBatchService(List.of(platformClient), gachaRepository);
+            GachaBatchService service = service(List.of(platformClient));
 
             // when
             List<Gacha> result = service.collectPostsForShop("shop1");
@@ -214,8 +275,9 @@ class GachaBatchServiceTest {
                 );
             });
             when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+            when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaBatchService service = new GachaBatchService(List.of(platformClient), gachaRepository);
+            GachaBatchService service = service(List.of(platformClient));
 
             // when
             List<Gacha> result = service.collectPostsForShop("shop1");
