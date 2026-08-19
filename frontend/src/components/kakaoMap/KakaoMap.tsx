@@ -12,6 +12,8 @@ interface KakaoMapProps {
   defaultCenter: LatLngLiteral;
   defaultLevel?: number;
   onMapReady?: (map: kakao.maps.Map) => void;
+  /** 지도의 빈 곳을 눌렀을 때. 마커를 누른 경우에는 호출되지 않는다. */
+  onMapClick?: () => void;
   children?: ReactNode;
 }
 
@@ -19,20 +21,35 @@ export default function KakaoMap({
   defaultCenter,
   defaultLevel = 4,
   onMapReady,
+  onMapClick,
   children,
 }: KakaoMapProps) {
   const kakaoMap = useKakaoMap({ defaultCenter, defaultLevel });
   const map = kakaoMap.status === 'success' ? kakaoMap.data : null;
   const onMapReadyRef = useRef(onMapReady);
+  const onMapClickRef = useRef(onMapClick);
 
   useEffect(() => {
     onMapReadyRef.current = onMapReady;
+    onMapClickRef.current = onMapClick;
   });
 
   useEffect(() => {
     if (!map) return;
 
     onMapReadyRef.current?.(map);
+  }, [map]);
+
+  // 핸들러를 ref로 읽으므로 지도가 새로 만들어질 때만 리스너를 다시 건다.
+  useEffect(() => {
+    if (!map) return;
+
+    const { maps } = window.kakao;
+    const handleClick = () => onMapClickRef.current?.();
+
+    maps.event.addListener(map, 'click', handleClick);
+
+    return () => maps.event.removeListener(map, 'click', handleClick);
   }, [map]);
 
   return (
