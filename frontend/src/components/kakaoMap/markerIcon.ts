@@ -8,16 +8,21 @@
  *   결과를 재사용하므로, 마커가 몇 개든 실제 래스터는 상태당 한 번이다.
  * - 두 상태의 배율과 기준점은 아래 상수에서 계산한다. 손으로 맞추면
  *   선택할 때 마커가 튄다.
+ * - 그림자는 넣지 않는다. 그림자가 있으면 기준점을 지면에 둬야 해서 캡슐이
+ *   좌표 위쪽에 뜨고, 이미지 박스도 아래로 길어져 클릭 영역이 넓어진다.
  */
 
-/** 도안의 기준 배율. 닫힘 상태의 viewBox 40.8단위를 40px로 그린다. */
-const BASE_VIEWBOX_WIDTH = 40.8;
-const BASE_RENDER_WIDTH = 40;
-const SCALE = BASE_RENDER_WIDTH / BASE_VIEWBOX_WIDTH;
-
-/** 두 상태가 공유하는 기준점 (도안 좌표계). 그릇의 중심축과 지면에 닿는 높이. */
+/** 캡슐 원 (도안 좌표계). 마커의 모든 치수가 여기서 나온다. */
 const CENTER_X = 20;
-const GROUND_Y = 51.5;
+const CENTER_Y = 28;
+const RADIUS = 17;
+const OUTLINE_WIDTH = 1.4;
+/** 외곽선은 경로 중앙에 그려지므로 절반이 원 바깥으로 나간다. */
+const EDGE = OUTLINE_WIDTH / 2;
+
+/** 캡슐 지름을 화면에서 몇 px로 그릴지. 마커 크기는 이 값 하나가 정한다. */
+const BALL_RENDER_DIAMETER = 24;
+const SCALE = BALL_RENDER_DIAMETER / (RADIUS * 2);
 
 /**
  * 뚜껑이 맞물리는 선(씰)이 반지름 17 원과 만나는 두 점.
@@ -51,52 +56,56 @@ interface MarkerArt {
   body: string;
 }
 
-const SHADOW_GRADIENT = `<radialGradient id="s">
-  <stop offset="0%" stop-color="${OUTLINE}" stop-opacity=".24"/>
-  <stop offset="55%" stop-color="${OUTLINE}" stop-opacity=".149"/>
-  <stop offset="100%" stop-color="${OUTLINE}" stop-opacity="0"/>
-</radialGradient>`;
-
-const SHADOW = `<ellipse cx="${CENTER_X}" cy="${GROUND_Y}" rx="7.4" ry="2.5" fill="url(#s)"/>`;
-
 /** 그릇 위쪽에 걸치는 반투명 띠. 뚜껑이 맞물린 자리를 표현한다. */
 const SEAM_BAND = `<g transform="rotate(-14 20 28)"><rect x="-40" y="29" width="120" height="4" fill="${GLASS}" opacity=".5"/></g>`;
 
 /** 유리 뚜껑의 하이라이트 호. */
 const HIGHLIGHT = `<path d="M 8.22 21.20 A 13.6 13.6 0 0 1 18.81 14.45" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".9"/>`;
 
+const BALL_PATH = `M ${CENTER_X} ${CENTER_Y - RADIUS} A ${RADIUS} ${RADIUS} 0 1 1 ${CENTER_X - 0.01} ${CENTER_Y - RADIUS} Z`;
+
+/** 닫힘 상태는 원에 외곽선 절반을 더한 정사각형이면 정확히 들어맞는다. */
 const CLOSED: MarkerArt = {
-  viewBox: { x: -0.4, y: 9, width: 40.8, height: 47.7 },
-  defs: `${SHADOW_GRADIENT}
-<clipPath id="a"><path d="M 20 11 A 17 17 0 1 1 19.99 11 Z"/></clipPath>`,
-  body: `${SHADOW}
-<g clip-path="url(#a)">
+  viewBox: {
+    x: CENTER_X - RADIUS - EDGE,
+    y: CENTER_Y - RADIUS - EDGE,
+    width: (RADIUS + EDGE) * 2,
+    height: (RADIUS + EDGE) * 2,
+  },
+  defs: `<clipPath id="a"><path d="${BALL_PATH}"/></clipPath>`,
+  body: `<g clip-path="url(#a)">
   <rect x="-40" y="-60" width="120" height="180" fill="${ORANGE}"/>
   <g transform="rotate(-14 20 28)"><rect x="-40" y="-51" width="120" height="80" fill="${GLASS}"/></g>
   ${SEAM_BAND}
 </g>
 ${HIGHLIGHT}
-<path d="M 20 11 A 17 17 0 1 1 19.99 11 Z" fill="none" stroke="${OUTLINE}" stroke-width="1.4" stroke-linejoin="round"/>`,
+<path d="${BALL_PATH}" fill="none" stroke="${OUTLINE}" stroke-width="${OUTLINE_WIDTH}" stroke-linejoin="round"/>`,
 };
 
 /** 씰 아래쪽 반원 = 그릇, 위쪽 반원 = 뚜껑. 둘 다 같은 원 위에 있다. */
-const BOWL_PATH = `M ${SEAM_RIGHT} A 17 17 0 0 1 ${SEAM_LEFT} Z`;
-const LID_PATH = `M ${SEAM_LEFT} A 17 17 0 1 1 ${SEAM_RIGHT} Z`;
+const BOWL_PATH = `M ${SEAM_RIGHT} A ${RADIUS} ${RADIUS} 0 0 1 ${SEAM_LEFT} Z`;
+const LID_PATH = `M ${SEAM_LEFT} A ${RADIUS} ${RADIUS} 0 1 1 ${SEAM_RIGHT} Z`;
 
 const SELECTED: MarkerArt = {
-  // 폭은 닫힘 상태와 같다. 뚜껑을 45도 젖혀도 원래 폭을 넘지 않는다.
-  viewBox: { x: -0.4, y: -2.44, width: 40.8, height: 59.14 },
-  defs: `${SHADOW_GRADIENT}
-<clipPath id="b"><path d="${BOWL_PATH}"/></clipPath>
+  // 왼쪽 가장자리와 아래는 닫힘 상태와 맞춘다. 왼쪽을 맞춰야 두 상태의 anchorX가
+  // 같아져서 선택할 때 마커가 좌우로 흔들리지 않는다.
+  // 위와 오른쪽은 경첩 기준 45도 젖힌 뚜껑이 정한다. 원호를 촘촘히 훑어 구한
+  // 값이라 식으로 적을 수 없다. 여는 각도를 바꾸면 다시 재야 한다.
+  viewBox: {
+    x: CENTER_X - RADIUS - EDGE,
+    y: -2.44,
+    width: 38.09,
+    height: 48.14,
+  },
+  defs: `<clipPath id="b"><path d="${BOWL_PATH}"/></clipPath>
 <clipPath id="c"><path d="${LID_PATH}"/></clipPath>`,
-  body: `${SHADOW}
-<g clip-path="url(#b)">
+  body: `<g clip-path="url(#b)">
   <rect x="-40" y="-60" width="120" height="180" fill="${ORANGE}"/>
   ${SEAM_BAND}
 </g>
-<path d="${BOWL_PATH}" fill="none" stroke="${OUTLINE}" stroke-width="1.4" stroke-linejoin="round"/>
+<path d="${BOWL_PATH}" fill="none" stroke="${OUTLINE}" stroke-width="${OUTLINE_WIDTH}" stroke-linejoin="round"/>
 <g transform="rotate(45 ${SEAM_RIGHT})">
-  <path d="${LID_PATH}" fill="${GLASS}" stroke="${OUTLINE}" stroke-width="1.4" stroke-linejoin="round"/>
+  <path d="${LID_PATH}" fill="${GLASS}" stroke="${OUTLINE}" stroke-width="${OUTLINE_WIDTH}" stroke-linejoin="round"/>
   <g clip-path="url(#c)">${HIGHLIGHT}</g>
 </g>`,
 };
@@ -107,9 +116,18 @@ export interface MarkerIcon {
   /** 표시 크기 (CSS px) */
   width: number;
   height: number;
-  /** 이미지 좌상단 기준 기준점. 이 점이 좌표에 꽂힌다. */
+  /** 이미지 좌상단 기준 기준점. 캡슐의 중심이 좌표에 꽂힌다. */
   anchorX: number;
   anchorY: number;
+  /**
+   * 클릭과 마우스오버가 먹는 영역. 캡슐 원만 잡는다.
+   *
+   * 이걸 지정하지 않으면 이미지의 사각형 전체가 반응한다. 그러면 원 바깥
+   * 모서리에서도 클릭이 먹어서, 겹쳐 있는 다른 마커를 누르기 어려워진다.
+   * `shape`/`coords`는 HTML `<area>`와 같은 규칙이다.
+   */
+  hitShape: 'circle';
+  hitCoords: string;
 }
 
 function toDataUrl({ viewBox, defs, body }: MarkerArt) {
@@ -121,15 +139,23 @@ function toDataUrl({ viewBox, defs, body }: MarkerArt) {
   return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
 
+function round(value: number) {
+  return Math.round(value * 100) / 100;
+}
+
 function toIcon(art: MarkerArt): MarkerIcon {
   const { viewBox } = art;
+  const centerX = (CENTER_X - viewBox.x) * SCALE;
+  const centerY = (CENTER_Y - viewBox.y) * SCALE;
 
   return {
     src: toDataUrl(art),
     width: viewBox.width * SCALE,
     height: viewBox.height * SCALE,
-    anchorX: (CENTER_X - viewBox.x) * SCALE,
-    anchorY: (GROUND_Y - viewBox.y) * SCALE,
+    anchorX: centerX,
+    anchorY: centerY,
+    hitShape: 'circle',
+    hitCoords: `${round(centerX)},${round(centerY)},${round((RADIUS + EDGE) * SCALE)}`,
   };
 }
 
