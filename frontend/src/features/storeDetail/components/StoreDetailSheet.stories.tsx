@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
+import defaultStoreThumbnail from '@/assets/defaultStoreThumbnail.png';
+
 import StoreDetailSheet from './StoreDetailSheet';
 import * as S from './StoreDetailSheet.styles';
 import StoreDetailSheetContainer from './StoreDetailSheetContainer';
@@ -8,6 +10,22 @@ import { mockStoreDetail } from '../mocks/storeDetail.mock';
 import { toStoreDetail } from '../model/toStoreDetail';
 
 const store = toStoreDetail(mockStoreDetail, { distanceMeters: 380 });
+const storeWithGallery = toStoreDetail(
+  {
+    ...mockStoreDetail,
+    images: Array.from({ length: 5 }, (_, index) => ({
+      storeImageId: index + 1,
+      imageUrl: `${defaultStoreThumbnail}?store=${index + 1}`,
+    })),
+  },
+  {
+    distanceMeters: 380,
+    gachaImageUrls: Array.from(
+      { length: 8 },
+      (_, index) => `${defaultStoreThumbnail}?gacha=${index + 1}`,
+    ),
+  },
+);
 const doNothing = () => undefined;
 
 function PinClickDemo() {
@@ -71,6 +89,18 @@ export const SuccessWithoutImage: Story = {
       state="full"
       status="success"
       store={store}
+      onClose={doNothing}
+      onStateChange={doNothing}
+    />
+  ),
+};
+
+export const GalleryWithGachaImages: Story = {
+  render: () => (
+    <StoreDetailSheet
+      state="full"
+      status="success"
+      store={storeWithGallery}
       onClose={doNothing}
       onStateChange={doNothing}
     />

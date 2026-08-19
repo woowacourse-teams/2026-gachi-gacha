@@ -51,30 +51,56 @@ export type StoreDetailSheetProps =
 
 const FALLBACK_THUMBNAILS = [null, null, null] as const;
 
-interface StoreThumbnailProps {
+type GalleryKind = 'store' | 'gacha';
+
+const GALLERY_CONFIG: Record<
+  GalleryKind,
+  { label: string; imageLabel: string; placeholder: string }
+> = {
+  store: {
+    label: '매장 사진',
+    imageLabel: '매장 사진',
+    placeholder: '매장 사진 준비 중',
+  },
+  gacha: {
+    label: '가챠 목록',
+    imageLabel: '가챠 사진',
+    placeholder: '가챠 사진 준비 중',
+  },
+};
+
+interface GalleryThumbnailProps {
   imageUrl: string | null;
+  imageLabel: string;
   index: number;
+  placeholder: string;
   storeName: string;
 }
 
-function StoreThumbnail({ imageUrl, index, storeName }: StoreThumbnailProps) {
+function GalleryThumbnail({
+  imageUrl,
+  imageLabel,
+  index,
+  placeholder,
+  storeName,
+}: GalleryThumbnailProps) {
   const [hasImageError, setHasImageError] = useState(false);
 
   if (!imageUrl || hasImageError) {
     return (
       <S.ThumbnailPlaceholder
-        aria-label={`${storeName} 매장 사진 ${index + 1} 준비 중`}
+        aria-label={`${storeName} ${imageLabel} ${index + 1} 준비 중`}
         role="img"
       >
         <S.ThumbnailPlaceholderMark aria-hidden="true" />
-        <span>매장 사진 준비 중</span>
+        <span>{placeholder}</span>
       </S.ThumbnailPlaceholder>
     );
   }
 
   return (
     <S.ThumbnailImage
-      alt={`${storeName} 매장 사진 ${index + 1}`}
+      alt={`${storeName} ${imageLabel} ${index + 1}`}
       draggable={false}
       src={imageUrl}
       onError={() => setHasImageError(true)}
@@ -83,8 +109,9 @@ function StoreThumbnail({ imageUrl, index, storeName }: StoreThumbnailProps) {
 }
 
 interface StoreGalleryProps {
-  imageUrls: string[];
+  gachaImageUrls: string[];
   state: BottomSheetState;
+  storeImageUrls: string[];
   storeName: string;
 }
 
@@ -101,7 +128,17 @@ function getFrameScrollLeft(frame: HTMLElement, rail: HTMLElement) {
   return frame.offsetLeft - (firstFrame?.offsetLeft ?? 0);
 }
 
-function StoreGallery({ imageUrls, state, storeName }: StoreGalleryProps) {
+function StoreGallery({
+  gachaImageUrls,
+  state,
+  storeImageUrls,
+  storeName,
+}: StoreGalleryProps) {
+  const tabPanelId = useId();
+  const [galleryKind, setGalleryKind] = useState<GalleryKind>('store');
+  const [showAll, setShowAll] = useState(false);
+  const imageUrls = galleryKind === 'store' ? storeImageUrls : gachaImageUrls;
+  const galleryConfig = GALLERY_CONFIG[galleryKind];
   const thumbnails = imageUrls.length > 0 ? imageUrls : FALLBACK_THUMBNAILS;
   const railRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<GalleryDragStart | null>(null);
@@ -146,7 +183,18 @@ function StoreGallery({ imageUrls, state, storeName }: StoreGalleryProps) {
     resizeObserver.observe(rail);
 
     return () => resizeObserver.disconnect();
-  }, [thumbnails.length, updateSlideControls]);
+  }, [showAll, thumbnails.length, updateSlideControls]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    setCanSlideLeft(false);
+    setShowAll(false);
+    railRef.current?.scrollTo({ left: 0 });
+  }, [galleryKind]);
+
+  useEffect(() => {
+    if (state !== 'full') setShowAll(false);
+  }, [state]);
 
   const slide = (direction: -1 | 1) => {
     const rail = railRef.current;
@@ -236,49 +284,108 @@ function StoreGallery({ imageUrls, state, storeName }: StoreGalleryProps) {
   return (
     <S.PhotoSection $state={state}>
       <S.PhotoTitleRow>
-        <S.SectionTitle>매장 사진</S.SectionTitle>
-        <S.GalleryControls aria-label="매장 사진 이동" role="group">
-          <S.GalleryControl
-            aria-label="이전 매장 사진"
-            disabled={!canSlideLeft}
-            type="button"
-            onClick={() => slide(-1)}
-          >
-            ‹
-          </S.GalleryControl>
-          <S.GalleryControl
-            aria-label="다음 매장 사진"
-            disabled={!canSlideRight}
-            type="button"
-            onClick={() => slide(1)}
-          >
-            ›
-          </S.GalleryControl>
+        <S.GalleryTabs aria-label="사진 종류" role="tablist">
+          {(Object.keys(GALLERY_CONFIG) as GalleryKind[]).map((kind) => (
+            <S.GalleryTab
+              key={kind}
+              $isActive={galleryKind === kind}
+              aria-controls={tabPanelId}
+              aria-selected={galleryKind === kind}
+              role="tab"
+              type="button"
+              onClick={() => setGalleryKind(kind)}
+            >
+              {GALLERY_CONFIG[kind].label}
+            </S.GalleryTab>
+          ))}
+        </S.GalleryTabs>
+        <S.GalleryControls
+          aria-label={`${galleryConfig.label} 보기`}
+          role="group"
+        >
+          {state === 'full' && (
+            <S.GalleryViewButton
+              disabled={imageUrls.length === 0}
+              type="button"
+              onClick={() => setShowAll((isShowingAll) => !isShowingAll)}
+            >
+              {showAll ? '미리보기' : '더보기'}
+            </S.GalleryViewButton>
+          )}
+          {!showAll && (
+            <>
+              <S.GalleryControl
+                aria-label={`이전 ${galleryConfig.imageLabel}`}
+                disabled={!canSlideLeft}
+                type="button"
+                onClick={() => slide(-1)}
+              >
+                ‹
+              </S.GalleryControl>
+              <S.GalleryControl
+                aria-label={`다음 ${galleryConfig.imageLabel}`}
+                disabled={!canSlideRight}
+                type="button"
+                onClick={() => slide(1)}
+              >
+                ›
+              </S.GalleryControl>
+            </>
+          )}
         </S.GalleryControls>
       </S.PhotoTitleRow>
-      <S.GalleryViewport $state={state}>
-        <S.ThumbnailRail
-          ref={railRef}
-          $isDragging={isDragging}
-          aria-label="매장 사진 목록"
-          data-horizontal-scroll
-          onPointerCancel={finishGalleryDrag}
-          onPointerDown={handleGalleryPointerDown}
-          onPointerMove={handleGalleryPointerMove}
-          onPointerUp={finishGalleryDrag}
-          onScroll={updateSlideControls}
+      {showAll ? (
+        <S.PhotoGrid
+          id={tabPanelId}
+          aria-label={`${galleryConfig.label} 전체 보기`}
+          role="tabpanel"
         >
-          {thumbnails.map((imageUrl, index) => (
-            <S.ThumbnailFrame key={imageUrl ?? `fallback-${index}`}>
-              <StoreThumbnail
+          {imageUrls.map((imageUrl, index) => (
+            <S.GridImageFrame key={imageUrl}>
+              <GalleryThumbnail
+                imageLabel={galleryConfig.imageLabel}
                 imageUrl={imageUrl}
                 index={index}
+                placeholder={galleryConfig.placeholder}
                 storeName={storeName}
               />
-            </S.ThumbnailFrame>
+            </S.GridImageFrame>
           ))}
-        </S.ThumbnailRail>
-      </S.GalleryViewport>
+        </S.PhotoGrid>
+      ) : (
+        <S.GalleryViewport
+          id={tabPanelId}
+          $state={state}
+          aria-label={galleryConfig.label}
+          role="tabpanel"
+        >
+          <S.ThumbnailRail
+            ref={railRef}
+            $isDragging={isDragging}
+            aria-label={galleryConfig.label}
+            data-horizontal-scroll
+            onPointerCancel={finishGalleryDrag}
+            onPointerDown={handleGalleryPointerDown}
+            onPointerMove={handleGalleryPointerMove}
+            onPointerUp={finishGalleryDrag}
+            onScroll={updateSlideControls}
+          >
+            {thumbnails.map((imageUrl, index) => (
+              <S.ThumbnailFrame
+                key={`${galleryKind}-${imageUrl ?? `fallback-${index}`}`}
+              >
+                <GalleryThumbnail
+                  imageLabel={galleryConfig.imageLabel}
+                  imageUrl={imageUrl}
+                  index={index}
+                  placeholder={galleryConfig.placeholder}
+                  storeName={storeName}
+                />
+              </S.ThumbnailFrame>
+            ))}
+          </S.ThumbnailRail>
+        </S.GalleryViewport>
+      )}
     </S.PhotoSection>
   );
 }
@@ -433,8 +540,9 @@ function StoreDetailContent({
         )}
 
         <StoreGallery
-          imageUrls={store.imageUrls}
+          gachaImageUrls={store.gachaImageUrls}
           state={state}
+          storeImageUrls={store.imageUrls}
           storeName={store.name}
         />
 
