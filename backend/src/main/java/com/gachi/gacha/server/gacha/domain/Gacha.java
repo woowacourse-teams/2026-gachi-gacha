@@ -51,7 +51,7 @@ public class Gacha extends BaseTimeEntity {
         this.thumbnailUrl = thumbnailUrl;
     }
 
-    public void approve(String name) {
+    public void approve(final String name) {
         this.status = GachaStatus.APPROVED;
         this.name = name;
     }

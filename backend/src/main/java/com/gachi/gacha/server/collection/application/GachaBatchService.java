@@ -78,9 +78,8 @@ public class GachaBatchService {
     }
 
     /**
-     * 게시글 순서대로 dedup 체크와 키워드 필터를 적용해 업로드 대상 목록을 확정한다.
-     * 인스타그램 피드가 최신순이라 순서 자체가 "얼마나 예전 게시물인지"를 의미하므로,
-     * 이미 수집된 게시글을 만나는 순간 페이지네이션을 중단해야 한다 - 이 판단은 반드시 순차로 이뤄져야 한다.
+     * 게시글 순서대로 dedup 체크와 키워드 필터를 적용해 업로드 대상 목록을 확정한다. 인스타그램 피드가 최신순이라 순서 자체가 "얼마나 예전 게시물인지"를 의미하므로, 이미 수집된 게시글을 만나는 순간
+     * 페이지네이션을 중단해야 한다 - 이 판단은 반드시 순차로 이뤄져야 한다.
      */
     private FilterResult filterPostsToUpload(final List<PlatformPostDto> posts) {
         List<PlatformPostDto> postsToUpload = new ArrayList<>();
@@ -97,8 +96,7 @@ public class GachaBatchService {
     }
 
     /**
-     * 다운로드/S3 업로드/저장은 순서와 무관하므로 전용 스레드풀에서 병렬로 처리한다.
-     * 개별 항목이 실패해도 uploadAndSave 내부에서 스킵되므로, 이 메서드는 성공한 것만 모아 반환한다.
+     * 다운로드/S3 업로드/저장은 순서와 무관하므로 전용 스레드풀에서 병렬로 처리한다. 개별 항목이 실패해도 uploadAndSave 내부에서 스킵되므로, 이 메서드는 성공한 것만 모아 반환한다.
      */
     private List<Gacha> uploadAndSaveInParallel(final List<PlatformPostDto> postsToUpload) {
         List<Callable<Optional<Gacha>>> tasks = new ArrayList<>();
@@ -143,7 +141,7 @@ public class GachaBatchService {
         return "%s/%s".formatted(s3RootFolder, ImageType.GACHA.getFolderName());
     }
 
-    private boolean isGachaKeywordIncluded(String caption) {
+    private boolean isGachaKeywordIncluded(final String caption) {
         return caption.contains("입고") || caption.contains("신상") || caption.contains("재입고");
     }
 
