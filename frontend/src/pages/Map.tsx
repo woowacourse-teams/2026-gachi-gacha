@@ -22,23 +22,28 @@ export default function MapPage() {
     latitude: DEFAULT_CENTER.lat,
     longitude: DEFAULT_CENTER.lng,
   });
-  const { closeStoreDetail, openStoreDetail, selection, setState, state } =
-    useStoreDetailSheet();
+  const {
+    closeStoreDetail,
+    collapseStoreDetail,
+    isStoreOpen,
+    selectStoreDetail,
+    selection,
+    setState,
+    state,
+  } = useStoreDetailSheet();
 
   const stores = nearbyStores.status === 'success' ? nearbyStores.data : [];
 
   return (
     <PageLayout>
-      <KakaoMap defaultCenter={DEFAULT_CENTER}>
+      <KakaoMap defaultCenter={DEFAULT_CENTER} onMapClick={collapseStoreDetail}>
         {stores.map((store) => (
           <StoreMarker
             key={store.storeId}
             position={{ lat: store.latitude, lng: store.longitude }}
-            isSelected={
-              state !== 'closed' && selection?.storeId === store.storeId
-            }
+            isSelected={isStoreOpen(store.storeId)}
             onClick={() =>
-              openStoreDetail({
+              selectStoreDetail({
                 storeId: store.storeId,
                 distanceMeters: store.distance,
               })
