@@ -1,6 +1,7 @@
 import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import { getBottomSheetTop } from '../model/bottomSheetState';
 import type { BottomSheetState } from '../model/storeDetail';
 
 const CONTENT_CARD_PADDING = '12px 16px';
@@ -37,20 +38,9 @@ interface SheetRootProps {
   $state: BottomSheetState;
 }
 
-function getSheetTop(state: BottomSheetState, dragOffset: number) {
-  const positions: Record<BottomSheetState, string> = {
-    closed: `calc(100% + ${dragOffset}px)`,
-    collapsed: `calc(100% - 116px + ${dragOffset}px)`,
-    summary: `calc(47% + ${dragOffset}px)`,
-    full: `calc(12px + ${dragOffset}px)`,
-  };
-
-  return positions[state];
-}
-
 export const SheetRoot = styled.section<SheetRootProps>`
   position: absolute;
-  top: ${({ $dragOffset, $state }) => getSheetTop($state, $dragOffset)};
+  top: ${({ $dragOffset, $state }) => getBottomSheetTop($state, $dragOffset)};
   right: 0;
   bottom: 0;
   left: 0;

@@ -18,6 +18,8 @@ function createMarkerImage(isSelected: boolean) {
     new maps.Size(icon.width, icon.height),
     {
       offset: new maps.Point(icon.anchorX, icon.anchorY),
+      shape: icon.hitShape,
+      coords: icon.hitCoords,
     },
   );
 }

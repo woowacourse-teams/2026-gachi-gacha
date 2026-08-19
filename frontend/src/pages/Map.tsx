@@ -1,10 +1,14 @@
+import { useCallback, useRef } from 'react';
 import styled from '@emotion/styled';
 
 import type { NearbyStoresFailure } from '@/apis/store';
 import ErrorNotice from '@/components/ErrorNotice';
 import KakaoMap from '@/components/kakaoMap/KakaoMap';
+import { revealPosition } from '@/components/kakaoMap/revealPosition';
 import StoreMarker from '@/components/kakaoMap/StoreMarker';
+import type { LatLngLiteral } from '@/components/kakaoMap/useKakaoMap';
 import {
+  getBottomSheetCoveredHeight,
   StoreDetailSheetContainer,
   useStoreDetailSheet,
 } from '@/features/storeDetail';
@@ -32,24 +36,51 @@ export default function MapPage() {
     state,
   } = useStoreDetailSheet();
 
+  const mapRef = useRef<kakao.maps.Map | null>(null);
+
   const stores = nearbyStores.status === 'success' ? nearbyStores.data : [];
+
+  /** 마커를 눌러 시트가 열릴 때, 그 마커가 시트에 가리면 지도를 옮겨준다. */
+  const handleMarkerClick = useCallback(
+    (storeId: number, position: LatLngLiteral, distanceMeters: number) => {
+      const opened = selectStoreDetail({ storeId, distanceMeters });
+      const map = mapRef.current;
+
+      if (!opened || !map) return;
+
+      revealPosition(map, position, {
+        coveredHeight: getBottomSheetCoveredHeight(
+          'summary',
+          map.getNode().clientHeight,
+        ),
+      });
+    },
+    [selectStoreDetail],
+  );
 
   return (
     <PageLayout>
-      <KakaoMap defaultCenter={DEFAULT_CENTER} onMapClick={collapseStoreDetail}>
-        {stores.map((store) => (
-          <StoreMarker
-            key={store.storeId}
-            position={{ lat: store.latitude, lng: store.longitude }}
-            isSelected={isStoreOpen(store.storeId)}
-            onClick={() =>
-              selectStoreDetail({
-                storeId: store.storeId,
-                distanceMeters: store.distance,
-              })
-            }
-          />
-        ))}
+      <KakaoMap
+        defaultCenter={DEFAULT_CENTER}
+        onMapClick={collapseStoreDetail}
+        onMapReady={(map) => {
+          mapRef.current = map;
+        }}
+      >
+        {stores.map((store) => {
+          const position = { lat: store.latitude, lng: store.longitude };
+
+          return (
+            <StoreMarker
+              key={store.storeId}
+              position={position}
+              isSelected={isStoreOpen(store.storeId)}
+              onClick={() =>
+                handleMarkerClick(store.storeId, position, store.distance)
+              }
+            />
+          );
+        })}
       </KakaoMap>
 
       {nearbyStores.status === 'loading' && (

@@ -48,12 +48,16 @@ export function useStoreDetailSheet() {
    * 그냥 `openStoreDetail`을 다시 부르면 시트를 'closed'로 내렸다가 다음
    * 프레임에 'summary'로 올리기 때문에, 같은 곳을 눌렀는데 시트가 접혔다 펴지고
    * 상세 요청도 한 번 더 나간다.
+   *
+   * @returns 실제로 열었으면 true. 지도를 옮길지 판단하는 데 쓴다.
    */
   const selectStoreDetail = useCallback(
     (nextSelection: StorePinSelection) => {
-      if (isStoreOpen(nextSelection.storeId)) return;
+      if (isStoreOpen(nextSelection.storeId)) return false;
 
       openStoreDetail(nextSelection);
+
+      return true;
     },
     [isStoreOpen, openStoreDetail],
   );
