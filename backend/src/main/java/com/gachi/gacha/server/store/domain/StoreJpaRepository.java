@@ -20,29 +20,33 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
 
     interface StoreWithDistance {
         Long getStoreId();
+
         String getThumbnailUrl();
+
         Double getLatitude();
+
         Double getLongitude();
+
         Double getDistance();
     }
 
     @Query(value = """
-                SELECT
-                    s.id AS storeId,
-                    s.thumbnail_url AS thumbnailUrl,
-                    s.latitude AS latitude,
-                    s.longitude AS longitude,
-                    ST_DistanceSphere(
-                       s.location,
-                       ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)
-                   ) AS distance
-                FROM store s
-                WHERE ST_DWithin(
-                   s.location::geography,
-                   ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
-                   :radius
-                )
-                ORDER BY distance ASC, s.id ASC
+                        SELECT
+                            s.id AS storeId,
+                            s.thumbnail_url AS thumbnailUrl,
+                            s.latitude AS latitude,
+                            s.longitude AS longitude,
+                            ST_DistanceSphere(
+                               s.location,
+                               ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)
+                           ) AS distance
+                        FROM store s
+                        WHERE ST_DWithin(
+                           s.location::geography,
+                           ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
+                           :radius
+                        )
+                        ORDER BY distance ASC, s.id ASC
             """, nativeQuery = true)
     List<StoreWithDistance> findNearbyStores(
             @Param("latitude") final Double latitude,
