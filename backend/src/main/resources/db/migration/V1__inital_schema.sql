@@ -8,7 +8,6 @@ CREATE TABLE gacha (
                        instagram_media_id VARCHAR(255),
                        created_at TIMESTAMP(6),
                        updated_at TIMESTAMP(6),
-
                        CONSTRAINT uk_gacha_instagram_media_id UNIQUE (instagram_media_id)
 );
 
@@ -97,3 +96,7 @@ CREATE INDEX idx_store_gacha_store_id
 
 CREATE INDEX idx_store_gacha_gacha_id
     ON store_gacha (gacha_id);
+
+CREATE INDEX idx_store_location_geography
+    ON store
+    USING GIST ((location::geography));
