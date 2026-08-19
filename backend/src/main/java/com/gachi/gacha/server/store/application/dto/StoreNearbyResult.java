@@ -38,15 +38,5 @@ public record StoreNearbyResult(
             Double longitude,
             Double distance
     ) {
-
-        public static StoreInfo of(final Store store, final Double distance) {
-            return new StoreInfo(
-                    store.getId(),
-                    store.getThumbnailUrl(),
-                    store.getLatitude(),
-                    store.getLongitude(),
-                    distance
-            );
-        }
     }
 }

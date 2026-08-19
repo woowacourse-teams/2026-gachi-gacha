@@ -23,13 +23,10 @@ import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.store.domain.exception.InvalidNearbyRequestException;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import net.sf.geographiclib.Geodesic;
-import net.sf.geographiclib.GeodesicData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -62,20 +59,19 @@ public class StoreService {
     ) {
         validateNearbyRequest(latitude, longitude, radius);
 
-        double latitudeDelta = radius / METERS_PER_LATITUDE_DEGREE;
-        double minLatitude = Math.max(-90, latitude - latitudeDelta);
-        double maxLatitude = Math.min(90, latitude + latitudeDelta);
+        List<StoreJpaRepository.StoreWithDistance> nearbyStores = storeJpaRepository.findNearbyStores(latitude, longitude, radius);
 
-        List<StoreNearbyResult.StoreInfo> stores = storeJpaRepository
-                .findAllByLatitudeBetween(minLatitude, maxLatitude).stream()
-                .map(store -> createStoreDistance(store, latitude, longitude))
-                .filter(storeDistance -> storeDistance.distance() <= radius)
-                .sorted(Comparator.comparingDouble(StoreDistance::distance)
-                        .thenComparing(storeDistance -> storeDistance.store().getId()))
-                .map(StoreDistance::toStoreInfo)
+        List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
+                .map(result -> StoreNearbyResult.StoreInfo.builder()
+                        .storeId(result.getStoreId())
+                        .thumbnailUrl(result.getThumbnailUrl())
+                        .latitude(result.getLatitude())
+                        .longitude(result.getLongitude())
+                        .distance(result.getDistance())
+                        .build())
                 .toList();
 
-        return StoreNearbyResult.of(latitude, longitude, radius, stores);
+        return StoreNearbyResult.of(latitude, longitude, radius, storeInfos);
     }
 
     public Page<StoreListResult> findStores(final Pageable pageable) {
@@ -225,46 +221,6 @@ public class StoreService {
         }
         if (radius == null || radius < MIN_SEARCH_RADIUS || radius > MAX_SEARCH_RADIUS) {
             throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
-        }
-    }
-
-    private StoreDistance createStoreDistance(
-            final Store store,
-            final Double latitude,
-            final Double longitude
-    ) {
-        double distance = calculateDistance(
-                latitude,
-                longitude,
-                store.getLatitude(),
-                store.getLongitude()
-        );
-        return new StoreDistance(store, distance);
-    }
-
-    private double calculateDistance(
-            final Double originLatitude,
-            final Double originLongitude,
-            final Double targetLatitude,
-            final Double targetLongitude
-    ) {
-        GeodesicData result = Geodesic.WGS84.Inverse(
-                originLatitude,
-                originLongitude,
-                targetLatitude,
-                targetLongitude
-        );
-
-        return result.s12;
-    }
-
-    private record StoreDistance(
-            Store store,
-            double distance
-    ) {
-
-        private StoreNearbyResult.StoreInfo toStoreInfo() {
-            return StoreNearbyResult.StoreInfo.of(store, distance);
         }
     }
 }
