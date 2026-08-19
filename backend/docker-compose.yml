@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    platform: linux/amd64
+    image: postgis/postgis:17-3.5
     container_name: gachi-gacha-postgres
     restart: unless-stopped
     environment:

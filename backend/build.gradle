@@ -25,6 +25,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'net.sf.geographiclib:GeographicLib-Java:2.1'
     implementation 'software.amazon.awssdk:s3:2.25.0'
+    implementation 'org.hibernate.orm:hibernate-spatial'
+    implementation 'org.locationtech.jts:jts-core:1.19.0'
 
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
@@ -37,6 +39,10 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     testImplementation 'io.rest-assured:rest-assured:6.0.1'
     testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    testImplementation "org.testcontainers:testcontainers:1.19.7"
+    testImplementation "org.testcontainers:junit-jupiter:1.19.7"
+    testImplementation "org.testcontainers:postgresql:1.19.7"
 
     testCompileOnly 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
