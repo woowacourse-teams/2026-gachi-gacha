@@ -4,6 +4,7 @@ import com.gachi.gacha.server.collection.application.exception.GachaCollectionEx
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
@@ -158,7 +159,8 @@ public class GachaCollectionService {
     }
 
     /**
-     * 네트워크/DB 일시 장애로 인한 실패만 한 번 재시도한다. 이미지 형식 오류 같은 재시도해도 똑같이 실패할 오류는 바로 포기한다.
+     * 업로드/저장 단계를 구분해서 예외를 잡는다. 이미지 형식 오류는 재시도해도 똑같이 실패하므로 바로 포기하고,
+     * 업로드/저장 각각의 일시 장애는 어느 단계에서 실패했는지 구분해서 로그를 남기고 재시도한다.
      */
     private Optional<Gacha> uploadAndSave(final PlatformPostDto post) {
         for (int attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
@@ -166,9 +168,16 @@ public class GachaCollectionService {
                 sleepBeforeRetry();
             }
             try {
-                return Optional.of(uploadAndSaveOnce(post));
-            } catch (S3Exception | DataAccessException e) {
-                log.warn("가챠 이미지 업로드/저장 재시도 (미디어 ID: {}, {}/{}번째): {}",
+                String s3ImageUrl = uploadImage(post);
+                return Optional.of(saveGacha(post, s3ImageUrl));
+            } catch (ImageInvalidValueException e) {
+                log.error("가챠 이미지 업로드 실패 (미디어 ID: {}): {}", post.originalId(), e.getMessage());
+                return Optional.empty();
+            } catch (S3Exception e) {
+                log.warn("가챠 이미지 업로드 재시도 (미디어 ID: {}, {}/{}번째): {}",
+                        post.originalId(), attempt, MAX_UPLOAD_ATTEMPTS, e.getMessage());
+            } catch (DataAccessException e) {
+                log.warn("가챠 저장 재시도 (미디어 ID: {}, {}/{}번째): {}",
                         post.originalId(), attempt, MAX_UPLOAD_ATTEMPTS, e.getMessage());
             } catch (Exception e) {
                 log.error("가챠 이미지 업로드/저장 실패 (미디어 ID: {}): {}", post.originalId(), e.getMessage());
@@ -179,9 +188,11 @@ public class GachaCollectionService {
         return Optional.empty();
     }
 
-    private Gacha uploadAndSaveOnce(final PlatformPostDto post) {
-        String s3ImageUrl = imageUploader.uploadFromUrl(post.imageUrl(), ImageType.GACHA.buildPath(s3RootFolder));
+    private String uploadImage(final PlatformPostDto post) {
+        return imageUploader.uploadFromUrl(post.imageUrl(), ImageType.GACHA.buildPath(s3RootFolder));
+    }
 
+    private Gacha saveGacha(final PlatformPostDto post, final String s3ImageUrl) {
         Gacha newGacha = Gacha.builder()
                 .caption(post.content())
                 .thumbnailUrl(s3ImageUrl)
