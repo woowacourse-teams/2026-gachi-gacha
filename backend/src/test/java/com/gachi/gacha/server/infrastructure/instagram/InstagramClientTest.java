@@ -15,7 +15,6 @@ import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.Med
 import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.Paging;
 import com.gachi.gacha.server.infrastructure.platform.PlatformType;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
-import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostPage;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -39,7 +38,7 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("응답의 미디어 목록을 PlatformPostDto로 변환하며, thumbnailUrl이 있으면 우선 사용한다.")
-    void fetchPage_mapsMediaToPlatformPostDto() {
+    void fetchRecentPosts_mapsMediaToPlatformPostDto() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
@@ -49,21 +48,21 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts()).hasSize(1);
-        PlatformPostDto post = result.posts().get(0);
+        assertThat(result).hasSize(1);
+        PlatformPostDto post = result.get(0);
         assertThat(post.originalId()).isEqualTo("media-1");
         assertThat(post.content()).isEqualTo("입고 안내");
         assertThat(post.imageUrl()).isEqualTo("https://cdn/thumb.jpg");
         assertThat(post.platformType()).isEqualTo(PlatformType.INSTAGRAM);
-        assertThat(result.hasNext()).isFalse();
+        verify(restTemplate, times(1)).getForObject(any(URI.class), eq(InstagramResponse.class));
     }
 
     @Test
     @DisplayName("thumbnailUrl이 없으면 media_url로 대체한다.")
-    void fetchPage_fallsBackToMediaUrl_whenThumbnailMissing() {
+    void fetchRecentPosts_fallsBackToMediaUrl_whenThumbnailMissing() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
@@ -73,15 +72,15 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts().get(0).imageUrl()).isEqualTo("https://cdn/media.jpg");
+        assertThat(result.get(0).imageUrl()).isEqualTo("https://cdn/media.jpg");
     }
 
     @Test
     @DisplayName("캐러셀 게시물은 각 자식 이미지를 별도의 PlatformPostDto로 변환하며, 캡션은 부모 게시물의 것을 사용한다.")
-    void fetchPage_expandsCarouselChildrenIntoSeparatePosts() {
+    void fetchRecentPosts_expandsCarouselChildrenIntoSeparatePosts() {
         // given
         InstagramResponse.Children children = new InstagramResponse.Children(List.of(
                 new InstagramResponse.ChildMedia("child-1", "IMAGE", "https://cdn/child1.jpg", null),
@@ -95,19 +94,19 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts()).hasSize(2);
-        assertThat(result.posts()).extracting(PlatformPostDto::originalId).containsExactly("child-1", "child-2");
-        assertThat(result.posts()).extracting(PlatformPostDto::content).containsOnly("입고 안내 모음");
-        assertThat(result.posts()).extracting(PlatformPostDto::imageUrl)
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(PlatformPostDto::originalId).containsExactly("child-1", "child-2");
+        assertThat(result).extracting(PlatformPostDto::content).containsOnly("입고 안내 모음");
+        assertThat(result).extracting(PlatformPostDto::imageUrl)
                 .containsExactly("https://cdn/child1.jpg", "https://cdn/child2-thumb.jpg");
     }
 
     @Test
     @DisplayName("자식 이미지가 없는 캐러셀 게시물은 부모 게시물 자체를 하나의 PlatformPostDto로 변환한다.")
-    void fetchPage_carouselWithoutChildren_fallsBackToParentPost() {
+    void fetchRecentPosts_carouselWithoutChildren_fallsBackToParentPost() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
@@ -118,88 +117,75 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts()).hasSize(1);
-        assertThat(result.posts().get(0).originalId()).isEqualTo("carousel-2");
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).originalId()).isEqualTo("carousel-2");
     }
 
     @Test
-    @DisplayName("응답의 paging.cursors.after 값을 다음 커서로 반환한다.")
-    void fetchPage_returnsNextCursorFromPaging() {
+    @DisplayName("응답의 paging.cursors.after 값을 다음 요청의 커서로 사용한다.")
+    void fetchRecentPosts_usesNextCursorFromPagingInNextRequest() {
         // given
-        InstagramResponse response = new InstagramResponse(
-                new BusinessDiscovery(new Media(
-                        List.of(new MediaData("media-1", "입고 안내", "https://cdn/media.jpg", null, "IMAGE", null)),
-                        new Paging(new Cursors("next-cursor-value"))
-                ))
-        );
-        when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
-
-        // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
-
-        // then
-        assertThat(result.hasNext()).isTrue();
-        assertThat(result.nextCursor()).isEqualTo("next-cursor-value");
-    }
-
-    @Test
-    @DisplayName("cursor가 주어지면 요청 URI에 after() 파라미터로 포함시킨다.")
-    void fetchPage_includesCursorInRequestUri() {
-        // given
+        InstagramResponse page1 = new InstagramResponse(new BusinessDiscovery(new Media(
+                List.of(new MediaData("media-1", "입고 안내", "https://cdn/media.jpg", null, "IMAGE", null)),
+                new Paging(new Cursors("next-cursor-value"))
+        )));
+        InstagramResponse page2 = new InstagramResponse(new BusinessDiscovery(new Media(List.of(), null)));
         ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
         when(restTemplate.getForObject(uriCaptor.capture(), eq(InstagramResponse.class)))
-                .thenReturn(new InstagramResponse(new BusinessDiscovery(new Media(List.of(), null))));
+                .thenReturn(page1)
+                .thenReturn(page2);
 
         // when
-        client().fetchPage("hoshi__gacha", "some-cursor");
+        client().fetchRecentPosts("hoshi__gacha", posts -> false);
 
         // then
-        assertThat(uriCaptor.getValue().toString()).contains("some-cursor");
+        assertThat(uriCaptor.getAllValues()).hasSize(2);
+        assertThat(uriCaptor.getAllValues().get(1).toString()).contains("next-cursor-value");
     }
 
     @Test
     @DisplayName("응답이 null이면 빈 목록을 반환한다.")
-    void fetchPage_nullResponse_returnsEmptyList() {
+    void fetchRecentPosts_nullResponse_returnsEmptyList() {
         // given
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(null);
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts()).isEmpty();
-        assertThat(result.hasNext()).isFalse();
+        assertThat(result).isEmpty();
+        verify(restTemplate, times(1)).getForObject(any(URI.class), eq(InstagramResponse.class));
     }
 
     @Test
     @DisplayName("business_discovery가 null이면 빈 목록을 반환한다.")
-    void fetchPage_nullBusinessDiscovery_returnsEmptyList() {
+    void fetchRecentPosts_nullBusinessDiscovery_returnsEmptyList() {
         // given
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class)))
                 .thenReturn(new InstagramResponse(null));
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts()).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test
     @DisplayName("media가 null이면 빈 목록을 반환한다.")
-    void fetchPage_nullMedia_returnsEmptyList() {
+    void fetchRecentPosts_nullMedia_returnsEmptyList() {
         // given
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class)))
                 .thenReturn(new InstagramResponse(new BusinessDiscovery(null)));
 
         // when
-        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> true);
 
         // then
-        assertThat(result.posts()).isEmpty();
+        assertThat(result).isEmpty();
     }
 
     @Test

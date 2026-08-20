@@ -63,7 +63,7 @@ public class InstagramClient implements PlatformClient {
         return allPosts;
     }
 
-    PlatformPostPage fetchPage(final String targetUsername, @Nullable final String cursor) {
+    private PlatformPostPage fetchPage(final String targetUsername, @Nullable final String cursor) {
         String mediaField = cursor == null ? "media.limit(10)" : "media.limit(10).after(" + cursor + ")";
         String fields = String.format(
                 "business_discovery.username(%s){%s{id,caption,media_type,media_url,thumbnail_url,"
