@@ -102,7 +102,7 @@ class GachaCollectionServiceTest {
         PlatformClient client = new StubPlatformClient(
                 new PlatformPostDto("media-1", "입고 안내", "url1", PlatformType.INSTAGRAM)
         );
-        when(gachaRepository.existsByInstagramMediaId("media-1")).thenReturn(true);
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-1"))).thenReturn(List.of("media-1"));
         GachaCollectionService service = service(List.of(client));
 
         // when
@@ -122,7 +122,7 @@ class GachaCollectionServiceTest {
                 new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM),
                 new PlatformPostDto("media-2", "재입고 되었습니다", "url2", PlatformType.INSTAGRAM)
         );
-        when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
         when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         GachaCollectionService service = service(List.of(client));
@@ -145,7 +145,7 @@ class GachaCollectionServiceTest {
         PlatformClient workingClient = new StubPlatformClient(
                 new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM)
         );
-        when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
         when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         GachaCollectionService service = service(List.of(failingClient, workingClient));
@@ -166,7 +166,7 @@ class GachaCollectionServiceTest {
                 new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM),
                 new PlatformPostDto("media-2", "재입고 되었습니다", "url2", PlatformType.INSTAGRAM)
         );
-        when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
         when(imageUploader.uploadFromUrl(eq("url1"), any())).thenThrow(new RuntimeException("업로드 실패"));
         when(imageUploader.uploadFromUrl(eq("url2"), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -189,7 +189,7 @@ class GachaCollectionServiceTest {
                 new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM),
                 new PlatformPostDto("media-2", "재입고 되었습니다", "url2", PlatformType.INSTAGRAM)
         );
-        when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
         when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
         when(gachaRepository.save(argThat(gacha -> gacha != null && "media-1".equals(gacha.getInstagramMediaId()))))
                 .thenThrow(new RuntimeException("저장 실패"));
@@ -226,8 +226,8 @@ class GachaCollectionServiceTest {
             );
             when(platformClient.fetchRecentPosts(eq("shop1"), isNull())).thenReturn(page1);
             when(platformClient.fetchRecentPosts(eq("shop1"), eq("cursor-1"))).thenReturn(page2);
-            when(gachaRepository.existsByInstagramMediaId("media-1")).thenReturn(false);
-            when(gachaRepository.existsByInstagramMediaId("media-0")).thenReturn(true);
+            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-1"))).thenReturn(List.of());
+            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-0"))).thenReturn(List.of("media-0"));
             when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
             GachaCollectionService service = service(List.of(platformClient));
@@ -249,7 +249,7 @@ class GachaCollectionServiceTest {
                     null
             );
             when(platformClient.fetchRecentPosts(eq("shop1"), isNull())).thenReturn(onlyPage);
-            when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
             when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
             GachaCollectionService service = service(List.of(platformClient));
@@ -274,7 +274,7 @@ class GachaCollectionServiceTest {
                         nextCursor
                 );
             });
-            when(gachaRepository.existsByInstagramMediaId(any())).thenReturn(false);
+            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
             when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
             when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
             GachaCollectionService service = service(List.of(platformClient));

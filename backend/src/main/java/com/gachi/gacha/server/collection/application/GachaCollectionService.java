@@ -10,8 +10,10 @@ import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostPage;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -40,17 +42,22 @@ public class GachaCollectionService {
         List<Gacha> savedGachas = new ArrayList<>();
 
         for (PlatformClient platformClient : platformClients) {
-            try {
-                savedGachas.addAll(collectFromPlatform(platformClient, shopInstagramId));
-            } catch (Exception e) {
-                log.error("{} 계정 수집 실패: {}", shopInstagramId, e.getMessage());
-            }
+            savedGachas.addAll(collectFromPlatform(platformClient, shopInstagramId));
         }
 
         return savedGachas;
     }
 
     private List<Gacha> collectFromPlatform(final PlatformClient platformClient, final String shopInstagramId) {
+        try {
+            return collectPagesFromPlatform(platformClient, shopInstagramId);
+        } catch (Exception e) {
+            log.error("{} 계정 수집 실패: {}", shopInstagramId, e.getMessage());
+            return List.of();
+        }
+    }
+
+    private List<Gacha> collectPagesFromPlatform(final PlatformClient platformClient, final String shopInstagramId) {
         List<Gacha> savedGachas = new ArrayList<>();
         String cursor = null;
 
@@ -84,10 +91,15 @@ public class GachaCollectionService {
      * 페이지네이션을 중단해야 한다 - 이 판단은 반드시 순차로 이뤄져야 한다.
      */
     private FilterResult filterPostsToUpload(final List<PlatformPostDto> posts) {
-        List<PlatformPostDto> postsToUpload = new ArrayList<>();
+        List<String> mediaIds = posts.stream()
+                .map(PlatformPostDto::originalId)
+                .toList();
+        Set<String> existingMediaIds = new HashSet<>(
+                gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(mediaIds));
 
+        List<PlatformPostDto> postsToUpload = new ArrayList<>();
         for (PlatformPostDto post : posts) {
-            if (gachaRepository.existsByInstagramMediaId(post.originalId())) {
+            if (existingMediaIds.contains(post.originalId())) {
                 return new FilterResult(postsToUpload, true);
             }
             if (post.content() != null && isGachaKeywordIncluded(post.content())) {
