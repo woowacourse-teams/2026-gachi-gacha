@@ -32,26 +32,28 @@ public class GachaCollectionFacade {
 
         do {
             page = storeService.findStoresWithInstagram(pageable);
-            for (StoreDetail storeDetail : page.getContent()) {
-                log.info("상점 크롤링 실행: {} ({})", storeDetail.getName(), storeDetail.getInstagramId());
-
-                try {
-                    Store store = storeDetail.getStore();
-                    List<Gacha> collectedGachas = gachaCollectionService.collectPostsForShop(
-                            storeDetail.getInstagramId());
-
-                    addStoreGachas(collectedGachas, store);
-                    collectedCount += collectedGachas.size();
-                } catch (Exception e) {
-                    log.error("상점 처리 실패: {} ({}) - {}", storeDetail.getName(), storeDetail.getInstagramId(),
-                            e.getMessage());
-                }
-
-            }
+            collectedCount += page.getContent().stream()
+                    .mapToInt(this::processStore)
+                    .sum();
+            pageable = pageable.next();
         } while (page.hasNext());
 
         log.info("인스타그램 가챠 데이터 수집 완료 (신규 수집: {}건)", collectedCount);
         return collectedCount;
+    }
+
+    private int processStore(final StoreDetail storeDetail) {
+        log.info("상점 크롤링 실행: {} ({})", storeDetail.getName(), storeDetail.getInstagramId());
+
+        try {
+            Store store = storeDetail.getStore();
+            List<Gacha> collectedGachas = gachaCollectionService.collectPostsForShop(storeDetail.getInstagramId());
+            addStoreGachas(collectedGachas, store);
+            return collectedGachas.size();
+        } catch (Exception e) {
+            log.error("상점 처리 실패: {} ({}) - {}", storeDetail.getName(), storeDetail.getInstagramId(), e.getMessage());
+            return 0;
+        }
     }
 
     private void addStoreGachas(List<Gacha> collectedGachas, Store store) {
