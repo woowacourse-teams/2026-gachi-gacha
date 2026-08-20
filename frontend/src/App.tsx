@@ -12,6 +12,14 @@ const globalStyle = css`
 
   body {
     margin: 0;
+    font-family: 'IBM Plex Sans KR', sans-serif;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
   }
 `;
 
