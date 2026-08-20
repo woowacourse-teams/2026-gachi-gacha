@@ -47,10 +47,10 @@ public class ImageUploader {
 
         try {
             s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-        } catch (final IOException e) {
+        } catch (IOException e) {
             log.error("이미지 파일을 읽는 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_READ_ERROR);
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
             log.error("이미지 업로드 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR);
         }
@@ -76,7 +76,7 @@ public class ImageUploader {
 
         try {
             s3Client.putObject(request, RequestBody.fromBytes(response.getBody()));
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
             log.error("이미지 업로드 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR);
         }
@@ -94,7 +94,7 @@ public class ImageUploader {
 
         try {
             s3Client.deleteObject(request);
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
             log.error("이미지 삭제 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_DELETE_ERROR);
         }
@@ -123,7 +123,7 @@ public class ImageUploader {
         try {
             s3Client.copyObject(copyRequest);
             s3Client.deleteObject(deleteRequest);
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
             log.error("이미지를 휴지통으로 이동하는 중 오류가 발생했습니다. key={}, trashKey={}", key, trashKey, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_MOVE_ERROR);
         }
@@ -150,7 +150,7 @@ public class ImageUploader {
                 throw new S3Exception(ErrorCode.S3_IMAGE_DOWNLOAD_ERROR);
             }
             return response;
-        } catch (final RestClientException e) {
+        } catch (RestClientException e) {
             log.error("원본 이미지를 다운로드하는 중 오류가 발생했습니다. sourceUrl={}", sourceUrl, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_DOWNLOAD_ERROR);
         }
