@@ -7,15 +7,21 @@ import com.gachi.gacha.server.infrastructure.platform.PlatformType;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostPage;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+@Slf4j
 @Component
 public class InstagramClient implements PlatformClient {
+
+    private static final int MAX_PAGES_PER_ACCOUNT = 5;
 
     private final RestTemplate restTemplate;
     private final String uri;
@@ -35,7 +41,29 @@ public class InstagramClient implements PlatformClient {
     }
 
     @Override
-    public PlatformPostPage fetchRecentPosts(final String targetUsername, @Nullable final String cursor) {
+    public List<PlatformPostDto> fetchRecentPosts(
+            final String targetUsername, final Predicate<List<PlatformPostDto>> shouldStopAfterPage) {
+        List<PlatformPostDto> allPosts = new ArrayList<>();
+        String cursor = null;
+
+        for (int page = 1; page <= MAX_PAGES_PER_ACCOUNT; page++) {
+            PlatformPostPage postPage = fetchPage(targetUsername, cursor);
+            allPosts.addAll(postPage.posts());
+
+            if (shouldStopAfterPage.test(postPage.posts()) || !postPage.hasNext()) {
+                return allPosts;
+            }
+            if (page == MAX_PAGES_PER_ACCOUNT) {
+                log.warn("{}: 페이지 상한({}) 도달, 이전 게시물이 더 남아있을 수 있음", targetUsername, MAX_PAGES_PER_ACCOUNT);
+                return allPosts;
+            }
+            cursor = postPage.nextCursor();
+        }
+
+        return allPosts;
+    }
+
+    PlatformPostPage fetchPage(final String targetUsername, @Nullable final String cursor) {
         String mediaField = cursor == null ? "media.limit(10)" : "media.limit(10).after(" + cursor + ")";
         String fields = String.format(
                 "business_discovery.username(%s){%s{id,caption,media_type,media_url,thumbnail_url,"

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,14 +17,13 @@ import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
 import com.gachi.gacha.server.infrastructure.platform.PlatformType;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
-import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostPage;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -251,89 +249,6 @@ class GachaCollectionServiceTest {
         verify(gachaRepository, never()).save(any());
     }
 
-    @Nested
-    @DisplayName("페이지네이션")
-    class Pagination {
-
-        @Mock
-        private PlatformClient platformClient;
-
-        @Test
-        @DisplayName("첫 페이지가 전부 신규 게시글이면 커서를 따라 다음 페이지까지 이어서 수집한다.")
-        void followsCursor_untilAlreadyCollectedMediaFound() {
-            // given
-            PlatformPostPage page1 = new PlatformPostPage(
-                    List.of(new PlatformPostDto("media-1", "입고 안내", "url1", PlatformType.INSTAGRAM)),
-                    "cursor-1"
-            );
-            PlatformPostPage page2 = new PlatformPostPage(
-                    List.of(new PlatformPostDto("media-0", "예전에 수집된 입고 글", "url0", PlatformType.INSTAGRAM)),
-                    "cursor-2"
-            );
-            when(platformClient.fetchRecentPosts(eq("shop1"), isNull())).thenReturn(page1);
-            when(platformClient.fetchRecentPosts(eq("shop1"), eq("cursor-1"))).thenReturn(page2);
-            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-1"))).thenReturn(List.of());
-            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-0"))).thenReturn(List.of("media-0"));
-            when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
-            when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaCollectionService service = service(List.of(platformClient));
-
-            // when
-            List<Gacha> result = service.collectPostsForShop("shop1");
-
-            // then
-            assertThat(result).extracting(Gacha::getInstagramMediaId).containsExactly("media-1");
-            verify(platformClient, times(2)).fetchRecentPosts(eq("shop1"), any());
-        }
-
-        @Test
-        @DisplayName("다음 페이지가 없으면 커서를 더 요청하지 않는다.")
-        void stopsWhenNoNextCursor() {
-            // given
-            PlatformPostPage onlyPage = new PlatformPostPage(
-                    List.of(new PlatformPostDto("media-1", "입고 안내", "url1", PlatformType.INSTAGRAM)),
-                    null
-            );
-            when(platformClient.fetchRecentPosts(eq("shop1"), isNull())).thenReturn(onlyPage);
-            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
-            when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
-            when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaCollectionService service = service(List.of(platformClient));
-
-            // when
-            List<Gacha> result = service.collectPostsForShop("shop1");
-
-            // then
-            assertThat(result).hasSize(1);
-            verify(platformClient, times(1)).fetchRecentPosts(eq("shop1"), any());
-        }
-
-        @Test
-        @DisplayName("이미 수집된 게시글을 계속 만나지 못해도 안전 상한 페이지 수까지만 요청한다.")
-        void stopsAtSafetyPageLimit() {
-            // given: 매 페이지가 전부 신규이며 다음 커서가 항상 존재하는 상황(무한 백로그)
-            when(platformClient.fetchRecentPosts(eq("shop1"), any())).thenAnswer(invocation -> {
-                String cursor = invocation.getArgument(1);
-                String nextCursor = "next-" + (cursor == null ? "1" : cursor);
-                return new PlatformPostPage(
-                        List.of(new PlatformPostDto("media-" + nextCursor, "입고 안내", "url", PlatformType.INSTAGRAM)),
-                        nextCursor
-                );
-            });
-            when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
-            when(imageUploader.uploadFromUrl(any(), any())).thenReturn(UPLOADED_URL);
-            when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-            GachaCollectionService service = service(List.of(platformClient));
-
-            // when
-            List<Gacha> result = service.collectPostsForShop("shop1");
-
-            // then
-            assertThat(result).hasSize(5);
-            verify(platformClient, times(5)).fetchRecentPosts(eq("shop1"), any());
-        }
-    }
-
     private record StubPlatformClient(List<PlatformPostDto> posts) implements PlatformClient {
 
         private StubPlatformClient(final PlatformPostDto... posts) {
@@ -341,8 +256,9 @@ class GachaCollectionServiceTest {
         }
 
         @Override
-        public PlatformPostPage fetchRecentPosts(final String targetId, final String cursor) {
-            return new PlatformPostPage(posts, null);
+        public List<PlatformPostDto> fetchRecentPosts(
+                final String targetId, final Predicate<List<PlatformPostDto>> shouldStopAfterPage) {
+            return posts;
         }
 
         @Override
@@ -354,7 +270,8 @@ class GachaCollectionServiceTest {
     private static class FailingPlatformClient implements PlatformClient {
 
         @Override
-        public PlatformPostPage fetchRecentPosts(final String targetId, final String cursor) {
+        public List<PlatformPostDto> fetchRecentPosts(
+                final String targetId, final Predicate<List<PlatformPostDto>> shouldStopAfterPage) {
             throw new RuntimeException("인스타그램 API 호출 실패");
         }
 

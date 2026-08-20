@@ -3,6 +3,8 @@ package com.gachi.gacha.server.infrastructure.instagram;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse;
@@ -37,7 +39,7 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("응답의 미디어 목록을 PlatformPostDto로 변환하며, thumbnailUrl이 있으면 우선 사용한다.")
-    void fetchRecentPosts_mapsMediaToPlatformPostDto() {
+    void fetchPage_mapsMediaToPlatformPostDto() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
@@ -47,7 +49,7 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts()).hasSize(1);
@@ -61,7 +63,7 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("thumbnailUrl이 없으면 media_url로 대체한다.")
-    void fetchRecentPosts_fallsBackToMediaUrl_whenThumbnailMissing() {
+    void fetchPage_fallsBackToMediaUrl_whenThumbnailMissing() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
@@ -71,7 +73,7 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts().get(0).imageUrl()).isEqualTo("https://cdn/media.jpg");
@@ -79,7 +81,7 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("캐러셀 게시물은 각 자식 이미지를 별도의 PlatformPostDto로 변환하며, 캡션은 부모 게시물의 것을 사용한다.")
-    void fetchRecentPosts_expandsCarouselChildrenIntoSeparatePosts() {
+    void fetchPage_expandsCarouselChildrenIntoSeparatePosts() {
         // given
         InstagramResponse.Children children = new InstagramResponse.Children(List.of(
                 new InstagramResponse.ChildMedia("child-1", "IMAGE", "https://cdn/child1.jpg", null),
@@ -93,7 +95,7 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts()).hasSize(2);
@@ -105,7 +107,7 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("자식 이미지가 없는 캐러셀 게시물은 부모 게시물 자체를 하나의 PlatformPostDto로 변환한다.")
-    void fetchRecentPosts_carouselWithoutChildren_fallsBackToParentPost() {
+    void fetchPage_carouselWithoutChildren_fallsBackToParentPost() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
@@ -116,7 +118,7 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts()).hasSize(1);
@@ -125,7 +127,7 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("응답의 paging.cursors.after 값을 다음 커서로 반환한다.")
-    void fetchRecentPosts_returnsNextCursorFromPaging() {
+    void fetchPage_returnsNextCursorFromPaging() {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(
@@ -136,7 +138,7 @@ class InstagramClientTest {
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.hasNext()).isTrue();
@@ -145,14 +147,14 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("cursor가 주어지면 요청 URI에 after() 파라미터로 포함시킨다.")
-    void fetchRecentPosts_includesCursorInRequestUri() {
+    void fetchPage_includesCursorInRequestUri() {
         // given
         ArgumentCaptor<URI> uriCaptor = ArgumentCaptor.forClass(URI.class);
         when(restTemplate.getForObject(uriCaptor.capture(), eq(InstagramResponse.class)))
                 .thenReturn(new InstagramResponse(new BusinessDiscovery(new Media(List.of(), null))));
 
         // when
-        client().fetchRecentPosts("hoshi__gacha", "some-cursor");
+        client().fetchPage("hoshi__gacha", "some-cursor");
 
         // then
         assertThat(uriCaptor.getValue().toString()).contains("some-cursor");
@@ -160,12 +162,12 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("응답이 null이면 빈 목록을 반환한다.")
-    void fetchRecentPosts_nullResponse_returnsEmptyList() {
+    void fetchPage_nullResponse_returnsEmptyList() {
         // given
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(null);
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts()).isEmpty();
@@ -174,13 +176,13 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("business_discovery가 null이면 빈 목록을 반환한다.")
-    void fetchRecentPosts_nullBusinessDiscovery_returnsEmptyList() {
+    void fetchPage_nullBusinessDiscovery_returnsEmptyList() {
         // given
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class)))
                 .thenReturn(new InstagramResponse(null));
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts()).isEmpty();
@@ -188,15 +190,76 @@ class InstagramClientTest {
 
     @Test
     @DisplayName("media가 null이면 빈 목록을 반환한다.")
-    void fetchRecentPosts_nullMedia_returnsEmptyList() {
+    void fetchPage_nullMedia_returnsEmptyList() {
         // given
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class)))
                 .thenReturn(new InstagramResponse(new BusinessDiscovery(null)));
 
         // when
-        PlatformPostPage result = client().fetchRecentPosts("hoshi__gacha", null);
+        PlatformPostPage result = client().fetchPage("hoshi__gacha", null);
 
         // then
         assertThat(result.posts()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("shouldStopAfterPage가 true를 반환하는 페이지까지만 가져오고 멈춘다.")
+    void fetchRecentPosts_stopsWhenShouldStopReturnsTrue() {
+        // given
+        InstagramResponse page1 = new InstagramResponse(new BusinessDiscovery(new Media(
+                List.of(new MediaData("media-1", "입고 안내", "url1", null, "IMAGE", null)),
+                new Paging(new Cursors("cursor-1"))
+        )));
+        InstagramResponse page2 = new InstagramResponse(new BusinessDiscovery(new Media(
+                List.of(new MediaData("media-0", "예전 글", "url0", null, "IMAGE", null)),
+                new Paging(new Cursors("cursor-2"))
+        )));
+        when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class)))
+                .thenReturn(page1)
+                .thenReturn(page2);
+
+        // when
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha",
+                posts -> posts.stream().anyMatch(post -> post.originalId().equals("media-0")));
+
+        // then
+        assertThat(result).extracting(PlatformPostDto::originalId).containsExactly("media-1", "media-0");
+        verify(restTemplate, times(2)).getForObject(any(URI.class), eq(InstagramResponse.class));
+    }
+
+    @Test
+    @DisplayName("다음 커서가 없으면 더 요청하지 않는다.")
+    void fetchRecentPosts_stopsWhenNoNextCursor() {
+        // given
+        InstagramResponse onlyPage = new InstagramResponse(new BusinessDiscovery(new Media(
+                List.of(new MediaData("media-1", "입고 안내", "url1", null, "IMAGE", null)),
+                null
+        )));
+        when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(onlyPage);
+
+        // when
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> false);
+
+        // then
+        assertThat(result).hasSize(1);
+        verify(restTemplate, times(1)).getForObject(any(URI.class), eq(InstagramResponse.class));
+    }
+
+    @Test
+    @DisplayName("shouldStopAfterPage가 계속 false여도 안전 상한 페이지 수까지만 요청한다.")
+    void fetchRecentPosts_stopsAtSafetyPageLimit() {
+        // given: 매 페이지가 전부 신규이며 다음 커서가 항상 존재하는 상황(무한 백로그)
+        InstagramResponse pageWithNext = new InstagramResponse(new BusinessDiscovery(new Media(
+                List.of(new MediaData("media-x", "입고 안내", "url", null, "IMAGE", null)),
+                new Paging(new Cursors("next-cursor"))
+        )));
+        when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(pageWithNext);
+
+        // when
+        List<PlatformPostDto> result = client().fetchRecentPosts("hoshi__gacha", posts -> false);
+
+        // then
+        assertThat(result).hasSize(5);
+        verify(restTemplate, times(5)).getForObject(any(URI.class), eq(InstagramResponse.class));
     }
 }

@@ -10,7 +10,6 @@ import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
 import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
-import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostPage;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -31,7 +30,6 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class GachaCollectionService {
 
-    private static final int MAX_PAGES_PER_SHOP = 5;
     private static final int MAX_UPLOAD_ATTEMPTS = 2;
     private static final long UPLOAD_RETRY_DELAY_MS = 500;
 
@@ -55,47 +53,27 @@ public class GachaCollectionService {
 
     private List<Gacha> collectFromPlatform(final PlatformClient platformClient, final String shopInstagramId) {
         try {
-            return collectPagesFromPlatform(platformClient, shopInstagramId);
+            List<PlatformPostDto> posts = platformClient.fetchRecentPosts(shopInstagramId, this::hasAlreadyCollectedPost);
+            List<PlatformPostDto> postsToUpload = filterPostsToUpload(posts);
+            return uploadAndSaveInParallel(postsToUpload);
         } catch (Exception e) {
             log.error("{} 계정 수집 실패: {}", shopInstagramId, e.getMessage());
             return List.of();
         }
     }
 
-    private List<Gacha> collectPagesFromPlatform(final PlatformClient platformClient, final String shopInstagramId) {
-        List<Gacha> savedGachas = new ArrayList<>();
-        String cursor = null;
-
-        for (int page = 1; page <= MAX_PAGES_PER_SHOP; page++) {
-            PlatformPostPage postPage = platformClient.fetchRecentPosts(shopInstagramId, cursor);
-            PageResult pageResult = processPosts(postPage.posts());
-            savedGachas.addAll(pageResult.savedGachas());
-
-            if (pageResult.reachedAlreadyCollected() || !postPage.hasNext()) {
-                return savedGachas;
-            }
-            if (page == MAX_PAGES_PER_SHOP) {
-                log.warn("{}: 페이지 상한({}) 도달, 이전 게시물이 더 남아있을 수 있음", shopInstagramId, MAX_PAGES_PER_SHOP);
-                return savedGachas;
-            }
-            cursor = postPage.nextCursor();
-        }
-
-        return savedGachas;
-    }
-
-    private PageResult processPosts(final List<PlatformPostDto> posts) {
-        FilterResult filterResult = filterPostsToUpload(posts);
-        List<Gacha> savedGachas = uploadAndSaveInParallel(filterResult.postsToUpload());
-
-        return new PageResult(savedGachas, filterResult.reachedAlreadyCollected());
+    private boolean hasAlreadyCollectedPost(final List<PlatformPostDto> posts) {
+        List<String> mediaIds = posts.stream()
+                .map(PlatformPostDto::originalId)
+                .toList();
+        return !gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(mediaIds).isEmpty();
     }
 
     /**
      * 게시글 순서대로 dedup 체크와 키워드 필터를 적용해 업로드 대상 목록을 확정한다. 인스타그램 피드가 최신순이라 순서 자체가 "얼마나 예전 게시물인지"를 의미하므로, 이미 수집된 게시글을 만나는 순간
-     * 페이지네이션을 중단해야 한다 - 이 판단은 반드시 순차로 이뤄져야 한다.
+     * 그 이후(더 예전) 게시글은 보지 않는다 - 이 판단은 반드시 순차로 이뤄져야 한다.
      */
-    private FilterResult filterPostsToUpload(final List<PlatformPostDto> posts) {
+    private List<PlatformPostDto> filterPostsToUpload(final List<PlatformPostDto> posts) {
         List<String> mediaIds = posts.stream()
                 .map(PlatformPostDto::originalId)
                 .toList();
@@ -105,13 +83,13 @@ public class GachaCollectionService {
         List<PlatformPostDto> postsToUpload = new ArrayList<>();
         for (PlatformPostDto post : posts) {
             if (existingMediaIds.contains(post.originalId())) {
-                return new FilterResult(postsToUpload, true);
+                return postsToUpload;
             }
             if (post.content() != null && GachaKeyword.isIncludedIn(post.content())) {
                 postsToUpload.add(post);
             }
         }
-        return new FilterResult(postsToUpload, false);
+        return postsToUpload;
     }
 
     /**
@@ -208,11 +186,5 @@ public class GachaCollectionService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    private record FilterResult(List<PlatformPostDto> postsToUpload, boolean reachedAlreadyCollected) {
-    }
-
-    private record PageResult(List<Gacha> savedGachas, boolean reachedAlreadyCollected) {
     }
 }
