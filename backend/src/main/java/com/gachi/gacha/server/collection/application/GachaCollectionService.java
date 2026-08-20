@@ -80,16 +80,10 @@ public class GachaCollectionService {
         Set<String> existingMediaIds = new HashSet<>(
                 gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(mediaIds));
 
-        List<PlatformPostDto> postsToUpload = new ArrayList<>();
-        for (PlatformPostDto post : posts) {
-            if (existingMediaIds.contains(post.originalId())) {
-                return postsToUpload;
-            }
-            if (post.content() != null && GachaKeyword.isIncludedIn(post.content())) {
-                postsToUpload.add(post);
-            }
-        }
-        return postsToUpload;
+        return posts.stream()
+                .takeWhile(post -> !existingMediaIds.contains(post.originalId()))
+                .filter(post -> post.content() != null && GachaKeyword.isIncludedIn(post.content()))
+                .toList();
     }
 
     /**
