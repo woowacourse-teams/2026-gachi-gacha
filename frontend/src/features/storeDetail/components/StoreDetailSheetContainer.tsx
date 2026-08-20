@@ -46,21 +46,27 @@ export default function StoreDetailSheetContainer({
 
     const gachaImageUrlsPromise = getStoreGachaImageUrls(storeId, {
       signal: controller.signal,
-    }).catch((error: unknown) => {
-      if (isAbortError(error)) throw error;
+    })
+      .then((imageUrls) => ({ imageUrls, isLoaded: true }))
+      .catch((error: unknown) => {
+        if (isAbortError(error)) throw error;
 
-      return [];
-    });
+        return { imageUrls: [], isLoaded: false };
+      });
 
     Promise.all([
       getStoreDetail(storeId, { signal: controller.signal }),
       gachaImageUrlsPromise,
     ])
-      .then(([dto, gachaImageUrls]) => {
+      .then(([dto, gachaCatalog]) => {
+        const options = {
+          gachaImageUrls: gachaCatalog.imageUrls,
+          isGachaCatalogLoaded: gachaCatalog.isLoaded,
+        };
         const store =
           distanceMeters === undefined
-            ? toStoreDetail(dto, { gachaImageUrls })
-            : toStoreDetail(dto, { distanceMeters, gachaImageUrls });
+            ? toStoreDetail(dto, options)
+            : toStoreDetail(dto, { ...options, distanceMeters });
 
         setRequestState({ status: 'success', store });
       })

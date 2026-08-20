@@ -16,8 +16,10 @@ import kujiIcon from '@/assets/kuji_icon.svg';
 import paymentsIcon from '@/assets/payments_icon.svg';
 import snsIcon from '@/assets/sns_icon.svg';
 
+import GachaCatalogInterest from './GachaCatalogInterest';
 import * as S from './StoreDetailSheet.styles';
 import { useBottomSheetDrag } from '../hooks/useBottomSheetDrag';
+import { isGachaCatalogInterestEligible } from '../model/isGachaCatalogInterestEligible';
 import type {
   BottomSheetState,
   StoreDetail,
@@ -109,8 +111,10 @@ function GalleryThumbnail({
 }
 
 interface StoreGalleryProps {
+  canRequestGachaCatalog: boolean;
   gachaImageUrls: string[];
   state: BottomSheetState;
+  storeId: number;
   storeImageUrls: string[];
   storeName: string;
 }
@@ -129,8 +133,10 @@ function getFrameScrollLeft(frame: HTMLElement, rail: HTMLElement) {
 }
 
 function StoreGallery({
+  canRequestGachaCatalog,
   gachaImageUrls,
   state,
+  storeId,
   storeImageUrls,
   storeName,
 }: StoreGalleryProps) {
@@ -139,6 +145,7 @@ function StoreGallery({
   const [showAll, setShowAll] = useState(false);
   const imageUrls = galleryKind === 'store' ? storeImageUrls : gachaImageUrls;
   const galleryConfig = GALLERY_CONFIG[galleryKind];
+  const showGachaInterest = galleryKind === 'gacha' && canRequestGachaCatalog;
   const thumbnails = imageUrls.length > 0 ? imageUrls : FALLBACK_THUMBNAILS;
   const railRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<GalleryDragStart | null>(null);
@@ -299,42 +306,51 @@ function StoreGallery({
             </S.GalleryTab>
           ))}
         </S.GalleryTabs>
-        <S.GalleryControls
-          aria-label={`${galleryConfig.label} 보기`}
-          role="group"
-        >
-          {state === 'full' && (
-            <S.GalleryViewButton
-              disabled={imageUrls.length === 0}
-              type="button"
-              onClick={() => setShowAll((isShowingAll) => !isShowingAll)}
-            >
-              {showAll ? '미리보기' : '더보기'}
-            </S.GalleryViewButton>
-          )}
-          {!showAll && (
-            <>
-              <S.GalleryControl
-                aria-label={`이전 ${galleryConfig.imageLabel}`}
-                disabled={!canSlideLeft}
+        {!showGachaInterest && (
+          <S.GalleryControls
+            aria-label={`${galleryConfig.label} 보기`}
+            role="group"
+          >
+            {state === 'full' && (
+              <S.GalleryViewButton
+                disabled={imageUrls.length === 0}
                 type="button"
-                onClick={() => slide(-1)}
+                onClick={() => setShowAll((isShowingAll) => !isShowingAll)}
               >
-                ‹
-              </S.GalleryControl>
-              <S.GalleryControl
-                aria-label={`다음 ${galleryConfig.imageLabel}`}
-                disabled={!canSlideRight}
-                type="button"
-                onClick={() => slide(1)}
-              >
-                ›
-              </S.GalleryControl>
-            </>
-          )}
-        </S.GalleryControls>
+                {showAll ? '미리보기' : '더보기'}
+              </S.GalleryViewButton>
+            )}
+            {!showAll && (
+              <>
+                <S.GalleryControl
+                  aria-label={`이전 ${galleryConfig.imageLabel}`}
+                  disabled={!canSlideLeft}
+                  type="button"
+                  onClick={() => slide(-1)}
+                >
+                  ‹
+                </S.GalleryControl>
+                <S.GalleryControl
+                  aria-label={`다음 ${galleryConfig.imageLabel}`}
+                  disabled={!canSlideRight}
+                  type="button"
+                  onClick={() => slide(1)}
+                >
+                  ›
+                </S.GalleryControl>
+              </>
+            )}
+          </S.GalleryControls>
+        )}
       </S.PhotoTitleRow>
-      {showAll ? (
+      {showGachaInterest ? (
+        <GachaCatalogInterest
+          key={storeId}
+          state={state}
+          storeId={storeId}
+          storeName={storeName}
+        />
+      ) : showAll ? (
         <S.PhotoGrid
           id={tabPanelId}
           aria-label={`${galleryConfig.label} 전체 보기`}
@@ -540,8 +556,10 @@ function StoreDetailContent({
         )}
 
         <StoreGallery
+          canRequestGachaCatalog={isGachaCatalogInterestEligible(store)}
           gachaImageUrls={store.gachaImageUrls}
           state={state}
+          storeId={store.id}
           storeImageUrls={store.imageUrls}
           storeName={store.name}
         />
