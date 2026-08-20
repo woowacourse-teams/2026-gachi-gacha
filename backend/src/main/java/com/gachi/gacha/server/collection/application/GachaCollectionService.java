@@ -113,13 +113,31 @@ public class GachaCollectionService {
      * 다운로드/S3 업로드/저장은 순서와 무관하므로 전용 스레드풀에서 병렬로 처리한다. 개별 항목이 실패해도 uploadAndSave 내부에서 스킵되므로, 이 메서드는 성공한 것만 모아 반환한다.
      */
     private List<Gacha> uploadAndSaveInParallel(final List<PlatformPostDto> postsToUpload) {
+        List<Callable<Optional<Gacha>>> tasks = buildUploadTasks(postsToUpload);
+        List<Future<Optional<Gacha>>> futures = invokeTasks(tasks);
+        return collectResults(futures);
+    }
+
+    private List<Callable<Optional<Gacha>>> buildUploadTasks(final List<PlatformPostDto> postsToUpload) {
         List<Callable<Optional<Gacha>>> tasks = new ArrayList<>();
         for (PlatformPostDto post : postsToUpload) {
             tasks.add(() -> uploadAndSave(post));
         }
+        return tasks;
+    }
 
+    private List<Future<Optional<Gacha>>> invokeTasks(final List<Callable<Optional<Gacha>>> tasks) {
         try {
-            List<Future<Optional<Gacha>>> futures = gachaImageUploadExecutor.invokeAll(tasks);
+            return gachaImageUploadExecutor.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("이미지 업로드 처리 중 인터럽트가 발생했습니다.", e);
+            throw new GachaCollectionException(ErrorCode.GACHA_COLLECTION_FAILED);
+        }
+    }
+
+    private List<Gacha> collectResults(final List<Future<Optional<Gacha>>> futures) {
+        try {
             List<Gacha> savedGachas = new ArrayList<>();
             for (Future<Optional<Gacha>> future : futures) {
                 future.get().ifPresent(savedGachas::add);
