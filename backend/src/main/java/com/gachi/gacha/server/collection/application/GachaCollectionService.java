@@ -4,6 +4,7 @@ import com.gachi.gacha.server.collection.application.exception.GachaCollectionEx
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
@@ -21,6 +22,7 @@ import java.util.concurrent.Future;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -29,6 +31,8 @@ import org.springframework.stereotype.Service;
 public class GachaCollectionService {
 
     private static final int MAX_PAGES_PER_SHOP = 5;
+    private static final int MAX_UPLOAD_ATTEMPTS = 2;
+    private static final long UPLOAD_RETRY_DELAY_MS = 500;
 
     private final List<PlatformClient> platformClients;
     private final GachaJpaRepository gachaRepository;
@@ -153,20 +157,45 @@ public class GachaCollectionService {
         }
     }
 
+    /**
+     * 네트워크/DB 일시 장애로 인한 실패만 한 번 재시도한다. 이미지 형식 오류 같은 재시도해도 똑같이 실패할 오류는 바로 포기한다.
+     */
     private Optional<Gacha> uploadAndSave(final PlatformPostDto post) {
+        for (int attempt = 1; attempt <= MAX_UPLOAD_ATTEMPTS; attempt++) {
+            if (attempt > 1) {
+                sleepBeforeRetry();
+            }
+            try {
+                return Optional.of(uploadAndSaveOnce(post));
+            } catch (S3Exception | DataAccessException e) {
+                log.warn("가챠 이미지 업로드/저장 재시도 (미디어 ID: {}, {}/{}번째): {}",
+                        post.originalId(), attempt, MAX_UPLOAD_ATTEMPTS, e.getMessage());
+            } catch (Exception e) {
+                log.error("가챠 이미지 업로드/저장 실패 (미디어 ID: {}): {}", post.originalId(), e.getMessage());
+                return Optional.empty();
+            }
+        }
+        log.error("가챠 이미지 업로드/저장 실패 (미디어 ID: {}): 최대 재시도 횟수 초과", post.originalId());
+        return Optional.empty();
+    }
+
+    private Gacha uploadAndSaveOnce(final PlatformPostDto post) {
+        String s3ImageUrl = imageUploader.uploadFromUrl(post.imageUrl(), ImageType.GACHA.buildPath(s3RootFolder));
+
+        Gacha newGacha = Gacha.builder()
+                .caption(post.content())
+                .thumbnailUrl(s3ImageUrl)
+                .instagramMediaId(post.originalId())
+                .build();
+
+        return gachaRepository.save(newGacha);
+    }
+
+    private void sleepBeforeRetry() {
         try {
-            String s3ImageUrl = imageUploader.uploadFromUrl(post.imageUrl(), ImageType.GACHA.buildPath(s3RootFolder));
-
-            Gacha newGacha = Gacha.builder()
-                    .caption(post.content())
-                    .thumbnailUrl(s3ImageUrl)
-                    .instagramMediaId(post.originalId())
-                    .build();
-
-            return Optional.of(gachaRepository.save(newGacha));
-        } catch (Exception e) {
-            log.error("가챠 이미지 업로드/저장 실패 (미디어 ID: {}): {}", post.originalId(), e.getMessage());
-            return Optional.empty();
+            Thread.sleep(UPLOAD_RETRY_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -10,7 +10,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
@@ -203,6 +205,50 @@ class GachaCollectionServiceTest {
         // then
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getInstagramMediaId()).isEqualTo("media-2");
+    }
+
+    @Test
+    @DisplayName("업로드가 일시적으로 실패해도 재시도해서 결국 성공하면 저장한다.")
+    void collectPostsForShop_uploadFailsOnce_retriesAndSucceeds() {
+        // given
+        PlatformClient client = new StubPlatformClient(
+                new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM)
+        );
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
+        when(imageUploader.uploadFromUrl(any(), any()))
+                .thenThrow(new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR))
+                .thenReturn(UPLOADED_URL);
+        when(gachaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        GachaCollectionService service = service(List.of(client));
+
+        // when
+        List<Gacha> result = service.collectPostsForShop("shop1");
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getInstagramMediaId()).isEqualTo("media-1");
+        verify(imageUploader, times(2)).uploadFromUrl(any(), any());
+    }
+
+    @Test
+    @DisplayName("재시도까지 계속 실패하면 더 이상 시도하지 않고 게시글을 포기한다.")
+    void collectPostsForShop_uploadKeepsFailing_givesUpAfterMaxAttempts() {
+        // given
+        PlatformClient client = new StubPlatformClient(
+                new PlatformPostDto("media-1", "신상 입고", "url1", PlatformType.INSTAGRAM)
+        );
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(any())).thenReturn(List.of());
+        when(imageUploader.uploadFromUrl(any(), any()))
+                .thenThrow(new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR));
+        GachaCollectionService service = service(List.of(client));
+
+        // when
+        List<Gacha> result = service.collectPostsForShop("shop1");
+
+        // then
+        assertThat(result).isEmpty();
+        verify(imageUploader, times(2)).uploadFromUrl(any(), any());
+        verify(gachaRepository, never()).save(any());
     }
 
     @Nested
