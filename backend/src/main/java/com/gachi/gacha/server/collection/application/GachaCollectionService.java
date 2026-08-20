@@ -107,7 +107,7 @@ public class GachaCollectionService {
             if (existingMediaIds.contains(post.originalId())) {
                 return new FilterResult(postsToUpload, true);
             }
-            if (post.content() != null && isGachaKeywordIncluded(post.content())) {
+            if (post.content() != null && GachaKeyword.isIncludedIn(post.content())) {
                 postsToUpload.add(post);
             }
         }
@@ -208,10 +208,6 @@ public class GachaCollectionService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-    }
-
-    private boolean isGachaKeywordIncluded(final String caption) {
-        return caption.contains("입고") || caption.contains("신상") || caption.contains("재입고");
     }
 
     private record FilterResult(List<PlatformPostDto> postsToUpload, boolean reachedAlreadyCollected) {
