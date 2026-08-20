@@ -1,7 +1,5 @@
 package com.gachi.gacha.server.collection.application;
 
-import com.gachi.gacha.server.collection.application.exception.GachaCollectionException;
-import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.config.ImageType;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
@@ -15,10 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -90,44 +86,14 @@ public class GachaCollectionService {
      * 다운로드/S3 업로드/저장은 순서와 무관하므로 전용 스레드풀에서 병렬로 처리한다. 개별 항목이 실패해도 uploadAndSave 내부에서 스킵되므로, 이 메서드는 성공한 것만 모아 반환한다.
      */
     private List<Gacha> uploadAndSaveInParallel(final List<PlatformPostDto> postsToUpload) {
-        List<Callable<Optional<Gacha>>> tasks = buildUploadTasks(postsToUpload);
-        List<Future<Optional<Gacha>>> futures = invokeTasks(tasks);
-        return collectResults(futures);
-    }
+        List<CompletableFuture<Optional<Gacha>>> futures = postsToUpload.stream()
+                .map(post -> CompletableFuture.supplyAsync(() -> uploadAndSave(post), gachaImageUploadExecutor))
+                .toList();
 
-    private List<Callable<Optional<Gacha>>> buildUploadTasks(final List<PlatformPostDto> postsToUpload) {
-        List<Callable<Optional<Gacha>>> tasks = new ArrayList<>();
-        for (PlatformPostDto post : postsToUpload) {
-            tasks.add(() -> uploadAndSave(post));
-        }
-        return tasks;
-    }
-
-    private List<Future<Optional<Gacha>>> invokeTasks(final List<Callable<Optional<Gacha>>> tasks) {
-        try {
-            return gachaImageUploadExecutor.invokeAll(tasks);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("이미지 업로드 처리 중 인터럽트가 발생했습니다.", e);
-            throw new GachaCollectionException(ErrorCode.GACHA_COLLECTION_FAILED);
-        }
-    }
-
-    private List<Gacha> collectResults(final List<Future<Optional<Gacha>>> futures) {
-        try {
-            List<Gacha> savedGachas = new ArrayList<>();
-            for (Future<Optional<Gacha>> future : futures) {
-                future.get().ifPresent(savedGachas::add);
-            }
-            return savedGachas;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("이미지 업로드 처리 중 인터럽트가 발생했습니다.", e);
-            throw new GachaCollectionException(ErrorCode.GACHA_COLLECTION_FAILED);
-        } catch (ExecutionException e) {
-            log.error("이미지 업로드 처리 중 알 수 없는 오류가 발생했습니다.", e);
-            throw new GachaCollectionException(ErrorCode.GACHA_COLLECTION_FAILED);
-        }
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .flatMap(Optional::stream)
+                .toList();
     }
 
     /**

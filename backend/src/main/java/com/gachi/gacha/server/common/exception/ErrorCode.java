@@ -31,9 +31,6 @@ public enum ErrorCode {
     STORE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "SIE01", "존재하지 않는 매장 사진입니다."),
     INVALID_STORE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "SIE02", "유효하지 않은 매장 사진입니다."),
 
-    // Gacha Collection
-    GACHA_COLLECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "GCE01", "가챠 수집 처리 중 오류가 발생했습니다."),
-
     // S3
     S3_IMAGE_INVALID_POLICY(HttpStatus.BAD_REQUEST, "S3E01", "지원하지 않는 이미지 형식입니다."),
     S3_IMAGE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E02", "이미지 파일을 읽는 중 오류가 발생했습니다."),
