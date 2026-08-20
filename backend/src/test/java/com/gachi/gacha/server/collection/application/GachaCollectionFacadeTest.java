@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.SliceImpl;
 
 @ExtendWith(MockitoExtension.class)
 class GachaCollectionFacadeTest {
@@ -44,7 +45,7 @@ class GachaCollectionFacadeTest {
         // given
         StoreDetail store1 = storeDetail(1L, "shop1");
         StoreDetail store2 = storeDetail(2L, "shop2");
-        when(storeService.findAllStoresWithInstagram()).thenReturn(List.of(store1, store2));
+        when(storeService.findStoresWithInstagram(any())).thenReturn(new SliceImpl<>(List.of(store1, store2)));
 
         Gacha gacha1 = mock(Gacha.class);
         Gacha gacha2 = mock(Gacha.class);
@@ -67,7 +68,7 @@ class GachaCollectionFacadeTest {
         // given
         StoreDetail store1 = storeDetail(1L, "shop1");
         StoreDetail store2 = storeDetail(2L, "shop2");
-        when(storeService.findAllStoresWithInstagram()).thenReturn(List.of(store1, store2));
+        when(storeService.findStoresWithInstagram(any())).thenReturn(new SliceImpl<>(List.of(store1, store2)));
 
         when(gachaCollectionService.collectPostsForShop("shop1")).thenThrow(new RuntimeException("크롤링 실패"));
         Gacha gacha2 = mock(Gacha.class);
@@ -85,7 +86,7 @@ class GachaCollectionFacadeTest {
         // given
         StoreDetail store1 = storeDetail(1L, "shop1");
         StoreDetail store2 = storeDetail(2L, "shop2");
-        when(storeService.findAllStoresWithInstagram()).thenReturn(List.of(store1, store2));
+        when(storeService.findStoresWithInstagram(any())).thenReturn(new SliceImpl<>(List.of(store1, store2)));
 
         Gacha gacha1 = mock(Gacha.class);
         Gacha gacha2 = mock(Gacha.class);
@@ -107,7 +108,7 @@ class GachaCollectionFacadeTest {
     @DisplayName("인스타그램이 연동된 상점이 없으면 아무 것도 수집하지 않는다.")
     void collectAllGachas_noStoresWithInstagram_doesNothing() {
         // given
-        when(storeService.findAllStoresWithInstagram()).thenReturn(List.of());
+        when(storeService.findStoresWithInstagram(any())).thenReturn(new SliceImpl<>(List.of()));
 
         // when
         facade().collectAllGachas();
