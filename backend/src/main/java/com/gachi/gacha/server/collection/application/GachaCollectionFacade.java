@@ -40,13 +40,7 @@ public class GachaCollectionFacade {
                     List<Gacha> collectedGachas = gachaCollectionService.collectPostsForShop(
                             storeDetail.getInstagramId());
 
-                    for (Gacha gacha : collectedGachas) {
-                        StoreGachaCreatCommand command = StoreGachaCreatCommand.builder()
-                                .store(store)
-                                .gacha(gacha)
-                                .build();
-                        storeGachaService.addStoreGacha(command);
-                    }
+                    addStoreGachas(collectedGachas, store);
                     collectedCount += collectedGachas.size();
                 } catch (Exception e) {
                     log.error("상점 처리 실패: {} ({}) - {}", storeDetail.getName(), storeDetail.getInstagramId(),
@@ -58,5 +52,15 @@ public class GachaCollectionFacade {
 
         log.info("인스타그램 가챠 데이터 수집 완료 (신규 수집: {}건)", collectedCount);
         return collectedCount;
+    }
+
+    private void addStoreGachas(List<Gacha> collectedGachas, Store store) {
+        for (Gacha gacha : collectedGachas) {
+            StoreGachaCreatCommand command = StoreGachaCreatCommand.builder()
+                    .store(store)
+                    .gacha(gacha)
+                    .build();
+            storeGachaService.addStoreGacha(command);
+        }
     }
 }
