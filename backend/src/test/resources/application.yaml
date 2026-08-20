@@ -10,7 +10,7 @@ spring:
       max-request-size: 100MB
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DB_URL}
+    url: ${TEST_DB_URL:${DB_URL}}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   flyway:
@@ -29,3 +29,10 @@ cloud:
     s3:
       bucket: test-bucket
       folder: test
+
+
+instagram:
+  api:
+    uri: "https://dummy-uri.com"
+    user-id: "dummy-user-id"
+    access-token: "dummy-access-token"

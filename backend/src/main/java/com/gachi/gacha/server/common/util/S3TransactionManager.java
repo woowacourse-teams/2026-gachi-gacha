@@ -91,7 +91,7 @@ public class S3TransactionManager {
     private void moveImageToTrash(final ImageType imageType, final Long domainId, final String imageUrl) {
         try {
             imageUploader.moveToTrash(imageUrl);
-        } catch (final RuntimeException e) {
+        } catch (RuntimeException e) {
             log.error("{} 이미지를 휴지통으로 이동하는 데 실패했습니다. domainId={}, imageUrl={}",
                     imageType.getLabel(), domainId, imageUrl, e);
         }
@@ -100,7 +100,7 @@ public class S3TransactionManager {
     private void deleteImage(final ImageType imageType, final Long domainId, final String imageUrl) {
         try {
             imageUploader.delete(imageUrl);
-        } catch (final RuntimeException e) {
+        } catch (RuntimeException e) {
             log.error("{} 이미지 삭제에 실패했습니다. domainId={}, imageUrl={}",
                     imageType.getLabel(), domainId, imageUrl, e);
         }

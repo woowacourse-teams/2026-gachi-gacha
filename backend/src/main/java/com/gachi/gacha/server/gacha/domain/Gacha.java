@@ -3,11 +3,11 @@ package com.gachi.gacha.server.gacha.domain;
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.common.exception.BusinessException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,10 +24,16 @@ public class Gacha extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     private String name;
+
+    @Column(columnDefinition = "TEXT")
     private String caption;
+
+    @Column(length = 1000)
     private String thumbnailUrl;
+
+    @Column(unique = true, name = "instagram_media_id")
+    private String instagramMediaId;
 
     public void update(final String name, final String caption, final String thumbnailUrl) {
         validateName(name);
@@ -37,7 +43,7 @@ public class Gacha extends BaseTimeEntity {
     }
 
     private void validateName(final String name) {
-        if(name == null || name.isBlank()) {
+        if (name == null || name.isBlank()) {
             throw new BusinessException(ErrorCode.INVALID_GACHA_POLICY);
         }
     }

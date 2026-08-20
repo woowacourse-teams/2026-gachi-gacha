@@ -9,7 +9,11 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -24,6 +28,8 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class ImageUploader {
 
     private final S3Client s3Client;
+
+    private final RestTemplate restTemplate;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
@@ -41,10 +47,36 @@ public class ImageUploader {
 
         try {
             s3Client.putObject(request, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
-        } catch (final IOException e) {
+        } catch (IOException e) {
             log.error("이미지 파일을 읽는 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_READ_ERROR);
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
+            log.error("이미지 업로드 중 오류가 발생했습니다. key={}", key, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR);
+        }
+
+        return convertToS3Url(key);
+    }
+
+    /**
+     * 외부 URL(인스타그램 CDN 등)에서 이미지를 내려받아 그대로 S3에 업로드한다.
+     * MultipartFile이 없는 소스(서버가 직접 다운로드한 이미지)를 위한 진입점.
+     */
+    public String uploadFromUrl(final String sourceUrl, final String path) {
+        ResponseEntity<byte[]> response = downloadImage(sourceUrl);
+        String contentType = validateContentType(resolveContentType(response));
+        String extension = ImageFormat.fromContentType(contentType).getExtension();
+        String key = generateUniqueKey(path, extension);
+
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .contentType(contentType)
+                .build();
+
+        try {
+            s3Client.putObject(request, RequestBody.fromBytes(response.getBody()));
+        } catch (SdkException e) {
             log.error("이미지 업로드 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_UPLOAD_ERROR);
         }
@@ -62,16 +94,15 @@ public class ImageUploader {
 
         try {
             s3Client.deleteObject(request);
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
             log.error("이미지 삭제 중 오류가 발생했습니다. key={}", key, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_DELETE_ERROR);
         }
     }
 
     /**
-     * 이미지를 영구 삭제하지 않고 trash 하위 경로로 이동한다(soft delete).
-     * S3는 원자적인 이동 연산이 없어서 복사 후 원본 삭제로 구현한다.
-     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     * 이미지를 영구 삭제하지 않고 trash 하위 경로로 이동한다(soft delete). S3는 원자적인 이동 연산이 없어서 복사 후 원본 삭제로 구현한다. 예: gachigacha/store/xxx.png
+     * -> gachigacha/trash/store/xxx.png
      */
     public void moveToTrash(final String imageUrl) {
         String key = extractKeyFromUrl(imageUrl);
@@ -92,15 +123,14 @@ public class ImageUploader {
         try {
             s3Client.copyObject(copyRequest);
             s3Client.deleteObject(deleteRequest);
-        } catch (final SdkException e) {
+        } catch (SdkException e) {
             log.error("이미지를 휴지통으로 이동하는 중 오류가 발생했습니다. key={}, trashKey={}", key, trashKey, e);
             throw new S3Exception(ErrorCode.S3_IMAGE_MOVE_ERROR);
         }
     }
 
     /**
-     * 클라이언트가 보낸 Content-Type을 그대로 신뢰하지 않고 화이트리스트로 검증한다.
-     * 검증 없이 저장하면 text/html 등으로 위장한 파일이 스토어드 XSS 벡터가 될 수 있다.
+     * 클라이언트가 보낸 Content-Type을 그대로 신뢰하지 않고 화이트리스트로 검증한다. 검증 없이 저장하면 text/html 등으로 위장한 파일이 스토어드 XSS 벡터가 될 수 있다.
      */
     private String validateContentType(final String contentType) {
         if (!ImageFormat.isAllowedContentType(contentType)) {
@@ -110,8 +140,35 @@ public class ImageUploader {
     }
 
     /**
-     * 원본 파일명에서 확장자만 뽑아 화이트리스트로 검증한다.
-     * 원본 파일명 자체는 키에 사용하지 않는다(아래 generateUniqueKey 참고).
+     * 외부 URL에서 이미지를 내려받는다. 응답 상태코드가 2xx가 아니면 RestTemplate이 자체적으로
+     * 예외를 던지므로, 여기서는 빈 body만 추가로 방어한다.
+     */
+    private ResponseEntity<byte[]> downloadImage(final String sourceUrl) {
+        try {
+            ResponseEntity<byte[]> response = restTemplate.getForEntity(sourceUrl, byte[].class);
+            if (response.getBody() == null || response.getBody().length == 0) {
+                throw new S3Exception(ErrorCode.S3_IMAGE_DOWNLOAD_ERROR);
+            }
+            return response;
+        } catch (RestClientException e) {
+            log.error("원본 이미지를 다운로드하는 중 오류가 발생했습니다. sourceUrl={}", sourceUrl, e);
+            throw new S3Exception(ErrorCode.S3_IMAGE_DOWNLOAD_ERROR);
+        }
+    }
+
+    /**
+     * 응답의 Content-Type 헤더에서 charset 등 부가 파라미터를 제외한 순수 타입만 뽑는다.
+     */
+    private String resolveContentType(final ResponseEntity<byte[]> response) {
+        MediaType mediaType = response.getHeaders().getContentType();
+        if (mediaType == null) {
+            return null;
+        }
+        return "%s/%s".formatted(mediaType.getType(), mediaType.getSubtype());
+    }
+
+    /**
+     * 원본 파일명에서 확장자만 뽑아 화이트리스트로 검증한다. 원본 파일명 자체는 키에 사용하지 않는다(아래 generateUniqueKey 참고).
      */
     private String validateExtension(final String originalFileName) {
         if (originalFileName == null || !originalFileName.contains(".")) {
@@ -126,17 +183,15 @@ public class ImageUploader {
     }
 
     /**
-     * 원본 파일명은 키에 넣지 않고 UUID + 검증된 확장자로만 키를 생성한다.
-     * 원본 파일명을 그대로 쓰면 특수문자/경로 문자로 키 구조를 조작당할 수 있기 때문이다.
+     * 원본 파일명은 키에 넣지 않고 UUID + 검증된 확장자로만 키를 생성한다. 원본 파일명을 그대로 쓰면 특수문자/경로 문자로 키 구조를 조작당할 수 있기 때문이다.
      */
     private String generateUniqueKey(final String path, final String extension) {
         return "%s/%s.%s".formatted(path, UUID.randomUUID(), extension);
     }
 
     /**
-     * 키의 최상위 폴더(root)는 유지하고, 그 다음 위치에 trash를 끼워 넣는다.
-     * 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
-     *     gachigacha/gacha/xxx.png -> gachigacha/trash/gacha/xxx.png
+     * 키의 최상위 폴더(root)는 유지하고, 그 다음 위치에 trash를 끼워 넣는다. 예: gachigacha/store/xxx.png -> gachigacha/trash/store/xxx.png
+     * gachigacha/gacha/xxx.png -> gachigacha/trash/gacha/xxx.png
      */
     private String generateTrashKey(final String key) {
         int rootFolderEndIndex = key.indexOf('/');

@@ -2,6 +2,7 @@ package com.gachi.gacha.server.gacha.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.gacha.domain.exception.GachaNotFoundException;
+import java.util.List;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,4 +17,6 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
     }
 
     Page<Gacha> findByNameContaining(final String keyword, final Pageable pageable);
+
+    List<String> findInstagramMediaIdByInstagramMediaIdIn(final List<String> instagramMediaIds);
 }

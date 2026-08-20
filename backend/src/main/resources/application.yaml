@@ -29,3 +29,9 @@ cloud:
     s3:
       bucket: ${AWS_S3_BUCKET}
       folder: ${AWS_S3_FOLDER}
+
+instagram:
+  api:
+    uri: "https://graph.facebook.com/v26.0"
+    user-id: ${META_IG_USER_ID}
+    access-token: ${META_ACCESS_TOKEN}

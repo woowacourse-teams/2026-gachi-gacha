@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,7 +59,8 @@ public class StoreService {
     ) {
         validateNearbyRequest(latitude, longitude, radius);
 
-        List<StoreJpaRepository.StoreWithDistance> nearbyStores = storeJpaRepository.findNearbyStores(latitude, longitude, radius);
+        List<StoreJpaRepository.StoreWithDistance> nearbyStores = storeJpaRepository.findNearbyStores(latitude,
+                longitude, radius);
 
         List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
                 .map(result -> StoreNearbyResult.StoreInfo.builder()
@@ -138,6 +140,10 @@ public class StoreService {
         return storeJpaRepository.getById(storeId);
     }
 
+    public Slice<StoreDetail> findStoresWithInstagram(Pageable pageable) {
+        return storeDetailJpaRepository.findAllByInstagramIdIsNotNull(pageable);
+    }
+
     private void saveStoreImages(final Store store, final List<MultipartFile> images) {
         if (images == null || images.isEmpty()) {
             return;
@@ -148,17 +154,13 @@ public class StoreService {
 
         List<StoreImage> storeImages = images.stream()
                 .map(file -> {
-                    String imageUrl = imageUploader.upload(file, imagePath());
+                    String imageUrl = imageUploader.upload(file, ImageType.STORE.buildPath(s3RootFolder));
                     uploadedImageUrls.add(imageUrl);
                     return new StoreImage(store, imageUrl);
                 })
                 .toList();
 
         storeImageJpaRepository.saveAll(storeImages);
-    }
-
-    private String imagePath() {
-        return "%s/%s".formatted(s3RootFolder, ImageType.STORE.getFolderName());
     }
 
     private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {

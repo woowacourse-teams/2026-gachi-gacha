@@ -63,7 +63,7 @@ public class GachaService {
                     .map(GachaInfo::from);
         }
         return gachaRepository.findByNameContaining(keyword, pageable)
-                    .map(GachaInfo::from);
+                .map(GachaInfo::from);
     }
 
     public GachaInfo findGachaById(final Long gachaId) {
