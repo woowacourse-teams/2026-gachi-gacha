@@ -522,6 +522,98 @@ export const ThumbnailPlaceholderMark = styled.div`
   }
 `;
 
+export const GachaInterestCard = styled.div<{ $state: BottomSheetState }>`
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 11px 13px;
+  align-items: center;
+  min-height: ${({ $state }) => ($state === 'summary' ? '142px' : '154px')};
+  padding: ${({ $state }) => ($state === 'summary' ? '14px' : '17px')};
+  margin-top: ${({ $state }) => ($state === 'summary' ? '10px' : '15px')};
+  background:
+    radial-gradient(
+      circle at 92% 18%,
+      rgb(255 255 255 / 78%) 0 12%,
+      transparent 13%
+    ),
+    linear-gradient(140deg, #fff6f8, #fbe9f0 55%, #f8eee8);
+  border: 1px solid #f0dfe5;
+  border-radius: 17px;
+`;
+
+export const GachaInterestMark = styled.span`
+  display: grid;
+  width: 48px;
+  height: 48px;
+  color: #a64268;
+  font-size: 30px;
+  line-height: 1;
+  background: rgb(255 255 255 / 86%);
+  border: 1px solid #f0d7e1;
+  border-radius: 50%;
+  box-shadow: 0 7px 18px rgb(134 64 89 / 10%);
+  place-items: center;
+`;
+
+export const GachaInterestCopy = styled.div`
+  min-width: 0;
+`;
+
+export const GachaInterestTitle = styled.strong`
+  display: block;
+  margin-bottom: 4px;
+  color: #4a343c;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+`;
+
+export const GachaInterestDescription = styled.p`
+  margin: 0;
+  color: #7f6971;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.45;
+`;
+
+export const GachaInterestButton = styled.button`
+  grid-column: 1 / -1;
+  min-height: 39px;
+  padding: 9px 14px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #a94169;
+  border: 1px solid #a94169;
+  border-radius: 11px;
+  box-shadow: 0 5px 12px rgb(140 52 85 / 16%);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
+
+  &:hover:not(:disabled) {
+    background: #923657;
+    border-color: #923657;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    color: #765e67;
+    cursor: default;
+    background: rgb(255 255 255 / 74%);
+    border-color: #e6ced7;
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(180 73 113 / 28%);
+    outline-offset: 2px;
+  }
+`;
+
 export const InfoList = styled.dl`
   display: grid;
   gap: 10px;

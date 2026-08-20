@@ -17,6 +17,7 @@ export interface StoreDetail {
   businessHours: string;
   imageUrls: string[];
   gachaImageUrls: string[];
+  isGachaCatalogLoaded: boolean;
   phone: string | null;
   socialLinks: StoreDetailSocialLink[];
   categories: string[];

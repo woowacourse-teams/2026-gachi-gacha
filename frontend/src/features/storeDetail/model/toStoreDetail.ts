@@ -8,6 +8,7 @@ import type { StoreDetailDto } from '../api/storeDetail.dto';
 interface ToStoreDetailOptions {
   distanceMeters?: number;
   gachaImageUrls?: string[];
+  isGachaCatalogLoaded?: boolean;
 }
 
 const AMOUNT_RANGES = [
@@ -166,6 +167,7 @@ export function toStoreDetail(
     businessHours: dto.businessHours ?? '정보 없음',
     imageUrls,
     gachaImageUrls: Array.from(new Set(options.gachaImageUrls ?? [])),
+    isGachaCatalogLoaded: options.isGachaCatalogLoaded === true,
     phone: dto.phoneNumber,
     socialLinks: instagram ? [instagram] : [],
     categories: createCategories(dto),

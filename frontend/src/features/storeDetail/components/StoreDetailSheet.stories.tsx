@@ -10,6 +10,18 @@ import { mockStoreDetail } from '../mocks/storeDetail.mock';
 import { toStoreDetail } from '../model/toStoreDetail';
 
 const store = toStoreDetail(mockStoreDetail, { distanceMeters: 380 });
+const storeWithoutGachaSource = toStoreDetail(
+  {
+    ...mockStoreDetail,
+    instagramId: null,
+    storeId: 55,
+  },
+  {
+    distanceMeters: 380,
+    gachaImageUrls: [],
+    isGachaCatalogLoaded: true,
+  },
+);
 const storeWithGallery = toStoreDetail(
   {
     ...mockStoreDetail,
@@ -24,6 +36,7 @@ const storeWithGallery = toStoreDetail(
       { length: 8 },
       (_, index) => `${defaultStoreThumbnail}?gacha=${index + 1}`,
     ),
+    isGachaCatalogLoaded: true,
   },
 );
 const doNothing = () => undefined;
@@ -101,6 +114,18 @@ export const GalleryWithGachaImages: Story = {
       state="full"
       status="success"
       store={storeWithGallery}
+      onClose={doNothing}
+      onStateChange={doNothing}
+    />
+  ),
+};
+
+export const GachaInterestFakeDoor: Story = {
+  render: () => (
+    <StoreDetailSheet
+      state="full"
+      status="success"
+      store={storeWithoutGachaSource}
       onClose={doNothing}
       onStateChange={doNothing}
     />
