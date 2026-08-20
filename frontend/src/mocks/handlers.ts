@@ -7,7 +7,9 @@ import {
   type NearbyStore,
   type NearbyStoresData,
 } from '@/apis/store';
+import defaultStoreThumbnail from '@/assets/defaultStoreThumbnail.png';
 import type { StoreDetailDto } from '@/features/storeDetail/api/storeDetail.dto';
+import type { StoreGachaPageDto } from '@/features/storeDetail/api/storeGacha.dto';
 import { mockStoreDetail } from '@/features/storeDetail/mocks/storeDetail.mock';
 
 export const mockNearbyStores: NearbyStore[] = [
@@ -85,6 +87,27 @@ export const handlers = [
       code: SUCCESS_CODE,
       message: '요청이 성공했습니다.',
       data: storeDetail,
+    });
+  }),
+  http.get('/api/v1/stores/:storeId/gachas', ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const page = Number(params.get('page') ?? 0);
+    const size = Number(params.get('size') ?? 20);
+
+    return HttpResponse.json<ApiResponse<StoreGachaPageDto>>({
+      code: SUCCESS_CODE,
+      message: '요청이 성공했습니다.',
+      data: {
+        content:
+          page === 0
+            ? Array.from({ length: 8 }, (_, index) => ({
+                gachaId: index + 1,
+                thumbnailUrl: `${defaultStoreThumbnail}?gacha=${index + 1}`,
+              }))
+            : [],
+        number: page,
+        totalPages: size > 0 ? 1 : 0,
+      },
     });
   }),
 ];

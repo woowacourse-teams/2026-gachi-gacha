@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import StoreDetailSheet from './StoreDetailSheet';
 import { getStoreDetail } from '../api/getStoreDetail';
+import { getStoreGachaImageUrls } from '../api/getStoreGachaImageUrls';
 import type { BottomSheetState, StoreDetail } from '../model/storeDetail';
 import { toStoreDetail } from '../model/toStoreDetail';
 
@@ -43,12 +44,23 @@ export default function StoreDetailSheetContainer({
 
     setRequestState({ status: 'loading' });
 
-    getStoreDetail(storeId, { signal: controller.signal })
-      .then((dto) => {
+    const gachaImageUrlsPromise = getStoreGachaImageUrls(storeId, {
+      signal: controller.signal,
+    }).catch((error: unknown) => {
+      if (isAbortError(error)) throw error;
+
+      return [];
+    });
+
+    Promise.all([
+      getStoreDetail(storeId, { signal: controller.signal }),
+      gachaImageUrlsPromise,
+    ])
+      .then(([dto, gachaImageUrls]) => {
         const store =
           distanceMeters === undefined
-            ? toStoreDetail(dto)
-            : toStoreDetail(dto, { distanceMeters });
+            ? toStoreDetail(dto, { gachaImageUrls })
+            : toStoreDetail(dto, { distanceMeters, gachaImageUrls });
 
         setRequestState({ status: 'success', store });
       })
