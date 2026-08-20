@@ -24,12 +24,7 @@ export const StoryFrame = styled.div`
   margin: 0 auto;
   overflow: hidden;
   background: #f5f5f8;
-  font-family:
-    Pretendard,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
 `;
 
 interface SheetRootProps {
@@ -60,12 +55,6 @@ export const SheetRoot = styled.section<SheetRootProps>`
     ${({ $isDragging }) => ($isDragging ? 'none' : 'top 280ms cubic-bezier(0.22, 1, 0.36, 1)')},
     opacity 180ms ease;
   will-change: top;
-  font-family:
-    Pretendard,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    sans-serif;
 `;
 
 export const SheetTopBar = styled.div`
