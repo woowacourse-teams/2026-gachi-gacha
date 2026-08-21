@@ -19,7 +19,7 @@ export interface StoreGachaPage {
  * 요청 세 번이 순차로 끝나야 매장 이름이 떴다. 지금은 첫 페이지만 받고,
  * 나머지는 전체 보기에서 스크롤이 닿을 때 이어 받는다.
  */
-export const GACHA_PAGE_SIZE = 24;
+export const GACHA_PAGE_SIZE = 20;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

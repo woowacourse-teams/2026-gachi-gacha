@@ -108,7 +108,7 @@ export const handlers = [
   http.get('/api/v1/stores/:storeId/gachas', ({ request }) => {
     const params = new URL(request.url).searchParams;
     const page = Number(params.get('page') ?? 0);
-    const size = Math.max(Number(params.get('size') ?? 24), 1);
+    const size = Math.max(Number(params.get('size') ?? 20), 1);
     // 무한 스크롤을 확인하려면 한 페이지로는 부족하다.
     const total = 57;
     const from = page * size;

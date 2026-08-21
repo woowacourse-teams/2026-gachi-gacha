@@ -33,7 +33,7 @@ const storeWithGallery = toStoreDetail(
   {
     distanceMeters: 380,
     gachaImageUrls: Array.from(
-      { length: 24 },
+      { length: 20 },
       (_, index) =>
         `${mockStoreImages[index % mockStoreImages.length] ?? ''}#g${index + 1}`,
     ),
