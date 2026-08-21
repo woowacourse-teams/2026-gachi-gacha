@@ -2,11 +2,24 @@ import { SUCCESS_CODE } from '@/apis/store';
 
 import type { StoreGachaPageDto, StoreGachaSummaryDto } from './storeGacha.dto';
 
-interface GetStoreGachaImageUrlsOptions {
+interface GetStoreGachaPageOptions {
   signal?: AbortSignal;
 }
 
-const PAGE_SIZE = 100;
+export interface StoreGachaPage {
+  imageUrls: string[];
+  page: number;
+  totalPages: number;
+}
+
+/**
+ * 한 번에 받는 장수.
+ *
+ * 전에는 100장씩 전체 페이지를 받아 시트를 열었다. 가챠가 250개인 매장은
+ * 요청 세 번이 순차로 끝나야 매장 이름이 떴다. 지금은 첫 페이지만 받고,
+ * 나머지는 전체 보기에서 스크롤이 닿을 때 이어 받는다.
+ */
+export const GACHA_PAGE_SIZE = 24;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -49,14 +62,15 @@ function toStoreGachaPage(body: unknown): StoreGachaPageDto {
   };
 }
 
-async function getStoreGachaPage(
+/** 가챠 사진 한 페이지. 빈 URL 은 걸러내고 중복도 없앤다. */
+export async function getStoreGachaPage(
   storeId: number,
   page: number,
-  options: GetStoreGachaImageUrlsOptions,
-) {
+  options: GetStoreGachaPageOptions = {},
+): Promise<StoreGachaPage> {
   const query = new URLSearchParams({
     page: String(page),
-    size: String(PAGE_SIZE),
+    size: String(GACHA_PAGE_SIZE),
   });
   const requestOptions: RequestInit = options.signal
     ? { signal: options.signal }
@@ -70,27 +84,16 @@ async function getStoreGachaPage(
     throw new Error(`store-gachas/http-${response.status}`);
   }
 
-  return toStoreGachaPage(await response.json());
-}
+  const dto = toStoreGachaPage(await response.json());
+  const imageUrls = dto.content.flatMap(({ thumbnailUrl }) => {
+    const normalizedUrl = thumbnailUrl?.trim();
 
-export async function getStoreGachaImageUrls(
-  storeId: number,
-  options: GetStoreGachaImageUrlsOptions = {},
-) {
-  const firstPage = await getStoreGachaPage(storeId, 0, options);
-  const pages = [firstPage];
+    return normalizedUrl ? [normalizedUrl] : [];
+  });
 
-  for (let page = 1; page < firstPage.totalPages; page += 1) {
-    pages.push(await getStoreGachaPage(storeId, page, options));
-  }
-
-  const imageUrls = pages.flatMap(({ content }) =>
-    content.flatMap(({ thumbnailUrl }) => {
-      const normalizedUrl = thumbnailUrl?.trim();
-
-      return normalizedUrl ? [normalizedUrl] : [];
-    }),
-  );
-
-  return Array.from(new Set(imageUrls));
+  return {
+    imageUrls: Array.from(new Set(imageUrls)),
+    page: dto.number,
+    totalPages: dto.totalPages,
+  };
 }

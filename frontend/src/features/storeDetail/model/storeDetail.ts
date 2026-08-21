@@ -16,7 +16,9 @@ export interface StoreDetail {
   address: string;
   businessHours: string;
   imageUrls: string[];
+  /** 첫 페이지만. 전체는 전체 보기에서 이어 받는다. */
   gachaImageUrls: string[];
+  gachaTotalPages: number;
   isGachaCatalogLoaded: boolean;
   phone: string | null;
   socialLinks: StoreDetailSocialLink[];
