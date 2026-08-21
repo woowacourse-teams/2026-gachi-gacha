@@ -1,15 +1,12 @@
 import * as S from './StoreDetailSheet.styles';
 import { useGachaCatalogInterest } from '../hooks/useGachaCatalogInterest';
-import type { BottomSheetState } from '../model/storeDetail';
 
 interface GachaCatalogInterestProps {
-  state: BottomSheetState;
   storeId: number;
   storeName: string;
 }
 
 export default function GachaCatalogInterest({
-  state,
   storeId,
   storeName,
 }: GachaCatalogInterestProps) {
@@ -19,7 +16,7 @@ export default function GachaCatalogInterest({
   );
 
   return (
-    <S.GachaInterestCard $state={state}>
+    <S.GachaInterestCard>
       <S.GachaInterestMark aria-hidden="true">♡</S.GachaInterestMark>
       <S.GachaInterestCopy aria-live="polite">
         <S.GachaInterestTitle>
