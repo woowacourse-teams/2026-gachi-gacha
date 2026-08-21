@@ -212,6 +212,18 @@ function useRailDrag(itemCount: number) {
 
 /* ---------------------------------------------------------- 대표 사진 */
 
+/** 도형은 지도 마커(`markerIcon.ts`)와 같은 원·씰 좌표를 쓴다. */
+function CapsuleMark() {
+  return (
+    <S.ThumbnailPlaceholderMark aria-hidden="true" viewBox="0 0 40 56">
+      <circle className="capsule-body" cx="20" cy="28" r="17" />
+      <g transform="rotate(-14 20 28)">
+        <rect className="capsule-seam" x="0" y="26" width="40" height="4" />
+      </g>
+    </S.ThumbnailPlaceholderMark>
+  );
+}
+
 interface StoreHeroProps {
   imageUrls: string[];
   storeName: string;
@@ -220,8 +232,8 @@ interface StoreHeroProps {
 /**
  * 시트 맨 위 대표 사진.
  *
- * 사진이 없으면 아무것도 그리지 않는다. 회색 자리 표시로 화면 위쪽
- * 200px 을 채우느니 이름부터 시작하는 편이 낫다.
+ * 사진이 없어도 자리를 비우지 않는다. 비우면 이름이 시작하는 높이가 225px 에서
+ * 48px 로 내려앉아, 매장을 옮겨가며 볼 때 같은 화면이 다르게 보인다.
  */
 function StoreHero({ imageUrls, storeName }: StoreHeroProps) {
   const [brokenUrls, setBrokenUrls] = useState<string[]>([]);
@@ -230,7 +242,19 @@ function StoreHero({ imageUrls, storeName }: StoreHeroProps) {
     usableUrls.length,
   );
 
-  if (usableUrls.length === 0) return null;
+  if (usableUrls.length === 0) {
+    return (
+      <S.Hero>
+        <S.ThumbnailPlaceholder
+          aria-label={`${storeName} 매장 사진 준비 중`}
+          role="img"
+        >
+          <CapsuleMark />
+          <span>매장 사진 준비 중</span>
+        </S.ThumbnailPlaceholder>
+      </S.Hero>
+    );
+  }
 
   return (
     <S.Hero>
@@ -272,18 +296,6 @@ interface GachaThumbnailProps {
   imageUrl: string | null;
   index: number;
   storeName: string;
-}
-
-/** 도형은 지도 마커(`markerIcon.ts`)와 같은 원·씰 좌표를 쓴다. */
-function CapsuleMark() {
-  return (
-    <S.ThumbnailPlaceholderMark aria-hidden="true" viewBox="0 0 40 56">
-      <circle className="capsule-body" cx="20" cy="28" r="17" />
-      <g transform="rotate(-14 20 28)">
-        <rect className="capsule-seam" x="0" y="26" width="40" height="4" />
-      </g>
-    </S.ThumbnailPlaceholderMark>
-  );
 }
 
 function GachaThumbnail({ imageUrl, index, storeName }: GachaThumbnailProps) {
@@ -605,7 +617,6 @@ function StoreDetailContent({
   titleId,
 }: StoreDetailContentProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const hasHero = store.imageUrls.length > 0;
   // 첫 페이지 밖에 사진이 더 있을 때만 전체 보기로 데려갈 곳이 생긴다.
   const hasFullCatalog =
     state === 'full' &&
@@ -665,7 +676,7 @@ function StoreDetailContent({
 
         <StoreHero imageUrls={store.imageUrls} storeName={store.name} />
 
-        <S.Content $hasHero={hasHero}>
+        <S.Content>
           <S.Overview>
             <S.OverviewHeading>
               <S.StoreName id={titleId}>{store.name}</S.StoreName>
