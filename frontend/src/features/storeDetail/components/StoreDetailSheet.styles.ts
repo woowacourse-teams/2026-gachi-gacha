@@ -280,9 +280,9 @@ export const CompactMeta = styled.p`
 
 /* ------------------------------------------------------------------ 개요 */
 
-export const Content = styled.div<{ $hasHero: boolean }>`
+export const Content = styled.div`
   position: relative;
-  padding: ${({ $hasHero }) => ($hasHero ? space.md : '48px')} ${space.lg}
+  padding: ${space.md} ${space.lg}
     calc(${space.lg} + env(safe-area-inset-bottom));
   background: ${color.surface};
 `;
