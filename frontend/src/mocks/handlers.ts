@@ -7,10 +7,15 @@ import {
   type NearbyStore,
   type NearbyStoresData,
 } from '@/apis/store';
-import defaultStoreThumbnail from '@/assets/defaultStoreThumbnail.png';
 import type { StoreDetailDto } from '@/features/storeDetail/api/storeDetail.dto';
 import type { StoreGachaPageDto } from '@/features/storeDetail/api/storeGacha.dto';
 import { mockStoreDetail } from '@/features/storeDetail/mocks/storeDetail.mock';
+import {
+  entrancePhoto,
+  machinePhoto,
+  mockStoreImages,
+  storeFrontPhoto,
+} from '@/features/storeDetail/mocks/storePhotos.mock';
 
 export const mockNearbyStores: NearbyStore[] = [
   {
@@ -36,19 +41,30 @@ export const mockNearbyStores: NearbyStore[] = [
   },
 ];
 
+const withImages = (imageUrls: string[]) =>
+  imageUrls.map((imageUrl, index) => ({
+    storeImageId: index + 1,
+    imageUrl,
+  }));
+
 const mockStoreDetails: Record<number, StoreDetailDto> = {
+  // 1번은 사진이 없는 매장. 대표 사진 없이 이름부터 시작하는 화면을 본다.
   1: mockStoreDetail,
   2: {
     ...mockStoreDetail,
     storeId: 2,
     name: '가챠스테이션 홍대입구점',
     address: '서울 마포구 양화로 160',
+    thumbnailUrl: storeFrontPhoto,
+    images: withImages(mockStoreImages),
   },
   3: {
     ...mockStoreDetail,
     storeId: 3,
     name: '가챠스테이션 연남점',
     address: '서울 마포구 동교로 242',
+    thumbnailUrl: machinePhoto,
+    images: withImages([machinePhoto, entrancePhoto]),
   },
 };
 
@@ -92,21 +108,30 @@ export const handlers = [
   http.get('/api/v1/stores/:storeId/gachas', ({ request }) => {
     const params = new URL(request.url).searchParams;
     const page = Number(params.get('page') ?? 0);
-    const size = Number(params.get('size') ?? 20);
+    const size = Math.max(Number(params.get('size') ?? 24), 1);
+    // 무한 스크롤을 확인하려면 한 페이지로는 부족하다.
+    const total = 57;
+    const from = page * size;
+    const content = Array.from(
+      { length: Math.max(Math.min(size, total - from), 0) },
+      (_, index) => ({
+        gachaId: from + index + 1,
+        // 목 사진은 몇 장뿐이라 돌려쓴다. 프래그먼트로 URL 을 다르게 만들지
+        // 않으면 중복 제거에 걸려 한 페이지로 접힌다.
+        thumbnailUrl: `${
+          mockStoreImages[(from + index) % mockStoreImages.length] ??
+          storeFrontPhoto
+        }#g${from + index + 1}`,
+      }),
+    );
 
     return HttpResponse.json<ApiResponse<StoreGachaPageDto>>({
       code: SUCCESS_CODE,
       message: '요청이 성공했습니다.',
       data: {
-        content:
-          page === 0
-            ? Array.from({ length: 8 }, (_, index) => ({
-                gachaId: index + 1,
-                thumbnailUrl: `${defaultStoreThumbnail}?gacha=${index + 1}`,
-              }))
-            : [],
+        content,
         number: page,
-        totalPages: size > 0 ? 1 : 0,
+        totalPages: Math.ceil(total / size),
       },
     });
   }),
