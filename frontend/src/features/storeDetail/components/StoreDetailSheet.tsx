@@ -437,9 +437,7 @@ function GachaCatalog({
       id={GACHA_CATALOG_ID}
       tabIndex={-1}
     >
-      <S.SectionTitle id={titleId}>
-        가챠 사진 전체 {imageUrls.length}장
-      </S.SectionTitle>
+      <S.SectionTitle id={titleId}>가챠 사진 전체</S.SectionTitle>
       <S.PhotoGrid>
         {imageUrls.map((imageUrl, index) => (
           <S.GridImageFrame key={imageUrl}>
