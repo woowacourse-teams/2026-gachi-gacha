@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { useBackClose } from './useBackClose';
 import type { BottomSheetState } from '../model/storeDetail';
 
 export interface StorePinSelection {
@@ -29,6 +30,15 @@ export function useStoreDetailSheet() {
   const closeStoreDetail = useCallback(() => {
     setState('closed');
   }, []);
+
+  /**
+   * 웹이라 휴대폰 뒤로가기가 그대로 들어온다. 시트가 열린 채로 뒤로가기를 누르면
+   * 앱을 나가버리므로 시트를 먼저 닫는다.
+   *
+   * 사진 뷰어도 같은 훅을 쓴다. 나중에 연 쪽이 히스토리 위에 쌓이니
+   * 뷰어 → 시트 → 앱 순서로 닫힌다.
+   */
+  useBackClose(state !== 'closed', closeStoreDetail);
 
   /**
    * 지도의 빈 곳을 눌렀을 때. 시트를 첫 단계까지 내리고 매장 선택은 유지한다.

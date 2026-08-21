@@ -171,6 +171,19 @@ export const Collapsed: Story = {
   ),
 };
 
+/** 사진을 눌러 전체화면으로 여는 흐름. 히어로와 가챠 사진 둘 다 열린다. */
+export const PhotoViewerFlow: Story = {
+  render: () => (
+    <StoreDetailSheet
+      state="full"
+      status="success"
+      store={storeWithGallery}
+      onClose={doNothing}
+      onStateChange={doNothing}
+    />
+  ),
+};
+
 export const Loading: Story = {
   render: () => (
     <StoreDetailSheet

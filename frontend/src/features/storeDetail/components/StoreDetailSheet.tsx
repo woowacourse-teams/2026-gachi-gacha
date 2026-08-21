@@ -4,7 +4,6 @@ import {
   useId,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
 
@@ -17,9 +16,11 @@ import paymentsIcon from '@/assets/payments_icon.svg';
 import snsIcon from '@/assets/sns_icon.svg';
 
 import GachaCatalogInterest from './GachaCatalogInterest';
+import PhotoViewer from './PhotoViewer';
 import * as S from './StoreDetailSheet.styles';
 import { useBottomSheetDrag } from '../hooks/useBottomSheetDrag';
 import { useGachaCatalogPages } from '../hooks/useGachaCatalogPages';
+import { useRailDrag } from '../hooks/useRailDrag';
 import { isGachaCatalogInterestEligible } from '../model/isGachaCatalogInterestEligible';
 import type {
   BottomSheetState,
@@ -60,156 +61,6 @@ const RAIL_PREVIEW_COUNT = 5;
 /** 전체 보기가 데려갈 자리. 시트 안에서만 쓰는 id 라 고정값이면 충분하다. */
 const GACHA_CATALOG_ID = 'gacha-catalog';
 
-/** 이만큼 끌어야 다음 장으로 넘어간다. 그보다 짧으면 제자리로 돌아온다. */
-const RAIL_SNAP_DISTANCE = 36;
-
-/* ------------------------------------------------------------ 가로 레일 */
-
-interface RailDragStart {
-  activeIndex: number;
-  pointerId: number;
-  scrollLeft: number;
-  x: number;
-}
-
-function getFrameScrollLeft(frame: HTMLElement, rail: HTMLElement) {
-  const firstFrame = rail.children.item(0) as HTMLElement | null;
-
-  return frame.offsetLeft - (firstFrame?.offsetLeft ?? 0);
-}
-
-/**
- * 손가락으로 끌어 넘기는 가로 목록.
- *
- * 시트 자체가 위아래 드래그를 가로채기 때문에 브라우저 기본 스크롤에만
- * 맡길 수 없다. 포인터를 직접 받아 어느 장에 멈출지 정한다.
- *
- * 대표 사진과 가챠 사진이 같은 동작을 해야 해서 한 곳에 둔다.
- */
-function useRailDrag(itemCount: number) {
-  const railRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef<RailDragStart | null>(null);
-  const dragDistanceRef = useRef(0);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const updateSlideControls = useCallback(() => {
-    const rail = railRef.current;
-
-    if (!rail) return;
-
-    const frames = Array.from(rail.children) as HTMLElement[];
-    const nextActiveIndex = frames.reduce((closestIndex, frame, index) => {
-      const closestFrame = frames[closestIndex];
-
-      if (!closestFrame) return index;
-
-      return Math.abs(getFrameScrollLeft(frame, rail) - rail.scrollLeft) <
-        Math.abs(getFrameScrollLeft(closestFrame, rail) - rail.scrollLeft)
-        ? index
-        : closestIndex;
-    }, 0);
-
-    setActiveIndex(nextActiveIndex);
-  }, []);
-
-  useEffect(() => {
-    const rail = railRef.current;
-
-    if (!rail) return;
-
-    updateSlideControls();
-
-    const resizeObserver = new ResizeObserver(updateSlideControls);
-
-    resizeObserver.observe(rail);
-
-    return () => resizeObserver.disconnect();
-  }, [itemCount, updateSlideControls]);
-
-  const scrollToIndex = useCallback(
-    (rail: HTMLElement, index: number) => {
-      const nextIndex = Math.min(Math.max(index, 0), itemCount - 1);
-      const nextFrame = rail.children.item(nextIndex) as HTMLElement | null;
-
-      if (!nextFrame) return;
-
-      rail.scrollTo({
-        behavior: 'smooth',
-        left: getFrameScrollLeft(nextFrame, rail),
-      });
-    },
-    [itemCount],
-  );
-
-  const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-
-    // 레일이 포인터를 캡처하면 그 안의 버튼은 click 을 못 받는다.
-    // 눌린 곳이 버튼이면 끌기를 시작하지 않는다.
-    if ((event.target as HTMLElement).closest('button')) return;
-
-    dragStartRef.current = {
-      activeIndex,
-      pointerId: event.pointerId,
-      scrollLeft: event.currentTarget.scrollLeft,
-      x: event.clientX,
-    };
-    dragDistanceRef.current = 0;
-    setIsDragging(true);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const dragStart = dragStartRef.current;
-
-    if (!dragStart || dragStart.pointerId !== event.pointerId) return;
-
-    const dragDistance = event.clientX - dragStart.x;
-
-    dragDistanceRef.current = dragDistance;
-    event.currentTarget.scrollLeft = dragStart.scrollLeft - dragDistance;
-
-    if (Math.abs(dragDistance) > 4) event.preventDefault();
-  };
-
-  const finishDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const dragStart = dragStartRef.current;
-
-    if (!dragStart || dragStart.pointerId !== event.pointerId) return;
-
-    const direction =
-      Math.abs(dragDistanceRef.current) < RAIL_SNAP_DISTANCE
-        ? 0
-        : dragDistanceRef.current > 0
-          ? -1
-          : 1;
-
-    scrollToIndex(event.currentTarget, dragStart.activeIndex + direction);
-
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-
-    dragStartRef.current = null;
-    dragDistanceRef.current = 0;
-    setIsDragging(false);
-  };
-
-  return {
-    activeIndex,
-    isDragging,
-    railProps: {
-      onPointerCancel: finishDrag,
-      onPointerDown: handlePointerDown,
-      onPointerMove: handlePointerMove,
-      onPointerUp: finishDrag,
-      onScroll: updateSlideControls,
-    },
-    railRef,
-  };
-}
-
 /* ---------------------------------------------------------- 대표 사진 */
 
 /** 도형은 지도 마커(`markerIcon.ts`)와 같은 원·씰 좌표를 쓴다. */
@@ -227,6 +78,7 @@ function CapsuleMark() {
 interface StoreHeroProps {
   imageUrls: string[];
   storeName: string;
+  onOpenPhoto: (imageUrls: string[], index: number) => void;
 }
 
 /**
@@ -235,11 +87,12 @@ interface StoreHeroProps {
  * 사진이 없어도 자리를 비우지 않는다. 비우면 이름이 시작하는 높이가 225px 에서
  * 48px 로 내려앉아, 매장을 옮겨가며 볼 때 같은 화면이 다르게 보인다.
  */
-function StoreHero({ imageUrls, storeName }: StoreHeroProps) {
+function StoreHero({ imageUrls, storeName, onOpenPhoto }: StoreHeroProps) {
   const [brokenUrls, setBrokenUrls] = useState<string[]>([]);
   const usableUrls = imageUrls.filter((url) => !brokenUrls.includes(url));
   const { activeIndex, isDragging, railProps, railRef } = useRailDrag(
     usableUrls.length,
+    { onTapItem: (index) => onOpenPhoto(usableUrls, index) },
   );
 
   if (usableUrls.length === 0) {
@@ -330,6 +183,7 @@ interface GachaGalleryProps {
   storeName: string;
   /** 전체 보기를 누르면 맨 아래 전체 섹션으로 데려간다. 없으면 버튼을 안 그린다. */
   onShowAll: (() => void) | null;
+  onOpenPhoto: (imageUrls: string[], index: number) => void;
 }
 
 /**
@@ -344,13 +198,18 @@ function GachaGallery({
   storeId,
   storeName,
   onShowAll,
+  onOpenPhoto,
 }: GachaGalleryProps) {
   const titleId = useId();
   const thumbnails =
     imageUrls.length > 0
       ? imageUrls.slice(0, RAIL_PREVIEW_COUNT)
       : FALLBACK_THUMBNAILS;
-  const { isDragging, railProps, railRef } = useRailDrag(thumbnails.length);
+  const { isDragging, railProps, railRef } = useRailDrag(thumbnails.length, {
+    onTapItem: (index) => {
+      if (imageUrls.length > 0) onOpenPhoto(imageUrls, index);
+    },
+  });
 
   return (
     <S.GachaSection aria-labelledby={titleId}>
@@ -381,7 +240,7 @@ function GachaGallery({
               </S.ThumbnailFrame>
             ))}
             {onShowAll && (
-              <S.ShowAllSlot>
+              <S.ShowAllSlot data-rail-control>
                 <S.ShowAllButton
                   aria-label="가챠 사진 전체보기"
                   type="button"
@@ -406,6 +265,7 @@ interface GachaCatalogProps {
   storeId: number;
   storeName: string;
   totalPages: number;
+  onOpenPhoto: (imageUrls: string[], index: number) => void;
 }
 
 /**
@@ -419,6 +279,7 @@ function GachaCatalog({
   storeId,
   storeName,
   totalPages,
+  onOpenPhoto,
 }: GachaCatalogProps) {
   const titleId = useId();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -452,7 +313,12 @@ function GachaCatalog({
       <S.SectionTitle id={titleId}>가챠 사진 전체</S.SectionTitle>
       <S.PhotoGrid>
         {imageUrls.map((imageUrl, index) => (
-          <S.GridImageFrame key={imageUrl}>
+          <S.GridImageFrame
+            key={imageUrl}
+            aria-label={`${storeName} 가챠 사진 ${index + 1} 크게 보기`}
+            type="button"
+            onClick={() => onOpenPhoto(imageUrls, index)}
+          >
             <GachaThumbnail
               imageUrl={imageUrl}
               index={index}
@@ -631,6 +497,15 @@ function StoreDetailContent({
 
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [photoView, setPhotoView] = useState<{
+    imageUrls: string[];
+    startIndex: number;
+  } | null>(null);
+
+  const openPhoto = (imageUrls: string[], startIndex: number) =>
+    setPhotoView({ imageUrls, startIndex });
+
+  const closePhoto = useCallback(() => setPhotoView(null), []);
 
   useEffect(() => {
     const sentinel = topSentinelRef.current;
@@ -674,7 +549,11 @@ function StoreDetailContent({
       >
         <S.TopSentinel ref={topSentinelRef} aria-hidden="true" />
 
-        <StoreHero imageUrls={store.imageUrls} storeName={store.name} />
+        <StoreHero
+          imageUrls={store.imageUrls}
+          storeName={store.name}
+          onOpenPhoto={openPhoto}
+        />
 
         <S.Content>
           <S.Overview>
@@ -710,6 +589,7 @@ function StoreDetailContent({
             imageUrls={store.gachaImageUrls}
             storeId={store.id}
             storeName={store.name}
+            onOpenPhoto={openPhoto}
             onShowAll={hasFullCatalog ? showCatalog : null}
           />
 
@@ -799,12 +679,22 @@ function StoreDetailContent({
                   storeId={store.id}
                   storeName={store.name}
                   totalPages={store.gachaTotalPages}
+                  onOpenPhoto={openPhoto}
                 />
               )}
             </>
           )}
         </S.Content>
       </S.ScrollArea>
+
+      {photoView && (
+        <PhotoViewer
+          imageUrls={photoView.imageUrls}
+          startIndex={photoView.startIndex}
+          title={`${store.name} 사진`}
+          onClose={closePhoto}
+        />
+      )}
 
       {isScrolledDown && (
         <S.ScrollTopButton
