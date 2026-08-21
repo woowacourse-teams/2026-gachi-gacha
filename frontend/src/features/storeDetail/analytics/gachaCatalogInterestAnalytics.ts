@@ -16,7 +16,7 @@ function captureGachaCatalogInterest(
   properties: Record<string, unknown> = {},
 ) {
   window.posthog?.capture(eventName, {
-    eligibility_reason: 'missing_instagram_and_gacha_images',
+    eligibility_reason: 'missing_gacha_images',
     environment: getEnvironment(),
     source: 'store_detail_gacha_tab',
     store_id: storeId,

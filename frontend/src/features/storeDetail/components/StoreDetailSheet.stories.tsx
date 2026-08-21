@@ -9,10 +9,9 @@ import { mockStoreImages } from '../mocks/storePhotos.mock';
 import { toStoreDetail } from '../model/toStoreDetail';
 
 const store = toStoreDetail(mockStoreDetail, { distanceMeters: 380 });
-const storeWithoutGachaSource = toStoreDetail(
+const storeWithInstagramWithoutGachaImages = toStoreDetail(
   {
     ...mockStoreDetail,
-    instagramId: null,
     storeId: 55,
   },
   {
@@ -122,12 +121,12 @@ export const GalleryWithGachaImages: Story = {
   ),
 };
 
-export const GachaInterestFakeDoor: Story = {
+export const GachaInterestWithInstagram: Story = {
   render: () => (
     <StoreDetailSheet
       state="full"
       status="success"
-      store={storeWithoutGachaSource}
+      store={storeWithInstagramWithoutGachaImages}
       onClose={doNothing}
       onStateChange={doNothing}
     />
