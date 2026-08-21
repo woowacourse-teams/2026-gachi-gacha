@@ -1,12 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import defaultStoreThumbnail from '@/assets/defaultStoreThumbnail.png';
-
 import StoreDetailSheet from './StoreDetailSheet';
 import * as S from './StoreDetailSheet.styles';
 import StoreDetailSheetContainer from './StoreDetailSheetContainer';
 import { useStoreDetailSheet } from '../hooks/useStoreDetailSheet';
 import { mockStoreDetail } from '../mocks/storeDetail.mock';
+import { mockStoreImages } from '../mocks/storePhotos.mock';
 import { toStoreDetail } from '../model/toStoreDetail';
 
 const store = toStoreDetail(mockStoreDetail, { distanceMeters: 380 });
@@ -25,17 +24,20 @@ const storeWithoutGachaSource = toStoreDetail(
 const storeWithGallery = toStoreDetail(
   {
     ...mockStoreDetail,
-    images: Array.from({ length: 5 }, (_, index) => ({
+    thumbnailUrl: mockStoreImages[0] ?? null,
+    images: mockStoreImages.map((imageUrl, index) => ({
       storeImageId: index + 1,
-      imageUrl: `${defaultStoreThumbnail}?store=${index + 1}`,
+      imageUrl,
     })),
   },
   {
     distanceMeters: 380,
     gachaImageUrls: Array.from(
-      { length: 8 },
-      (_, index) => `${defaultStoreThumbnail}?gacha=${index + 1}`,
+      { length: 20 },
+      (_, index) =>
+        `${mockStoreImages[index % mockStoreImages.length] ?? ''}#g${index + 1}`,
     ),
+    gachaTotalPages: 3,
     isGachaCatalogLoaded: true,
   },
 );
@@ -126,6 +128,19 @@ export const GachaInterestFakeDoor: Story = {
       state="full"
       status="success"
       store={storeWithoutGachaSource}
+      onClose={doNothing}
+      onStateChange={doNothing}
+    />
+  ),
+};
+
+/** 2단계에서 대표 사진이 얼마나 차지하는지 본다. */
+export const SummaryWithPhotos: Story = {
+  render: () => (
+    <StoreDetailSheet
+      state="summary"
+      status="success"
+      store={storeWithGallery}
       onClose={doNothing}
       onStateChange={doNothing}
     />

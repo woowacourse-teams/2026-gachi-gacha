@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import StoreDetailSheet from './StoreDetailSheet';
 import { getStoreDetail } from '../api/getStoreDetail';
-import { getStoreGachaImageUrls } from '../api/getStoreGachaImageUrls';
+import { getStoreGachaPage } from '../api/getStoreGachaImageUrls';
 import type { BottomSheetState, StoreDetail } from '../model/storeDetail';
 import { toStoreDetail } from '../model/toStoreDetail';
 
@@ -44,23 +44,25 @@ export default function StoreDetailSheetContainer({
 
     setRequestState({ status: 'loading' });
 
-    const gachaImageUrlsPromise = getStoreGachaImageUrls(storeId, {
+    // 첫 페이지만 받는다. 카탈로그가 크든 작든 시트 여는 시간이 같아야 한다.
+    const gachaFirstPagePromise = getStoreGachaPage(storeId, 0, {
       signal: controller.signal,
     })
-      .then((imageUrls) => ({ imageUrls, isLoaded: true }))
+      .then((page) => ({ ...page, isLoaded: true }))
       .catch((error: unknown) => {
         if (isAbortError(error)) throw error;
 
-        return { imageUrls: [], isLoaded: false };
+        return { imageUrls: [], isLoaded: false, page: 0, totalPages: 0 };
       });
 
     Promise.all([
       getStoreDetail(storeId, { signal: controller.signal }),
-      gachaImageUrlsPromise,
+      gachaFirstPagePromise,
     ])
       .then(([dto, gachaCatalog]) => {
         const options = {
           gachaImageUrls: gachaCatalog.imageUrls,
+          gachaTotalPages: gachaCatalog.totalPages,
           isGachaCatalogLoaded: gachaCatalog.isLoaded,
         };
         const store =

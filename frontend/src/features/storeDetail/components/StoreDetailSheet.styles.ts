@@ -1,10 +1,32 @@
 import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import {
+  alpha,
+  brandColor,
+  color,
+  focusRing,
+  fontSize,
+  fontWeight,
+  radius,
+  shadow,
+  space,
+} from '@/styles/tokens';
+
 import { getBottomSheetTop } from '../model/bottomSheetState';
 import type { BottomSheetState } from '../model/storeDetail';
 
-const CONTENT_CARD_PADDING = '12px 16px';
+const fadeUp = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 const shimmer = keyframes`
   from {
@@ -16,6 +38,8 @@ const shimmer = keyframes`
   }
 `;
 
+/* ------------------------------------------------------------------ 시트 */
+
 export const StoryFrame = styled.div`
   position: relative;
   width: min(100vw, 430px);
@@ -23,7 +47,7 @@ export const StoryFrame = styled.div`
   min-height: 720px;
   margin: 0 auto;
   overflow: hidden;
-  background: #f5f5f8;
+  background: ${color.surface2};
   font-family: 'IBM Plex Sans KR', sans-serif;
 `;
 
@@ -43,20 +67,27 @@ export const SheetRoot = styled.section<SheetRootProps>`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  color: #2f292c;
+  color: ${color.ink};
   pointer-events: ${({ $state }) => ($state === 'closed' ? 'none' : 'auto')};
-  background: #ffffff;
-  border-radius: 24px 24px 0 0;
-  box-shadow: 0 -8px 36px rgb(73 53 60 / 14%);
+  background: ${color.surface};
+  border-radius: ${radius.lg} ${radius.lg} 0 0;
+  box-shadow: ${shadow.sheet};
   opacity: ${({ $state }) => ($state === 'closed' ? 0 : 1)};
   touch-action: pan-x;
   user-select: ${({ $isDragging }) => ($isDragging ? 'none' : 'auto')};
   transition:
-    ${({ $isDragging }) => ($isDragging ? 'none' : 'top 280ms cubic-bezier(0.22, 1, 0.36, 1)')},
+    ${({ $isDragging }) =>
+      $isDragging ? 'none' : 'top 280ms cubic-bezier(0.22, 1, 0.36, 1)'},
     opacity 180ms ease;
   will-change: top;
 `;
 
+/**
+ * 손잡이와 닫기 버튼이 놓이는 줄. 아래 내용 위에 떠 있다.
+ *
+ * 사진 위에 얹힐 때도 있어서 배경을 깔지 않는다. 대신 손잡이와 버튼이
+ * 각자 자기 배경을 갖는다.
+ */
 export const SheetTopBar = styled.div`
   position: absolute;
   top: 0;
@@ -64,10 +95,14 @@ export const SheetTopBar = styled.div`
   left: 0;
   z-index: 2;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   height: 48px;
-  background: linear-gradient(180deg, #ffffff 72%, rgb(255 255 255 / 0%));
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 `;
 
 export const DragHandleButton = styled.button`
@@ -86,39 +121,43 @@ export const DragHandleButton = styled.button`
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 24%);
+    outline: ${focusRing};
     outline-offset: -7px;
-    border-radius: 14px;
+    border-radius: ${radius.md};
   }
 `;
 
-export const Grabber = styled.span`
-  width: 44px;
-  height: 5px;
-  background: #cfc4c8;
-  border-radius: 999px;
+export const Grabber = styled.span<{ $onImage: boolean }>`
+  width: 40px;
+  height: 4px;
+  margin-top: ${space.sm};
+  background: ${({ $onImage }) =>
+    $onImage ? alpha(color.surface, 85) : color.line};
+  border-radius: ${radius.pill};
+  box-shadow: ${({ $onImage }) =>
+    $onImage ? `0 1px 3px ${alpha(color.ink, 30)}` : 'none'};
 `;
 
 export const CloseButton = styled.button`
   position: absolute;
   top: 10px;
-  right: 16px;
+  right: ${space.md};
   display: grid;
   width: 32px;
   height: 32px;
   padding: 0;
-  color: #3a3034;
-  font-size: 25px;
+  color: ${color.ink};
+  font-size: ${fontSize.xl};
   line-height: 1;
   cursor: pointer;
-  background: rgb(255 255 255 / 92%);
+  background: ${alpha(color.surface, 92)};
   border: 0;
-  border-radius: 50%;
-  box-shadow: 0 2px 10px rgb(73 53 60 / 14%);
+  border-radius: ${radius.circle};
+  box-shadow: ${shadow.float};
   place-items: center;
 
   &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 24%);
+    outline: ${focusRing};
     outline-offset: 2px;
   }
 `;
@@ -135,219 +174,241 @@ export const ScrollArea = styled.div<{ $canScroll: boolean }>`
   }
 `;
 
+/* -------------------------------------------------------------- 매장 사진 */
+
+/**
+ * 시트 맨 위를 꽉 채우는 대표 사진.
+ *
+ * 높이를 화면 높이에 묶는다. 고정 px 로 두면 작은 기기에서 이름과 주소가
+ * 시트 밖으로 밀려나고, 시트 높이의 %로 두면 드래그하는 동안 매 프레임
+ * 높이가 바뀌어 레이아웃을 다시 계산한다.
+ */
 export const Hero = styled.div`
   position: relative;
+  flex: 0 0 auto;
   width: 100%;
-  height: 224px;
+  height: clamp(140px, 28dvh, 240px);
   overflow: hidden;
-  background: #f1eff8;
+  background: ${color.surface2};
+`;
+
+export const HeroRail = styled.div<{ $isDragging: boolean }>`
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-snap-type: ${({ $isDragging }) =>
+    $isDragging ? 'none' : 'x mandatory'};
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  user-select: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+export const HeroFrame = styled.div`
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 `;
 
 export const HeroImage = styled.img`
+  display: block;
   width: 100%;
   height: 100%;
+  user-select: none;
   object-fit: cover;
+  -webkit-user-drag: none;
 `;
 
+/** 아래쪽만 살짝 어둡게. 사진이 밝아도 장수 표시가 읽힌다. */
 export const HeroShade = styled.div`
   position: absolute;
   inset: auto 0 0;
-  height: 60px;
+  height: 72px;
   pointer-events: none;
-  background: linear-gradient(transparent, rgb(24 20 31 / 22%));
+  background: linear-gradient(transparent, ${alpha(color.ink, 34)});
 `;
 
-export const DefaultImage = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
+export const HeroCounter = styled.span`
+  position: absolute;
+  right: ${space.sm};
+  bottom: ${space.sm};
+  padding: 4px 10px;
+  color: ${color.surface};
+  font-size: ${fontSize.sm};
+  font-variant-numeric: tabular-nums;
+  background: ${alpha(color.ink, 55)};
+  border-radius: ${radius.pill};
+`;
+
+/* ------------------------------------------------------- 1단계 압축 헤더 */
+
+/**
+ * 접힌 단계에서는 시트가 116px 만 보인다. 사진을 그리면 윗동강만 나오고
+ * 매장 이름이 사라져서, 이름과 한 줄 요약만 남긴다.
+ */
+export const CompactContent = styled.div`
+  padding: 44px ${space.lg} ${space.md};
+`;
+
+export const CompactStoreName = styled.h2`
+  margin: 0;
   overflow: hidden;
-  color: #746f7d;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  background:
-    radial-gradient(
-      circle at 12% 18%,
-      rgb(255 255 255 / 68%) 0 8%,
-      transparent 9%
-    ),
-    radial-gradient(
-      circle at 88% 82%,
-      rgb(255 255 255 / 48%) 0 15%,
-      transparent 16%
-    ),
-    linear-gradient(140deg, #f6eafa, #e8e4fa 52%, #e0ecff);
+  color: ${color.ink};
+  font-size: ${fontSize.lg};
+  font-weight: ${fontWeight.bold};
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
 `;
 
-export const DefaultImageMark = styled.div`
-  position: relative;
-  width: 80px;
-  height: 64px;
-  border: 5px solid rgb(255 255 255 / 88%);
-  border-radius: 19px;
-  box-shadow: 0 12px 24px rgb(74 55 112 / 12%);
-  transform: rotate(-2deg);
-
-  &::before {
-    position: absolute;
-    top: 11px;
-    right: 12px;
-    width: 13px;
-    height: 13px;
-    content: '';
-    background: #f8bddd;
-    border-radius: 50%;
-  }
-
-  &::after {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    height: 27px;
-    content: '';
-    background: linear-gradient(145deg, #a692ef 49%, #8170d0 50%);
-    clip-path: polygon(0 100%, 34% 32%, 53% 62%, 70% 20%, 100% 100%);
-    border-radius: 4px;
-  }
-`;
-
-export const Content = styled.div<{ $state: BottomSheetState }>`
-  position: relative;
-  padding: ${({ $state }) => ($state === 'summary' ? '44px' : '48px')} 20px
-    calc(36px + env(safe-area-inset-bottom));
-  background: #ffffff;
-`;
-
-export const Overview = styled.div<{ $state: BottomSheetState }>`
-  padding: ${({ $state }) => ($state === 'summary' ? '0 0 10px' : '4px 0 18px')};
-  border-bottom: 1px solid #f0e8eb;
-`;
-
-export const OverviewHeading = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  justify-content: space-between;
-  min-width: 0;
-`;
-
-export const StoreAddress = styled.p`
-  margin: 5px 0 0;
+export const CompactMeta = styled.p`
+  margin: 4px 0 0;
   overflow: hidden;
-  color: #7f7478;
-  font-size: 13px;
-  font-weight: 520;
+  color: ${color.ink3};
+  font-size: ${fontSize.sm};
   line-height: 1.5;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-export const Headline = styled.div`
-  padding-bottom: 22px;
-  border-bottom: 1px solid #f0e8eb;
+/* ------------------------------------------------------------------ 개요 */
+
+export const Content = styled.div<{ $hasHero: boolean }>`
+  position: relative;
+  padding: ${({ $hasHero }) => ($hasHero ? space.md : '48px')} ${space.lg}
+    calc(${space.lg} + env(safe-area-inset-bottom));
+  background: ${color.surface};
 `;
 
-export const DistanceBadge = styled.span`
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  min-height: 26px;
-  padding: 4px 10px;
-  color: #963c5d;
-  font-size: 12px;
-  font-weight: 750;
-  background: #fde8ef;
-  border-radius: 999px;
+export const Overview = styled.div`
+  padding-bottom: ${space.md};
+`;
+
+export const OverviewHeading = styled.div`
+  display: flex;
+  gap: ${space.sm};
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
 `;
 
 export const StoreName = styled.h2`
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: #2d2729;
-  font-size: 22px;
-  font-weight: 800;
+  color: ${color.ink};
+  font-size: ${fontSize.xl};
+  font-weight: ${fontWeight.bold};
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
+`;
+
+/** 누를 수 없는 정보라 배경을 주지 않는다. 알약은 누를 수 있다는 신호다. */
+export const DistanceBadge = styled.span`
+  flex: 0 0 auto;
+  color: ${color.ink3};
+  font-size: ${fontSize.md};
+`;
+
+export const StoreAddress = styled.p`
+  margin: 6px 0 0;
+  overflow: hidden;
+  color: ${color.ink2};
+  font-size: ${fontSize.md};
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const UpdatedAt = styled.p<{ $state: BottomSheetState }>`
   display: ${({ $state }) => ($state === 'summary' ? 'none' : 'block')};
   margin: 6px 0 0;
-  color: #9b9094;
-  font-size: 11px;
+  color: ${color.ink3};
+  font-size: ${fontSize.sm};
   line-height: 1.5;
 `;
 
-export const PhotoSection = styled.section<{ $state: BottomSheetState }>`
-  padding: ${({ $state }) => ($state === 'summary' ? '14px 0' : '24px 0')};
-  border-bottom: 1px solid #f0e8eb;
+export const SummaryDetails = styled.div`
+  display: grid;
+  gap: ${space.sm};
+  padding-top: ${space.md};
 `;
 
-export const PhotoTitleRow = styled.div`
+export const SummaryRow = styled.div`
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: ${space.sm};
+  font-size: ${fontSize.md};
+  line-height: 1.55;
+`;
+
+export const SummaryLabel = styled.span`
+  color: ${color.ink3};
+`;
+
+export const SummaryValue = styled.span`
+  overflow: hidden;
+  color: ${color.ink};
+  text-overflow: ellipsis;
+  white-space: pre-line;
+`;
+
+export const CategoryList = styled.ul`
   display: flex;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: ${space.sm} 0 0;
+  list-style: none;
 `;
 
-export const GalleryTabs = styled.div`
-  display: flex;
-  min-width: 0;
-  padding: 3px;
-  background: #f8f1f4;
-  border-radius: 12px;
+export const CategoryChip = styled.li`
+  padding: 5px 10px;
+  color: ${color.accent};
+  font-size: ${fontSize.sm};
+  font-weight: ${fontWeight.bold};
+  background: ${color.accentBg};
+  border-radius: ${radius.pill};
 `;
 
-export const GalleryTab = styled.button<{ $isActive: boolean }>`
-  min-height: 34px;
-  padding: 7px 11px;
-  color: ${({ $isActive }) => ($isActive ? '#7f3150' : '#87777d')};
-  font-size: 13px;
-  font-weight: 750;
-  white-space: nowrap;
-  cursor: pointer;
-  background: ${({ $isActive }) => ($isActive ? '#ffffff' : 'transparent')};
-  border: 0;
-  border-radius: 9px;
-  box-shadow: ${({ $isActive }) =>
-    $isActive ? '0 2px 8px rgb(98 56 71 / 10%)' : 'none'};
+/* -------------------------------------------------------------- 가챠 사진 */
 
-  &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 24%);
-    outline-offset: 1px;
-  }
-`;
-
-export const GalleryControls = styled.div`
-  display: flex;
-  gap: 7px;
-  align-items: center;
+/**
+ * 매장 사진은 맨 위 히어로가 맡는다. 여기는 가챠 사진만 다룬다.
+ *
+ * 전에는 둘이 탭 하나에 묶여 한 번에 하나만 보였다. 가챠 앱에서 "뭘 뽑을
+ * 수 있나"는 탭 뒤에 숨길 정보가 아니다.
+ */
+export const GachaSection = styled.section`
+  /* 구분선 위아래를 같은 간격으로 띄운다. 위쪽은 앞 요소가 무엇이든 여기서 만든다. */
+  padding: ${space.lg} 0;
+  margin-top: ${space.lg};
+  border-top: 1px solid ${color.line};
 `;
 
 export const GalleryViewButton = styled.button`
-  min-height: 32px;
-  padding: 6px 9px;
-  color: #8a4861;
-  font-size: 12px;
-  font-weight: 750;
+  padding: 6px 10px;
+  color: ${color.ink3};
+  font-family: inherit;
+  font-size: ${fontSize.sm};
   white-space: nowrap;
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: 9px;
+  border-radius: ${radius.sm};
 
   &:hover:not(:disabled) {
-    background: #fff0f5;
+    color: ${color.accent};
+    background: ${color.accentBg};
   }
 
   &:disabled {
@@ -356,56 +417,69 @@ export const GalleryViewButton = styled.button`
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 24%);
+    outline: ${focusRing};
     outline-offset: 1px;
   }
 `;
 
-export const GalleryControl = styled.button`
+/**
+ * 레일 끝에 남기는 좁은 자리. 사진 칸 하나를 통째로 쓰지 않는다.
+ *
+ * 마지막 사진 옆에 살짝 보여서 "여기가 끝이고 더 보려면 여기"를 같이 알린다.
+ */
+export const ShowAllSlot = styled.div`
   display: grid;
-  width: 32px;
-  height: 32px;
-  padding: 0 0 2px;
-  color: #795a67;
-  font-size: 25px;
-  line-height: 1;
+  flex: 0 0 84px;
+  gap: ${space.xs};
+  height: 266px;
+  scroll-snap-align: end;
+  place-content: center;
+  place-items: center;
+`;
+
+export const ShowAllButton = styled.button`
+  display: grid;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: ${color.ink2};
   cursor: pointer;
-  background: #fff0f5;
-  border: 1px solid #f2d9e2;
-  border-radius: 50%;
-  transition:
-    color 140ms ease,
-    background 140ms ease,
-    opacity 140ms ease;
+  background: ${color.surface2};
+  border: 1px solid ${color.line};
+  border-radius: ${radius.circle};
   place-items: center;
 
-  &:hover:not(:disabled) {
-    color: #ffffff;
-    background: #ad456d;
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.34;
+  svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 24%);
+    outline: ${focusRing};
     outline-offset: 2px;
   }
 `;
 
-export const GalleryViewport = styled.div<{ $state: BottomSheetState }>`
-  height: ${({ $state }) => ($state === 'summary' ? '142px' : 'auto')};
-  margin-top: ${({ $state }) => ($state === 'summary' ? '10px' : '15px')};
-  overflow: ${({ $state }) => ($state === 'summary' ? 'hidden' : 'visible')};
+export const ShowAllLabel = styled.span`
+  color: ${color.ink3};
+  font-size: ${fontSize.sm};
+  white-space: nowrap;
+`;
+
+export const GalleryViewport = styled.div`
+  margin-top: 0;
 `;
 
 export const ThumbnailRail = styled.div<{ $isDragging: boolean }>`
   display: flex;
-  gap: 10px;
-  padding-right: 20px;
-  margin-right: -20px;
+  gap: ${space.xs};
+  padding-right: ${space.lg};
+  margin-right: -${space.lg};
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scrollbar-width: none;
@@ -428,13 +502,19 @@ export const ThumbnailRail = styled.div<{ $isDragging: boolean }>`
   }
 `;
 
+/**
+ * 정사각으로 둔다. 가챠 사진은 캡슐이나 피규어 같은 물건 사진이고, 공간을
+ * 담는 매장 사진과 모양으로도 구분된다.
+ *
+ * 한 장이 온전히 들어가고 다음 장이 76px 보이는 크기다.
+ */
 export const ThumbnailFrame = styled.div`
-  flex: 0 0 76%;
-  height: 154px;
+  flex: 0 0 266px;
+  height: 266px;
   overflow: hidden;
-  background: #faf3f5;
-  border: 1px solid #f0e3e7;
-  border-radius: 17px;
+  background: ${color.surface2};
+  border: 1px solid ${color.line};
+  border-radius: ${radius.md};
   scroll-snap-align: start;
   scroll-snap-stop: always;
 `;
@@ -442,16 +522,15 @@ export const ThumbnailFrame = styled.div`
 export const PhotoGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
-  margin-top: 15px;
+  gap: ${space.xs};
 `;
 
 export const GridImageFrame = styled.div`
   overflow: hidden;
   aspect-ratio: 1;
-  background: #faf3f5;
-  border: 1px solid #f0e3e7;
-  border-radius: 14px;
+  background: ${color.surface2};
+  border: 1px solid ${color.line};
+  border-radius: ${radius.md};
 `;
 
 export const ThumbnailImage = styled.img`
@@ -472,86 +551,132 @@ export const ThumbnailPlaceholder = styled.div`
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: #85787d;
-  font-size: 11px;
-  font-weight: 650;
+  color: ${color.ink3};
+  font-size: ${fontSize.sm};
   pointer-events: none;
-  background:
-    radial-gradient(
-      circle at 15% 16%,
-      rgb(255 255 255 / 72%) 0 8%,
-      transparent 9%
-    ),
-    radial-gradient(
-      circle at 86% 82%,
-      rgb(255 255 255 / 52%) 0 16%,
-      transparent 17%
-    ),
-    linear-gradient(140deg, #fff4f7, #f9e8ee 52%, #f5eee8);
+  background: ${color.surface2};
 `;
 
-export const ThumbnailPlaceholderMark = styled.div`
-  position: relative;
+/**
+ * 지도 마커와 같은 캡슐 모양. 사진이 없을 때 이 자리가 무엇인지 알려준다.
+ *
+ * 색은 팔레트에서 가져와 조용하게 둔다. 자리 표시가 진짜 사진보다 눈에
+ * 띄면 안 된다.
+ */
+export const ThumbnailPlaceholderMark = styled.svg`
+  width: 30%;
+  min-width: 44px;
+  max-width: 88px;
+  aspect-ratio: 1;
+
+  .capsule-body {
+    fill: ${color.line};
+  }
+
+  .capsule-seam {
+    fill: ${color.surface2};
+  }
+`;
+
+/* ----------------------------------------------- 가챠 사진 전체 (맨 아래) */
+
+/**
+ * 전체 보기는 시트 맨 아래에 둔다.
+ *
+ * 무한 스크롤이 중간에 있으면 그 아래 매장 정보와 가격에 영원히 닿지 못한다.
+ * 맨 아래라서 계속 이어 붙여도 안전하다.
+ */
+export const GachaCatalogSection = styled.section`
+  padding: ${space.lg} 0 0;
+  margin-top: ${space.lg};
+  border-top: 1px solid ${color.line};
+  scroll-margin-top: ${space.lg};
+
+  &:focus {
+    outline: none;
+  }
+`;
+
+/** 스크롤이 여기 닿으면 다음 페이지를 부른다. 화면에는 보이지 않는다. */
+export const CatalogSentinel = styled.div`
+  height: 1px;
+`;
+
+export const CatalogStatus = styled.p`
+  padding: ${space.md} 0;
+  margin: 0;
+  color: ${color.ink3};
+  font-size: ${fontSize.sm};
+  text-align: center;
+`;
+
+/** 스크롤이 여기서 벗어나면 '맨 위로'를 띄운다. 스크롤 핸들러를 매 프레임 돌리지 않는다. */
+export const TopSentinel = styled.div`
+  height: 1px;
+`;
+
+/**
+ * 시트 오른쪽 아래에 떠 있는 맨 위로.
+ *
+ * 시트가 position: absolute 라 그 안에서 자리를 잡는다. 스크롤 영역 안에
+ * 두면 내용과 같이 밀려 올라간다.
+ */
+export const ScrollTopButton = styled.button`
+  position: absolute;
+  right: ${space.md};
+  bottom: calc(${space.md} + env(safe-area-inset-bottom));
+  z-index: 3;
+  display: grid;
   width: 48px;
-  height: 38px;
-  border: 3px solid rgb(255 255 255 / 90%);
-  border-radius: 11px;
-  box-shadow: 0 8px 18px rgb(108 70 82 / 10%);
+  height: 48px;
+  padding: 0;
+  color: ${color.ink2};
+  cursor: pointer;
+  background: ${alpha(color.surface, 94)};
+  border: 1px solid ${color.line};
+  border-radius: ${radius.circle};
+  box-shadow: ${shadow.float};
+  animation: ${fadeUp} 160ms ease;
+  place-items: center;
 
-  &::before {
-    position: absolute;
-    top: 7px;
-    right: 8px;
-    width: 8px;
-    height: 8px;
-    content: '';
-    background: #f8bddd;
-    border-radius: 50%;
+  &:focus-visible {
+    outline: ${focusRing};
+    outline-offset: 2px;
   }
 
-  &::after {
-    position: absolute;
-    right: 5px;
-    bottom: 5px;
-    left: 5px;
-    height: 17px;
-    content: '';
-    background: linear-gradient(145deg, #d7a0b3 49%, #bd7d94 50%);
-    clip-path: polygon(0 100%, 34% 32%, 53% 62%, 70% 20%, 100% 100%);
-    border-radius: 3px;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
-export const GachaInterestCard = styled.div<{ $state: BottomSheetState }>`
+/** 글리프 대신 도형으로 그린다. 폰트마다 삼각형 모양과 크기가 달라진다. */
+export const ScrollTopIcon = styled.svg`
+  width: 16px;
+  height: 16px;
+  fill: currentcolor;
+`;
+
+/* --------------------------------------------------- 가챠 목록 관심 요청 */
+
+export const GachaInterestCard = styled.div`
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
-  gap: 11px 13px;
+  gap: ${space.sm} ${space.sm};
   align-items: center;
-  min-height: ${({ $state }) => ($state === 'summary' ? '142px' : '154px')};
-  padding: ${({ $state }) => ($state === 'summary' ? '14px' : '17px')};
-  margin-top: ${({ $state }) => ($state === 'summary' ? '10px' : '15px')};
-  background:
-    radial-gradient(
-      circle at 92% 18%,
-      rgb(255 255 255 / 78%) 0 12%,
-      transparent 13%
-    ),
-    linear-gradient(140deg, #fff6f8, #fbe9f0 55%, #f8eee8);
-  border: 1px solid #f0dfe5;
-  border-radius: 17px;
+  padding: ${space.md};
+  background: ${color.surface2};
+  border: 1px solid ${color.line};
+  border-radius: ${radius.md};
 `;
 
 export const GachaInterestMark = styled.span`
   display: grid;
   width: 48px;
   height: 48px;
-  color: #a64268;
-  font-size: 30px;
-  line-height: 1;
-  background: rgb(255 255 255 / 86%);
-  border: 1px solid #f0d7e1;
-  border-radius: 50%;
-  box-shadow: 0 7px 18px rgb(134 64 89 / 10%);
+  color: ${color.accent};
+  font-size: ${fontSize.xl};
+  background: ${color.accentBg};
+  border-radius: ${radius.circle};
   place-items: center;
 `;
 
@@ -559,149 +684,115 @@ export const GachaInterestCopy = styled.div`
   min-width: 0;
 `;
 
-export const GachaInterestTitle = styled.strong`
-  display: block;
-  margin-bottom: 4px;
-  color: #4a343c;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.4;
-  letter-spacing: -0.02em;
+export const GachaInterestTitle = styled.p`
+  margin: 0;
+  color: ${color.ink};
+  font-size: ${fontSize.md};
+  font-weight: ${fontWeight.bold};
 `;
 
 export const GachaInterestDescription = styled.p`
-  margin: 0;
-  color: #7f6971;
-  font-size: 12px;
-  font-weight: 550;
-  line-height: 1.45;
+  margin: 4px 0 0;
+  color: ${color.ink2};
+  font-size: ${fontSize.sm};
+  line-height: 1.55;
 `;
 
 export const GachaInterestButton = styled.button`
   grid-column: 1 / -1;
-  min-height: 39px;
-  padding: 9px 14px;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 800;
+  min-height: 44px;
+  color: ${color.surface};
+  font-family: inherit;
+  font-size: ${fontSize.md};
+  font-weight: ${fontWeight.bold};
   cursor: pointer;
-  background: #a94169;
-  border: 1px solid #a94169;
-  border-radius: 11px;
-  box-shadow: 0 5px 12px rgb(140 52 85 / 16%);
-  transition:
-    background 140ms ease,
-    border-color 140ms ease,
-    transform 140ms ease;
-
-  &:hover:not(:disabled) {
-    background: #923657;
-    border-color: #923657;
-    transform: translateY(-1px);
-  }
+  background: ${color.accent};
+  border: 0;
+  border-radius: ${radius.sm};
 
   &:disabled {
-    color: #765e67;
+    color: ${color.ink3};
     cursor: default;
-    background: rgb(255 255 255 / 74%);
-    border-color: #e6ced7;
-    box-shadow: none;
+    background: ${color.surface};
+    border: 1px solid ${color.line};
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 28%);
+    outline: ${focusRing};
     outline-offset: 2px;
   }
 `;
 
+/* -------------------------------------------------------------- 매장 정보 */
+
 export const InfoList = styled.dl`
   display: grid;
-  gap: 10px;
-  padding: 22px 0;
+  gap: ${space.sm};
+  padding: ${space.lg} 0;
   margin: 0;
-  border-bottom: 1px solid #f0e8eb;
+  border-top: 1px solid ${color.line};
 `;
 
 export const InfoRow = styled.div`
   display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: ${space.sm};
   align-items: center;
-  min-height: 58px;
-  padding: ${CONTENT_CARD_PADDING};
-  background: #fffdfd;
-  border: 1px solid #f0e7e7;
-  border-radius: 14px;
-  box-shadow: 0 3px 10px rgb(96 70 77 / 6%);
 `;
 
 export const InfoLabel = styled.dt`
   display: flex;
-  gap: 9px;
+  gap: ${space.xs};
   align-items: center;
-  color: #73676c;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.65;
+  color: ${color.ink3};
+  font-size: ${fontSize.md};
+  line-height: 1.55;
 `;
 
 export const InfoIcon = styled.img`
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 20px;
+  height: 20px;
 `;
 
 export const InfoValue = styled.dd`
   margin: 0;
-  color: #3a3135;
-  font-size: 14px;
-  font-weight: 520;
-  line-height: 1.65;
+  color: ${color.ink};
+  font-size: ${fontSize.md};
+  line-height: 1.55;
   white-space: pre-wrap;
 `;
 
 export const SocialLinkList = styled.ul`
   display: flex;
-  gap: 9px;
+  gap: ${space.xs};
   align-items: center;
-  justify-content: flex-end;
   padding: 0;
   margin: 0;
   list-style: none;
 `;
 
+/** 브랜드 색은 팔레트 밖이다. 정해진 색이라야 알아본다. */
 export const SocialLink = styled.a<{ $platform: 'instagram' | 'kakao' }>`
   display: grid;
-  width: 40px;
-  height: 40px;
-  color: ${({ $platform }) => ($platform === 'kakao' ? '#251c1c' : '#ffffff')};
-  text-decoration: none;
+  width: 32px;
+  height: 32px;
+  color: ${({ $platform }) =>
+    $platform === 'kakao' ? brandColor.kakaoInk : color.surface};
   background: ${({ $platform }) =>
-    $platform === 'kakao'
-      ? '#fee500'
-      : 'linear-gradient(145deg, #6c45d7, #d83c72 54%, #f1a13f)'};
-  border: 3px solid #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 3px 10px rgb(155 48 90 / 22%);
-  transition:
-    box-shadow 140ms ease,
-    transform 140ms ease;
+    $platform === 'kakao' ? brandColor.kakao : brandColor.instagram};
+  border-radius: ${radius.sm};
   place-items: center;
 
-  &:hover {
-    box-shadow: 0 5px 14px rgb(155 48 90 / 30%);
-    transform: translateY(-1px);
-  }
-
   &:focus-visible {
-    outline: 3px solid rgb(180 73 113 / 25%);
+    outline: ${focusRing};
     outline-offset: 2px;
   }
 `;
 
 export const InstagramIcon = styled.svg`
-  width: 25px;
-  height: 25px;
+  width: 18px;
+  height: 18px;
   fill: none;
   stroke: currentcolor;
   stroke-width: 1.8;
@@ -713,67 +804,67 @@ export const InstagramIcon = styled.svg`
 `;
 
 export const KakaoIcon = styled.svg`
-  width: 27px;
-  height: 27px;
+  width: 18px;
+  height: 18px;
   fill: currentcolor;
 `;
 
+/* ---------------------------------------------------------------- 섹션 */
+
 export const Section = styled.section`
-  padding: 24px 0;
-  border-bottom: 1px solid #f0e8eb;
+  padding: ${space.lg} 0;
+  border-top: 1px solid ${color.line};
 
   &:last-child {
     padding-bottom: 0;
-    border-bottom: 0;
   }
 `;
 
 export const SectionTitle = styled.h3`
-  margin: 0 0 15px;
-  color: #342b2f;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
+  margin: 0 0 ${space.sm};
+  color: ${color.ink};
+  font-size: ${fontSize.lg};
+  font-weight: ${fontWeight.bold};
+  letter-spacing: -0.02em;
 `;
 
 export const IconSectionTitle = styled.h3`
   display: flex;
-  gap: 10px;
+  gap: ${space.xs};
   align-items: center;
-  margin: 0 0 15px;
-  color: #342b2f;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
+  margin: 0 0 ${space.sm};
+  color: ${color.ink};
+  font-size: ${fontSize.lg};
+  font-weight: ${fontWeight.bold};
+  letter-spacing: -0.02em;
 `;
 
 export const SectionIcon = styled.img`
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 24px;
+  height: 24px;
 `;
 
 export const AmountGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: ${space.xs};
 `;
 
 export const AmountCard = styled.div`
   display: flex;
-  gap: 11px;
+  gap: ${space.sm};
   align-items: center;
   min-width: 0;
-  padding: ${CONTENT_CARD_PADDING};
-  background: #fff9fb;
-  border: 1px solid #f1e2e7;
-  border-radius: 15px;
+  padding: ${space.sm};
+  background: ${color.surface2};
+  border-radius: ${radius.md};
 `;
 
 export const AmountIcon = styled.img`
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
 `;
 
 export const AmountText = styled.div`
@@ -781,301 +872,90 @@ export const AmountText = styled.div`
 `;
 
 export const AmountLabel = styled.p`
-  margin: 0 0 3px;
-  color: #7c6f74;
-  font-size: 12px;
-  font-weight: 650;
+  margin: 0 0 2px;
+  color: ${color.ink3};
+  font-size: ${fontSize.sm};
 `;
 
 export const AmountValue = styled.strong`
-  color: #3d3035;
-  font-size: 18px;
-  font-weight: 800;
+  color: ${color.ink};
+  font-size: ${fontSize.lg};
+  font-weight: ${fontWeight.bold};
   letter-spacing: -0.02em;
 `;
 
 export const PriceList = styled.dl`
+  display: grid;
+  gap: ${space.sm};
   margin: 0;
-  overflow: hidden;
-  background: #fffdfd;
-  border: 1px solid #f0e3e7;
-  border-radius: 15px;
 `;
 
 export const PriceRow = styled.div`
   display: flex;
-  gap: 16px;
+  gap: ${space.md};
   align-items: center;
   justify-content: space-between;
-  min-height: 62px;
-  padding: ${CONTENT_CARD_PADDING};
-  border-bottom: 1px solid #f3e9ec;
-
-  &:last-child {
-    border-bottom: 0;
-  }
 `;
 
 export const PriceLabel = styled.dt`
   display: flex;
-  gap: 10px;
+  gap: ${space.xs};
   align-items: center;
-  color: #6f6267;
-  font-size: 13px;
-  font-weight: 700;
+  color: ${color.ink3};
+  font-size: ${fontSize.md};
 `;
 
 export const PriceIcon = styled.img`
   flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
+  width: 20px;
+  height: 20px;
 `;
 
 export const PriceValue = styled.dd`
   margin: 0;
-  color: #3a3034;
-  font-size: 14px;
-  font-weight: 750;
+  color: ${color.ink};
+  font-size: ${fontSize.md};
+  font-weight: ${fontWeight.bold};
   text-align: right;
 `;
 
 export const ChipList = styled.ul`
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   padding: 0;
   margin: 0;
   list-style: none;
 `;
 
 export const Chip = styled.li`
-  padding: 8px 12px;
-  color: #6d5660;
-  font-size: 12px;
-  font-weight: 700;
-  background: #fff0f5;
-  border: 1px solid #f1dce4;
-  border-radius: 999px;
+  padding: 5px 10px;
+  color: ${color.ink2};
+  font-size: ${fontSize.sm};
+  background: ${color.surface2};
+  border-radius: ${radius.pill};
 `;
 
-export const CompactScrollArea = styled.div`
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-`;
-
-export const CompactContent = styled.div`
-  padding: 47px 20px calc(24px + env(safe-area-inset-bottom));
-`;
-
-export const CompactHeadline = styled.div`
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  justify-content: space-between;
-  min-width: 0;
-`;
-
-export const CompactTitleGroup = styled.div`
-  min-width: 0;
-`;
-
-export const CompactStoreName = styled.h2`
-  margin: 0;
-  overflow: hidden;
-  color: #32292d;
-  font-size: 19px;
-  font-weight: 800;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: -0.03em;
-`;
-
-export const CompactMeta = styled.p`
-  margin: 4px 0 0;
-  overflow: hidden;
-  color: #8d8186;
-  font-size: 12px;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
-export const CompactDistance = styled.span`
-  flex: 0 0 auto;
-  padding: 5px 9px;
-  color: #963c5d;
-  font-size: 11px;
-  font-weight: 750;
-  background: #fde8ef;
-  border-radius: 999px;
-`;
-
-export const SummaryDetails = styled.div<{ $state: BottomSheetState }>`
-  display: grid;
-  gap: 14px;
-  padding-top: ${({ $state }) => ($state === 'summary' ? '10px' : '18px')};
-`;
-
-export const SummaryRow = styled.div`
-  display: grid;
-  grid-template-columns: 68px minmax(0, 1fr);
-  gap: 10px;
-  font-size: 13px;
-  line-height: 1.55;
-`;
-
-export const SummaryLabel = styled.span`
-  color: #8f8287;
-  font-weight: 650;
-`;
-
-export const SummaryValue = styled.span`
-  overflow: hidden;
-  color: #463a3f;
-  font-weight: 550;
-  text-overflow: ellipsis;
-  white-space: pre-line;
-`;
-
-export const CategoryList = styled.ul<{ $state: BottomSheetState }>`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0;
-  margin: ${({ $state }) => ($state === 'summary' ? '10px 0 0' : '17px 0 0')};
-  list-style: none;
-`;
-
-export const CategoryChip = styled.li`
-  padding: 7px 12px;
-  color: #7b4d5f;
-  font-size: 12px;
-  font-weight: 750;
-  background: #fde7ef;
-  border: 1px solid #f2d5e0;
-  border-radius: 999px;
-
-  &:nth-of-type(4n + 2) {
-    color: #88492f;
-    background: #fbe9df;
-    border-color: #f2d7c9;
-  }
-
-  &:nth-of-type(4n + 3) {
-    color: #715d35;
-    background: #f5eddc;
-    border-color: #eadfca;
-  }
-
-  &:nth-of-type(4n + 4) {
-    color: #65566c;
-    background: #eee8f0;
-    border-color: #e1d7e5;
-  }
-`;
-
-export const SwipeHint = styled.p`
-  margin: 16px 0 0;
-  color: #aaa4af;
-  font-size: 11px;
-  text-align: center;
-`;
-
-export const DemoMap = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  background:
-    linear-gradient(
-      30deg,
-      transparent 48%,
-      rgb(255 255 255 / 65%) 49% 52%,
-      transparent 53%
-    ),
-    linear-gradient(
-      120deg,
-      transparent 47%,
-      rgb(255 255 255 / 58%) 48% 52%,
-      transparent 53%
-    ),
-    #e5e9e1;
-  background-size:
-    130px 130px,
-    180px 180px,
-    auto;
-`;
-
-export const DemoMapLabel = styled.p`
-  position: absolute;
-  top: 24px;
-  left: 20px;
-  padding: 8px 12px;
-  margin: 0;
-  color: #625d68;
-  font-size: 12px;
-  font-weight: 700;
-  background: rgb(255 255 255 / 88%);
-  border-radius: 999px;
-  box-shadow: 0 4px 14px rgb(55 50 63 / 10%);
-`;
-
-export const DemoPinButton = styled.button`
-  position: absolute;
-  top: 38%;
-  left: 52%;
-  width: 42px;
-  height: 42px;
-  padding: 0;
-  color: #ffffff;
-  font-size: 18px;
-  cursor: pointer;
-  background: #a8461c;
-  border: 4px solid #ffffff;
-  border-radius: 50% 50% 50% 8px;
-  box-shadow: 0 8px 18px rgb(111 49 22 / 28%);
-  transform: translate(-50%, -50%) rotate(-45deg);
-
-  span {
-    display: block;
-    transform: rotate(45deg);
-  }
-
-  &:focus-visible {
-    outline: 4px solid rgb(168 70 28 / 25%);
-    outline-offset: 4px;
-  }
-`;
-
-export const LoadingHero = styled.div`
-  width: 100%;
-  height: 224px;
-  background: linear-gradient(90deg, #eeecf1 25%, #f7f6f8 50%, #eeecf1 75%);
-  background-size: 200% 100%;
-  animation: ${shimmer} 1.4s infinite linear;
-`;
+/* ------------------------------------------------------ 로딩 · 에러 상태 */
 
 export const LoadingContent = styled.div`
   display: grid;
-  gap: 14px;
-  padding: 60px 20px 28px;
+  gap: ${space.sm};
+  padding: 48px ${space.lg} ${space.lg};
 `;
 
 export const Skeleton = styled.div<{ width?: string; height?: number }>`
   width: ${({ width }) => width ?? '100%'};
-  height: ${({ height }) => height ?? 18}px;
-  background: linear-gradient(90deg, #eeecf1 25%, #f8f7f9 50%, #eeecf1 75%);
-  background-size: 200% 100%;
-  border-radius: 8px;
-  animation: ${shimmer} 1.4s infinite linear;
+  height: ${({ height }) => `${height ?? 16}px`};
+  background: linear-gradient(
+      90deg,
+      ${color.surface2} 25%,
+      ${color.line} 37%,
+      ${color.surface2} 63%
+    )
+    0 0 / 400% 100%;
+  border-radius: ${radius.sm};
+  animation: ${shimmer} 1.4s ease infinite;
 `;
 
 export const VisuallyHidden = styled.span`
@@ -1085,67 +965,104 @@ export const VisuallyHidden = styled.span`
   padding: 0;
   margin: -1px;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 `;
 
 export const ErrorBody = styled.div`
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 28px;
+  display: grid;
+  gap: ${space.sm};
+  justify-items: center;
+  padding: 56px ${space.lg} ${space.lg};
   text-align: center;
 `;
 
 export const ErrorMark = styled.div`
   display: grid;
-  width: 64px;
-  height: 64px;
-  margin-bottom: 20px;
-  color: #a8461c;
-  font-size: 30px;
-  font-weight: 800;
-  background: #fbe9df;
-  border-radius: 22px;
+  width: 48px;
+  height: 48px;
+  color: ${color.accent};
+  font-size: ${fontSize.xl};
+  font-weight: ${fontWeight.bold};
+  background: ${color.accentBg};
+  border-radius: ${radius.circle};
   place-items: center;
 `;
 
 export const ErrorTitle = styled.h2`
   margin: 0;
-  color: #28242e;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
+  color: ${color.ink};
+  font-size: ${fontSize.lg};
+  font-weight: ${fontWeight.bold};
 `;
 
 export const ErrorDescription = styled.p`
-  margin: 9px 0 22px;
-  color: #817b87;
-  font-size: 14px;
-  line-height: 1.6;
+  margin: 0;
+  color: ${color.ink2};
+  font-size: ${fontSize.md};
+  line-height: 1.55;
 `;
 
 export const RetryButton = styled.button`
-  min-width: 112px;
-  height: 44px;
-  padding: 0 20px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 750;
+  min-height: 44px;
+  padding: 0 ${space.lg};
+  margin-top: ${space.xs};
+  color: ${color.surface};
+  font-family: inherit;
+  font-size: ${fontSize.md};
+  font-weight: ${fontWeight.bold};
   cursor: pointer;
-  background: #a8461c;
+  background: ${color.accent};
   border: 0;
-  border-radius: 13px;
-
-  &:hover {
-    background: #903814;
-  }
+  border-radius: ${radius.sm};
 
   &:focus-visible {
-    outline: 3px solid rgb(168 70 28 / 25%);
-    outline-offset: 3px;
+    outline: ${focusRing};
+    outline-offset: 2px;
+  }
+`;
+
+/* ---------------------------------------------------- 스토리북 전용 목업 */
+
+export const DemoMap = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    repeating-linear-gradient(0deg, ${color.line} 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(90deg, ${color.line} 0 1px, transparent 1px 42px),
+    ${color.surface2};
+`;
+
+export const DemoMapLabel = styled.p`
+  position: absolute;
+  top: ${space.md};
+  left: 50%;
+  padding: ${space.xs} ${space.md};
+  margin: 0;
+  color: ${color.ink2};
+  font-size: ${fontSize.sm};
+  white-space: nowrap;
+  background: ${color.surface};
+  border-radius: ${radius.pill};
+  box-shadow: ${shadow.float};
+  transform: translateX(-50%);
+`;
+
+export const DemoPinButton = styled.button`
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  cursor: pointer;
+  background: ${color.accent};
+  border: 0;
+  border-radius: ${radius.circle};
+  box-shadow: ${shadow.float};
+
+  &:focus-visible {
+    outline: ${focusRing};
+    outline-offset: 2px;
   }
 `;

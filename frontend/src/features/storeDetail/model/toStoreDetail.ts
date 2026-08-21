@@ -8,6 +8,7 @@ import type { StoreDetailDto } from '../api/storeDetail.dto';
 interface ToStoreDetailOptions {
   distanceMeters?: number;
   gachaImageUrls?: string[];
+  gachaTotalPages?: number;
   isGachaCatalogLoaded?: boolean;
 }
 
@@ -167,6 +168,7 @@ export function toStoreDetail(
     businessHours: dto.businessHours ?? '정보 없음',
     imageUrls,
     gachaImageUrls: Array.from(new Set(options.gachaImageUrls ?? [])),
+    gachaTotalPages: options.gachaTotalPages ?? 0,
     isGachaCatalogLoaded: options.isGachaCatalogLoaded === true,
     phone: dto.phoneNumber,
     socialLinks: instagram ? [instagram] : [],
