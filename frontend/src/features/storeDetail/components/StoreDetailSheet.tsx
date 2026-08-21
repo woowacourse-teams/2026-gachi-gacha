@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -15,6 +16,7 @@ import paymentsIcon from '@/assets/payments_icon.svg';
 import snsIcon from '@/assets/sns_icon.svg';
 
 import GachaCatalogInterest from './GachaCatalogInterest';
+import PhotoViewer from './PhotoViewer';
 import * as S from './StoreDetailSheet.styles';
 import { useBottomSheetDrag } from '../hooks/useBottomSheetDrag';
 import { useGachaCatalogPages } from '../hooks/useGachaCatalogPages';
@@ -76,6 +78,7 @@ function CapsuleMark() {
 interface StoreHeroProps {
   imageUrls: string[];
   storeName: string;
+  onOpenPhoto: (imageUrls: string[], index: number) => void;
 }
 
 /**
@@ -84,11 +87,12 @@ interface StoreHeroProps {
  * 사진이 없어도 자리를 비우지 않는다. 비우면 이름이 시작하는 높이가 225px 에서
  * 48px 로 내려앉아, 매장을 옮겨가며 볼 때 같은 화면이 다르게 보인다.
  */
-function StoreHero({ imageUrls, storeName }: StoreHeroProps) {
+function StoreHero({ imageUrls, storeName, onOpenPhoto }: StoreHeroProps) {
   const [brokenUrls, setBrokenUrls] = useState<string[]>([]);
   const usableUrls = imageUrls.filter((url) => !brokenUrls.includes(url));
   const { activeIndex, isDragging, railProps, railRef } = useRailDrag(
     usableUrls.length,
+    { onTapItem: (index) => onOpenPhoto(usableUrls, index) },
   );
 
   if (usableUrls.length === 0) {
@@ -179,6 +183,7 @@ interface GachaGalleryProps {
   storeName: string;
   /** 전체 보기를 누르면 맨 아래 전체 섹션으로 데려간다. 없으면 버튼을 안 그린다. */
   onShowAll: (() => void) | null;
+  onOpenPhoto: (imageUrls: string[], index: number) => void;
 }
 
 /**
@@ -193,13 +198,18 @@ function GachaGallery({
   storeId,
   storeName,
   onShowAll,
+  onOpenPhoto,
 }: GachaGalleryProps) {
   const titleId = useId();
   const thumbnails =
     imageUrls.length > 0
       ? imageUrls.slice(0, RAIL_PREVIEW_COUNT)
       : FALLBACK_THUMBNAILS;
-  const { isDragging, railProps, railRef } = useRailDrag(thumbnails.length);
+  const { isDragging, railProps, railRef } = useRailDrag(thumbnails.length, {
+    onTapItem: (index) => {
+      if (imageUrls.length > 0) onOpenPhoto(imageUrls, index);
+    },
+  });
 
   return (
     <S.GachaSection aria-labelledby={titleId}>
@@ -230,7 +240,7 @@ function GachaGallery({
               </S.ThumbnailFrame>
             ))}
             {onShowAll && (
-              <S.ShowAllSlot>
+              <S.ShowAllSlot data-rail-control>
                 <S.ShowAllButton
                   aria-label="가챠 사진 전체보기"
                   type="button"
@@ -255,6 +265,7 @@ interface GachaCatalogProps {
   storeId: number;
   storeName: string;
   totalPages: number;
+  onOpenPhoto: (imageUrls: string[], index: number) => void;
 }
 
 /**
@@ -268,6 +279,7 @@ function GachaCatalog({
   storeId,
   storeName,
   totalPages,
+  onOpenPhoto,
 }: GachaCatalogProps) {
   const titleId = useId();
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -301,7 +313,12 @@ function GachaCatalog({
       <S.SectionTitle id={titleId}>가챠 사진 전체</S.SectionTitle>
       <S.PhotoGrid>
         {imageUrls.map((imageUrl, index) => (
-          <S.GridImageFrame key={imageUrl}>
+          <S.GridImageFrame
+            key={imageUrl}
+            aria-label={`${storeName} 가챠 사진 ${index + 1} 크게 보기`}
+            type="button"
+            onClick={() => onOpenPhoto(imageUrls, index)}
+          >
             <GachaThumbnail
               imageUrl={imageUrl}
               index={index}
@@ -480,6 +497,15 @@ function StoreDetailContent({
 
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const [isScrolledDown, setIsScrolledDown] = useState(false);
+  const [photoView, setPhotoView] = useState<{
+    imageUrls: string[];
+    startIndex: number;
+  } | null>(null);
+
+  const openPhoto = (imageUrls: string[], startIndex: number) =>
+    setPhotoView({ imageUrls, startIndex });
+
+  const closePhoto = useCallback(() => setPhotoView(null), []);
 
   useEffect(() => {
     const sentinel = topSentinelRef.current;
@@ -523,7 +549,11 @@ function StoreDetailContent({
       >
         <S.TopSentinel ref={topSentinelRef} aria-hidden="true" />
 
-        <StoreHero imageUrls={store.imageUrls} storeName={store.name} />
+        <StoreHero
+          imageUrls={store.imageUrls}
+          storeName={store.name}
+          onOpenPhoto={openPhoto}
+        />
 
         <S.Content>
           <S.Overview>
@@ -559,6 +589,7 @@ function StoreDetailContent({
             imageUrls={store.gachaImageUrls}
             storeId={store.id}
             storeName={store.name}
+            onOpenPhoto={openPhoto}
             onShowAll={hasFullCatalog ? showCatalog : null}
           />
 
@@ -648,12 +679,22 @@ function StoreDetailContent({
                   storeId={store.id}
                   storeName={store.name}
                   totalPages={store.gachaTotalPages}
+                  onOpenPhoto={openPhoto}
                 />
               )}
             </>
           )}
         </S.Content>
       </S.ScrollArea>
+
+      {photoView && (
+        <PhotoViewer
+          imageUrls={photoView.imageUrls}
+          startIndex={photoView.startIndex}
+          title={`${store.name} 사진`}
+          onClose={closePhoto}
+        />
+      )}
 
       {isScrolledDown && (
         <S.ScrollTopButton

@@ -525,12 +525,20 @@ export const PhotoGrid = styled.div`
   gap: ${space.xs};
 `;
 
-export const GridImageFrame = styled.div`
+/** 눌러서 크게 볼 수 있으므로 버튼이다. */
+export const GridImageFrame = styled.button`
+  padding: 0;
   overflow: hidden;
   aspect-ratio: 1;
+  cursor: pointer;
   background: ${color.surface2};
   border: 1px solid ${color.line};
   border-radius: ${radius.md};
+
+  &:focus-visible {
+    outline: ${focusRing};
+    outline-offset: 2px;
+  }
 `;
 
 export const ThumbnailImage = styled.img`
