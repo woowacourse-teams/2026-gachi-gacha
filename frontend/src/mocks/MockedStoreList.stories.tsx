@@ -7,15 +7,23 @@ import {
   type NearbyStore,
 } from '@/apis/store';
 
-function MockedStoreList() {
+interface MockedStoreListProps {
+  latitude: number;
+  longitude: number;
+}
+
+function MockedStoreList({ latitude, longitude }: MockedStoreListProps) {
   const [stores, setStores] = useState<NearbyStore[] | null>(null);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
 
+    setStores(null);
+    setHasError(false);
+
     getNearbyStores(
-      { latitude: 37.5551, longitude: 126.9251, radius: DEFAULT_RADIUS },
+      { latitude, longitude, radius: DEFAULT_RADIUS },
       controller.signal,
     )
       .then((data) => setStores(data.stores))
@@ -28,7 +36,7 @@ function MockedStoreList() {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [latitude, longitude]);
 
   if (hasError) {
     return <p role="alert">매장 목록을 불러오지 못했습니다.</p>;
@@ -52,6 +60,10 @@ function MockedStoreList() {
 const meta = {
   title: 'Mocks/Store list',
   component: MockedStoreList,
+  args: {
+    latitude: 37.5551,
+    longitude: 126.9251,
+  },
 } satisfies Meta<typeof MockedStoreList>;
 
 export default meta;
@@ -59,3 +71,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Success: Story = {};
+
+export const InternationalElectronicsCenter: Story = {
+  args: {
+    latitude: 37.4847435,
+    longitude: 127.0178182,
+  },
+};
