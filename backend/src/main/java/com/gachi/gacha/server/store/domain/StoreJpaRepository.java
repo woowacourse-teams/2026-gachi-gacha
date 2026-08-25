@@ -19,6 +19,8 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
     }
 
     interface StoreWithDistance {
+        String getName();
+
         Long getStoreId();
 
         String getThumbnailUrl();
@@ -33,6 +35,7 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
     @Query(value = """
                         SELECT
                             s.id AS storeId,
+                            s.name AS name,
                             s.thumbnail_url AS thumbnailUrl,
                             s.latitude AS latitude,
                             s.longitude AS longitude,

@@ -33,6 +33,7 @@ public record StoreNearbyResponse(
 
     public record StoreItemResponse(
             Long storeId,
+            String name,
             String thumbnailUrl,
             Double latitude,
             Double longitude,
@@ -42,6 +43,7 @@ public record StoreNearbyResponse(
         private static StoreItemResponse from(final StoreNearbyResult.StoreInfo store) {
             return new StoreItemResponse(
                     store.storeId(),
+                    store.name(),
                     store.thumbnailUrl(),
                     store.latitude(),
                     store.longitude(),

@@ -32,6 +32,7 @@ public record StoreNearbyResult(
     @Builder
     public record StoreInfo(
             Long storeId,
+            String name,
             String thumbnailUrl,
             Double latitude,
             Double longitude,

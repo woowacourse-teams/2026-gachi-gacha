@@ -39,6 +39,7 @@ public record StoreCreateCommand(
 
     public Store toStore() {
         return Store.builder()
+                .name(name)
                 .thumbnailUrl(thumbnailUrl)
                 .longitude(longitude)
                 .latitude(latitude)
