@@ -11,11 +11,16 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.store.domain.Store;
+import com.gachi.gacha.server.store.domain.StoreDetail;
+import com.gachi.gacha.server.store.domain.StoreDetailJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;
+import java.util.ArrayList;
+import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,6 +45,11 @@ class StoreImageControllerTest {
     @Autowired
     private StoreImageJpaRepository storeImageRepository;
 
+    @Autowired
+    private StoreDetailJpaRepository storeDetailRepository;
+
+    private final List<Long> createdStoreIds = new ArrayList<>();
+
     @MockitoBean
     private ImageUploader imageUploader;
 
@@ -53,6 +63,16 @@ class StoreImageControllerTest {
                 .thenReturn("https://example.com/stores/test-image.jpg");
         doNothing().when(imageUploader).delete(anyString());
         doNothing().when(imageUploader).moveToTrash(anyString());
+    }
+
+    @AfterEach
+    void tearDown() {
+        for (Long storeId : createdStoreIds) {
+            storeImageRepository.deleteAll(storeImageRepository.findAllByStoreId(storeId));
+            storeDetailRepository.findById(storeId).ifPresent(storeDetailRepository::delete);
+            storeRepository.findById(storeId).ifPresent(storeRepository::delete);
+        }
+        createdStoreIds.clear();
     }
 
     @Nested
@@ -297,12 +317,22 @@ class StoreImageControllerTest {
 
     private Long createTargetStore() {
         Store store = Store.builder()
+                .name("이미지 테스트 매장")
                 .thumbnailUrl("https://example.com/thumb.png")
                 .latitude(37.5)
                 .longitude(127.0)
                 .build();
 
-        return storeRepository.save(store).getId();
+        Store savedStore = storeRepository.save(store);
+        StoreDetail storeDetail = StoreDetail.builder()
+                .store(savedStore)
+                .name("이미지 테스트 매장")
+                .address("서울특별시 테스트구 테스트로 1")
+                .build();
+        storeDetailRepository.save(storeDetail);
+        createdStoreIds.add(savedStore.getId());
+
+        return savedStore.getId();
     }
 
     private Long createTargetStoreImage(final Long storeId) {
