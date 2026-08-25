@@ -6,8 +6,8 @@ import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
-import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
-import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
+import com.gachi.gacha.server.infra.platform.PlatformClient;
+import com.gachi.gacha.server.infra.platform.dto.PlatformPostDto;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +49,8 @@ public class GachaCollectionService {
 
     private List<Gacha> collectFromPlatform(final PlatformClient platformClient, final String shopInstagramId) {
         try {
-            List<PlatformPostDto> posts = platformClient.fetchRecentPosts(shopInstagramId, this::hasAlreadyCollectedPost);
+            List<PlatformPostDto> posts = platformClient.fetchRecentPosts(shopInstagramId,
+                    this::hasAlreadyCollectedPost);
             List<PlatformPostDto> postsToUpload = filterPostsToUpload(posts);
             return uploadAndSaveInParallel(postsToUpload);
         } catch (Exception e) {
@@ -114,8 +115,7 @@ public class GachaCollectionService {
     }
 
     /**
-     * 업로드/저장 단계를 구분해서 예외를 잡는다. 어느 단계에서 실패했는지에 따라 다른 로그를 남기고,
-     * 재시도 가능한 실패인지를 함께 반환한다.
+     * 업로드/저장 단계를 구분해서 예외를 잡는다. 어느 단계에서 실패했는지에 따라 다른 로그를 남기고, 재시도 가능한 실패인지를 함께 반환한다.
      */
     private AttemptResult attemptUploadAndSave(final PlatformPostDto post, final int attempt) {
         try {

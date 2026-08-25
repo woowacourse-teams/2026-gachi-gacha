@@ -14,9 +14,9 @@ import com.gachi.gacha.server.common.infra.config.ImageUploader;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
-import com.gachi.gacha.server.infrastructure.platform.PlatformClient;
-import com.gachi.gacha.server.infrastructure.platform.PlatformType;
-import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
+import com.gachi.gacha.server.infra.platform.PlatformClient;
+import com.gachi.gacha.server.infra.platform.PlatformType;
+import com.gachi.gacha.server.infra.platform.dto.PlatformPostDto;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,7 +54,8 @@ class GachaCollectionServiceTest {
     }
 
     private GachaCollectionService service(final List<PlatformClient> clients) {
-        GachaCollectionService service = new GachaCollectionService(clients, gachaRepository, imageUploader, executorService);
+        GachaCollectionService service = new GachaCollectionService(clients, gachaRepository, imageUploader,
+                executorService);
         ReflectionTestUtils.setField(service, "s3RootFolder", "gachigacha");
         return service;
     }
@@ -102,7 +103,8 @@ class GachaCollectionServiceTest {
         PlatformClient client = new StubPlatformClient(
                 new PlatformPostDto("media-1", "입고 안내", "url1", PlatformType.INSTAGRAM)
         );
-        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-1"))).thenReturn(List.of("media-1"));
+        when(gachaRepository.findInstagramMediaIdByInstagramMediaIdIn(List.of("media-1"))).thenReturn(
+                List.of("media-1"));
         GachaCollectionService service = service(List.of(client));
 
         // when
