@@ -68,7 +68,7 @@ public class Store extends BaseTimeEntity {
 
         return Store.builder()
                 .id(id)
-                .name(name)
+                .name(valueOrCurrent(name, this.name))
                 .thumbnailUrl(valueOrCurrent(thumbnailUrl, this.thumbnailUrl))
                 .latitude(valueOrCurrent(latitude, this.latitude))
                 .longitude(valueOrCurrent(longitude, this.longitude))
