@@ -24,7 +24,6 @@ import org.locationtech.jts.geom.Point;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Store extends BaseTimeEntity {
 
-    private static final int MAX_UNIT_LENGTH = 50;
     private static final int MIN_LATITUDE = -90;
     private static final int MAX_LATITUDE = 90;
     private static final int MIN_LONGITUDE = -180;
@@ -55,7 +54,7 @@ public class Store extends BaseTimeEntity {
 
     private Integer floor;
 
-    @Column(length = MAX_UNIT_LENGTH)
+    @Column(length = 50)
     private String unit;
 
     @Builder
@@ -137,7 +136,7 @@ public class Store extends BaseTimeEntity {
     }
 
     private void validateUnit(final String unit) {
-        if (unit != null && (unit.isBlank() || unit.length() > MAX_UNIT_LENGTH)) {
+        if (unit != null && (unit.isBlank() || unit.length() > 50)) {
             throw new InvalidStoreException();
         }
     }
