@@ -55,18 +55,22 @@ public class StoreService {
     public StoreNearbyResult findNearbyStores(
             final Double latitude,
             final Double longitude,
-            final Integer radius
+            final Integer radius,
+            final Integer floor
     ) {
-        validateNearbyRequest(latitude, longitude, radius);
+        validateNearbyRequest(latitude, longitude, radius, floor);
 
         List<StoreJpaRepository.StoreWithDistance> nearbyStores = storeJpaRepository.findNearbyStores(latitude,
-                longitude, radius);
+                longitude, radius, floor);
 
         List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
                 .map(result -> StoreNearbyResult.StoreInfo.builder()
                         .name(result.getName())
                         .storeId(result.getStoreId())
                         .thumbnailUrl(result.getThumbnailUrl())
+                        .address(result.getAddress())
+                        .floor(result.getFloor())
+                        .unit(result.getUnit())
                         .latitude(result.getLatitude())
                         .longitude(result.getLongitude())
                         .distance(result.getDistance())
@@ -215,7 +219,8 @@ public class StoreService {
     private void validateNearbyRequest(
             final Double latitude,
             final Double longitude,
-            final Integer radius
+            final Integer radius,
+            final Integer floor
     ) {
         if (latitude == null || !Double.isFinite(latitude) || latitude < -90 || latitude > 90) {
             throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
@@ -224,6 +229,9 @@ public class StoreService {
             throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
         }
         if (radius == null || radius < MIN_SEARCH_RADIUS || radius > MAX_SEARCH_RADIUS) {
+            throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
+        }
+        if (floor != null && floor == 0) {
             throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
         }
     }

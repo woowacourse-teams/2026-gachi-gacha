@@ -25,6 +25,12 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
 
         String getThumbnailUrl();
 
+        String getAddress();
+
+        Integer getFloor();
+
+        String getUnit();
+
         Double getLatitude();
 
         Double getLongitude();
@@ -37,6 +43,9 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
                             s.id AS storeId,
                             s.name AS name,
                             s.thumbnail_url AS thumbnailUrl,
+                            s.address AS address,
+                            s.floor AS floor,
+                            s.unit AS unit,
                             s.latitude AS latitude,
                             s.longitude AS longitude,
                             ST_DistanceSphere(
@@ -49,12 +58,14 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
                            ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
                            :radius
                         )
+                        AND (:floor IS NULL OR s.floor = :floor)
                         ORDER BY distance ASC, s.id ASC
             """, nativeQuery = true)
     List<StoreWithDistance> findNearbyStores(
             @Param("latitude") final Double latitude,
             @Param("longitude") final Double longitude,
-            @Param("radius") final Integer radius
+            @Param("radius") final Integer radius,
+            @Param("floor") final Integer floor
     );
 
     @Override
