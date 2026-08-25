@@ -25,6 +25,10 @@ import org.locationtech.jts.geom.Point;
 public class Store extends BaseTimeEntity {
 
     private static final int MAX_UNIT_LENGTH = 50;
+    private static final int MIN_LATITUDE = -90;
+    private static final int MAX_LATITUDE = 90;
+    private static final int MIN_LONGITUDE = -180;
+    private static final int MAX_LONGITUDE = 180;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -112,10 +116,10 @@ public class Store extends BaseTimeEntity {
     }
 
     private void validateCoordinates(final Double latitude, final Double longitude) {
-        if (latitude == null || latitude < -90 || latitude > 90) {
+        if (latitude == null || latitude < MIN_LATITUDE || latitude > MAX_LATITUDE) {
             throw new InvalidStoreException();
         }
-        if (longitude == null || longitude < -180 || longitude > 180) {
+        if (longitude == null || longitude < MIN_LONGITUDE || longitude > MAX_LONGITUDE) {
             throw new InvalidStoreException();
         }
     }
