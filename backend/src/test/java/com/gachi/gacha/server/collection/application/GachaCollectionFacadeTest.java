@@ -121,14 +121,14 @@ class GachaCollectionFacadeTest {
     private StoreDetail storeDetail(final Long storeId, final String instagramId) {
         Store store = Store.builder()
                 .id(storeId)
+                .name("상점" + storeId)
+                .address("주소" + storeId)
                 .latitude(37.5)
                 .longitude(127.0)
                 .build();
         return StoreDetail.builder()
                 .id(storeId)
                 .store(store)
-                .name("상점" + storeId)
-                .address("주소" + storeId)
                 .instagramId(instagramId)
                 .build();
     }

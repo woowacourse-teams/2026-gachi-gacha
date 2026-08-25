@@ -34,6 +34,9 @@ public record StoreNearbyResult(
             Long storeId,
             String name,
             String thumbnailUrl,
+            String address,
+            Integer floor,
+            String unit,
             Double latitude,
             Double longitude,
             Double distance

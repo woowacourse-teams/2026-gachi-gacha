@@ -4,8 +4,6 @@ import com.gachi.gacha.server.common.util.BaseUtils;
 import java.util.List;
 
 public record StoreDetailUpdate(
-        String name,
-        String address,
         String businessHours,
         String paymentMethods,
         String phone,

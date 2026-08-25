@@ -127,7 +127,7 @@ class StoreControllerTest {
         @DisplayName("매장 상세 조회에 성공하면 200 OK와 상세 정보를 반환한다.")
         void readStore_success() {
             // given
-            Long storeId = createTargetStore();
+            Long storeId = createTargetStore(STORE_NAME, STORE_LATITUDE, STORE_LONGITUDE, 7, "92호");
 
             // when
             ExtractableResponse<Response> response = RestAssured.given().log().all()
@@ -142,6 +142,8 @@ class StoreControllerTest {
             assertThat(response.jsonPath().getLong("data.storeId")).isEqualTo(storeId);
             assertThat(response.jsonPath().getString("data.name")).isEqualTo(STORE_NAME);
             assertThat(response.jsonPath().getString("data.address")).isEqualTo(STORE_ADDRESS);
+            assertThat(response.jsonPath().getInt("data.floor")).isEqualTo(7);
+            assertThat(response.jsonPath().getString("data.unit")).isEqualTo("92호");
             assertThat(response.jsonPath().getString("data.paymentMethods")).isEqualTo("현금, 카드");
             assertThat(response.jsonPath().getInt("data.gachaMachineAmount")).isEqualTo(10);
             assertThat(response.jsonPath().getInt("data.kujiAmount")).isEqualTo(5);
@@ -212,6 +214,57 @@ class StoreControllerTest {
             assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
             assertThat(response.jsonPath().getString("code")).isEqualTo("SE003");
         }
+
+        @Test
+        @DisplayName("층을 지정하면 반경 안에서 해당 층의 매장만 반환한다.")
+        void readNearbyStores_filterByFloor() {
+            // given
+            double latitude = 37.484742019735;
+            double longitude = 127.01776766049;
+            Long floor7StoreId = createTargetStore("7층 매장", latitude, longitude, 7, "92호");
+            Long floor8StoreId = createTargetStore("8층 매장", latitude, longitude, 8, "99호");
+            Long unknownFloorStoreId = createTargetStore("층 미상 매장", latitude, longitude);
+
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .param("latitude", latitude)
+                    .param("longitude", longitude)
+                    .param("radius", 3_000)
+                    .param("floor", 7)
+                    .when()
+                    .get("/api/v1/stores/nearby")
+                    .then().log().all()
+                    .extract();
+
+            // then
+            List<Long> storeIds = response.jsonPath().getList("data.stores.storeId", Long.class);
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
+            assertThat(storeIds).contains(floor7StoreId).doesNotContain(floor8StoreId, unknownFloorStoreId);
+
+            int storeIndex = storeIds.indexOf(floor7StoreId);
+            assertThat(response.jsonPath().getString("data.stores[" + storeIndex + "].address"))
+                    .isEqualTo(STORE_ADDRESS);
+            assertThat(response.jsonPath().getInt("data.stores[" + storeIndex + "].floor")).isEqualTo(7);
+            assertThat(response.jsonPath().getString("data.stores[" + storeIndex + "].unit")).isEqualTo("92호");
+        }
+
+        @Test
+        @DisplayName("0층을 요청하면 400 Bad Request를 반환한다.")
+        void readNearbyStores_invalidFloor() {
+            // when
+            ExtractableResponse<Response> response = RestAssured.given().log().all()
+                    .param("latitude", STORE_LATITUDE)
+                    .param("longitude", STORE_LONGITUDE)
+                    .param("floor", 0)
+                    .when()
+                    .get("/api/v1/stores/nearby")
+                    .then().log().all()
+                    .extract();
+
+            // then
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+            assertThat(response.jsonPath().getString("code")).isEqualTo("SE003");
+        }
     }
 
     @Nested
@@ -225,7 +278,9 @@ class StoreControllerTest {
             Long storeId = createTargetStore();
             Map<String, Object> request = Map.of(
                     "name", "수정된 매장",
-                    "businessHours", "매일 10:00-22:00"
+                    "businessHours", "매일 10:00-22:00",
+                    "floor", 7,
+                    "unit", "92호"
             );
 
             // when
@@ -242,6 +297,14 @@ class StoreControllerTest {
             assertThat(response.jsonPath().getString("code")).isEqualTo("C002");
             assertThat(response.jsonPath().getLong("data.storeId")).isEqualTo(storeId);
             assertThat(response.jsonPath().getString("data.updatedAt")).isNotBlank();
+
+            ExtractableResponse<Response> detailResponse = RestAssured.given()
+                    .when()
+                    .get("/api/v1/stores/{storeId}", storeId)
+                    .then()
+                    .extract();
+            assertThat(detailResponse.jsonPath().getInt("data.floor")).isEqualTo(7);
+            assertThat(detailResponse.jsonPath().getString("data.unit")).isEqualTo("92호");
         }
 
         @Test
@@ -435,7 +498,23 @@ class StoreControllerTest {
     }
 
     private Long createTargetStore(final String name, final double latitude, final double longitude) {
+        return createTargetStore(name, latitude, longitude, null, null);
+    }
+
+    private Long createTargetStore(
+            final String name,
+            final double latitude,
+            final double longitude,
+            final Integer floor,
+            final String unit
+    ) {
         Map<String, Object> request = createStoreRequest(name, latitude, longitude);
+        if (floor != null) {
+            request.put("floor", floor);
+        }
+        if (unit != null) {
+            request.put("unit", unit);
+        }
         return requestCreateStore(request).jsonPath().getLong("data.storeId");
     }
 

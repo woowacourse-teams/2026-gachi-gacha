@@ -17,6 +17,8 @@ public record StoreCreateCommand(
         String phoneNumber,
         String instagramId,
         String address,
+        Integer floor,
+        String unit,
         String businessHours,
         String paymentMethods,
         Integer gachaMachineAmount,
@@ -43,14 +45,15 @@ public record StoreCreateCommand(
                 .thumbnailUrl(thumbnailUrl)
                 .longitude(longitude)
                 .latitude(latitude)
+                .address(address)
+                .floor(floor)
+                .unit(unit)
                 .build();
     }
 
     public StoreDetail toStoreDetail(final Store store) {
         return StoreDetail.builder()
                 .store(store)
-                .name(name)
-                .address(address)
                 .businessHours(businessHours)
                 .paymentMethods(paymentMethods)
                 .phone(phoneNumber)

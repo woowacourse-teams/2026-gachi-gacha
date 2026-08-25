@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.infrastructure.instagram;
+package com.gachi.gacha.server.infra.instagram;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -7,14 +7,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.BusinessDiscovery;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.Cursors;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.Media;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.MediaData;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.Paging;
-import com.gachi.gacha.server.infrastructure.platform.PlatformType;
-import com.gachi.gacha.server.infrastructure.platform.dto.PlatformPostDto;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.BusinessDiscovery;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.Cursors;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.Media;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.MediaData;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.Paging;
+import com.gachi.gacha.server.infra.platform.PlatformType;
+import com.gachi.gacha.server.infra.platform.dto.PlatformPostDto;
 import java.net.URI;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,8 @@ class InstagramClientTest {
         // given
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
-                        new MediaData("media-1", "입고 안내", "https://cdn/media.jpg", "https://cdn/thumb.jpg", "IMAGE", null)
+                        new MediaData("media-1", "입고 안내", "https://cdn/media.jpg", "https://cdn/thumb.jpg", "IMAGE",
+                                null)
                 ), null))
         );
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);
@@ -84,11 +85,13 @@ class InstagramClientTest {
         // given
         InstagramResponse.Children children = new InstagramResponse.Children(List.of(
                 new InstagramResponse.ChildMedia("child-1", "IMAGE", "https://cdn/child1.jpg", null),
-                new InstagramResponse.ChildMedia("child-2", "IMAGE", "https://cdn/child2.jpg", "https://cdn/child2-thumb.jpg")
+                new InstagramResponse.ChildMedia("child-2", "IMAGE", "https://cdn/child2.jpg",
+                        "https://cdn/child2-thumb.jpg")
         ));
         InstagramResponse response = new InstagramResponse(
                 new BusinessDiscovery(new Media(List.of(
-                        new MediaData("carousel-1", "입고 안내 모음", "https://cdn/cover.jpg", null, "CAROUSEL_ALBUM", children)
+                        new MediaData("carousel-1", "입고 안내 모음", "https://cdn/cover.jpg", null, "CAROUSEL_ALBUM",
+                                children)
                 ), null))
         );
         when(restTemplate.getForObject(any(URI.class), eq(InstagramResponse.class))).thenReturn(response);

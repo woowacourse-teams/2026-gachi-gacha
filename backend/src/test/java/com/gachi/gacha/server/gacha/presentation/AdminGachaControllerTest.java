@@ -8,10 +8,10 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gachi.gacha.server.common.infra.config.ImageUploader;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.BusinessDiscovery;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.Media;
-import com.gachi.gacha.server.infrastructure.instagram.dto.InstagramResponse.MediaData;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.BusinessDiscovery;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.Media;
+import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.MediaData;
 import io.restassured.RestAssured;
 import io.restassured.response.ExtractableResponse;
 import io.restassured.response.Response;

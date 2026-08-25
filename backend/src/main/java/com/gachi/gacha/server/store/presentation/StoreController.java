@@ -56,9 +56,10 @@ public class StoreController {
     public ResponseEntity<BaseResponse<StoreNearbyResponse>> readNearbyStores(
             @RequestParam(required = false) final Double latitude,
             @RequestParam(required = false) final Double longitude,
-            @RequestParam(defaultValue = "3000") final Integer radius
+            @RequestParam(defaultValue = "3000") final Integer radius,
+            @RequestParam(required = false) final Integer floor
     ) {
-        StoreNearbyResult result = storeService.findNearbyStores(latitude, longitude, radius);
+        StoreNearbyResult result = storeService.findNearbyStores(latitude, longitude, radius, floor);
 
         return ResponseEntity.ok(BaseResponse.ok(StoreNearbyResponse.from(result)));
     }
@@ -129,13 +130,15 @@ public class StoreController {
     }
 
     @GetMapping("/{storeId}/gachas")
-    public BaseResponse<Page<GachaSummaryResponse>> readStoreGachas(@PathVariable final Long storeId, final Pageable pageable) {
+    public BaseResponse<Page<GachaSummaryResponse>> readStoreGachas(@PathVariable final Long storeId,
+                                                                    final Pageable pageable) {
         Page<GachaSummaryInfo> gachaSummaryInfos = storeGachaFacade.getGachas(storeId, pageable);
         return BaseResponse.ok(gachaSummaryInfos.map(GachaSummaryResponse::from));
     }
 
     @DeleteMapping("/{storeId}/gachas/{gachaId}")
-    public BaseResponse<StoreGachaResponse> deleteStoreGachas(@PathVariable final Long storeId, @PathVariable final Long gachaId) {
+    public BaseResponse<StoreGachaResponse> deleteStoreGachas(@PathVariable final Long storeId,
+                                                              @PathVariable final Long gachaId) {
         StoreGachaInfo storeGachaInfo = storeGachaFacade.removeStoreGacha(storeId, gachaId);
         return BaseResponse.deleted(StoreGachaResponse.from(storeGachaInfo));
     }

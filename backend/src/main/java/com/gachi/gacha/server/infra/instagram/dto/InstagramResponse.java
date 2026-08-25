@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.infrastructure.instagram.dto;
+package com.gachi.gacha.server.infra.instagram.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;

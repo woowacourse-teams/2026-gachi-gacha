@@ -16,9 +16,9 @@ public record StoreListResult(
     public static StoreListResult of(final Store store, final StoreDetail storeDetail) {
         return new StoreListResult(
                 store.getId(),
-                storeDetail.getName(),
+                store.getName(),
                 store.getThumbnailUrl(),
-                storeDetail.getAddress(),
+                store.getAddress(),
                 store.getLatitude(),
                 store.getLongitude(),
                 storeDetail.getMachineAmount()

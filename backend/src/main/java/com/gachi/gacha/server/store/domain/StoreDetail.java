@@ -13,7 +13,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
-import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -33,12 +32,6 @@ public class StoreDetail extends BaseTimeEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id")
     private Store store;
-
-    @NotNull
-    private String name;
-
-    @NotNull
-    private String address;
 
     private String businessHours;
 
@@ -74,8 +67,6 @@ public class StoreDetail extends BaseTimeEntity {
     private StoreDetail(
             final Long id,
             final Store store,
-            final String name,
-            final String address,
             final String businessHours,
             final String paymentMethods,
             final String phone,
@@ -93,7 +84,6 @@ public class StoreDetail extends BaseTimeEntity {
             final Boolean hasRandomBox,
             final Boolean hasSelectGacha
     ) {
-        validateRequired(name, address);
         validateNonNegative(machineAmount, kujiAmount, coinPrice);
         validatePriceRange(gachaMinPrice, gachaMaxPrice);
         validatePriceRange(kujiMinPrice, kujiMaxPrice);
@@ -101,8 +91,6 @@ public class StoreDetail extends BaseTimeEntity {
 
         this.id = id;
         this.store = store;
-        this.name = name;
-        this.address = address;
         this.businessHours = businessHours;
         this.paymentMethods = paymentMethods;
         this.phone = phone;
@@ -125,8 +113,6 @@ public class StoreDetail extends BaseTimeEntity {
         return StoreDetail.builder()
                 .id(id)
                 .store(store)
-                .name(valueOrCurrent(update.name(), name))
-                .address(valueOrCurrent(update.address(), address))
                 .businessHours(valueOrCurrent(update.businessHours(), businessHours))
                 .paymentMethods(valueOrCurrent(update.paymentMethods(), paymentMethods))
                 .phone(valueOrCurrent(update.phone(), phone))
@@ -144,16 +130,6 @@ public class StoreDetail extends BaseTimeEntity {
                 .hasRandomBox(valueOrCurrent(update.hasRandomBox(), hasRandomBox))
                 .hasSelectGacha(valueOrCurrent(update.hasSelectGacha(), hasSelectGacha))
                 .build();
-    }
-
-    private void validateRequired(final String name, final String address) {
-        if (isBlank(name) || isBlank(address)) {
-            throw new InvalidStoreException();
-        }
-    }
-
-    private boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 
     private void validateNonNegative(

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import java.util.List;
@@ -37,6 +38,12 @@ public record StoreCreateRequest(
         @NotBlank(message = "매장 주소는 필수입니다.")
         @Size(max = 255, message = "매장 주소는 255자를 초과할 수 없습니다.")
         String address,
+
+        Integer floor,
+
+        @Size(max = 50, message = "호수 또는 점포 번호는 50자를 초과할 수 없습니다.")
+        @Pattern(regexp = ".*\\S.*", message = "호수 또는 점포 번호는 공백일 수 없습니다.")
+        String unit,
 
         @Size(max = 255, message = "영업시간은 255자를 초과할 수 없습니다.")
         String businessHours,
@@ -87,6 +94,8 @@ public record StoreCreateRequest(
                 .phoneNumber(phoneNumber)
                 .instagramId(instagramId)
                 .address(address)
+                .floor(floor)
+                .unit(unit)
                 .businessHours(businessHours)
                 .paymentMethods(paymentMethods)
                 .gachaMachineAmount(gachaMachineAmount)

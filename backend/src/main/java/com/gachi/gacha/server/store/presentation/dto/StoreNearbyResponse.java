@@ -35,6 +35,9 @@ public record StoreNearbyResponse(
             Long storeId,
             String name,
             String thumbnailUrl,
+            String address,
+            Integer floor,
+            String unit,
             Double latitude,
             Double longitude,
             Double distance
@@ -45,6 +48,9 @@ public record StoreNearbyResponse(
                     store.storeId(),
                     store.name(),
                     store.thumbnailUrl(),
+                    store.address(),
+                    store.floor(),
+                    store.unit(),
                     store.latitude(),
                     store.longitude(),
                     store.distance()
