@@ -54,7 +54,7 @@ public class Store extends BaseTimeEntity {
 
     private Integer floor;
 
-    @Column(length = 50)
+    @Column(length = 255)
     private String unit;
 
     @Builder
@@ -136,7 +136,7 @@ public class Store extends BaseTimeEntity {
     }
 
     private void validateUnit(final String unit) {
-        if (unit != null && (unit.isBlank() || unit.length() > 50)) {
+        if (unit != null && (unit.isBlank() || unit.length() > 255)) {
             throw new InvalidStoreException();
         }
     }

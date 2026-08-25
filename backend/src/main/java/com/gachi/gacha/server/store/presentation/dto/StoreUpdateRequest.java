@@ -37,7 +37,7 @@ public record StoreUpdateRequest(
 
         Integer floor,
 
-        @Size(max = 50, message = "호수 또는 점포 번호는 50자를 초과할 수 없습니다.")
+        @Size(max = 255, message = "호수 또는 점포 번호는 255자를 초과할 수 없습니다.")
         @Pattern(regexp = ".*\\S.*", message = "호수 또는 점포 번호는 공백일 수 없습니다.")
         String unit,
 
