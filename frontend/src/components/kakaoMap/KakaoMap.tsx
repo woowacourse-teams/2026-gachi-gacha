@@ -14,6 +14,8 @@ interface KakaoMapProps {
   onMapReady?: (map: kakao.maps.Map) => void;
   /** 지도의 빈 곳을 눌렀을 때. 마커를 누른 경우에는 호출되지 않는다. */
   onMapClick?: () => void;
+  /** 사용자가 지도 드래그를 마쳤을 때. 프로그램으로 지도를 옮긴 경우에는 호출되지 않는다. */
+  onMapDragEnd?: () => void;
   children?: ReactNode;
 }
 
@@ -22,16 +24,19 @@ export default function KakaoMap({
   defaultLevel = 4,
   onMapReady,
   onMapClick,
+  onMapDragEnd,
   children,
 }: KakaoMapProps) {
   const kakaoMap = useKakaoMap({ defaultCenter, defaultLevel });
   const map = kakaoMap.status === 'success' ? kakaoMap.data : null;
   const onMapReadyRef = useRef(onMapReady);
   const onMapClickRef = useRef(onMapClick);
+  const onMapDragEndRef = useRef(onMapDragEnd);
 
   useEffect(() => {
     onMapReadyRef.current = onMapReady;
     onMapClickRef.current = onMapClick;
+    onMapDragEndRef.current = onMapDragEnd;
   });
 
   useEffect(() => {
@@ -46,10 +51,15 @@ export default function KakaoMap({
 
     const { maps } = window.kakao;
     const handleClick = () => onMapClickRef.current?.();
+    const handleDragEnd = () => onMapDragEndRef.current?.();
 
     maps.event.addListener(map, 'click', handleClick);
+    maps.event.addListener(map, 'dragend', handleDragEnd);
 
-    return () => maps.event.removeListener(map, 'click', handleClick);
+    return () => {
+      maps.event.removeListener(map, 'click', handleClick);
+      maps.event.removeListener(map, 'dragend', handleDragEnd);
+    };
   }, [map]);
 
   return (
