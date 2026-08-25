@@ -35,6 +35,12 @@ public record StoreUpdateRequest(
         @Pattern(regexp = ".*\\S.*", message = "매장 주소는 공백일 수 없습니다.")
         String address,
 
+        Integer floor,
+
+        @Size(max = 50, message = "호수 또는 점포 번호는 50자를 초과할 수 없습니다.")
+        @Pattern(regexp = ".*\\S.*", message = "호수 또는 점포 번호는 공백일 수 없습니다.")
+        String unit,
+
         @Size(max = 255, message = "영업시간은 255자를 초과할 수 없습니다.")
         String businessHours,
 
@@ -84,6 +90,8 @@ public record StoreUpdateRequest(
                 phoneNumber,
                 instagramId,
                 address,
+                floor,
+                unit,
                 businessHours,
                 paymentMethods,
                 gachaMachineAmount,

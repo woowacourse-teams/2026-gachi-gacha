@@ -319,6 +319,7 @@ class StoreImageControllerTest {
         Store store = Store.builder()
                 .name("이미지 테스트 매장")
                 .thumbnailUrl("https://example.com/thumb.png")
+                .address("서울특별시 테스트구 테스트로 1")
                 .latitude(37.5)
                 .longitude(127.0)
                 .build();
@@ -326,8 +327,6 @@ class StoreImageControllerTest {
         Store savedStore = storeRepository.save(store);
         StoreDetail storeDetail = StoreDetail.builder()
                 .store(savedStore)
-                .name("이미지 테스트 매장")
-                .address("서울특별시 테스트구 테스트로 1")
                 .build();
         storeDetailRepository.save(storeDetail);
         createdStoreIds.add(savedStore.getId());

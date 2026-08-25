@@ -24,12 +24,16 @@ import org.locationtech.jts.geom.Point;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Store extends BaseTimeEntity {
 
+    private static final int MAX_UNIT_LENGTH = 50;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String thumbnailUrl;
 
+    @NotNull
+    @Column(nullable = false, length = 255)
     private String name;
 
     @NotNull
@@ -41,15 +45,30 @@ public class Store extends BaseTimeEntity {
     @Column(columnDefinition = "GEOMETRY(Point, 4326)")
     private Point location;
 
+    @NotNull
+    @Column(nullable = false, length = 255)
+    private String address;
+
+    private Integer floor;
+
+    @Column(length = MAX_UNIT_LENGTH)
+    private String unit;
+
     @Builder
     private Store(
             final Long id,
             final String name,
             final String thumbnailUrl,
             final Double latitude,
-            final Double longitude
+            final Double longitude,
+            final String address,
+            final Integer floor,
+            final String unit
     ) {
+        validateRequired(name, address);
         validateCoordinates(latitude, longitude);
+        validateFloor(floor);
+        validateUnit(unit);
 
         this.id = id;
         this.name = name;
@@ -57,13 +76,19 @@ public class Store extends BaseTimeEntity {
         this.latitude = latitude;
         this.longitude = longitude;
         this.location = GeometryUtils.createPoint(latitude, longitude);
+        this.floor = floor;
+        this.unit = unit;
+        this.address = address;
     }
 
     public Store patch(
             final String name,
             final String thumbnailUrl,
             final Double latitude,
-            final Double longitude
+            final Double longitude,
+            final String address,
+            final Integer floor,
+            final String unit
     ) {
 
         return Store.builder()
@@ -72,6 +97,9 @@ public class Store extends BaseTimeEntity {
                 .thumbnailUrl(valueOrCurrent(thumbnailUrl, this.thumbnailUrl))
                 .latitude(valueOrCurrent(latitude, this.latitude))
                 .longitude(valueOrCurrent(longitude, this.longitude))
+                .address(valueOrCurrent(address, this.address))
+                .floor(valueOrCurrent(floor, this.floor))
+                .unit(valueOrCurrent(unit, this.unit))
                 .build();
     }
 
@@ -90,5 +118,27 @@ public class Store extends BaseTimeEntity {
         if (longitude == null || longitude < -180 || longitude > 180) {
             throw new InvalidStoreException();
         }
+    }
+
+    private void validateRequired(final String name, final String address) {
+        if (isBlank(name) || isBlank(address)) {
+            throw new InvalidStoreException();
+        }
+    }
+
+    private void validateFloor(final Integer floor) {
+        if (floor != null && floor == 0) {
+            throw new InvalidStoreException();
+        }
+    }
+
+    private void validateUnit(final String unit) {
+        if (unit != null && (unit.isBlank() || unit.length() > MAX_UNIT_LENGTH)) {
+            throw new InvalidStoreException();
+        }
+    }
+
+    private boolean isBlank(final String value) {
+        return value == null || value.isBlank();
     }
 }

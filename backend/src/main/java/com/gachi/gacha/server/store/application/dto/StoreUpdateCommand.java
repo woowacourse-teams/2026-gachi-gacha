@@ -12,6 +12,8 @@ public record StoreUpdateCommand(
         String phoneNumber,
         String instagramId,
         String address,
+        Integer floor,
+        String unit,
         String businessHours,
         String paymentMethods,
         Integer gachaMachineAmount,

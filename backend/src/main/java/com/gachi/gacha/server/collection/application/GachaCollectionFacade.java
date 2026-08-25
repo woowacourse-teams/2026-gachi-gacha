@@ -43,15 +43,15 @@ public class GachaCollectionFacade {
     }
 
     private int processStore(final StoreDetail storeDetail) {
-        log.info("상점 크롤링 실행: {} ({})", storeDetail.getName(), storeDetail.getInstagramId());
+        Store store = storeDetail.getStore();
+        log.info("상점 크롤링 실행: {} ({})", store.getName(), storeDetail.getInstagramId());
 
         try {
-            Store store = storeDetail.getStore();
             List<Gacha> collectedGachas = gachaCollectionService.collectPostsForShop(storeDetail.getInstagramId());
             addStoreGachas(collectedGachas, store);
             return collectedGachas.size();
         } catch (Exception e) {
-            log.error("상점 처리 실패: {} ({}) - {}", storeDetail.getName(), storeDetail.getInstagramId(), e.getMessage());
+            log.error("상점 처리 실패: {} ({}) - {}", store.getName(), storeDetail.getInstagramId(), e.getMessage());
             return 0;
         }
     }

@@ -112,7 +112,10 @@ public class StoreService {
                 command.name(),
                 command.thumbnailUrl(),
                 command.latitude(),
-                command.longitude()
+                command.longitude(),
+                command.address(),
+                command.floor(),
+                command.unit()
         );
         Store savedStore = storeJpaRepository.save(patchedStore);
         StoreDetail patchedDetail = storeDetail.patch(createStoreDetailUpdate(command));
@@ -190,8 +193,6 @@ public class StoreService {
 
     private StoreDetailUpdate createStoreDetailUpdate(final StoreUpdateCommand command) {
         return new StoreDetailUpdate(
-                command.name(),
-                command.address(),
                 command.businessHours(),
                 command.paymentMethods(),
                 command.phoneNumber(),
