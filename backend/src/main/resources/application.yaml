@@ -41,8 +41,6 @@ management:
       exposure:
         include: health, info, prometheus, metrics
   metrics:
-    tags:
-      application: ${spring.application.name} # 'backend' 값이 자동으로 매핑됩니다.
     distribution:
       percentiles-histogram:
         s3.client.requests: true # 커스텀 S3 메트릭 P95/P99 활성화
