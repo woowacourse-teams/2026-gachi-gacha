@@ -30,6 +30,8 @@ public class Store extends BaseTimeEntity {
 
     private String thumbnailUrl;
 
+    private String name;
+
     @NotNull
     private Double latitude;
 
@@ -42,6 +44,7 @@ public class Store extends BaseTimeEntity {
     @Builder
     private Store(
             final Long id,
+            final String name,
             final String thumbnailUrl,
             final Double latitude,
             final Double longitude
@@ -49,6 +52,7 @@ public class Store extends BaseTimeEntity {
         validateCoordinates(latitude, longitude);
 
         this.id = id;
+        this.name = name;
         this.thumbnailUrl = thumbnailUrl;
         this.latitude = latitude;
         this.longitude = longitude;
@@ -56,6 +60,7 @@ public class Store extends BaseTimeEntity {
     }
 
     public Store patch(
+            final String name,
             final String thumbnailUrl,
             final Double latitude,
             final Double longitude
@@ -63,6 +68,7 @@ public class Store extends BaseTimeEntity {
 
         return Store.builder()
                 .id(id)
+                .name(valueOrCurrent(name, this.name))
                 .thumbnailUrl(valueOrCurrent(thumbnailUrl, this.thumbnailUrl))
                 .latitude(valueOrCurrent(latitude, this.latitude))
                 .longitude(valueOrCurrent(longitude, this.longitude))

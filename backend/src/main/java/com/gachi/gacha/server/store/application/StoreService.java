@@ -64,6 +64,7 @@ public class StoreService {
 
         List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
                 .map(result -> StoreNearbyResult.StoreInfo.builder()
+                        .name(result.getName())
                         .storeId(result.getStoreId())
                         .thumbnailUrl(result.getThumbnailUrl())
                         .latitude(result.getLatitude())
@@ -108,6 +109,7 @@ public class StoreService {
         StoreDetail storeDetail = storeDetailJpaRepository.getByStoreId(storeId);
 
         Store patchedStore = store.patch(
+                command.name(),
                 command.thumbnailUrl(),
                 command.latitude(),
                 command.longitude()
