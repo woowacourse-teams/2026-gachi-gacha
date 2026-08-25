@@ -31,6 +31,13 @@ export function useStoreDetailSheet() {
     setState('closed');
   }, []);
 
+  /** 닫기용 히스토리 항목을 먼저 제거하고 popstate에서 실제 상태를 닫는다. */
+  const requestCloseStoreDetail = useCallback(() => {
+    if (state === 'closed') return;
+
+    history.back();
+  }, [state]);
+
   /**
    * 웹이라 휴대폰 뒤로가기가 그대로 들어온다. 시트가 열린 채로 뒤로가기를 누르면
    * 앱을 나가버리므로 시트를 먼저 닫는다.
@@ -77,6 +84,7 @@ export function useStoreDetailSheet() {
     collapseStoreDetail,
     isStoreOpen,
     openStoreDetail,
+    requestCloseStoreDetail,
     selectStoreDetail,
     selection,
     setState,

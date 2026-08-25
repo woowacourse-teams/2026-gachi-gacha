@@ -17,29 +17,75 @@ import {
   storeFrontPhoto,
 } from '@/features/storeDetail/mocks/storePhotos.mock';
 
-export const mockNearbyStores: NearbyStore[] = [
+type MockStoreLocation = Omit<NearbyStore, 'distance'>;
+
+const EARTH_RADIUS_METERS = 6_371_000;
+
+const mockStoreLocations: MockStoreLocation[] = [
   {
     storeId: 2,
     thumbnailUrl: '',
     latitude: 37.5559645111431,
     longitude: 126.923901713362,
-    distance: 145,
   },
   {
     storeId: 1,
     thumbnailUrl: '',
     latitude: 37.556674962258,
     longitude: 126.925336052306,
-    distance: 180,
   },
   {
     storeId: 3,
     thumbnailUrl: '',
     latitude: 37.5569164654944,
     longitude: 126.925392965,
-    distance: 207,
+  },
+  {
+    storeId: 4,
+    thumbnailUrl: '',
+    latitude: 37.4847435,
+    longitude: 127.0178182,
   },
 ];
+
+function toRadians(degrees: number) {
+  return (degrees * Math.PI) / 180;
+}
+
+function getDistanceMeters(
+  latitude: number,
+  longitude: number,
+  store: MockStoreLocation,
+) {
+  const latitudeDelta = toRadians(store.latitude - latitude);
+  const longitudeDelta = toRadians(store.longitude - longitude);
+  const originLatitude = toRadians(latitude);
+  const storeLatitude = toRadians(store.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(originLatitude) *
+      Math.cos(storeLatitude) *
+      Math.sin(longitudeDelta / 2) ** 2;
+
+  return Math.round(
+    2 *
+      EARTH_RADIUS_METERS *
+      Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine)),
+  );
+}
+
+function getMockNearbyStores(
+  latitude: number,
+  longitude: number,
+  radius: number,
+) {
+  return mockStoreLocations
+    .map((store): NearbyStore => ({
+      ...store,
+      distance: getDistanceMeters(latitude, longitude, store),
+    }))
+    .filter((store) => store.distance <= radius);
+}
 
 const withImages = (imageUrls: string[]) =>
   imageUrls.map((imageUrl, index) => ({
@@ -66,6 +112,14 @@ const mockStoreDetails: Record<number, StoreDetailDto> = {
     thumbnailUrl: machinePhoto,
     images: withImages([machinePhoto, entrancePhoto]),
   },
+  4: {
+    ...mockStoreDetail,
+    storeId: 4,
+    name: '국제전자센터 가챠샵',
+    address: '서울 서초구 효령로 304',
+    thumbnailUrl: storeFrontPhoto,
+    images: withImages(mockStoreImages),
+  },
 };
 
 export const handlers = [
@@ -81,7 +135,7 @@ export const handlers = [
       data: {
         center: { latitude, longitude },
         radius,
-        stores: mockNearbyStores.filter((store) => store.distance <= radius),
+        stores: getMockNearbyStores(latitude, longitude, radius),
       },
     });
   }),
