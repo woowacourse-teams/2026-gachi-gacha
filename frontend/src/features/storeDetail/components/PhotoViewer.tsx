@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { createPortal } from 'react-dom';
 
+import { useBackClose } from '@/hooks/useBackClose';
+
 import * as S from './PhotoViewer.styles';
-import { useBackClose } from '../hooks/useBackClose';
 import { useRailDrag } from '../hooks/useRailDrag';
 
 interface PhotoViewerProps {
