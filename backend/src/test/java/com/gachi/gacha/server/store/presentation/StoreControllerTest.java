@@ -191,9 +191,13 @@ class StoreControllerTest {
                     .extract();
 
             // then
+            List<Long> storeIds = response.jsonPath().getList("data.stores.storeId", Long.class);
+            int storeIndex = storeIds.indexOf(storeId);
+
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
             assertThat(response.jsonPath().getString("code")).isEqualTo("C000");
-            assertThat(response.jsonPath().getList("data.stores.storeId", Long.class)).contains(storeId);
+            assertThat(storeIds).contains(storeId);
+            assertThat(response.jsonPath().getList("data.stores[" + storeIndex + "].unit", String.class)).isEmpty();
             assertThat(response.jsonPath().getDouble("data.stores[0].distance")).isZero();
         }
 
@@ -221,8 +225,8 @@ class StoreControllerTest {
             // given
             double latitude = 37.484742019735;
             double longitude = 127.01776766049;
-            Long floor7StoreId = createTargetStore("7층 매장", latitude, longitude, 7, "92호");
-            Long floor8StoreId = createTargetStore("8층 매장", latitude, longitude, 8, "99호");
+            Long floor7StoreId = createTargetStore("7층 매장", latitude, longitude, 7, "7092, 7093");
+            Long floor8StoreId = createTargetStore("8층 매장", latitude, longitude, 8, "8099");
             Long unknownFloorStoreId = createTargetStore("층 미상 매장", latitude, longitude);
 
             // when
@@ -245,7 +249,8 @@ class StoreControllerTest {
             assertThat(response.jsonPath().getString("data.stores[" + storeIndex + "].address"))
                     .isEqualTo(STORE_ADDRESS);
             assertThat(response.jsonPath().getInt("data.stores[" + storeIndex + "].floor")).isEqualTo(7);
-            assertThat(response.jsonPath().getString("data.stores[" + storeIndex + "].unit")).isEqualTo("92호");
+            assertThat(response.jsonPath().getList("data.stores[" + storeIndex + "].unit", String.class))
+                    .containsExactly("7092", "7093");
         }
 
         @Test
