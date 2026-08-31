@@ -33,16 +33,4 @@ public class StoreImage {
 
     @NotNull
     private String imageUrl;
-
-    public StoreImage(final Store store, final String imageUrl) {
-        this.store = store;
-        this.imageUrl = imageUrl;
-    }
-
-    public void changeImageUrl(final String newImageUrl) {
-        if (newImageUrl == null) {
-            throw new StoreImageInvalidValueException(ErrorCode.INVALID_STORE_IMAGE_POLICY);
-        }
-        this.imageUrl = newImageUrl;
-    }
 }

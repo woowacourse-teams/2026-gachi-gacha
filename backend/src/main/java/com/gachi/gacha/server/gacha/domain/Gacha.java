@@ -1,19 +1,32 @@
 package com.gachi.gacha.server.gacha.domain;
 
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
-import com.gachi.gacha.server.common.exception.BusinessException;
-import com.gachi.gacha.server.common.exception.ErrorCode;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(
+        name = "gacha",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_gacha_source_product_code",
+                columnNames = {"source", "product_code"}
+        )
+)
 @Builder
 @Getter
 @AllArgsConstructor
@@ -35,16 +48,15 @@ public class Gacha extends BaseTimeEntity {
     @Column(unique = true, name = "instagram_media_id")
     private String instagramMediaId;
 
-    public void update(final String name, final String caption, final String thumbnailUrl) {
-        validateName(name);
-        this.name = name;
-        this.caption = caption;
-        this.thumbnailUrl = thumbnailUrl;
-    }
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private CollectionSource source = CollectionSource.MANUAL;
 
-    private void validateName(final String name) {
-        if (name == null || name.isBlank()) {
-            throw new BusinessException(ErrorCode.INVALID_GACHA_POLICY);
-        }
-    }
+    @Column(name = "product_code", length = 255)
+    private String productCode;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "gacha", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GachaCategory> gachaCategories = new ArrayList<>();
 }

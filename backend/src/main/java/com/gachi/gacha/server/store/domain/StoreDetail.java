@@ -1,9 +1,6 @@
 package com.gachi.gacha.server.store.domain;
 
-import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
-
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
-import com.gachi.gacha.server.store.application.dto.StoreDetailUpdate;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
@@ -108,29 +105,6 @@ public class StoreDetail extends BaseTimeEntity {
         this.selectGachaMaxPrice = selectGachaMaxPrice;
         this.hasRandomBox = hasRandomBox;
         this.hasSelectGacha = hasSelectGacha;
-    }
-
-    public StoreDetail patch(final StoreDetailUpdate update) {
-        return StoreDetail.builder()
-                .id(id)
-                .store(store)
-                .businessHours(valueOrCurrent(update.businessHours(), businessHours))
-                .paymentMethods(valueOrCurrent(update.paymentMethods(), paymentMethods))
-                .phone(valueOrCurrent(update.phone(), phone))
-                .facilities(update.facilities() == null ? facilities : update.facilities())
-                .instagramId(valueOrCurrent(update.instagramId(), instagramId))
-                .machineAmount(valueOrCurrent(update.machineAmount(), machineAmount))
-                .kujiAmount(valueOrCurrent(update.kujiAmount(), kujiAmount))
-                .coinPrice(valueOrCurrent(update.coinPrice(), coinPrice))
-                .gachaMinPrice(valueOrCurrent(update.gachaMinPrice(), gachaMinPrice))
-                .gachaMaxPrice(valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice))
-                .kujiMinPrice(valueOrCurrent(update.kujiMinPrice(), kujiMinPrice))
-                .kujiMaxPrice(valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice))
-                .selectGachaMinPrice(valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice))
-                .selectGachaMaxPrice(valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice))
-                .hasRandomBox(valueOrCurrent(update.hasRandomBox(), hasRandomBox))
-                .hasSelectGacha(valueOrCurrent(update.hasSelectGacha(), hasSelectGacha))
-                .build();
     }
 
     private void validateNonNegative(
