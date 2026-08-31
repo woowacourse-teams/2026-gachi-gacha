@@ -2,7 +2,6 @@ package com.gachi.gacha.server.gacha.application.dto;
 
 import com.gachi.gacha.server.gacha.domain.CollectionSource;
 import com.gachi.gacha.server.gacha.domain.Gacha;
-import com.gachi.gacha.server.gacha.domain.GachaCategory;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
