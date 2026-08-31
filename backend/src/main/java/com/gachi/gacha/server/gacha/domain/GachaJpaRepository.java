@@ -26,7 +26,7 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
     Optional<Gacha> findByIdWithCategories(@Param("id") final Long id);
 
     @Query("SELECT g.id FROM Gacha g")
-    Page<Long> findGachaIds(Pageable pageable);
+    Page<Long> findGachaIds(final Pageable pageable);
 
     @Query(value = "SELECT g.id FROM Gacha g WHERE g.name LIKE %:keyword%",
             countQuery = "SELECT COUNT(g) FROM Gacha g WHERE g.name LIKE %:keyword%")
@@ -36,7 +36,7 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
             "LEFT JOIN FETCH g.gachaCategories gc " +
             "LEFT JOIN FETCH gc.category c " +
             "WHERE g.id IN :ids")
-    List<Gacha> findByIdsWithCategories(@Param("ids") List<Long> ids);
+    List<Gacha> findByIdsWithCategories(@Param("ids") final List<Long> ids);
 
 
 }
