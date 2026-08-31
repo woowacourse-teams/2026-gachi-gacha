@@ -2,6 +2,7 @@ package com.gachi.gacha.server.gacha.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.gacha.domain.exception.GachaNotFoundException;
+import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
@@ -24,16 +25,18 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
             "WHERE g.id = :id")
     Optional<Gacha> findByIdWithCategories(@Param("id") final Long id);
 
-    @Query(value = "SELECT DISTINCT g FROM Gacha g " +
-            "LEFT JOIN FETCH g.gachaCategories gc " +
-            "LEFT JOIN FETCH gc.category c",
-            countQuery = "SELECT COUNT(g) FROM Gacha g")
-    Page<Gacha> findAllWithCategories(Pageable pageable);
+    @Query("SELECT g.id FROM Gacha g")
+    Page<Long> findGachaIds(Pageable pageable);
 
-    @Query(value = "SELECT DISTINCT g FROM Gacha g " +
+    @Query(value = "SELECT g.id FROM Gacha g WHERE g.name LIKE %:keyword%",
+            countQuery = "SELECT COUNT(g) FROM Gacha g WHERE g.name LIKE %:keyword%")
+    Page<Long> findGachaIdsByNameContaining(@Param("keyword") final String keyword, final Pageable pageable);
+
+    @Query("SELECT DISTINCT g FROM Gacha g " +
             "LEFT JOIN FETCH g.gachaCategories gc " +
             "LEFT JOIN FETCH gc.category c " +
-            "WHERE g.name LIKE %:keyword%",
-            countQuery = "SELECT COUNT(g) FROM Gacha g WHERE g.name LIKE %:keyword%")
-    Page<Gacha> findByNameContainingWithCategories(@Param("keyword") String keyword, Pageable pageable);
+            "WHERE g.id IN :ids")
+    List<Gacha> findByIdsWithCategories(@Param("ids") List<Long> ids);
+
+
 }
