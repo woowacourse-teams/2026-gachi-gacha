@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.infra.platform.dto;
+package com.gachi.gacha.server.collection.infra.platform.dto;
 
 import java.util.List;
 

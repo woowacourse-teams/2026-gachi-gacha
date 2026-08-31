@@ -1,6 +1,6 @@
-package com.gachi.gacha.server.infra.platform;
+package com.gachi.gacha.server.collection.infra.platform;
 
-import com.gachi.gacha.server.infra.platform.dto.PlatformPostDto;
+import com.gachi.gacha.server.collection.infra.platform.dto.PlatformPostDto;
 import java.util.List;
 import java.util.function.Predicate;
 

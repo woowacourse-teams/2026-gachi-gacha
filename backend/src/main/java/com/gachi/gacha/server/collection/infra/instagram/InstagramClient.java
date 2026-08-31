@@ -1,11 +1,11 @@
-package com.gachi.gacha.server.infra.instagram;
+package com.gachi.gacha.server.collection.infra.instagram;
 
-import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse;
-import com.gachi.gacha.server.infra.instagram.dto.InstagramResponse.MediaData;
-import com.gachi.gacha.server.infra.platform.PlatformClient;
-import com.gachi.gacha.server.infra.platform.PlatformType;
-import com.gachi.gacha.server.infra.platform.dto.PlatformPostDto;
-import com.gachi.gacha.server.infra.platform.dto.PlatformPostPage;
+import com.gachi.gacha.server.collection.infra.instagram.dto.InstagramResponse;
+import com.gachi.gacha.server.collection.infra.instagram.dto.InstagramResponse.MediaData;
+import com.gachi.gacha.server.collection.infra.platform.PlatformClient;
+import com.gachi.gacha.server.collection.infra.platform.PlatformType;
+import com.gachi.gacha.server.collection.infra.platform.dto.PlatformPostDto;
+import com.gachi.gacha.server.collection.infra.platform.dto.PlatformPostPage;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;

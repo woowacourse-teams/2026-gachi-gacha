@@ -3,6 +3,7 @@ package com.gachi.gacha.server.store.domain;
 import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
 
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
+import com.gachi.gacha.server.store.application.dto.StoreDetailUpdate;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;

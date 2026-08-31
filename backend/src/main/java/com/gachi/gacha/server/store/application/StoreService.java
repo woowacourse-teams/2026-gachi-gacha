@@ -16,7 +16,7 @@ import com.gachi.gacha.server.store.application.dto.StoreUpdateResult;
 import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreDetail;
 import com.gachi.gacha.server.store.domain.StoreDetailJpaRepository;
-import com.gachi.gacha.server.store.domain.StoreDetailUpdate;
+import com.gachi.gacha.server.store.application.dto.StoreDetailUpdate;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;

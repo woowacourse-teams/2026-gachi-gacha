@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.store.domain;
+package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.common.util.BaseUtils;
 import java.util.List;

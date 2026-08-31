@@ -1,6 +1,6 @@
-package com.gachi.gacha.server.infra.platform.dto;
+package com.gachi.gacha.server.collection.infra.platform.dto;
 
-import com.gachi.gacha.server.infra.platform.PlatformType;
+import com.gachi.gacha.server.collection.infra.platform.PlatformType;
 
 public record PlatformPostDto(
         String originalId,
