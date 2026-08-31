@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.common.infra.config;
+package com.gachi.gacha.server.common.infra.application;
 
 import com.gachi.gacha.server.common.domain.ImageFormat;
 import com.gachi.gacha.server.common.exception.ErrorCode;

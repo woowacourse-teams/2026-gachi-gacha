@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.store.application;
 
-import com.gachi.gacha.server.common.infra.config.ImageType;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.store.application.dto.StoreImageInfo;
 import com.gachi.gacha.server.store.domain.Store;

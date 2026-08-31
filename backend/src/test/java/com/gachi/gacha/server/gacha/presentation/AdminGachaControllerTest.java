@@ -7,7 +7,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.collection.infra.instagram.dto.InstagramResponse;
 import com.gachi.gacha.server.collection.infra.instagram.dto.InstagramResponse.BusinessDiscovery;
 import com.gachi.gacha.server.collection.infra.instagram.dto.InstagramResponse.Media;

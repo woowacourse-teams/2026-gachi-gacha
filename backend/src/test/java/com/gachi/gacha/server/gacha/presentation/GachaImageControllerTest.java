@@ -9,7 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaImageJpaRepository;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;

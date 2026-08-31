@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import org.junit.jupiter.api.DisplayName;

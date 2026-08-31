@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.common.util;
 
-import com.gachi.gacha.server.common.infra.config.ImageType;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

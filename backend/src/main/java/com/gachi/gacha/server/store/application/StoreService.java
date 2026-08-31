@@ -2,8 +2,8 @@ package com.gachi.gacha.server.store.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
-import com.gachi.gacha.server.common.infra.config.ImageType;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.store.application.dto.StoreCreateCommand;
 import com.gachi.gacha.server.store.application.dto.StoreCreateResult;

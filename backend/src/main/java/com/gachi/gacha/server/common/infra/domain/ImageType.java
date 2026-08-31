@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.common.infra.config;
+package com.gachi.gacha.server.common.infra.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

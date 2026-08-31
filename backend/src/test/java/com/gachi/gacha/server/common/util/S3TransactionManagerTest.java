@@ -6,8 +6,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.gachi.gacha.server.common.infra.config.ImageType;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;

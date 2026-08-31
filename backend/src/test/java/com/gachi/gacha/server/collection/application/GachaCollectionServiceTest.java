@@ -10,7 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;

@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.collection.application;
 
-import com.gachi.gacha.server.common.infra.config.ImageType;
-import com.gachi.gacha.server.common.infra.config.ImageUploader;
+import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.ImageUploader;
 import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import com.gachi.gacha.server.gacha.domain.Gacha;

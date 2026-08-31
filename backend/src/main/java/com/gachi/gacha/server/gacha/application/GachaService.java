@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.gacha.application;
 
-import com.gachi.gacha.server.common.infra.config.ImageType;
+import com.gachi.gacha.server.common.infra.domain.ImageType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.application.dto.GachaCreateCommand;
 import com.gachi.gacha.server.gacha.application.dto.GachaDeleteResult;
