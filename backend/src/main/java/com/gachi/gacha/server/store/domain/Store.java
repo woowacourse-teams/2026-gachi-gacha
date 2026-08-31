@@ -1,7 +1,5 @@
 package com.gachi.gacha.server.store.domain;
 
-import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
-
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.common.util.GeometryUtils;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
@@ -82,28 +80,6 @@ public class Store extends BaseTimeEntity {
         this.floor = floor;
         this.unit = unit;
         this.address = address;
-    }
-
-    public Store patch(
-            final String name,
-            final String thumbnailUrl,
-            final Double latitude,
-            final Double longitude,
-            final String address,
-            final Integer floor,
-            final String unit
-    ) {
-
-        return Store.builder()
-                .id(id)
-                .name(valueOrCurrent(name, this.name))
-                .thumbnailUrl(valueOrCurrent(thumbnailUrl, this.thumbnailUrl))
-                .latitude(valueOrCurrent(latitude, this.latitude))
-                .longitude(valueOrCurrent(longitude, this.longitude))
-                .address(valueOrCurrent(address, this.address))
-                .floor(valueOrCurrent(floor, this.floor))
-                .unit(valueOrCurrent(unit, this.unit))
-                .build();
     }
 
     @PrePersist
