@@ -17,11 +17,11 @@ public class GachaService {
     private final GachaJpaRepository gachaRepository;
 
     public Page<GachaInfo> findAllGacha(@Nullable final String keyword, final Pageable pageable) {
-        if (keyword == null) {
-            return gachaRepository.findAll(pageable)
+        if (keyword == null || keyword.isBlank()) {
+            return gachaRepository.findAllWithCategories(pageable)
                     .map(GachaInfo::from);
         }
-        return gachaRepository.findByNameContaining(keyword, pageable)
+        return gachaRepository.findByNameContainingWithCategories(keyword, pageable)
                 .map(GachaInfo::from);
     }
 

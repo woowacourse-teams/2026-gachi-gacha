@@ -3,6 +3,7 @@ package com.gachi.gacha.server.gacha.presentation.dto;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
 import com.gachi.gacha.server.gacha.domain.CollectionSource;
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Builder;
 
 @Builder
@@ -12,7 +13,7 @@ public record GachaResponse(
         String caption,
         String thumbnailUrl,
         String productCode,
-        String category,
+        List<String> categories,
         CollectionSource source,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
@@ -24,7 +25,7 @@ public record GachaResponse(
                 .caption(gachaInfo.caption())
                 .thumbnailUrl(gachaInfo.thumbnailUrl())
                 .productCode(gachaInfo.productCode())
-                .category(gachaInfo.category())
+                .categories(gachaInfo.categories())
                 .source(gachaInfo.source())
                 .createdAt(gachaInfo.createdAt())
                 .updatedAt(gachaInfo.updatedAt())
