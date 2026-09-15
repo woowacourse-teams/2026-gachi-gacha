@@ -3,7 +3,7 @@ CREATE TABLE trade (
                         member_id BIGINT NOT NULL,
                         title VARCHAR(255) NOT NULL,
                         description TEXT,
-                        desired_exchange VARCHAR(255),
+                        desired_production VARCHAR(255),
                         purchase_store_address VARCHAR(255),
                         trade_place VARCHAR(255),
                         available_time TIMESTAMP(6),

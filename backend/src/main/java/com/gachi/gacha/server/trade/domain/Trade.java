@@ -44,7 +44,7 @@ public class Trade extends BaseTimeEntity {
     private String description;
 
     @Column(length = 255)
-    private String desiredExchange;
+    private String desiredProduction;
 
     @Column(length = 255)
     private String purchaseStoreAddress;
@@ -67,7 +67,7 @@ public class Trade extends BaseTimeEntity {
             final Member member,
             final String title,
             final String description,
-            final String desiredExchange,
+            final String desiredProduction,
             final String purchaseStoreAddress,
             final String tradePlace,
             final LocalDateTime availableTime,
@@ -79,7 +79,7 @@ public class Trade extends BaseTimeEntity {
         this.member = member;
         this.title = title;
         this.description = description;
-        this.desiredExchange = desiredExchange;
+        this.desiredProduction = desiredProduction;
         this.purchaseStoreAddress = purchaseStoreAddress;
         this.tradePlace = tradePlace;
         this.availableTime = availableTime;
