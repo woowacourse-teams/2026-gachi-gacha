@@ -3,7 +3,7 @@ export interface MatchedGachaSummary {
   name: string;
 }
 
-export interface SearchStore {
+export interface StoreSearchResult {
   id: number;
   name: string;
   latitude: number;
