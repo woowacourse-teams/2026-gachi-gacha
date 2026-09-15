@@ -13,6 +13,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "CE002", "지원하지 않는 HTTP 메서드입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "CE003", "서버 내부 오류가 발생했습니다."),
     INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "CE004", "유효하지 않은 페이지 요청입니다."),
+    UNAUTHORIZATION_TOKEN(HttpStatus.UNAUTHORIZED, "CE005", "유효하지 않은 토큰입니다."),
 
     // Gacha
     GACHA_NOT_FOUND(HttpStatus.NOT_FOUND, "GE001", "존재하지 않는 가챠입니다."),
@@ -49,7 +50,11 @@ public enum ErrorCode {
 
     // Trade Image
     TRADE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "TIE01", "존재하지 않는 교환 게시글 사진입니다."),
-    INVALID_TRADE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "TIE02", "유효하지 않은 교환 게시글 사진입니다.");
+    INVALID_TRADE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "TIE02", "유효하지 않은 교환 게시글 사진입니다."),
+
+    //kakao
+    KAKAO_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "KE01", "카카오 인증에 실패했습니다. 다시 로그인해주세요."),
+    KAKAO_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "KE02", "카카오 서버와 통신 중 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;
