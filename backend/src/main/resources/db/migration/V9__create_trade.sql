@@ -9,7 +9,10 @@ CREATE TABLE trade (
                         available_time TIMESTAMP(6),
                         status VARCHAR(20) NOT NULL,
                         created_at TIMESTAMP(6),
-                        updated_at TIMESTAMP(6)
+                        updated_at TIMESTAMP(6),
+
+                        CONSTRAINT fk_trade_member
+                            FOREIGN KEY (member_id) REFERENCES member (id)
 );
 
 CREATE TABLE trade_category (
