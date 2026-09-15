@@ -41,7 +41,15 @@ public enum ErrorCode {
 
     // Member
     UNSUPPORTED_TYPE_ERROR(HttpStatus.BAD_REQUEST, "AUE01", "지원하지 않는 소셜 로그인 타입입니다."),
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUE02", "존재하지 않는 사용자입니다.");
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUE02", "존재하지 않는 사용자입니다."),
+
+    // Trade
+    TRADE_NOT_FOUND(HttpStatus.NOT_FOUND, "TE001", "존재하지 않는 교환 게시글입니다."),
+    INVALID_TRADE_POLICY(HttpStatus.BAD_REQUEST, "TE002", "유효하지 않은 교환 게시글 정보입니다."),
+
+    // Trade Image
+    TRADE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "TIE01", "존재하지 않는 교환 게시글 사진입니다."),
+    INVALID_TRADE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "TIE02", "유효하지 않은 교환 게시글 사진입니다.");
 
     private final HttpStatus status;
     private final String code;
