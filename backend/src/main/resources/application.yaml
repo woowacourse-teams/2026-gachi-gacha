@@ -23,6 +23,8 @@ spring:
     properties:
       hibernate:
         format_sql: true
+  mongodb:
+    uri: ${MONGODB_URI}
 cloud:
   aws:
     region: ${AWS_REGION}
