@@ -1,27 +1,8 @@
-import { Global, css } from '@emotion/react';
+import { Global } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import MapPage from './pages/Map';
-
-const globalStyle = css`
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-  }
-
-  body {
-    margin: 0;
-    font-family: 'IBM Plex Sans KR', sans-serif;
-  }
-
-  button,
-  input,
-  select,
-  textarea {
-    font: inherit;
-  }
-`;
+import { globalStyle } from './styles/globalStyle';
 
 const MobileLayout = styled.div`
   width: 100%;
