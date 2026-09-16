@@ -70,6 +70,9 @@ module.exports = (_env, argv) => {
       new webpack.DefinePlugin({
         __IS_DEV__: JSON.stringify(!isProduction),
         __KAKAO_MAP_KEY__: JSON.stringify(KAKAO_MAP_KEY),
+        __USE_MSW__: JSON.stringify(
+          !isProduction && process.env.MOCK_API === 'true',
+        ),
       }),
     ],
 
