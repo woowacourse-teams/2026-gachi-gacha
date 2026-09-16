@@ -13,7 +13,6 @@ import com.gachi.gacha.server.member.presentation.session.OauthNonceSessionManag
 import jakarta.servlet.http.HttpSession;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +32,6 @@ public class OauthController {
     private final OauthNonceSessionManager oauthNonceSessionManager;
 
     @GetMapping("/{provider}")
-    @SneakyThrows
     public ResponseEntity<Void> redirectAuthCodeRequestUrl(
             @PathVariable OauthProviderType provider,
             HttpSession session

@@ -6,7 +6,7 @@ import static java.util.stream.Collectors.toMap;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
-import com.gachi.gacha.server.member.domain.exception.UnSupportedServerTypeException;
+import com.gachi.gacha.server.member.domain.exception.UnSupportedProviderTypeException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -31,6 +31,6 @@ public class OauthMemberClientComposite {
 
     private OauthMemberClient getClient(final OauthProviderType oauthServerType) {
         return Optional.ofNullable(mapping.get(oauthServerType))
-                .orElseThrow(() -> new UnSupportedServerTypeException(ErrorCode.UNSUPPORTED_TYPE_ERROR));
+                .orElseThrow(() -> new UnSupportedProviderTypeException(ErrorCode.UNSUPPORTED_TYPE_ERROR));
     }
 }
