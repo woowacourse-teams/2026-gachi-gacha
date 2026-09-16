@@ -24,7 +24,7 @@ public class AuthCodeRequestUrlProviderComposite {
                 ));
     }
 
-    public String provide(final OauthProviderType provider, String nonce) {
+    public String provide(final OauthProviderType provider, final String nonce) {
         return getProvider(provider).provide(nonce);
     }
 

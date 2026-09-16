@@ -14,7 +14,6 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AuthArgumentResolver implements HandlerMethodArgumentResolver {
@@ -33,13 +32,11 @@ public class AuthArgumentResolver implements HandlerMethodArgumentResolver {
                                   @NonNull final NativeWebRequest webRequest, final WebDataBinderFactory binderFactory)
     {
         String accessToken = extractAccessToken(webRequest);
-        log.info("accessToken = {}", accessToken);
         return jwtProvider.extractMemberId(accessToken);
     }
 
     private String extractAccessToken(final NativeWebRequest webRequest) {
         String bearerToken = webRequest.getHeader("Authorization");
-        log.info("token = {}", bearerToken);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
