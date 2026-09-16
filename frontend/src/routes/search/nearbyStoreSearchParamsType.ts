@@ -4,5 +4,4 @@ export interface NearbyStoreSearchParams {
   radius: number;
   keyword?: string;
   categoryIds?: readonly number[];
-  floor?: number;
 }

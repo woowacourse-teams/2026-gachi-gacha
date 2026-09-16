@@ -8,7 +8,6 @@ export function createNearbyStoreSearchUrl({
   radius,
   keyword,
   categoryIds,
-  floor,
 }: NearbyStoreSearchParams): string {
   const searchParams = new URLSearchParams({
     latitude: String(latitude),
@@ -22,10 +21,6 @@ export function createNearbyStoreSearchUrl({
 
   if (categoryIds?.length) {
     searchParams.set('categoryIds', categoryIds.join(','));
-  }
-
-  if (floor !== undefined) {
-    searchParams.set('floor', String(floor));
   }
 
   return `${NEARBY_STORES_API_PATH}?${searchParams}`;
