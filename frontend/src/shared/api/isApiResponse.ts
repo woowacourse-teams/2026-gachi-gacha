@@ -1,6 +1,6 @@
-import type { ApiResponse } from './apiResponseType';
-
-export function isApiResponse(value: unknown): value is ApiResponse<unknown> {
+export function isApiResponse(
+  value: unknown,
+): value is { code: string; message: string; data?: unknown } {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
@@ -8,8 +8,6 @@ export function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   const response = value as Record<string, unknown>;
 
   return (
-    typeof response.code === 'string' &&
-    typeof response.message === 'string' &&
-    'data' in response
+    typeof response.code === 'string' && typeof response.message === 'string'
   );
 }
