@@ -30,15 +30,26 @@ public class AuthArgumentResolver implements HandlerMethodArgumentResolver {
     public Object resolveArgument(@NonNull final MethodParameter parameter, final ModelAndViewContainer mavContainer,
                                   @NonNull final NativeWebRequest webRequest, final WebDataBinderFactory binderFactory)
     {
-        String accessToken = extractAccessToken(webRequest);
+        Auth auth = parameter.getParameterAnnotation(Auth.class);
+        boolean isRequired = (auth == null) || auth.required();
+
+        String accessToken = extractAccessToken(webRequest, isRequired);
+
+        if (!StringUtils.hasText(accessToken)) {
+            return null;
+        }
+
         return jwtProvider.extractMemberId(accessToken);
     }
 
-    private String extractAccessToken(final NativeWebRequest webRequest) {
+    private String extractAccessToken(final NativeWebRequest webRequest, boolean isRequired) {
         String bearerToken = webRequest.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        throw new UnAuthorizationException(ErrorCode.UNAUTHORIZATION_TOKEN);
+        if (isRequired) {
+            throw new UnAuthorizationException(ErrorCode.UNAUTHORIZATION_TOKEN);
+        }
+        return null;
     }
 }
