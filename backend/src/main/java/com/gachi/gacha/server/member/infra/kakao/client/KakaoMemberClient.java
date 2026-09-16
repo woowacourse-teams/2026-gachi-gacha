@@ -36,6 +36,10 @@ public class KakaoMemberClient implements OauthMemberClient {
     public Member fetch(final String authCode, final String nonce) {
         KakaoToken tokenInfo = fetchToken(authCode);
         KakaoIdTokenClaims claims = kakaoIdTokenValidator.validate(tokenInfo.idToken(), nonce);
+        return toMember(claims);
+    }
+
+    private static Member toMember(final KakaoIdTokenClaims claims) {
         return Member.builder()
                 .oauthId(new OauthId(claims.sub(), OauthProviderType.KAKAO))
                 .nickname(claims.nickname())

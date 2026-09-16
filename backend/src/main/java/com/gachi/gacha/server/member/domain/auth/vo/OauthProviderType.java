@@ -4,6 +4,7 @@ import static java.util.Locale.ENGLISH;
 
 public enum OauthProviderType {
     KAKAO,
+    NAVER
     ;
     public static OauthProviderType fromName(String type) {
         return OauthProviderType.valueOf(type.toUpperCase(ENGLISH));
