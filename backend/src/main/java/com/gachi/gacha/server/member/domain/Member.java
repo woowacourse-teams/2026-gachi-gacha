@@ -38,6 +38,7 @@ public class Member extends BaseTimeEntity {
     private String profileImageUrl;
     private String desireTradeLocation;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean isDeleted = false;
 
