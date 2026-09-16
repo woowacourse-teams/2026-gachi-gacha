@@ -13,9 +13,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOriginPatterns(
                         "http://localhost:*",
-                        "http://192.168.*.*:*",
-                        "http://10.*.*.*:*",
-                        "http://172.30.1.54:*"
+                        "https://dev.gachigacha.kro.kr"
                 )
                 .allowedMethods(
                         HttpMethod.GET.name(),
