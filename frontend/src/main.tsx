@@ -9,8 +9,20 @@ if (!container) {
   throw new Error('#root 엘리먼트를 찾을 수 없습니다.');
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+async function enableMocking(): Promise<void> {
+  if (!__USE_MSW__) {
+    return;
+  }
+
+  const { worker } = await import('@/mocks/browser');
+
+  await worker.start({ onUnhandledRequest: 'bypass' });
+}
+
+void enableMocking().then(() => {
+  createRoot(container).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+});
