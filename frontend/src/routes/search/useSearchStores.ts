@@ -2,29 +2,27 @@ import { useEffect, useMemo, useState } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import { createNearbyStoreSearchUrl } from './api/createNearbyStoreSearchUrl';
 import { getNearbyStores } from './api/getNearbyStores';
 import type { NearbyStoreSearchParams } from './api/nearbyStoreSearchParamsType';
 import type { NearbyStoresResponseDto } from './api/nearbyStoresResponseType';
 
-type SearchStoresState = AsyncState<NearbyStoresResponseDto>;
 type SettledSearchStoresState = Extract<
-  SearchStoresState,
+  AsyncState<NearbyStoresResponseDto>,
   { status: 'success' | 'error' }
 >;
 
 interface SettledSearchResult {
-  requestKey: string;
+  request: NearbyStoreSearchParams;
   state: SettledSearchStoresState;
 }
 
 const DEFAULT_ERROR_MESSAGE = '주변 매장을 불러오지 못했습니다.';
-const IDLE_STATE: SearchStoresState = {
+const IDLE_STATE: AsyncState<NearbyStoresResponseDto> = {
   status: 'idle',
   data: null,
   errorMessage: null,
 };
-const LOADING_STATE: SearchStoresState = {
+const LOADING_STATE: AsyncState<NearbyStoresResponseDto> = {
   status: 'loading',
   data: null,
   errorMessage: null,
@@ -32,10 +30,6 @@ const LOADING_STATE: SearchStoresState = {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE;
-}
-
-function createCategoryIdsKey(categoryIds?: readonly number[]): string {
-  return [...new Set(categoryIds)].sort((a, b) => a - b).join(',');
 }
 
 async function loadSearchStores(
@@ -58,13 +52,13 @@ async function loadSearchStores(
 export function useSearchStores(params: NearbyStoreSearchParams | null) {
   const [settledResult, setSettledResult] =
     useState<SettledSearchResult | null>(null);
+  const gachaId = params?.gachaId;
   const latitude = params?.latitude;
   const longitude = params?.longitude;
   const radius = params?.radius;
-  const keyword = params?.keyword?.trim() || undefined;
-  const categoryIdsKey = createCategoryIdsKey(params?.categoryIds);
   const requestParams = useMemo<NearbyStoreSearchParams | null>(() => {
     if (
+      gachaId === undefined ||
       latitude === undefined ||
       longitude === undefined ||
       radius === undefined
@@ -73,26 +67,19 @@ export function useSearchStores(params: NearbyStoreSearchParams | null) {
     }
 
     return {
+      gachaId,
       latitude,
       longitude,
       radius,
-      ...(keyword !== undefined && { keyword }),
-      ...(categoryIdsKey && {
-        categoryIds: categoryIdsKey.split(',').map(Number),
-      }),
     };
-  }, [categoryIdsKey, keyword, latitude, longitude, radius]);
-  const requestKey = requestParams
-    ? createNearbyStoreSearchUrl(requestParams)
-    : null;
+  }, [gachaId, latitude, longitude, radius]);
 
   useEffect(() => {
-    if (!requestParams || !requestKey) {
+    if (!requestParams) {
       return;
     }
 
     const activeRequestParams = requestParams;
-    const activeRequestKey = requestKey;
     const controller = new AbortController();
 
     async function applySearchResult() {
@@ -102,7 +89,7 @@ export function useSearchStores(params: NearbyStoreSearchParams | null) {
       );
 
       if (!controller.signal.aborted) {
-        setSettledResult({ requestKey: activeRequestKey, state: nextState });
+        setSettledResult({ request: activeRequestParams, state: nextState });
       }
     }
 
@@ -111,13 +98,13 @@ export function useSearchStores(params: NearbyStoreSearchParams | null) {
     return () => {
       controller.abort();
     };
-  }, [requestKey, requestParams]);
+  }, [requestParams]);
 
-  if (!requestKey) {
+  if (!requestParams) {
     return IDLE_STATE;
   }
 
-  if (settledResult?.requestKey !== requestKey) {
+  if (settledResult?.request !== requestParams) {
     return LOADING_STATE;
   }
 

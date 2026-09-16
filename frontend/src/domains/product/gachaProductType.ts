@@ -1,5 +1,5 @@
 export interface GachaProductSummary {
-  id: number;
+  gachaId: number;
   name: string;
   thumbnailUrl: string | null;
   categories: readonly string[];

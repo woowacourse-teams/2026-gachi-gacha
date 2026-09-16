@@ -42,3 +42,32 @@ export const nearbyStoresMockResponse = {
     ],
   },
 } satisfies ApiResponse<NearbyStoresResponseDto>;
+
+// 가챠별 보유 매장 필터는 아직 백엔드 협의 전인 프론트 목 계약이다.
+export const mockStoreIdsByGachaId: Readonly<
+  Record<number, readonly number[]>
+> = {
+  10: [1, 2],
+  11: [2, 3],
+  12: [],
+};
+
+export function createNearbyStoresMockResponse(
+  gachaId: number,
+): ApiResponse<NearbyStoresResponseDto> | null {
+  const storeIds = mockStoreIdsByGachaId[gachaId];
+
+  if (!storeIds) {
+    return null;
+  }
+
+  return {
+    ...nearbyStoresMockResponse,
+    data: {
+      ...nearbyStoresMockResponse.data,
+      stores: nearbyStoresMockResponse.data.stores.filter((store) =>
+        storeIds.includes(store.storeId),
+      ),
+    },
+  };
+}
