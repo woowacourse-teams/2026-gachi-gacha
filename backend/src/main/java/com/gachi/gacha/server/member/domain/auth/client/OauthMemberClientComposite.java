@@ -25,7 +25,7 @@ public class OauthMemberClientComposite {
                 ));
     }
 
-    public Member fetch(final OauthProviderType oauthProviderType, final String authCode, String nonce) {
+    public Member fetch(final OauthProviderType oauthProviderType, final String authCode, final String nonce) {
         return getClient(oauthProviderType).fetch(authCode, nonce);
     }
 

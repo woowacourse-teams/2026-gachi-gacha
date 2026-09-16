@@ -4,5 +4,5 @@ import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 
 public interface AuthCodeRequestUrlProvider {
     OauthProviderType supportProvider();
-    String provide(String nonce);
+    String provide(final String nonce);
 }
