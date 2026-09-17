@@ -1,3 +1,5 @@
+import type { UIEvent } from 'react';
+
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
@@ -12,6 +14,8 @@ import {
   ImageFallback,
   LoadingCard,
   LoadingGrid,
+  LoadMoreError,
+  LoadMoreStatus,
   Popover,
   ProductButton,
   ProductImage,
@@ -30,10 +34,16 @@ import { getVisibleCategories } from './getVisibleCategories';
 export interface GachaSearchPopoverProps {
   query: string;
   searchState: AsyncState<GachaSearchResult>;
+  hasMore?: boolean;
+  isLoadingMore?: boolean;
+  loadMoreErrorMessage?: string | null;
   onClose: () => void;
+  onLoadMore?: () => void;
   onRetry?: () => void;
   onSelect: (gachaId: number) => void;
 }
+
+const LOAD_MORE_THRESHOLD = 120;
 
 interface ProductCardProps {
   product: GachaProductSummary;
@@ -93,11 +103,28 @@ function LoadingContent() {
 export function GachaSearchPopover({
   query,
   searchState,
+  hasMore = false,
+  isLoadingMore = false,
+  loadMoreErrorMessage = null,
   onClose,
+  onLoadMore,
   onRetry,
   onSelect,
 }: GachaSearchPopoverProps) {
   const trimmedQuery = query.trim();
+
+  function handleContentScroll(event: UIEvent<HTMLDivElement>) {
+    if (!hasMore || isLoadingMore || loadMoreErrorMessage || !onLoadMore) {
+      return;
+    }
+
+    const { clientHeight, scrollHeight, scrollTop } = event.currentTarget;
+    const remainingScroll = scrollHeight - scrollTop - clientHeight;
+
+    if (remainingScroll <= LOAD_MORE_THRESHOLD) {
+      onLoadMore();
+    }
+  }
 
   return (
     <Popover aria-label="가챠 검색 결과">
@@ -119,7 +146,7 @@ export function GachaSearchPopover({
         </CloseButton>
       </Header>
 
-      <Content aria-live="polite">
+      <Content aria-live="polite" onScroll={handleContentScroll}>
         {searchState.status === 'idle' && (
           <EmptyState>찾고 싶은 가챠 이름을 입력해 주세요.</EmptyState>
         )}
@@ -161,6 +188,26 @@ export function GachaSearchPopover({
                   />
                 ))}
               </ProductList>
+              {isLoadingMore && (
+                <LoadMoreStatus role="status">
+                  검색 결과를 더 불러오는 중이에요.
+                </LoadMoreStatus>
+              )}
+              {loadMoreErrorMessage && (
+                <LoadMoreError>
+                  <ErrorMessage>{loadMoreErrorMessage}</ErrorMessage>
+                  {onLoadMore && (
+                    <RetryButton type="button" onClick={onLoadMore}>
+                      더 불러오기 재시도
+                    </RetryButton>
+                  )}
+                </LoadMoreError>
+              )}
+              {hasMore && !isLoadingMore && !loadMoreErrorMessage && (
+                <LoadMoreStatus>
+                  아래로 스크롤해 더 확인해 보세요.
+                </LoadMoreStatus>
+              )}
             </>
           )}
       </Content>

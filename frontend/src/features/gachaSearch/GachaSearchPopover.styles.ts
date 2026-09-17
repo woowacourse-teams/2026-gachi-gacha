@@ -290,3 +290,22 @@ export const LoadingCard = styled.div`
     animation: none;
   }
 `;
+
+export const LoadMoreStatus = styled.p`
+  margin: 22px 0 0;
+  color: var(--color-text-muted, #777173);
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+`;
+
+export const LoadMoreError = styled.div`
+  display: flex;
+  margin-top: 22px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  text-align: center;
+`;
