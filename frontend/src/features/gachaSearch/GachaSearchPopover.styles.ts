@@ -95,6 +95,7 @@ export const Content = styled.div`
   padding: 20px 28px 28px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 
   @media (max-width: 767px) {
     padding: 18px 20px 28px;
@@ -121,6 +122,7 @@ export const ProductList = styled.ul`
   padding: 0;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 24px 16px;
+  align-items: start;
   list-style: none;
 
   @media (max-width: 1080px) {
@@ -195,13 +197,14 @@ export const ProductImage = styled.img`
 
 export const ProductName = styled.strong`
   display: -webkit-box;
-  min-height: 44px;
+  height: 44px;
   margin-top: 10px;
   overflow: hidden;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.45;
   letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 `;

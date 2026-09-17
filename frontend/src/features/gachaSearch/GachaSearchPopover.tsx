@@ -24,10 +24,12 @@ import {
   RetryButton,
   Title,
 } from './GachaSearchPopover.styles';
+import type { GachaSearchResult } from './gachaSearchResultType';
+import { getVisibleCategories } from './getVisibleCategories';
 
 export interface GachaSearchPopoverProps {
   query: string;
-  searchState: AsyncState<readonly GachaProductSummary[]>;
+  searchState: AsyncState<GachaSearchResult>;
   onClose: () => void;
   onRetry?: () => void;
   onSelect: (gachaId: number) => void;
@@ -35,11 +37,20 @@ export interface GachaSearchPopoverProps {
 
 interface ProductCardProps {
   product: GachaProductSummary;
+  query: string;
   onSelect: (gachaId: number) => void;
 }
 
-function ProductCard({ product, onSelect }: ProductCardProps) {
-  const categories = product.categories.slice(0, 2).join(' · ');
+function ProductCard({ product, query, onSelect }: ProductCardProps) {
+  const visibleCategories = getVisibleCategories(product.categories, query);
+  const hiddenCategoryCount = Math.max(
+    product.categories.length - visibleCategories.length,
+    0,
+  );
+  const categoryPreview = visibleCategories.join(' · ');
+  const categoryLabel = hiddenCategoryCount
+    ? `${categoryPreview} 외 ${hiddenCategoryCount}개`
+    : categoryPreview;
 
   return (
     <ProductItem>
@@ -60,8 +71,10 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
             />
           )}
         </ProductImageFrame>
-        <ProductName>{product.name}</ProductName>
-        <CategoryText>{categories || '카테고리 미등록'}</CategoryText>
+        <ProductName title={product.name}>{product.name}</ProductName>
+        <CategoryText title={product.categories.join(', ')}>
+          {categoryLabel || '카테고리 미등록'}
+        </CategoryText>
       </ProductButton>
     </ProductItem>
   );
@@ -124,27 +137,32 @@ export function GachaSearchPopover({
           </EmptyState>
         )}
 
-        {searchState.status === 'success' && searchState.data.length === 0 && (
-          <EmptyState>검색어와 일치하는 가챠가 없습니다.</EmptyState>
-        )}
+        {searchState.status === 'success' &&
+          searchState.data.products.length === 0 && (
+            <EmptyState>검색어와 일치하는 가챠가 없습니다.</EmptyState>
+          )}
 
-        {searchState.status === 'success' && searchState.data.length > 0 && (
-          <>
-            <ResultSummary>
-              <span>관련 가챠</span>
-              <ResultCount>{searchState.data.length}개 표시</ResultCount>
-            </ResultSummary>
-            <ProductList>
-              {searchState.data.map((product) => (
-                <ProductCard
-                  key={product.gachaId}
-                  product={product}
-                  onSelect={onSelect}
-                />
-              ))}
-            </ProductList>
-          </>
-        )}
+        {searchState.status === 'success' &&
+          searchState.data.products.length > 0 && (
+            <>
+              <ResultSummary>
+                <span>관련 가챠</span>
+                <ResultCount>
+                  {searchState.data.totalCount.toLocaleString('ko-KR')}개의 결과
+                </ResultCount>
+              </ResultSummary>
+              <ProductList>
+                {searchState.data.products.map((product) => (
+                  <ProductCard
+                    key={product.gachaId}
+                    product={product}
+                    query={trimmedQuery}
+                    onSelect={onSelect}
+                  />
+                ))}
+              </ProductList>
+            </>
+          )}
       </Content>
     </Popover>
   );
