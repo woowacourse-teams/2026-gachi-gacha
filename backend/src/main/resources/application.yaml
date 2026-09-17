@@ -47,3 +47,22 @@ management:
       percentiles-histogram:
         s3.client.requests: true # 커스텀 S3 메트릭 P95/P99 활성화
         http.server.requests: true # HTTP API 요청 P95/P99 활성화 (권장)
+
+oauth:
+  kakao:
+    redirect-uri: ${KAKAO_REDIRECT_URL}
+    client-id: ${KAKAO_CLIENT_ID}
+    client-secret: ${KAKAO_CLIENT_SECRET}
+    scope:
+      - openid
+      - profile_nickname
+      - profile_image
+  naver:
+    redirect-uri: ${NAVER_REDIRECT_URL}
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+    scope:
+      - openid
+jwt:
+  access-token-expiration-day: ${JWT_EXPIRATION_DAY}
+  secret-key: ${JWT_SECRET_KEY}

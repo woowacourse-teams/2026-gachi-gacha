@@ -1,7 +1,5 @@
 package com.gachi.gacha.server.store.domain;
 
-import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.store.domain.exception.StoreImageInvalidValueException;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
