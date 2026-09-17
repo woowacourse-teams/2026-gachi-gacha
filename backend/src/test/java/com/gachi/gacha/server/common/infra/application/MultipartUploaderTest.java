@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import org.junit.jupiter.api.DisplayName;
@@ -45,11 +46,11 @@ class MultipartUploaderTest {
         // given
         MultipartUploader multipartUploader = multipartUploader();
         MultipartFile file = new MockMultipartFile("image", "photo.png", "image/png", new byte[]{1, 2, 3});
-        when(s3Uploader.upload(any(RequestBody.class), eq("gachigacha/store"), eq("png"), eq("image/png"), isNull()))
+        when(s3Uploader.upload(any(RequestBody.class), eq(DomainType.STORE), eq("png"), eq("image/png"), isNull()))
                 .thenReturn("https://test-bucket.s3.amazonaws.com/gachigacha/store/uuid.png");
 
         // when
-        String result = multipartUploader.upload(file, "gachigacha/store");
+        String result = multipartUploader.upload(file, DomainType.STORE);
 
         // then
         assertThat(result).isEqualTo("https://test-bucket.s3.amazonaws.com/gachigacha/store/uuid.png");
@@ -61,11 +62,11 @@ class MultipartUploaderTest {
         // given
         MultipartUploader multipartUploader = multipartUploader();
         MultipartFile file = new MockMultipartFile("video", "clip.mp4", "video/mp4", new byte[]{1, 2, 3});
-        when(s3Uploader.upload(any(RequestBody.class), eq("gachigacha/trade"), eq("mp4"), eq("video/mp4"), isNull()))
+        when(s3Uploader.upload(any(RequestBody.class), eq(DomainType.TRADE), eq("mp4"), eq("video/mp4"), isNull()))
                 .thenReturn("https://test-bucket.s3.amazonaws.com/gachigacha/trade/uuid.mp4");
 
         // when
-        String result = multipartUploader.upload(file, "gachigacha/trade");
+        String result = multipartUploader.upload(file, DomainType.TRADE);
 
         // then
         assertThat(result).isEqualTo("https://test-bucket.s3.amazonaws.com/gachigacha/trade/uuid.mp4");
@@ -79,7 +80,7 @@ class MultipartUploaderTest {
         MultipartFile file = new MockMultipartFile("image", "logo.svg", "image/svg+xml", new byte[]{1, 2, 3});
 
         // when & then
-        assertThatThrownBy(() -> multipartUploader.upload(file, "gachigacha/store"))
+        assertThatThrownBy(() -> multipartUploader.upload(file, DomainType.STORE))
                 .isInstanceOf(ImageInvalidValueException.class);
         verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }
@@ -92,7 +93,7 @@ class MultipartUploaderTest {
         MultipartFile file = new MockMultipartFile("image", "malware.exe", "image/png", new byte[]{1, 2, 3});
 
         // when & then
-        assertThatThrownBy(() -> multipartUploader.upload(file, "gachigacha/store"))
+        assertThatThrownBy(() -> multipartUploader.upload(file, DomainType.STORE))
                 .isInstanceOf(ImageInvalidValueException.class);
         verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }
@@ -105,7 +106,7 @@ class MultipartUploaderTest {
         MultipartFile file = new MockMultipartFile("image", "photo.png", "text/html", new byte[]{1, 2, 3});
 
         // when & then
-        assertThatThrownBy(() -> multipartUploader.upload(file, "gachigacha/store"))
+        assertThatThrownBy(() -> multipartUploader.upload(file, DomainType.STORE))
                 .isInstanceOf(ImageInvalidValueException.class);
         verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }
@@ -145,12 +146,12 @@ class MultipartUploaderTest {
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(body);
         when(restTemplate.getForEntity("https://cdn.instagram.com/photo", byte[].class)).thenReturn(response);
-        when(s3Uploader.upload(any(RequestBody.class), eq("gachigacha/gacha"), eq("jpg"), eq("image/jpeg"), isNull()))
+        when(s3Uploader.upload(any(RequestBody.class), eq(DomainType.GACHA), eq("jpg"), eq("image/jpeg"), isNull()))
                 .thenReturn("https://test-bucket.s3.amazonaws.com/gachigacha/gacha/uuid.jpg");
         MultipartUploader multipartUploader = multipartUploader();
 
         // when
-        String result = multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", "gachigacha/gacha");
+        String result = multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", DomainType.GACHA);
 
         // then
         assertThat(result).isEqualTo("https://test-bucket.s3.amazonaws.com/gachigacha/gacha/uuid.jpg");
@@ -167,7 +168,7 @@ class MultipartUploaderTest {
         MultipartUploader multipartUploader = multipartUploader();
 
         // when & then
-        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", "gachigacha/gacha"))
+        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", DomainType.GACHA))
                 .isInstanceOf(ImageInvalidValueException.class);
         verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }
@@ -183,7 +184,7 @@ class MultipartUploaderTest {
         MultipartUploader multipartUploader = multipartUploader();
 
         // when & then
-        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", "gachigacha/gacha"))
+        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", DomainType.GACHA))
                 .isInstanceOf(S3Exception.class);
         verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }
@@ -197,7 +198,7 @@ class MultipartUploaderTest {
         MultipartUploader multipartUploader = multipartUploader();
 
         // when & then
-        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/dead-link", "gachigacha/gacha"))
+        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/dead-link", DomainType.GACHA))
                 .isInstanceOf(S3Exception.class);
         verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }

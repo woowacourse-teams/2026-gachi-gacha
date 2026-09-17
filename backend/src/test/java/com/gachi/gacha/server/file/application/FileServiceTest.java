@@ -3,14 +3,14 @@ package com.gachi.gacha.server.file.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.gachi.gacha.server.common.infra.application.MultipartUploader;
-import com.gachi.gacha.server.common.infra.exception.FileInvalidValueException;
+import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.file.application.dto.FileUploadInfo;
+import com.gachi.gacha.server.file.exception.FileInvalidValueException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,9 +28,7 @@ class FileServiceTest {
     private MultipartUploader multipartUploader;
 
     private FileService fileService() {
-        FileService fileService = new FileService(multipartUploader);
-        ReflectionTestUtils.setField(fileService, "s3RootFolder", "gachigacha");
-        return fileService;
+        return new FileService(multipartUploader);
     }
 
     @Test
@@ -41,7 +38,7 @@ class FileServiceTest {
         FileService fileService = fileService();
         MultipartFile file1 = new MockMultipartFile("files", "kuromi.jpg", "image/jpeg", new byte[]{1, 2, 3});
         MultipartFile file2 = new MockMultipartFile("files", "clip.mp4", "video/mp4", new byte[]{4, 5});
-        when(multipartUploader.upload(any(MultipartFile.class), anyString()))
+        when(multipartUploader.upload(any(MultipartFile.class), any(DomainType.class)))
                 .thenReturn("https://cdn.example.com/files/uuid-1.jpg")
                 .thenReturn("https://cdn.example.com/files/uuid-2.mp4");
 
@@ -60,8 +57,8 @@ class FileServiceTest {
         assertThat(results.get(1).contentType()).isEqualTo("video/mp4");
         assertThat(results.get(1).size()).isEqualTo(2);
 
-        verify(multipartUploader).upload(file1, "gachigacha/chat");
-        verify(multipartUploader).upload(file2, "gachigacha/chat");
+        verify(multipartUploader).upload(file1, DomainType.CHAT);
+        verify(multipartUploader).upload(file2, DomainType.CHAT);
     }
 
     @Test
@@ -90,7 +87,7 @@ class FileServiceTest {
         // when & then
         assertThatThrownBy(() -> fileService.uploadFiles(files))
                 .isInstanceOf(FileInvalidValueException.class);
-        verify(multipartUploader, never()).upload(any(), anyString());
+        verify(multipartUploader, never()).upload(any(), any(DomainType.class));
     }
 
     @Test
@@ -102,7 +99,7 @@ class FileServiceTest {
         for (int i = 0; i < 10; i++) {
             files.add(new MockMultipartFile("files", "file" + i + ".jpg", "image/jpeg", new byte[]{1}));
         }
-        when(multipartUploader.upload(any(MultipartFile.class), anyString()))
+        when(multipartUploader.upload(any(MultipartFile.class), any(DomainType.class)))
                 .thenReturn("https://cdn.example.com/files/uuid.jpg");
 
         // when

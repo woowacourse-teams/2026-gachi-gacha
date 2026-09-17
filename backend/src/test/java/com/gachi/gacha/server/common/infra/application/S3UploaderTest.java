@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
+import com.gachi.gacha.server.common.infra.domain.DomainType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ class S3UploaderTest {
     private S3Uploader s3Uploader() {
         S3Uploader s3Uploader = new S3Uploader(s3Client);
         ReflectionTestUtils.setField(s3Uploader, "bucket", "test-bucket");
+        ReflectionTestUtils.setField(s3Uploader, "rootFolder", "gachigacha");
         return s3Uploader;
     }
 
@@ -37,7 +39,7 @@ class S3UploaderTest {
         RequestBody body = RequestBody.fromBytes(new byte[]{1, 2, 3});
 
         // when
-        String result = s3Uploader.upload(body, "gachigacha/chat", "pdf", "application/pdf", "attachment");
+        String result = s3Uploader.upload(body, DomainType.CHAT, "pdf", "application/pdf", "attachment");
 
         // then
         ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);
@@ -58,7 +60,7 @@ class S3UploaderTest {
         RequestBody body = RequestBody.fromBytes(new byte[]{1, 2, 3});
 
         // when
-        s3Uploader.upload(body, "gachigacha/store", "png", "image/png", null);
+        s3Uploader.upload(body, DomainType.STORE, "png", "image/png", null);
 
         // then
         ArgumentCaptor<PutObjectRequest> captor = ArgumentCaptor.forClass(PutObjectRequest.class);

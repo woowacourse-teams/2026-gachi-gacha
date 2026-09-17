@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.common.infra.exception;
+package com.gachi.gacha.server.file.exception;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidValueException;
