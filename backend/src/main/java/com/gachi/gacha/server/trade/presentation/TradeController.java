@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,9 +59,9 @@ public class TradeController {
 
     @GetMapping
     public BaseResponse<Page<TradeSummaryResponse>> readTrades(
-            @Nullable final String keyword,
-            @Nullable final List<Long> categoryIds,
-            @Nullable final TradeStatus status,
+            @RequestParam(required = false) @Nullable final String keyword,
+            @RequestParam(required = false) @Nullable final List<Long> categoryIds,
+            @RequestParam(required = false) @Nullable final TradeStatus status,
             @PageableDefault(sort = "createdAt", direction = Direction.DESC) final Pageable pageable
     ) {
         TradeSearchCondition condition = TradeSearchCondition.builder()
