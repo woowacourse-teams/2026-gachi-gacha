@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 
-import { GachaSearchPopover } from './GachaSearchPopover';
+import {
+  GachaSearchPopover,
+  type GachaSearchPopoverProps,
+} from './GachaSearchPopover';
 
 function createThumbnail(label: string, color: string): string {
   const svg = `
@@ -26,8 +30,8 @@ interface ProductFixture {
 
 const productFixtures = [
   {
-    name: '산리오 캐릭터즈 스탠드 피규어',
-    categories: ['산리오', '피규어'],
+    name: '산리오 캐릭터즈 스탠드 피규어 컬렉션 스페셜 에디션',
+    categories: ['캐릭터', '피규어', '산리오', '미니어처'],
     color: '#d93b54',
   },
   {
@@ -84,6 +88,20 @@ const products = productFixtures.map(({ name, categories, color }, index) => ({
   thumbnailUrl: createThumbnail(`GACHA ${index + 1}`, color),
 })) satisfies readonly GachaProductSummary[];
 
+const scrollableProducts = Array.from({ length: 24 }, (_, index) => {
+  const product = products[index % products.length];
+
+  if (!product) {
+    throw new Error('Storybook 가챠 목 데이터를 찾을 수 없습니다.');
+  }
+
+  return {
+    ...product,
+    gachaId: index + 101,
+    name: `${product.name} ${index + 1}`,
+  };
+}) satisfies readonly GachaProductSummary[];
+
 const previewDecorator = (Story: () => React.JSX.Element) => (
   <div
     style={{
@@ -94,6 +112,14 @@ const previewDecorator = (Story: () => React.JSX.Element) => (
       boxSizing: 'border-box',
     }}
   >
+    <Story />
+  </div>
+);
+
+function InteractivePreview(props: GachaSearchPopoverProps) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
     <div
       style={{
         position: 'relative',
@@ -101,8 +127,12 @@ const previewDecorator = (Story: () => React.JSX.Element) => (
         margin: '0 auto',
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        aria-expanded={isOpen}
         style={{
+          width: '100%',
           height: 54,
           padding: '0 20px',
           display: 'flex',
@@ -111,22 +141,35 @@ const previewDecorator = (Story: () => React.JSX.Element) => (
           borderRadius: 16,
           background: '#ffffff',
           color: '#4b4547',
+          font: 'inherit',
+          textAlign: 'left',
+          cursor: 'pointer',
           boxShadow: '0 6px 18px rgb(35 31 32 / 6%)',
         }}
       >
         <span aria-hidden="true" style={{ marginRight: 12 }}>
           ⌕
         </span>
-        산리오
-      </div>
-      <Story />
+        {props.query}
+      </button>
+
+      {isOpen && (
+        <GachaSearchPopover
+          {...props}
+          onClose={() => {
+            setIsOpen(false);
+            props.onClose();
+          }}
+        />
+      )}
     </div>
-  </div>
-);
+  );
+}
 
 const meta = {
   title: 'Features/GachaSearch/GachaSearchPopover',
   component: GachaSearchPopover,
+  render: (args) => <InteractivePreview {...args} />,
   decorators: [previewDecorator],
   parameters: {
     layout: 'fullscreen',
@@ -147,7 +190,10 @@ export const Results: Story = {
   args: {
     searchState: {
       status: 'success',
-      data: products,
+      data: {
+        products,
+        totalCount: products.length,
+      },
       errorMessage: null,
     },
   },
@@ -167,13 +213,17 @@ export const Empty: Story = {
   args: {
     searchState: {
       status: 'success',
-      data: [],
+      data: {
+        products: [],
+        totalCount: 0,
+      },
       errorMessage: null,
     },
   },
 };
 
-export const Error: Story = {
+export const ErrorState: Story = {
+  name: 'Error',
   args: {
     searchState: {
       status: 'error',
@@ -187,13 +237,29 @@ export const Mobile: Story = {
   args: {
     searchState: {
       status: 'success',
-      data: products,
+      data: {
+        products,
+        totalCount: products.length,
+      },
       errorMessage: null,
     },
   },
   parameters: {
     viewport: {
       defaultViewport: 'mobile1',
+    },
+  },
+};
+
+export const ScrollableResults: Story = {
+  args: {
+    searchState: {
+      status: 'success',
+      data: {
+        products: scrollableProducts,
+        totalCount: scrollableProducts.length,
+      },
+      errorMessage: null,
     },
   },
 };
