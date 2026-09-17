@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
@@ -15,9 +15,12 @@ interface GachaSearchRequest extends GachaSearchParams {
   attempt: number;
 }
 
-interface SettledGachaSearchResult {
+interface GachaSearchSnapshot {
   request: GachaSearchRequest;
   state: SettledGachaSearchState;
+  lastLoadedPage: number;
+  isLoadingMore: boolean;
+  loadMoreErrorMessage: string | null;
 }
 
 const FIRST_PAGE = 0;
@@ -38,19 +41,29 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE;
 }
 
+function mergeSearchResults(
+  currentResult: GachaSearchResult,
+  nextResult: GachaSearchResult,
+): GachaSearchResult {
+  const loadedGachaIds = new Set(
+    currentResult.products.map((product) => product.gachaId),
+  );
+  const newProducts = nextResult.products.filter(
+    (product) => !loadedGachaIds.has(product.gachaId),
+  );
+
+  return {
+    products: [...currentResult.products, ...newProducts],
+    totalCount: nextResult.totalCount,
+  };
+}
+
 async function loadGachaSearch(
-  request: GachaSearchRequest,
+  params: GachaSearchParams,
   signal: AbortSignal,
 ): Promise<SettledGachaSearchState> {
   try {
-    const data = await getGachaSearchResults(
-      {
-        keyword: request.keyword,
-        page: request.page,
-        size: request.size,
-      },
-      signal,
-    );
+    const data = await getGachaSearchResults(params, signal);
 
     return { status: 'success', data, errorMessage: null };
   } catch (error: unknown) {
@@ -64,8 +77,8 @@ async function loadGachaSearch(
 
 export function useGachaSearch(keyword: string) {
   const [attempt, setAttempt] = useState(0);
-  const [settledResult, setSettledResult] =
-    useState<SettledGachaSearchResult | null>(null);
+  const [snapshot, setSnapshot] = useState<GachaSearchSnapshot | null>(null);
+  const loadMoreControllerRef = useRef<AbortController | null>(null);
   const normalizedKeyword = keyword.trim();
   const request = useMemo<GachaSearchRequest | null>(
     () =>
@@ -92,10 +105,23 @@ export function useGachaSearch(keyword: string) {
     const controller = new AbortController();
 
     async function applyGachaSearchResult() {
-      const nextState = await loadGachaSearch(activeRequest, controller.signal);
+      const nextState = await loadGachaSearch(
+        {
+          keyword: activeRequest.keyword,
+          page: activeRequest.page,
+          size: activeRequest.size,
+        },
+        controller.signal,
+      );
 
       if (!controller.signal.aborted) {
-        setSettledResult({ request: activeRequest, state: nextState });
+        setSnapshot({
+          request: activeRequest,
+          state: nextState,
+          lastLoadedPage: FIRST_PAGE,
+          isLoadingMore: false,
+          loadMoreErrorMessage: null,
+        });
       }
     }
 
@@ -106,13 +132,121 @@ export function useGachaSearch(keyword: string) {
     };
   }, [request]);
 
+  useEffect(
+    () => () => {
+      loadMoreControllerRef.current?.abort();
+      loadMoreControllerRef.current = null;
+    },
+    [request],
+  );
+
+  const currentSnapshot = snapshot?.request === request ? snapshot : null;
+  const canLoadMore =
+    currentSnapshot?.state.status === 'success' &&
+    currentSnapshot.state.data.products.length <
+      currentSnapshot.state.data.totalCount;
+
+  const loadMore = useCallback(() => {
+    if (
+      !request ||
+      !currentSnapshot ||
+      currentSnapshot.state.status !== 'success' ||
+      !canLoadMore ||
+      currentSnapshot.isLoadingMore ||
+      loadMoreControllerRef.current
+    ) {
+      return;
+    }
+
+    const activeRequest = request;
+    const nextPage = currentSnapshot.lastLoadedPage + 1;
+    const controller = new AbortController();
+    loadMoreControllerRef.current = controller;
+    setSnapshot({
+      ...currentSnapshot,
+      isLoadingMore: true,
+      loadMoreErrorMessage: null,
+    });
+
+    async function appendNextPage() {
+      const nextState = await loadGachaSearch(
+        {
+          keyword: activeRequest.keyword,
+          page: nextPage,
+          size: activeRequest.size,
+        },
+        controller.signal,
+      );
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      setSnapshot((latestSnapshot) => {
+        if (
+          latestSnapshot?.request !== activeRequest ||
+          latestSnapshot.state.status !== 'success'
+        ) {
+          return latestSnapshot;
+        }
+
+        if (nextState.status === 'error') {
+          return {
+            ...latestSnapshot,
+            isLoadingMore: false,
+            loadMoreErrorMessage: nextState.errorMessage,
+          };
+        }
+
+        return {
+          request: activeRequest,
+          state: {
+            status: 'success',
+            data: mergeSearchResults(latestSnapshot.state.data, nextState.data),
+            errorMessage: null,
+          },
+          lastLoadedPage: nextPage,
+          isLoadingMore: false,
+          loadMoreErrorMessage: null,
+        };
+      });
+
+      if (loadMoreControllerRef.current === controller) {
+        loadMoreControllerRef.current = null;
+      }
+    }
+
+    void appendNextPage();
+  }, [canLoadMore, currentSnapshot, request]);
+
   if (!request) {
-    return { searchState: IDLE_STATE, retrySearch };
+    return {
+      searchState: IDLE_STATE,
+      hasMore: false,
+      isLoadingMore: false,
+      loadMoreErrorMessage: null,
+      retrySearch,
+      loadMore,
+    };
   }
 
-  if (settledResult?.request !== request) {
-    return { searchState: LOADING_STATE, retrySearch };
+  if (!currentSnapshot) {
+    return {
+      searchState: LOADING_STATE,
+      hasMore: false,
+      isLoadingMore: false,
+      loadMoreErrorMessage: null,
+      retrySearch,
+      loadMore,
+    };
   }
 
-  return { searchState: settledResult.state, retrySearch };
+  return {
+    searchState: currentSnapshot.state,
+    hasMore: canLoadMore,
+    isLoadingMore: currentSnapshot.isLoadingMore,
+    loadMoreErrorMessage: currentSnapshot.loadMoreErrorMessage,
+    retrySearch,
+    loadMore,
+  };
 }
