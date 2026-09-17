@@ -13,6 +13,7 @@ public enum ErrorCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "CE002", "지원하지 않는 HTTP 메서드입니다."),
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "CE003", "서버 내부 오류가 발생했습니다."),
     INVALID_PAGE_REQUEST(HttpStatus.BAD_REQUEST, "CE004", "유효하지 않은 페이지 요청입니다."),
+    UNAUTHORIZATION_TOKEN(HttpStatus.UNAUTHORIZED, "CE005", "유효하지 않은 토큰입니다."),
 
     // Gacha
     GACHA_NOT_FOUND(HttpStatus.NOT_FOUND, "GE001", "존재하지 않는 가챠입니다."),
@@ -42,6 +43,8 @@ public enum ErrorCode {
     // Member
     UNSUPPORTED_TYPE_ERROR(HttpStatus.BAD_REQUEST, "AUE01", "지원하지 않는 소셜 로그인 타입입니다."),
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUE02", "존재하지 않는 사용자입니다."),
+    INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUE03", "로그인 요청이 유효하지 않습니다. 다시 로그인해주세요."),
+    OAUTH_AUTHENTICATION_DENIED(HttpStatus.UNAUTHORIZED, "AUE04", "로그인이 취소되었거나 실패했습니다. 다시 시도해주세요."),
 
     // Trade
     TRADE_NOT_FOUND(HttpStatus.NOT_FOUND, "TE001", "존재하지 않는 교환 게시글입니다."),
@@ -49,7 +52,15 @@ public enum ErrorCode {
 
     // Trade Image
     TRADE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "TIE01", "존재하지 않는 교환 게시글 사진입니다."),
-    INVALID_TRADE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "TIE02", "유효하지 않은 교환 게시글 사진입니다.");
+    INVALID_TRADE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "TIE02", "유효하지 않은 교환 게시글 사진입니다."),
+
+    //kakao
+    KAKAO_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "KE01", "카카오 인증에 실패했습니다. 다시 로그인해주세요."),
+    KAKAO_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "KE02", "카카오 서버와 통신 중 오류가 발생했습니다."),
+
+    //naver
+    NAVER_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "NE01",  "네이버 인증에 실패했습니다. 다시 로그인해주세요."),
+    NAVER_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "NE02", "네이버 서버와 통신 중 오류가 발생했습니다.");
 
     private final HttpStatus status;
     private final String code;
