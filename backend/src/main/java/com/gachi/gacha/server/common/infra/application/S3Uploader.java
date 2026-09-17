@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.common.infra.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -24,14 +25,21 @@ public class S3Uploader {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
+    @Value("${cloud.aws.s3.folder}")
+    private String rootFolder;
+
+    /**
+     * 객체를 어느 폴더에 둘지는 {@link DomainType}만 받아서 이 클래스가 정한다. 버킷·루트 폴더 같은 S3 설정을
+     * 호출하는 쪽으로 새어 나가지 않게 하려는 것이다.
+     */
     public String upload(
             final RequestBody body,
-            final String path,
+            final DomainType domainType,
             final String extension,
             final String contentType,
             final String contentDisposition
     ) {
-        String key = generateUniqueKey(path, extension);
+        String key = generateUniqueKey(domainType.buildPath(rootFolder), extension);
 
         PutObjectRequest.Builder requestBuilder = PutObjectRequest.builder()
                 .bucket(bucket)

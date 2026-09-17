@@ -3,11 +3,10 @@ package com.gachi.gacha.server.file.application;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.application.MultipartUploader;
 import com.gachi.gacha.server.common.infra.domain.DomainType;
-import com.gachi.gacha.server.common.infra.exception.FileInvalidValueException;
 import com.gachi.gacha.server.file.application.dto.FileUploadInfo;
+import com.gachi.gacha.server.file.exception.FileInvalidValueException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,9 +18,6 @@ public class FileService {
 
     private final MultipartUploader multipartUploader;
 
-    @Value("${cloud.aws.s3.folder}")
-    private String s3RootFolder;
-
     public List<FileUploadInfo> uploadFiles(final List<MultipartFile> files) {
         validateFileCount(files);
 
@@ -31,7 +27,7 @@ public class FileService {
     }
 
     private FileUploadInfo uploadSingleFile(final MultipartFile file) {
-        String url = multipartUploader.upload(file, DomainType.CHAT.buildPath(s3RootFolder));
+        String url = multipartUploader.upload(file, DomainType.CHAT);
         return FileUploadInfo.of(url, file);
     }
 
@@ -41,7 +37,7 @@ public class FileService {
      */
     private void validateFileCount(final List<MultipartFile> files) {
         if (files.size() > MAX_FILE_COUNT) {
-            throw new FileInvalidValueException(ErrorCode.S3_FILE_COUNT_EXCEEDED);
+            throw new FileInvalidValueException(ErrorCode.FILE_COUNT_EXCEEDED);
         }
     }
 }
