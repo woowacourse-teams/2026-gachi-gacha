@@ -46,12 +46,30 @@ class FileUploaderTest {
     }
 
     @Test
-    @DisplayName("이미지가 아닌 파일은 contentDisposition을 attachment로 넘긴다.")
-    void upload_nonImage_attachesContentDisposition() {
+    @DisplayName("이미지가 아닌 파일은 contentDisposition에 attachment와 원본 파일명을 RFC 5987 형식으로 함께 넘긴다.")
+    void upload_nonImage_attachesContentDispositionWithFileName() {
         // given
         FileUploader fileUploader = fileUploader();
         MultipartFile file = new MockMultipartFile("file", "doc.pdf", "application/pdf", new byte[]{1, 2, 3});
-        when(s3Uploader.upload(any(RequestBody.class), eq("gachigacha/chat"), eq("pdf"), eq("application/pdf"), eq("attachment")))
+        when(s3Uploader.upload(any(RequestBody.class), eq("gachigacha/chat"), eq("pdf"), eq("application/pdf"),
+                eq("attachment; filename*=UTF-8''doc.pdf")))
+                .thenReturn("https://test-bucket.s3.amazonaws.com/gachigacha/chat/uuid.pdf");
+
+        // when
+        String result = fileUploader.upload(file, "gachigacha/chat");
+
+        // then
+        assertThat(result).isEqualTo("https://test-bucket.s3.amazonaws.com/gachigacha/chat/uuid.pdf");
+    }
+
+    @Test
+    @DisplayName("한글 등 비ASCII 파일명도 percent-encoding되어 contentDisposition에 실린다.")
+    void upload_nonImage_encodesNonAsciiFileName() {
+        // given
+        FileUploader fileUploader = fileUploader();
+        MultipartFile file = new MockMultipartFile("file", "가챠 사진.pdf", "application/pdf", new byte[]{1, 2, 3});
+        when(s3Uploader.upload(any(RequestBody.class), eq("gachigacha/chat"), eq("pdf"), eq("application/pdf"),
+                eq("attachment; filename*=UTF-8''%EA%B0%80%EC%B1%A0%20%EC%82%AC%EC%A7%84.pdf")))
                 .thenReturn("https://test-bucket.s3.amazonaws.com/gachigacha/chat/uuid.pdf");
 
         // when

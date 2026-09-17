@@ -4,6 +4,8 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.exception.FileInvalidValueException;
 import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,20 +22,21 @@ import software.amazon.awssdk.core.sync.RequestBody;
 public class FileUploader {
 
     private static final String SVG_CONTENT_TYPE = "image/svg+xml";
-    private static final String SVG_EXTENSION = "svg";
     private static final String IMAGE_CONTENT_TYPE_PREFIX = "image/";
-    private static final String ATTACHMENT_DISPOSITION = "attachment";
+    private static final String SVG_EXTENSION = "svg";
 
     private final S3Uploader s3Uploader;
 
     public String upload(final MultipartFile file, final String path) {
         String contentType = file.getContentType();
-        String extension = extractExtension(file.getOriginalFilename());
+        String originalFileName = file.getOriginalFilename();
+        String extension = extractExtension(originalFileName);
         validateNotSvg(contentType, extension);
 
         try {
             RequestBody body = RequestBody.fromInputStream(file.getInputStream(), file.getSize());
-            return s3Uploader.upload(body, path, extension, contentType, resolveContentDisposition(contentType));
+            String contentDisposition = resolveContentDisposition(contentType, originalFileName);
+            return s3Uploader.upload(body, path, extension, contentType, contentDisposition);
         } catch (IOException e) {
             log.error("파일을 읽는 중 오류가 발생했습니다.", e);
             throw new S3Exception(ErrorCode.S3_READ_ERROR);
@@ -50,13 +53,19 @@ public class FileUploader {
     }
 
     /**
-     * image/*(svg 제외)는 인라인으로 바로 보여도 안전하니 헤더를 붙이지 않고, 그 외 파일은 브라우저가 직접 실행하지 못하도록 다운로드로만 열리게 한다.
+     * image/*(svg 제외)는 인라인으로 바로 보여도 안전하니 헤더를 붙이지 않고, 그 외 파일은 브라우저가 직접 실행하지 못하도록
+     * 다운로드로만 열리게 한다. 이때 원본 파일명을 넣어주지 않으면 브라우저가 S3 키(UUID)를 저장 파일명으로 제안하게 되므로,
+     * RFC 5987 형식(filename*=UTF-8''...)으로 원본 파일명을 percent-encoding해서 함께 실어 보낸다.
      */
-    private String resolveContentDisposition(final String contentType) {
+    private String resolveContentDisposition(final String contentType, final String originalFileName) {
         if (contentType != null && contentType.toLowerCase().startsWith(IMAGE_CONTENT_TYPE_PREFIX)) {
             return null;
         }
-        return ATTACHMENT_DISPOSITION;
+        return "attachment; filename*=UTF-8''" + encodeFileName(originalFileName);
+    }
+
+    private String encodeFileName(final String originalFileName) {
+        return URLEncoder.encode(originalFileName, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
     private String extractExtension(final String originalFileName) {

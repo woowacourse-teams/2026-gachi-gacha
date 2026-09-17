@@ -41,6 +41,7 @@ public enum ErrorCode {
     S3_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E06", "파일 삭제 중 오류가 발생했습니다."),
     S3_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E07", "파일을 휴지통으로 이동하는 중 오류가 발생했습니다."),
     S3_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E08", "파일을 읽는 중 오류가 발생했습니다."),
+    S3_FILE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "S3E09", "한 번에 업로드할 수 있는 파일 개수를 초과했습니다."),
 
     // Member
     UNSUPPORTED_TYPE_ERROR(HttpStatus.BAD_REQUEST, "AUE01", "지원하지 않는 소셜 로그인 타입입니다."),
