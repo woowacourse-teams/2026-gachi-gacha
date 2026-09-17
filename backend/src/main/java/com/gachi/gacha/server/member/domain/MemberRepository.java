@@ -10,9 +10,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
-    default Member getMemberByOauthId(final OauthId oauthId) {
-        return findByOauthId(oauthId).orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+    default Member getMemberById(final Long memberId) {
+        return findById(memberId).orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
     }
 
     Optional<Member> findByOauthId(final OauthId oauthId);
+
 }
