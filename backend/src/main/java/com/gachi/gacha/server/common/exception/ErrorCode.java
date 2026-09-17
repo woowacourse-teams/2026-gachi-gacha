@@ -36,12 +36,10 @@ public enum ErrorCode {
     S3_IMAGE_INVALID_POLICY(HttpStatus.BAD_REQUEST, "S3E01", "지원하지 않는 이미지 형식입니다."),
     S3_IMAGE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E02", "이미지 파일을 읽는 중 오류가 발생했습니다."),
     S3_IMAGE_DOWNLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E03", "원본 이미지를 다운로드하는 중 오류가 발생했습니다."),
-    S3_FILE_INVALID_POLICY(HttpStatus.BAD_REQUEST, "S3E04", "지원하지 않는 파일 형식입니다."),
-    S3_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E05", "파일 업로드 중 오류가 발생했습니다."),
-    S3_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E06", "파일 삭제 중 오류가 발생했습니다."),
-    S3_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E07", "파일을 휴지통으로 이동하는 중 오류가 발생했습니다."),
-    S3_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E08", "파일을 읽는 중 오류가 발생했습니다."),
-    S3_FILE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "S3E09", "한 번에 업로드할 수 있는 파일 개수를 초과했습니다."),
+    S3_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E04", "파일 업로드 중 오류가 발생했습니다."),
+    S3_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E05", "파일 삭제 중 오류가 발생했습니다."),
+    S3_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E06", "파일을 휴지통으로 이동하는 중 오류가 발생했습니다."),
+    S3_FILE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "S3E07", "한 번에 업로드할 수 있는 파일 개수를 초과했습니다."),
 
     // Member
     UNSUPPORTED_TYPE_ERROR(HttpStatus.BAD_REQUEST, "AUE01", "지원하지 않는 소셜 로그인 타입입니다."),
