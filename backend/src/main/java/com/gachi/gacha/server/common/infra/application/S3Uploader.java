@@ -45,9 +45,7 @@ public class S3Uploader {
                 .bucket(bucket)
                 .key(key)
                 .contentType(contentType);
-        if (contentDisposition != null) {
-            requestBuilder.contentDisposition(contentDisposition);
-        }
+        requestBuilder.contentDisposition(contentDisposition);
 
         try {
             s3Client.putObject(requestBuilder.build(), body);
