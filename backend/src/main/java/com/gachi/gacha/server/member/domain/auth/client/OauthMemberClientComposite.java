@@ -29,8 +29,8 @@ public class OauthMemberClientComposite {
         return getClient(oauthProviderType).fetch(authCode, nonce);
     }
 
-    private OauthMemberClient getClient(final OauthProviderType oauthServerType) {
-        return Optional.ofNullable(mapping.get(oauthServerType))
+    private OauthMemberClient getClient(final OauthProviderType oauthProviderType) {
+        return Optional.ofNullable(mapping.get(oauthProviderType))
                 .orElseThrow(() -> new UnSupportedProviderTypeException(ErrorCode.UNSUPPORTED_TYPE_ERROR));
     }
 }
