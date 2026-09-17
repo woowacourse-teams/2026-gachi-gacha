@@ -11,19 +11,12 @@ import static org.mockito.Mockito.when;
 
 import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.infra.exception.ImageInvalidValueException;
-import com.gachi.gacha.server.common.infra.exception.S3Exception;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 
@@ -33,11 +26,8 @@ class MultipartUploaderTest {
     @Mock
     private S3Uploader s3Uploader;
 
-    @Mock
-    private RestTemplate restTemplate;
-
     private MultipartUploader multipartUploader() {
-        return new MultipartUploader(s3Uploader, restTemplate);
+        return new MultipartUploader(s3Uploader);
     }
 
     @Test
@@ -135,71 +125,5 @@ class MultipartUploaderTest {
 
         // then
         verify(s3Uploader).moveToTrash("https://test-bucket.s3.amazonaws.com/gachigacha/store/abc.png");
-    }
-
-    @Test
-    @DisplayName("uploadFromUrl은 원본 URL의 이미지를 내려받아 content-type에 맞는 확장자로 S3Uploader에 위임한다.")
-    void uploadFromUrl_success() {
-        // given
-        byte[] body = {1, 2, 3};
-        ResponseEntity<byte[]> response = ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(body);
-        when(restTemplate.getForEntity("https://cdn.instagram.com/photo", byte[].class)).thenReturn(response);
-        when(s3Uploader.upload(any(RequestBody.class), eq(DomainType.GACHA), eq("jpg"), eq("image/jpeg"), isNull()))
-                .thenReturn("https://test-bucket.s3.amazonaws.com/gachigacha/gacha/uuid.jpg");
-        MultipartUploader multipartUploader = multipartUploader();
-
-        // when
-        String result = multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", DomainType.GACHA);
-
-        // then
-        assertThat(result).isEqualTo("https://test-bucket.s3.amazonaws.com/gachigacha/gacha/uuid.jpg");
-    }
-
-    @Test
-    @DisplayName("허용되지 않은 content-type이면 S3Uploader를 호출하지 않고 예외를 던진다.")
-    void uploadFromUrl_invalidContentType_throws() {
-        // given
-        ResponseEntity<byte[]> response = ResponseEntity.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(new byte[]{1, 2, 3});
-        when(restTemplate.getForEntity("https://cdn.instagram.com/photo", byte[].class)).thenReturn(response);
-        MultipartUploader multipartUploader = multipartUploader();
-
-        // when & then
-        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", DomainType.GACHA))
-                .isInstanceOf(ImageInvalidValueException.class);
-        verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("응답 body가 비어있으면 S3Uploader를 호출하지 않고 예외를 던진다.")
-    void uploadFromUrl_emptyBody_throws() {
-        // given
-        ResponseEntity<byte[]> response = ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(new byte[0]);
-        when(restTemplate.getForEntity("https://cdn.instagram.com/photo", byte[].class)).thenReturn(response);
-        MultipartUploader multipartUploader = multipartUploader();
-
-        // when & then
-        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/photo", DomainType.GACHA))
-                .isInstanceOf(S3Exception.class);
-        verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
-    }
-
-    @Test
-    @DisplayName("원본 이미지 다운로드가 실패하면 S3Uploader를 호출하지 않고 예외를 던진다.")
-    void uploadFromUrl_downloadFails_throws() {
-        // given
-        when(restTemplate.getForEntity("https://cdn.instagram.com/dead-link", byte[].class))
-                .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
-        MultipartUploader multipartUploader = multipartUploader();
-
-        // when & then
-        assertThatThrownBy(() -> multipartUploader.uploadFromUrl("https://cdn.instagram.com/dead-link", DomainType.GACHA))
-                .isInstanceOf(S3Exception.class);
-        verify(s3Uploader, never()).upload(any(), any(), any(), any(), any());
     }
 }
