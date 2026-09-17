@@ -26,6 +26,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'net.sf.geographiclib:GeographicLib-Java:2.1'
     implementation 'software.amazon.awssdk:s3:2.25.0'
+    implementation 'software.amazon.awssdk:apache-client:2.25.0'
     implementation 'org.hibernate.orm:hibernate-spatial'
     implementation 'org.locationtech.jts:jts-core:1.19.0'
 
