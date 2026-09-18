@@ -33,12 +33,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      # Runner 내장 npm 대신 프로젝트 Node의 정상 npm으로 pnpm을 설치한다.
+      - name: Set up Node.js before pnpm installer
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 11.9.0
 
-      - name: Set up Node.js
+      # pnpm 설치 후에만 pnpm store 경로를 조회하여 캐시할 수 있다.
+      - name: Restore pnpm cache
         uses: actions/setup-node@v7
         with:
           node-version-file: frontend/.nvmrc
