@@ -5,11 +5,14 @@ import com.gachi.gacha.server.common.infra.application.MultipartUploader;
 import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.file.application.dto.FileUploadInfo;
 import com.gachi.gacha.server.file.exception.FileInvalidValueException;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileService {
@@ -21,14 +24,29 @@ public class FileService {
     public List<FileUploadInfo> uploadFiles(final List<MultipartFile> files) {
         validateFileCount(files);
 
-        return files.stream()
-                .map(this::uploadSingleFile)
-                .toList();
+        List<FileUploadInfo> uploaded = new ArrayList<>();
+        try {
+            for (MultipartFile file : files) {
+                uploaded.add(uploadSingleFile(file));
+            }
+            return uploaded;
+        } catch (RuntimeException e) {
+            uploaded.forEach(info -> deleteQuietly(info.url()));
+            throw e;
+        }
     }
 
     private FileUploadInfo uploadSingleFile(final MultipartFile file) {
         String url = multipartUploader.upload(file, DomainType.CHAT);
         return FileUploadInfo.of(url, file);
+    }
+
+    private void deleteQuietly(final String fileUrl) {
+        try {
+            multipartUploader.delete(fileUrl);
+        } catch (RuntimeException e) {
+            log.error("업로드 실패 후 파일을 정리하지 못했습니다. url={}", fileUrl, e);
+        }
     }
 
     /**
