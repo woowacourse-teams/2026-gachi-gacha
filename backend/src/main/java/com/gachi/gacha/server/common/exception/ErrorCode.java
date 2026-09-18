@@ -46,9 +46,13 @@ public enum ErrorCode {
     INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUE03", "로그인 요청이 유효하지 않습니다. 다시 로그인해주세요."),
     OAUTH_AUTHENTICATION_DENIED(HttpStatus.UNAUTHORIZED, "AUE04", "로그인이 취소되었거나 실패했습니다. 다시 시도해주세요."),
 
+    // Category
+    CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CAE01", "존재하지 않는 카테고리입니다."),
+
     // Trade
     TRADE_NOT_FOUND(HttpStatus.NOT_FOUND, "TE001", "존재하지 않는 교환 게시글입니다."),
     INVALID_TRADE_POLICY(HttpStatus.BAD_REQUEST, "TE002", "유효하지 않은 교환 게시글 정보입니다."),
+    TRADE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "TE003", "본인이 작성한 교환 게시글만 수정하거나 삭제할 수 있습니다."),
 
     // Trade Image
     TRADE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "TIE01", "존재하지 않는 교환 게시글 사진입니다."),
