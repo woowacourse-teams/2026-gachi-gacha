@@ -35,10 +35,13 @@ public enum ErrorCode {
     // S3
     S3_IMAGE_INVALID_POLICY(HttpStatus.BAD_REQUEST, "S3E01", "지원하지 않는 이미지 형식입니다."),
     S3_IMAGE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E02", "이미지 파일을 읽는 중 오류가 발생했습니다."),
-    S3_IMAGE_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E03", "이미지 업로드 중 오류가 발생했습니다."),
-    S3_IMAGE_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E04", "이미지 삭제 중 오류가 발생했습니다."),
-    S3_IMAGE_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E05", "이미지를 휴지통으로 이동하는 중 오류가 발생했습니다."),
-    S3_IMAGE_DOWNLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E06", "원본 이미지를 다운로드하는 중 오류가 발생했습니다."),
+    S3_IMAGE_DOWNLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E03", "원본 이미지를 다운로드하는 중 오류가 발생했습니다."),
+    S3_UPLOAD_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E04", "파일 업로드 중 오류가 발생했습니다."),
+    S3_DELETE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E05", "파일 삭제 중 오류가 발생했습니다."),
+    S3_MOVE_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S3E06", "파일을 휴지통으로 이동하는 중 오류가 발생했습니다."),
+
+    // File
+    FILE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "FE001", "한 번에 업로드할 수 있는 파일 개수를 초과했습니다."),
 
     // Member
     UNSUPPORTED_TYPE_ERROR(HttpStatus.BAD_REQUEST, "AUE01", "지원하지 않는 소셜 로그인 타입입니다."),
@@ -59,7 +62,7 @@ public enum ErrorCode {
     KAKAO_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "KE02", "카카오 서버와 통신 중 오류가 발생했습니다."),
 
     //naver
-    NAVER_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "NE01",  "네이버 인증에 실패했습니다. 다시 로그인해주세요."),
+    NAVER_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "NE01", "네이버 인증에 실패했습니다. 다시 로그인해주세요."),
     NAVER_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "NE02", "네이버 서버와 통신 중 오류가 발생했습니다.");
 
     private final HttpStatus status;

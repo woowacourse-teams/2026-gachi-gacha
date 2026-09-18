@@ -8,12 +8,14 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ImageFormat {
+public enum MultipartFormat {
     PNG("image/png", "png"),
     JPG("image/jpeg", "jpg"),
     JPEG("image/jpeg", "jpeg"),
     GIF("image/gif", "gif"),
-    WEBP("image/webp", "webp");
+    WEBP("image/webp", "webp"),
+    MP4("video/mp4", "mp4"),
+    MOV("video/quicktime", "mov");
 
     private final String contentType;
     private final String extension;
@@ -34,7 +36,7 @@ public enum ImageFormat {
                 .anyMatch(type -> type.extension.equalsIgnoreCase(extension));
     }
 
-    public static ImageFormat fromContentType(final String contentType) {
+    public static MultipartFormat fromContentType(final String contentType) {
         return Arrays.stream(values())
                 .filter(type -> type.contentType.equalsIgnoreCase(contentType))
                 .findFirst()
