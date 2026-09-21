@@ -22,7 +22,6 @@ export interface KakaoMapProps {
   level?: number;
   label?: string;
   onMapReady?: (map: kakao.maps.Map | null) => void;
-  onCurrentLocationChange?: (coordinate: MapCoordinate) => void;
 }
 
 const DEFAULT_MAP_LEVEL = 4;
@@ -32,7 +31,6 @@ export function KakaoMap({
   level = DEFAULT_MAP_LEVEL,
   label = '가챠 매장 지도',
   onMapReady,
-  onCurrentLocationChange,
 }: KakaoMapProps) {
   const { containerRef, mapState, retryMap } = useKakaoMap({ center, level });
   const { locationState, requestCurrentLocation } = useCurrentLocation();
@@ -40,13 +38,10 @@ export function KakaoMap({
   const map = mapState.status === 'success' ? mapState.data : null;
   const currentLocation =
     locationState.status === 'success' ? locationState.data : null;
-  const onCurrentLocationChangeRef = useRef(onCurrentLocationChange);
-  const reportedLocationRef = useRef<MapCoordinate | null>(null);
 
   useCurrentLocationMarker({ coordinate: currentLocation, map });
 
   onMapReadyRef.current = onMapReady;
-  onCurrentLocationChangeRef.current = onCurrentLocationChange;
 
   useEffect(() => {
     if (mapState.status !== 'success') {
@@ -59,18 +54,6 @@ export function KakaoMap({
       onMapReadyRef.current?.(null);
     };
   }, [mapState]);
-
-  useEffect(() => {
-    if (
-      locationState.status !== 'success' ||
-      reportedLocationRef.current === locationState.data
-    ) {
-      return;
-    }
-
-    reportedLocationRef.current = locationState.data;
-    onCurrentLocationChangeRef.current?.(locationState.data);
-  }, [locationState]);
 
   useEffect(() => {
     if (
