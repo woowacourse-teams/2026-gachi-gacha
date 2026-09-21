@@ -21,6 +21,8 @@ import software.amazon.awssdk.core.sync.RequestBody;
 @RequiredArgsConstructor
 public class MultipartUploader {
 
+    private static final String FILE_EXTENSION = ".";
+
     private final S3Uploader s3Uploader;
 
     public String upload(final MultipartFile file, final DomainType domainType) {
@@ -64,11 +66,11 @@ public class MultipartUploader {
      * 원본 파일명에서 확장자만 뽑아 화이트리스트로 검증한다. 원본 파일명 자체는 키에 사용하지 않는다.
      */
     private String validateExtension(final String originalFileName) {
-        if (originalFileName == null || !originalFileName.contains(".")) {
+        if (originalFileName == null || !originalFileName.contains(FILE_EXTENSION)) {
             throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
 
-        String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
+        String extension = originalFileName.substring(originalFileName.lastIndexOf(FILE_EXTENSION) + 1).toLowerCase();
         if (!MultipartFormat.isAllowedExtension(extension)) {
             throw new ImageInvalidValueException(ErrorCode.S3_IMAGE_INVALID_POLICY);
         }
