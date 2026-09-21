@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 104" role="img" aria-labelledby="title">
+  <title id="title">가치가챠 픽셀 G 심볼</title>
+  <g fill="#ea321f">
+    <path d="M24 0h48v8h12v8h8v24H76V24h-8V16H28v8h-8v56h8v8h40v-8h8V60H60V44h32v52h-8v8H72v-8H24v-8H12v-8H4V24h8v-8h12V0Z"/>
+    <path d="M44 34h8v10h10v8H52v10h8v8h-8v-8h-8v8h-8v-8h8V52H34v-8h10V34Z"/>
+  </g>
+</svg>

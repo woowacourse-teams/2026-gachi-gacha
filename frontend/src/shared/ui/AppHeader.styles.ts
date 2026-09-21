@@ -61,10 +61,11 @@ export const Brand = styled.a`
   }
 `;
 
-export const BrandIcon = styled.svg`
+export const BrandLogo = styled.img`
   width: 27px;
   height: 27px;
   flex: 0 0 auto;
+  object-fit: contain;
 `;
 
 export const SearchArea = styled.div`
