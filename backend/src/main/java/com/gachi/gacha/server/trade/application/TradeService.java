@@ -73,7 +73,7 @@ public class TradeService {
         return TradeInfo.of(trade, imageUrls);
     }
 
-    public List<TradeSummaryInfo> findAllByMemberId(Long memberId, TradeStatus status) {
+    public List<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status) {
         List<Trade> trades = (status == null) ? tradeJpaRepository.findAllByMemberId(memberId) :
                 tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status);
         List<Long> tradeIds = trades.stream()
