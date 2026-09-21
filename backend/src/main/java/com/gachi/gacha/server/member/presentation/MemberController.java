@@ -8,7 +8,10 @@ import com.gachi.gacha.server.member.application.dto.MemberInfo;
 import com.gachi.gacha.server.member.presentation.dto.MemberDeleteResponse;
 import com.gachi.gacha.server.member.presentation.dto.MemberRequest;
 import com.gachi.gacha.server.member.presentation.dto.MemberResponse;
+import com.gachi.gacha.server.member.presentation.dto.MyTradeResponse;
+import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +31,12 @@ public class MemberController {
     public BaseResponse<MemberResponse> readMember(@Auth Long memberId) {
         MemberInfo memberInfo = memberService.getMemberInfo(memberId);
         return BaseResponse.ok(MemberResponse.from(memberInfo));
+    }
+
+    @GetMapping("/me/trades")
+    public BaseResponse<MyTradeResponse> readMemberTrades(@Auth Long memberId) {
+        List<TradeSummaryInfo> tradeInfos = memberService.getMemberTradeInfo(memberId);
+        return BaseResponse.ok(MyTradeResponse.from(tradeInfos));
     }
 
     @PatchMapping("/me")

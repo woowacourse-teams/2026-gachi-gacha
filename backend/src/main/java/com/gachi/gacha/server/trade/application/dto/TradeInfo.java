@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.trade.application.dto;
 
+import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeCategory;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
@@ -29,7 +30,7 @@ public record TradeInfo(
     public static TradeInfo of(final Trade trade, final List<String> imageUrls) {
         List<String> categories = trade.getTradeCategories().stream()
                 .map(TradeCategory::getCategory)
-                .map(category -> category.getName())
+                .map(Category::getName)
                 .toList();
 
         return TradeInfo.builder()
