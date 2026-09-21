@@ -3,7 +3,6 @@ import {
   Address,
   Card,
   CardButton,
-  Distance,
   Heading,
   Information,
   SelectionHint,
@@ -19,24 +18,12 @@ export interface StoreCardProps {
   onSelect: (storeId: number) => void;
 }
 
-const METERS_PER_KILOMETER = 1000;
-
-function formatDistance(distanceInMeters: number): string {
-  if (distanceInMeters < METERS_PER_KILOMETER) {
-    return `${Math.round(distanceInMeters)}m`;
-  }
-
-  const distanceInKilometers = distanceInMeters / METERS_PER_KILOMETER;
-
-  return `${distanceInKilometers.toFixed(1)}km`;
-}
-
 export function StoreCard({
   store,
   isSelected = false,
   onSelect,
 }: StoreCardProps) {
-  const { storeId, name, thumbnailUrl, address, distance } = store;
+  const { storeId, name, thumbnailUrl, address } = store;
 
   return (
     <Card>
@@ -61,7 +48,6 @@ export function StoreCard({
         <Information>
           <Heading>
             <StoreName title={name}>{name}</StoreName>
-            <Distance>{formatDistance(distance)}</Distance>
           </Heading>
           <Address title={address}>{address}</Address>
           <SelectionHint>

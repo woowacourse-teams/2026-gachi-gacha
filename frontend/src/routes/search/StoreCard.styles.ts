@@ -77,10 +77,7 @@ export const Information = styled.div`
 `;
 
 export const Heading = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  min-width: 0;
 `;
 
 export const StoreName = styled.h3`
@@ -98,15 +95,6 @@ export const StoreName = styled.h3`
   @media (max-width: 767px) {
     font-size: 16px;
   }
-`;
-
-export const Distance = styled.span`
-  flex: 0 0 auto;
-  color: var(--color-primary, #d93b54);
-  font-size: 13px;
-  font-weight: 750;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.5;
 `;
 
 export const Address = styled.p`
