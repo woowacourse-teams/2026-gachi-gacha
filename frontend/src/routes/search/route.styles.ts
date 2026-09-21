@@ -18,6 +18,29 @@ export const PageTitle = styled.h1`
   border: 0;
 `;
 
+export const SearchToolbar = styled.div`
+  position: sticky;
+  z-index: 40;
+  top: 0;
+  display: flex;
+  min-height: 76px;
+  padding: 12px 32px;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
+  background: rgb(255 255 255 / 96%);
+  backdrop-filter: blur(12px);
+
+  @media (max-width: 767px) {
+    min-height: 64px;
+    padding: 8px 16px;
+  }
+`;
+
+export const SearchControl = styled.div`
+  width: min(720px, 100%);
+`;
+
 export const SelectedGachaArea = styled.div`
   padding-top: 24px;
 
