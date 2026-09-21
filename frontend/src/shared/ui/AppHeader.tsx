@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import gachiGachaLogoSymbol from '@/assets/gachi-gacha-logo-symbol.svg';
+import gachiGachaLogo from '@/assets/gachi-gacha-logo.png';
 
 import {
   Brand,
@@ -28,7 +28,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
     <Header>
       <HeaderContent>
         <Brand href="/" aria-label="GachiGacha 홈">
-          <BrandLogo src={gachiGachaLogoSymbol} alt="" aria-hidden="true" />
+          <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
           <span>GachiGacha</span>
         </Brand>
 

@@ -62,8 +62,8 @@ export const Brand = styled.a`
 `;
 
 export const BrandLogo = styled.img`
-  width: 27px;
-  height: 27px;
+  width: auto;
+  height: 29px;
   flex: 0 0 auto;
   object-fit: contain;
 `;
