@@ -81,6 +81,20 @@ type Story = StoryObj<typeof meta>;
 
 export const Success: Story = {};
 
+export const NoSelection: Story = {
+  args: {
+    search: '',
+  },
+};
+
+export const MobileSuccess: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
+
 export const EmptyStores: Story = {
   args: {
     search: '?gachaId=12',
