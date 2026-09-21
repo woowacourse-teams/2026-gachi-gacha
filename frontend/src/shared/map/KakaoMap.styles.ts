@@ -28,6 +28,29 @@ export const MapCanvas = styled.div`
   inset: 0;
 `;
 
+export const MapControls = styled.div`
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+`;
+
+export const LocationErrorMessage = styled.p`
+  max-width: min(280px, calc(100vw - 72px));
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgb(217 59 84 / 18%);
+  border-radius: 12px;
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 5px 16px rgb(36 33 34 / 12%);
+  color: var(--color-primary, #d93b54);
+  font-size: 13px;
+  line-height: 1.5;
+`;
+
 export const StatusLayer = styled.div`
   position: absolute;
   inset: 0;
