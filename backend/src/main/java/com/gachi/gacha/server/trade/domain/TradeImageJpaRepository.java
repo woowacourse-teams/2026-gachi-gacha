@@ -6,5 +6,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface TradeImageJpaRepository extends JpaRepository<TradeImage, Long> {
-    List<TradeImage> findAllByTradeId(final Long tradeId);
+
+    List<TradeImage> findAllByTradeIdOrderByIdAsc(final Long tradeId);
+
+    List<TradeImage> findAllByTradeIdInOrderByIdAsc(final List<Long> tradeIds);
 }

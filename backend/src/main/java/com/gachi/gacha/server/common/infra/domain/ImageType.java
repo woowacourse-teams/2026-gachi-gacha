@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ImageType {
     STORE("매장", "store"),
-    GACHA("가챠", "gacha");
+    GACHA("가챠", "gacha"),
+    TRADE("교환 게시글", "trade");
 
     private final String label;
     private final String folderName;
