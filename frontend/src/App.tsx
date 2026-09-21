@@ -1,5 +1,7 @@
 import { lazy, Suspense } from 'react';
 
+import { GlobalStyles } from '@/shared/ui/GlobalStyles';
+
 const SearchRoute = lazy(async () => {
   const routeModule = await import('@/routes/search/route');
 
@@ -7,13 +9,17 @@ const SearchRoute = lazy(async () => {
 });
 
 export default function App() {
-  if (window.location.pathname === '/search') {
-    return (
+  const route =
+    window.location.pathname === '/search' ? (
       <Suspense fallback={<p role="status">검색 결과를 준비하고 있어요.</p>}>
         <SearchRoute />
       </Suspense>
-    );
-  }
+    ) : null;
 
-  return null;
+  return (
+    <>
+      <GlobalStyles />
+      {route}
+    </>
+  );
 }
