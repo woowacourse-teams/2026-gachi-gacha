@@ -14,6 +14,7 @@ import {
 } from './KakaoMap.styles';
 import type { MapCoordinate } from './mapCoordinateType';
 import { useCurrentLocation } from './useCurrentLocation';
+import { useCurrentLocationMarker } from './useCurrentLocationMarker';
 import { useKakaoMap } from './useKakaoMap';
 
 export interface KakaoMapProps {
@@ -34,6 +35,11 @@ export function KakaoMap({
   const { containerRef, mapState, retryMap } = useKakaoMap({ center, level });
   const { locationState, requestCurrentLocation } = useCurrentLocation();
   const onMapReadyRef = useRef(onMapReady);
+  const map = mapState.status === 'success' ? mapState.data : null;
+  const currentLocation =
+    locationState.status === 'success' ? locationState.data : null;
+
+  useCurrentLocationMarker({ coordinate: currentLocation, map });
 
   onMapReadyRef.current = onMapReady;
 
