@@ -1,14 +1,9 @@
 import { createStoreDetailUrl } from '@/domains/store/storeRoute';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
+import { AppHeader } from '@/shared/ui/AppHeader';
 
-import {
-  Page,
-  PageTitle,
-  SearchControl,
-  SearchToolbar,
-  SelectedGachaArea,
-} from './route.styles';
+import { Page, PageTitle, SelectedGachaArea } from './route.styles';
 import { createSearchResultsUrl } from './searchParams';
 import { SelectedGachaSummary } from './SelectedGachaSummary';
 import { StoreResultsSection } from './StoreResultsSection';
@@ -61,11 +56,10 @@ export function SearchRoute({
   return (
     <Page>
       <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
-      <SearchToolbar>
-        <SearchControl>
-          <GachaSearchBar onSelect={onSelectGacha} />
-        </SearchControl>
-      </SearchToolbar>
+      <AppHeader
+        currentPath="/search"
+        search={<GachaSearchBar onSelect={onSelectGacha} />}
+      />
       <StoreResultsSection
         center={searchCenter}
         storesState={storesState}
