@@ -1,8 +1,8 @@
 package com.gachi.gacha.server.trade.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.common.infra.application.ImageUploader;
-import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.MultipartUploader;
+import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
@@ -46,11 +46,8 @@ public class TradeService {
     private final TradeImageJpaRepository tradeImageRepository;
     private final CategoryJpaRepository categoryRepository;
     private final MemberRepository memberRepository;
-    private final ImageUploader imageUploader;
+    private final MultipartUploader multipartUploader;
     private final S3TransactionManager s3TransactionManager;
-
-    @Value("${cloud.aws.s3.folder}")
-    private String s3RootFolder;
 
     @Transactional
     public TradeInfo createTrade(
@@ -165,7 +162,7 @@ public class TradeService {
         tradeRepository.delete(trade);
 
         // 사용자가 올린 콘텐츠라 오삭제·신고 대응 여지를 남기기 위해 완전 삭제가 아닌 휴지통으로 옮긴다.
-        s3TransactionManager.trashImagesAfterRemoved(ImageType.TRADE, tradeId, imageUrls);
+        s3TransactionManager.trashImagesAfterRemoved(DomainType.TRADE, tradeId, imageUrls);
     }
 
     /**
@@ -215,11 +212,10 @@ public class TradeService {
         }
 
         List<String> uploadedUrls = new ArrayList<>();
-        s3TransactionManager.deleteImagesOnRollback(ImageType.TRADE, trade.getId(), uploadedUrls);
+        s3TransactionManager.deleteImagesOnRollback(DomainType.TRADE, trade.getId(), uploadedUrls);
 
-        String path = ImageType.TRADE.buildPath(s3RootFolder);
         for (MultipartFile image : images) {
-            String imageUrl = imageUploader.upload(image, path);
+            String imageUrl = multipartUploader.upload(image, DomainType.TRADE);
             uploadedUrls.add(imageUrl);
             tradeImageRepository.save(TradeImage.builder()
                     .trade(trade)
@@ -243,7 +239,7 @@ public class TradeService {
                 .map(TradeImage::getImageUrl)
                 .toList();
         tradeImageRepository.deleteAll(oldImages);
-        s3TransactionManager.trashImagesAfterRemoved(ImageType.TRADE, trade.getId(), oldImageUrls);
+        s3TransactionManager.trashImagesAfterRemoved(DomainType.TRADE, trade.getId(), oldImageUrls);
 
         return uploadImages(trade, images);
     }
