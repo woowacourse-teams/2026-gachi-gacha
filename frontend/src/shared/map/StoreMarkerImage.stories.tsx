@@ -27,18 +27,6 @@ function StoreMarkerImagePreview({
             'linear-gradient(90deg, transparent 48%, #fff 48%, #fff 52%, transparent 52%), linear-gradient(transparent 47%, #fff 47%, #fff 53%, transparent 53%), #e8e5dc',
         }}
       >
-        <span
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: coordinate.y - 2,
-            left: coordinate.x - 2,
-            width: 4,
-            height: 4,
-            borderRadius: '50%',
-            background: '#d93b54',
-          }}
-        />
         <img
           src={markerImage.src}
           width={markerImage.width}
