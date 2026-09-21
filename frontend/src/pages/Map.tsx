@@ -8,6 +8,14 @@ import { revealPosition } from '@/components/kakaoMap/revealPosition';
 import StoreMarker from '@/components/kakaoMap/StoreMarker';
 import type { LatLngLiteral } from '@/components/kakaoMap/useKakaoMap';
 import {
+  BuildingFloorsOverlay,
+  BuildingMarker,
+  findBuildingOf,
+  GACHA_BUILDINGS,
+  GUKJE_ELECTRONICS_CENTER_FLOORS,
+  type GachaBuilding,
+} from '@/features/building';
+import {
   getBottomSheetCoveredHeight,
   StoreDetailSheetContainer,
   useStoreDetailSheet,
@@ -94,7 +102,25 @@ export default function MapPage() {
 
   const mapRef = useRef<kakao.maps.Map | null>(null);
 
+  /** 층 화면을 열어 둔 건물. 안 열려 있으면 null. */
+  const [openBuilding, setOpenBuilding] = useState<GachaBuilding | null>(null);
+
   const stores = nearbyStores.status === 'success' ? nearbyStores.data : [];
+
+  /**
+   * 건물에 속한 매장은 개별 마커로 그리지 않는다. 같은 좌표에 마커가 포개지는
+   * 걸 없애려고 건물 마커를 두는 것이라, 밑에 그대로 깔면 달라지는 게 없다.
+   */
+  const standaloneStores = stores.filter(
+    (store) => findBuildingOf(store) === null,
+  );
+
+  /** 이번 검색 결과에 매장이 잡힌 건물만 그린다. 반경 밖 건물까지 띄우지 않는다. */
+  const visibleBuildings = GACHA_BUILDINGS.filter((building) =>
+    stores.some(
+      (store) => findBuildingOf(store)?.buildingId === building.buildingId,
+    ),
+  );
 
   const handleSearchCurrentArea = useCallback(() => {
     const map = mapRef.current;
@@ -135,7 +161,15 @@ export default function MapPage() {
           mapRef.current = map;
         }}
       >
-        {stores.map((store) => {
+        {visibleBuildings.map((building) => (
+          <BuildingMarker
+            key={building.buildingId}
+            building={building}
+            onClick={() => setOpenBuilding(building)}
+          />
+        ))}
+
+        {standaloneStores.map((store) => {
           const position = { lat: store.latitude, lng: store.longitude };
 
           return (
@@ -157,6 +191,14 @@ export default function MapPage() {
         onRetry={nearbyStores.retry}
         onSearch={handleSearchCurrentArea}
       />
+
+      {openBuilding !== null && (
+        <BuildingFloorsOverlay
+          building={openBuilding}
+          floors={GUKJE_ELECTRONICS_CENTER_FLOORS}
+          onClose={() => setOpenBuilding(null)}
+        />
+      )}
 
       <StoreDetailSheetContainer
         distanceMeters={selection?.distanceMeters}

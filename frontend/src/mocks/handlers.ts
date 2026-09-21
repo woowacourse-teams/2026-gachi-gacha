@@ -40,11 +40,32 @@ const mockStoreLocations: MockStoreLocation[] = [
     latitude: 37.5569164654944,
     longitude: 126.925392965,
   },
+  // 아래는 모두 국제전자센터 안이다. 실제로는 한 건물에 70곳 넘게 있고 좌표를
+  // 거의 공유해서, 개별 마커로 두면 그대로 포개진다. 건물 마커가 이걸 하나로
+  // 묶는지 보려면 목업에도 겹치는 매장이 여럿 있어야 한다.
   {
     storeId: 4,
     thumbnailUrl: '',
     latitude: 37.4847435,
     longitude: 127.0178182,
+  },
+  {
+    storeId: 5,
+    thumbnailUrl: '',
+    latitude: 37.4847435,
+    longitude: 127.0178182,
+  },
+  {
+    storeId: 6,
+    thumbnailUrl: '',
+    latitude: 37.4847612,
+    longitude: 127.0177341,
+  },
+  {
+    storeId: 7,
+    thumbnailUrl: '',
+    latitude: 37.4847198,
+    longitude: 127.0178904,
   },
 ];
 

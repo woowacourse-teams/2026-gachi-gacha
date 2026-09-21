@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 
-import { useBackClose } from './useBackClose';
+import { useBackClose } from '@/hooks/useBackClose';
+
 import type { BottomSheetState } from '../model/storeDetail';
 
 export interface StorePinSelection {
