@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 
 import {
   SearchForm,
@@ -40,10 +40,22 @@ export function GachaSearchBar({
       }
     }
 
+    function handleEscapeKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key !== 'Escape') {
+        return;
+      }
+
+      event.preventDefault();
+      setIsOpen(false);
+      window.requestAnimationFrame(() => inputRef.current?.focus());
+    }
+
     document.addEventListener('pointerdown', handleOutsidePointerDown);
+    document.addEventListener('keydown', handleEscapeKeyDown);
 
     return () => {
       document.removeEventListener('pointerdown', handleOutsidePointerDown);
+      document.removeEventListener('keydown', handleEscapeKeyDown);
     };
   }, [isOpen]);
 
@@ -71,23 +83,13 @@ export function GachaSearchBar({
     window.requestAnimationFrame(() => inputRef.current?.focus());
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== 'Escape' || !isOpen) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    closeSearchResults();
-  }
-
   function handleSelect(gachaId: number) {
     setIsOpen(false);
     onSelect(gachaId);
   }
 
   return (
-    <SearchRoot ref={rootRef} onKeyDown={handleKeyDown}>
+    <SearchRoot ref={rootRef}>
       <SearchForm role="search" onSubmit={handleSubmit}>
         <SearchIcon viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle
