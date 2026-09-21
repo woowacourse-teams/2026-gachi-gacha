@@ -10,7 +10,7 @@ public record MyTradeResponse(
         int count,
         List<TradeSummaryResponse> trades
 ) {
-    public static MyTradeResponse from(List<TradeSummaryInfo> tradeInfos) {
+    public static MyTradeResponse from(final List<TradeSummaryInfo> tradeInfos) {
         return MyTradeResponse.builder()
                 .count(tradeInfos.size())
                 .trades(

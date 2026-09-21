@@ -33,8 +33,8 @@ public class OauthController {
 
     @GetMapping("/{provider}")
     public ResponseEntity<Void> redirectAuthCodeRequestUrl(
-            @PathVariable OauthProviderType provider,
-            HttpSession session
+            @PathVariable final OauthProviderType provider,
+            final HttpSession session
     ) {
         String nonce = oauthNonceSessionManager.issue(session);
         String redirectUrl = oauthService.getAuthCodeRequestUrl(provider, nonce);
@@ -44,12 +44,12 @@ public class OauthController {
 
     @GetMapping("/login/{provider}")
     public BaseResponse<LoginResponse> login(
-            @PathVariable OauthProviderType provider,
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String state,
-            @RequestParam(required = false) String error,
-            @RequestParam(required = false) String error_description,
-            HttpSession session
+            @PathVariable final OauthProviderType provider,
+            @RequestParam(required = false) final String code,
+            @RequestParam(required = false) final String state,
+            @RequestParam(required = false) final String error,
+            @RequestParam(required = false) final String error_description,
+            final HttpSession session
     ) {
         String nonce = oauthNonceSessionManager.consume(session);
         if (provider.equals(OauthProviderType.NAVER) && !nonce.equals(state)) {

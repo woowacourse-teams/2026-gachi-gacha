@@ -44,7 +44,7 @@ public class MemberController {
     public BaseResponse<Page<TradeSummaryResponse>> readMemberTrades(
             @Auth final Long memberId,
             @RequestParam(required = false) final TradeStatus status,
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) final Pageable pageable
     ) {
         Page<TradeSummaryInfo> tradeInfos = memberService.getMemberTradeInfo(memberId, status, pageable);
         return BaseResponse.ok(tradeInfos.map(TradeSummaryResponse::from));
@@ -52,15 +52,15 @@ public class MemberController {
 
     @PatchMapping("/me")
     public BaseResponse<MemberResponse> updateMember(
-            @Auth Long memberId,
-            @Valid @RequestBody MemberRequest memberRequest
+            @Auth final Long memberId,
+            @Valid @RequestBody final MemberRequest memberRequest
     ) {
         MemberInfo memberInfo = memberService.modifyMember(memberId, memberRequest.toCommand());
         return BaseResponse.updated(MemberResponse.from(memberInfo));
     }
 
     @DeleteMapping("/me")
-    public BaseResponse<MemberDeleteResponse> deleteMember(@Auth Long memberId) {
+    public BaseResponse<MemberDeleteResponse> deleteMember(@Auth final Long memberId) {
         MemberDeleteResult result = memberService.removeMember(memberId);
         return BaseResponse.deleted(MemberDeleteResponse.from(result));
     }

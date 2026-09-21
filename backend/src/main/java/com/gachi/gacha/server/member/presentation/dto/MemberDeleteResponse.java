@@ -7,7 +7,7 @@ import lombok.Builder;
 public record MemberDeleteResponse(
         Long memberId
 ) {
-    public static MemberDeleteResponse from(MemberDeleteResult result) {
+    public static MemberDeleteResponse from(final MemberDeleteResult result) {
         return MemberDeleteResponse.builder()
                 .memberId(result.memberId())
                 .build();

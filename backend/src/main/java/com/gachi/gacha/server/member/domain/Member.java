@@ -44,7 +44,7 @@ public class Member extends BaseTimeEntity {
 
     private LocalDateTime deletedAt;
 
-    public void updateProfile(String nickname, String profileImageUrl, String desireTradeLocation) {
+    public void updateProfile(final String nickname, final String profileImageUrl, final String desireTradeLocation) {
         this.nickname = nickname;
         this.profileImageUrl = profileImageUrl;
         this.desireTradeLocation = desireTradeLocation;
