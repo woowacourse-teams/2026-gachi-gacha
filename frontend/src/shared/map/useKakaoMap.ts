@@ -100,8 +100,15 @@ export function useKakaoMap({
     mapState.data.panTo(
       new window.kakao.maps.LatLng(center.latitude, center.longitude),
     );
+  }, [center.latitude, center.longitude, mapState]);
+
+  useEffect(() => {
+    if (mapState.status !== 'success') {
+      return;
+    }
+
     mapState.data.setLevel(level);
-  }, [center.latitude, center.longitude, level, mapState]);
+  }, [level, mapState]);
 
   return { containerRef, mapState, retryMap };
 }
