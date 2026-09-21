@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import gachiGachaLogo from '@/assets/gachi-gacha-logo.png';
+import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 
 import {
   Brand,

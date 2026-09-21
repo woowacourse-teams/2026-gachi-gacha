@@ -1,4 +1,4 @@
-import gachiGachaLogo from '@/assets/gachi-gacha-logo.png';
+import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 
 import {
   LoadingLogo,
