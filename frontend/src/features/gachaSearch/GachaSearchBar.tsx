@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 
 import {
@@ -19,11 +19,33 @@ export function GachaSearchBar({
   initialQuery = '',
   onSelect,
 }: GachaSearchBarProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const popoverId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState(initialQuery);
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    function handleOutsidePointerDown(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !rootRef.current?.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handleOutsidePointerDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handleOutsidePointerDown);
+    };
+  }, [isOpen]);
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
     setInputValue(event.currentTarget.value);
@@ -65,7 +87,7 @@ export function GachaSearchBar({
   }
 
   return (
-    <SearchRoot onKeyDown={handleKeyDown}>
+    <SearchRoot ref={rootRef} onKeyDown={handleKeyDown}>
       <SearchForm role="search" onSubmit={handleSubmit}>
         <SearchIcon viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle
