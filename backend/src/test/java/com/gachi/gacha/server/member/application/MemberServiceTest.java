@@ -7,7 +7,7 @@ import com.gachi.gacha.server.member.application.dto.MemberDeleteResult;
 import com.gachi.gacha.server.member.application.dto.MemberInfo;
 import com.gachi.gacha.server.member.application.dto.MemberUpdateCommand;
 import com.gachi.gacha.server.member.domain.Member;
-import com.gachi.gacha.server.member.domain.MemberRepository;
+import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.member.domain.exception.MemberNotFoundException;
@@ -27,7 +27,7 @@ class MemberServiceTest {
     private MemberService memberService;
 
     @Autowired
-    private MemberRepository memberRepository;
+    private MemberJpaRepository memberJpaRepository;
 
     private Member savedMember;
 
@@ -40,7 +40,7 @@ class MemberServiceTest {
                 .profileImageUrl("https://image.com/profile.png")
                 .desireTradeLocation("서울시 강남구")
                 .build();
-        savedMember = memberRepository.save(member);
+        savedMember = memberJpaRepository.save(member);
     }
 
     @Nested
@@ -88,7 +88,7 @@ class MemberServiceTest {
             assertThat(result.nickname()).isEqualTo("newNickname");
             assertThat(result.profileImageUrl()).isEqualTo("https://image.com/new.png");
             assertThat(result.desireTradeLocation()).isEqualTo("서울시 서초구");
-            Member reloaded = memberRepository.getMemberById(savedMember.getId());
+            Member reloaded = memberJpaRepository.getMemberById(savedMember.getId());
             assertThat(reloaded.getNickname()).isEqualTo("newNickname");
             assertThat(reloaded.getProfileImageUrl()).isEqualTo("https://image.com/new.png");
             assertThat(reloaded.getDesireTradeLocation()).isEqualTo("서울시 서초구");
@@ -108,7 +108,7 @@ class MemberServiceTest {
             // then
             assertThat(result.memberId()).isEqualTo(savedMember.getId());
 
-            assertThatThrownBy(() -> memberRepository.getMemberById(savedMember.getId()))
+            assertThatThrownBy(() -> memberJpaRepository.getMemberById(savedMember.getId()))
                     .isInstanceOf(MemberNotFoundException.class);
         }
     }
