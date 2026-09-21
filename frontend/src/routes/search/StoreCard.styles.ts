@@ -11,7 +11,7 @@ export const Card = styled.article`
 export const CardButton = styled.button<{ $isSelected: boolean }>`
   display: grid;
   width: 100%;
-  padding: 20px 0;
+  padding: 20px;
   grid-template-columns: 168px minmax(0, 1fr);
   gap: 20px;
   border: 0;
