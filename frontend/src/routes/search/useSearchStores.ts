@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
@@ -11,9 +11,18 @@ type SettledSearchStoresState = Extract<
   { status: 'success' | 'error' }
 >;
 
+interface SearchStoresRequest extends NearbyStoreSearchParams {
+  attempt: number;
+}
+
 interface SettledSearchResult {
-  request: NearbyStoreSearchParams;
+  request: SearchStoresRequest;
   state: SettledSearchStoresState;
+}
+
+export interface UseSearchStoresResult {
+  storesState: AsyncState<NearbyStoresResponseDto>;
+  retryStores: () => void;
 }
 
 const DEFAULT_ERROR_MESSAGE = '주변 매장을 불러오지 못했습니다.';
@@ -49,14 +58,17 @@ async function loadSearchStores(
   }
 }
 
-export function useSearchStores(params: NearbyStoreSearchParams | null) {
+export function useSearchStores(
+  params: NearbyStoreSearchParams | null,
+): UseSearchStoresResult {
+  const [attempt, setAttempt] = useState(0);
   const [settledResult, setSettledResult] =
     useState<SettledSearchResult | null>(null);
   const gachaId = params?.gachaId;
   const latitude = params?.latitude;
   const longitude = params?.longitude;
   const radius = params?.radius;
-  const requestParams = useMemo<NearbyStoreSearchParams | null>(() => {
+  const requestParams = useMemo<SearchStoresRequest | null>(() => {
     if (
       gachaId === undefined ||
       latitude === undefined ||
@@ -71,8 +83,12 @@ export function useSearchStores(params: NearbyStoreSearchParams | null) {
       latitude,
       longitude,
       radius,
+      attempt,
     };
-  }, [gachaId, latitude, longitude, radius]);
+  }, [attempt, gachaId, latitude, longitude, radius]);
+  const retryStores = useCallback(() => {
+    setAttempt((currentAttempt) => currentAttempt + 1);
+  }, []);
 
   useEffect(() => {
     if (!requestParams) {
@@ -101,12 +117,12 @@ export function useSearchStores(params: NearbyStoreSearchParams | null) {
   }, [requestParams]);
 
   if (!requestParams) {
-    return IDLE_STATE;
+    return { storesState: IDLE_STATE, retryStores };
   }
 
   if (settledResult?.request !== requestParams) {
-    return LOADING_STATE;
+    return { storesState: LOADING_STATE, retryStores };
   }
 
-  return settledResult.state;
+  return { storesState: settledResult.state, retryStores };
 }
