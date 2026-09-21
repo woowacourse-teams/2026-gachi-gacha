@@ -41,7 +41,9 @@ export const ListArea = styled.div`
   overscroll-behavior: contain;
 
   @media (max-width: 767px) {
-    padding: 0 20px;
+    z-index: 2;
+    padding: 0 0 max(16px, env(safe-area-inset-bottom));
+    margin-top: -190px;
     overflow: visible;
   }
 `;

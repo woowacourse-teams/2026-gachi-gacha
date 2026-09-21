@@ -31,7 +31,7 @@ export const MapCanvas = styled.div`
 export const MapControls = styled.div`
   position: absolute;
   right: 18px;
-  bottom: 18px;
+  bottom: var(--map-controls-bottom, 18px);
   z-index: 2;
   display: grid;
   justify-items: end;

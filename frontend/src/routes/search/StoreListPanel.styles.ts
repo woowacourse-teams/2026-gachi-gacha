@@ -10,6 +10,10 @@ const shimmer = keyframes`
 export const Panel = styled.section`
   min-width: 0;
   color: var(--color-text, #242122);
+
+  @media (max-width: 767px) {
+    padding-bottom: 4px;
+  }
 `;
 
 export const Header = styled.div`
@@ -19,6 +23,18 @@ export const Header = styled.div`
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
+
+  @media (max-width: 767px) {
+    width: fit-content;
+    min-height: 38px;
+    padding: 0 14px;
+    margin: 0 16px 10px;
+    border: 1px solid rgb(36 33 34 / 9%);
+    border-radius: 999px;
+    background: rgb(255 255 255 / 94%);
+    box-shadow: 0 5px 16px rgb(36 33 34 / 12%);
+    backdrop-filter: blur(8px);
+  }
 `;
 
 export const Title = styled.h2`
@@ -38,10 +54,34 @@ export const List = styled.ul`
   padding: 0;
   margin: 0;
   list-style: none;
+
+  @media (max-width: 767px) {
+    display: grid;
+    padding: 0 16px 12px;
+    grid-auto-columns: min(380px, calc(100vw - 48px));
+    grid-auto-flow: column;
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-padding-inline: 16px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
 `;
 
 export const ListItem = styled.li`
   margin: 0;
+
+  @media (max-width: 767px) {
+    min-width: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
 `;
 
 export const StateArea = styled.div`
@@ -53,6 +93,16 @@ export const StateArea = styled.div`
   font-size: 14px;
   line-height: 1.6;
   text-align: center;
+
+  @media (max-width: 767px) {
+    min-height: 156px;
+    margin: 0 16px 12px;
+    border: 1px solid rgb(36 33 34 / 9%);
+    border-radius: 20px;
+    background: rgb(255 255 255 / 96%);
+    box-shadow: 0 8px 24px rgb(36 33 34 / 14%);
+    backdrop-filter: blur(8px);
+  }
 `;
 
 export const StateContent = styled.div`
@@ -91,6 +141,14 @@ export const LoadingList = styled.div`
   display: grid;
   padding: 20px 0;
   gap: 18px;
+
+  @media (max-width: 767px) {
+    padding: 0 16px 12px;
+    grid-auto-columns: min(380px, calc(100vw - 48px));
+    grid-auto-flow: column;
+    gap: 12px;
+    overflow: hidden;
+  }
 `;
 
 export const LoadingCard = styled.div`
@@ -99,6 +157,12 @@ export const LoadingCard = styled.div`
   background: linear-gradient(100deg, #eeeae8 20%, #f8f6f5 38%, #eeeae8 56%);
   background-size: 220% 100%;
   animation: ${shimmer} 1.4s ease-in-out infinite;
+
+  @media (max-width: 767px) {
+    border: 1px solid rgb(36 33 34 / 8%);
+    background-color: var(--color-surface, #ffffff);
+    box-shadow: 0 8px 24px rgb(36 33 34 / 12%);
+  }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;

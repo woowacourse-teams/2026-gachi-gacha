@@ -2,6 +2,10 @@ import styled from '@emotion/styled';
 
 export const Card = styled.article`
   border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
+
+  @media (max-width: 767px) {
+    border: 0;
+  }
 `;
 
 export const CardButton = styled.button<{ $isSelected: boolean }>`
@@ -35,9 +39,18 @@ export const CardButton = styled.button<{ $isSelected: boolean }>`
   }
 
   @media (max-width: 767px) {
-    padding: 16px 0;
+    min-height: 156px;
+    padding: 12px;
     grid-template-columns: 116px minmax(0, 1fr);
     gap: 14px;
+    border: 1px solid rgb(36 33 34 / 9%);
+    border-radius: 20px;
+    background: ${({ $isSelected }) =>
+      $isSelected
+        ? 'var(--color-primary-soft, #fbf0f2)'
+        : 'rgb(255 255 255 / 96%)'};
+    box-shadow: 0 8px 24px rgb(36 33 34 / 14%);
+    backdrop-filter: blur(8px);
   }
 `;
 
