@@ -32,6 +32,7 @@ import type { GachaSearchResult } from './gachaSearchResultType';
 import { getVisibleCategories } from './getVisibleCategories';
 
 export interface GachaSearchPopoverProps {
+  id?: string;
   query: string;
   searchState: AsyncState<GachaSearchResult>;
   hasMore?: boolean;
@@ -101,6 +102,7 @@ function LoadingContent() {
 }
 
 export function GachaSearchPopover({
+  id,
   query,
   searchState,
   hasMore = false,
@@ -127,7 +129,7 @@ export function GachaSearchPopover({
   }
 
   return (
-    <Popover aria-label="가챠 검색 결과">
+    <Popover id={id} aria-label="가챠 검색 결과">
       <Header>
         <div>
           <Title>

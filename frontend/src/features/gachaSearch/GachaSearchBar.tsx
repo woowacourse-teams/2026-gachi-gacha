@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent, KeyboardEvent } from 'react';
 
 import {
@@ -19,6 +19,8 @@ export function GachaSearchBar({
   initialQuery = '',
   onSelect,
 }: GachaSearchBarProps) {
+  const popoverId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = useState(initialQuery);
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -42,10 +44,19 @@ export function GachaSearchBar({
     setIsOpen(true);
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Escape') {
-      setIsOpen(false);
+  function closeSearchResults() {
+    setIsOpen(false);
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Escape' || !isOpen) {
+      return;
     }
+
+    event.preventDefault();
+    event.stopPropagation();
+    closeSearchResults();
   }
 
   function handleSelect(gachaId: number) {
@@ -54,7 +65,7 @@ export function GachaSearchBar({
   }
 
   return (
-    <SearchRoot>
+    <SearchRoot onKeyDown={handleKeyDown}>
       <SearchForm role="search" onSubmit={handleSubmit}>
         <SearchIcon viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle
@@ -72,21 +83,23 @@ export function GachaSearchBar({
           />
         </SearchIcon>
         <SearchInput
+          ref={inputRef}
           type="search"
           value={inputValue}
           placeholder="찾고 싶은 가챠를 검색"
           aria-label="가챠 검색어"
           aria-expanded={isOpen}
+          aria-controls={isOpen ? popoverId : undefined}
           onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
         />
         <SubmitButton type="submit">검색</SubmitButton>
       </SearchForm>
 
       {isOpen && (
         <GachaSearchPopoverContainer
+          id={popoverId}
           query={submittedQuery}
-          onClose={() => setIsOpen(false)}
+          onClose={closeSearchResults}
           onSelect={handleSelect}
         />
       )}

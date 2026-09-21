@@ -2,12 +2,14 @@ import { GachaSearchPopover } from './GachaSearchPopover';
 import { useGachaSearch } from './useGachaSearch';
 
 export interface GachaSearchPopoverContainerProps {
+  id?: string;
   query: string;
   onClose: () => void;
   onSelect: (gachaId: number) => void;
 }
 
 export function GachaSearchPopoverContainer({
+  id,
   query,
   onClose,
   onSelect,
@@ -23,6 +25,7 @@ export function GachaSearchPopoverContainer({
 
   return (
     <GachaSearchPopover
+      {...(id ? { id } : {})}
       query={query}
       searchState={searchState}
       hasMore={hasMore}
