@@ -9,7 +9,7 @@ public record MemberInfo(
         String profileImageUrl,
         String desireTradeLocation
 ) {
-    public static MemberInfo from(Member member) {
+    public static MemberInfo from(final Member member) {
         return MemberInfo.builder()
                 .nickname(member.getNickname())
                 .profileImageUrl(member.getProfileImageUrl())

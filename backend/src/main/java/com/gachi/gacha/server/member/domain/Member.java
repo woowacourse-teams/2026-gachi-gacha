@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.member.domain;
 
+import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
+
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
 import jakarta.persistence.Column;
@@ -44,9 +46,9 @@ public class Member extends BaseTimeEntity {
 
     private LocalDateTime deletedAt;
 
-    public void updateProfile(final String nickname, final String profileImageUrl, final String desireTradeLocation) {
-        this.nickname = nickname;
-        this.profileImageUrl = profileImageUrl;
-        this.desireTradeLocation = desireTradeLocation;
+    public void patch(final String nickname, final String profileImageUrl, final String desireTradeLocation) {
+        this.nickname = valueOrCurrent(nickname,  this.nickname);
+        this.profileImageUrl = valueOrCurrent(profileImageUrl, this.profileImageUrl);
+        this.desireTradeLocation = valueOrCurrent(desireTradeLocation, this.desireTradeLocation);
     }
 }

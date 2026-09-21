@@ -24,7 +24,7 @@ public class MemberService {
     @Transactional
     public MemberInfo modifyMember(final Long memberId, final MemberUpdateCommand command) {
         Member member = memberJpaRepository.getMemberById(memberId);
-        member.updateProfile(command.nickname(), command.profileImageUrl(), command.desireTradeLocation());
+        member.patch(command.nickname(), command.profileImageUrl(), command.desireTradeLocation());
         return MemberInfo.from(member);
     }
 
