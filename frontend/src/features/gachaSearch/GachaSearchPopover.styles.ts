@@ -7,7 +7,7 @@ export const Popover = styled.section`
   left: 50%;
   display: flex;
   width: min(960px, calc(100vw - 40px));
-  max-height: min(680px, calc(100vh - 120px));
+  height: min(620px, calc(100dvh - 120px));
   overflow: hidden;
   transform: translateX(-50%);
   flex-direction: column;
@@ -21,7 +21,7 @@ export const Popover = styled.section`
     position: fixed;
     inset: auto 0 0;
     width: auto;
-    max-height: 82dvh;
+    height: min(82dvh, 680px);
     transform: none;
     border-right: 0;
     border-bottom: 0;
@@ -91,8 +91,9 @@ export const CloseButton = styled.button`
 `;
 
 export const Content = styled.div`
-  min-height: 260px;
+  min-height: 0;
   padding: 20px 28px 28px;
+  flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
