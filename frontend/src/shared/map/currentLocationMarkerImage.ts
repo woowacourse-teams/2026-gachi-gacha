@@ -8,8 +8,8 @@ const currentLocationMarkerSvg = `
         <stop offset="66%" stop-color="#ffffff" stop-opacity="0.94" />
         <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
       </radialGradient>
-      <radialGradient id="location-core" cx="42%" cy="38%" r="62%">
-        <stop offset="0%" stop-color="#2f72dd" />
+      <radialGradient id="location-core" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#367de8" />
         <stop offset="52%" stop-color="#367de8" stop-opacity="0.98" />
         <stop offset="78%" stop-color="#5c94ea" stop-opacity="0.76" />
         <stop offset="100%" stop-color="#8ab4f3" stop-opacity="0.08" />
