@@ -18,6 +18,7 @@ import { useStoreSearchArea } from './useStoreSearchArea';
 
 export interface SearchRouteProps {
   search?: string;
+  onSelectGacha?: (gachaId: number) => void;
 }
 
 const HONGDAE_SEARCH_CENTER = {
@@ -37,6 +38,7 @@ function openGachaSearchResult(gachaId: number) {
 
 export function SearchRoute({
   search = window.location.search,
+  onSelectGacha = openGachaSearchResult,
 }: SearchRouteProps) {
   const { selectedGachaId, selectedGacha } = useSearchResults(search);
   const {
@@ -61,7 +63,7 @@ export function SearchRoute({
       <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
       <SearchToolbar>
         <SearchControl>
-          <GachaSearchBar onSelect={openGachaSearchResult} />
+          <GachaSearchBar onSelect={onSelectGacha} />
         </SearchControl>
       </SearchToolbar>
       <StoreResultsSection

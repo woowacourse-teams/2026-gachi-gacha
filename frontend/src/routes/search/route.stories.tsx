@@ -17,6 +17,7 @@ function startMockWorker() {
 
 function MockedSearchRoute(props: SearchRouteProps) {
   const [workerState, setWorkerState] = useState<MockWorkerState>('loading');
+  const [activeSearch, setActiveSearch] = useState(props.search ?? '');
 
   useEffect(() => {
     let isMounted = true;
@@ -50,7 +51,16 @@ function MockedSearchRoute(props: SearchRouteProps) {
     return <p>검색 결과 목 환경을 준비하지 못했습니다.</p>;
   }
 
-  return <SearchRoute {...props} />;
+  return (
+    <SearchRoute
+      {...props}
+      search={activeSearch}
+      onSelectGacha={(gachaId) => {
+        setActiveSearch(`?gachaId=${gachaId}`);
+        props.onSelectGacha?.(gachaId);
+      }}
+    />
+  );
 }
 
 const meta = {
