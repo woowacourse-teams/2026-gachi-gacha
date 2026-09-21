@@ -13,9 +13,9 @@ export const Summary = styled.section`
   padding: 18px 20px;
   align-items: center;
   gap: 16px;
-  border: 1px solid var(--color-border-subtle, #f0eeec);
+  border: 1px solid rgb(217 59 84 / 20%);
   border-radius: 18px;
-  background: var(--color-surface-muted, #faf9f8);
+  background: var(--color-primary-soft, #fbf0f2);
   color: var(--color-text, #242122);
 `;
 
