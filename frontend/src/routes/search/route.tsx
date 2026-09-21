@@ -1,3 +1,4 @@
+import { createStoreDetailUrl } from '@/domains/store/storeRoute';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 
 import { Page, PageTitle, SelectedGachaArea } from './route.styles';
@@ -17,6 +18,10 @@ const HONGDAE_SEARCH_CENTER = {
 } satisfies MapCoordinate;
 
 const STORE_SEARCH_RADIUS_METERS = 3000;
+
+function openStoreDetail(storeId: number) {
+  window.location.assign(createStoreDetailUrl(storeId));
+}
 
 export function SearchRoute({
   search = window.location.search,
@@ -46,6 +51,7 @@ export function SearchRoute({
         center={searchCenter}
         storesState={storesState}
         isSearchAreaChanged={isSearchAreaChanged}
+        onOpenStore={openStoreDetail}
         onRetry={retryStores}
         onSearchArea={commitViewportCenter}
         onViewportCenterChange={updateViewportCenter}

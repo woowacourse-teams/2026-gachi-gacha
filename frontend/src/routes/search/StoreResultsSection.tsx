@@ -22,6 +22,7 @@ export interface StoreResultsSectionProps {
   listHeader?: ReactNode;
   storesState: AsyncState<NearbyStoresResponseDto>;
   isSearchAreaChanged: boolean;
+  onOpenStore: (storeId: number) => void;
   onRetry: () => void;
   onSearchArea: () => void;
   onViewportCenterChange: (center: MapCoordinate) => void;
@@ -34,6 +35,7 @@ export function StoreResultsSection({
   listHeader,
   storesState,
   isSearchAreaChanged,
+  onOpenStore,
   onRetry,
   onSearchArea,
   onViewportCenterChange,
@@ -49,6 +51,7 @@ export function StoreResultsSection({
         <StoreListPanel
           storesState={storesState}
           selectedStoreId={selectedStoreId}
+          onOpenStore={onOpenStore}
           onSelectStore={selectStore}
           onRetry={onRetry}
         />

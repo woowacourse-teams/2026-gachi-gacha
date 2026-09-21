@@ -72,6 +72,7 @@ const meta = {
       longitude: 126.9238,
       distance: 120,
     },
+    onOpen: () => undefined,
     onSelect: () => undefined,
   },
 } satisfies Meta<typeof StoreCard>;

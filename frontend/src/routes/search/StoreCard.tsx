@@ -15,15 +15,25 @@ import {
 export interface StoreCardProps {
   store: NearbyStoreResponseDto;
   isSelected?: boolean;
+  onOpen: (storeId: number) => void;
   onSelect: (storeId: number) => void;
 }
 
 export function StoreCard({
   store,
   isSelected = false,
+  onOpen,
   onSelect,
 }: StoreCardProps) {
   const { storeId, name, thumbnailUrl, address } = store;
+  const handleClick = () => {
+    if (isSelected) {
+      onOpen(storeId);
+      return;
+    }
+
+    onSelect(storeId);
+  };
 
   return (
     <Card>
@@ -31,7 +41,12 @@ export function StoreCard({
         type="button"
         $isSelected={isSelected}
         aria-pressed={isSelected}
-        onClick={() => onSelect(storeId)}
+        aria-label={
+          isSelected
+            ? `${name} 매장 상세 페이지로 이동`
+            : `${name} 매장을 지도에서 선택`
+        }
+        onClick={handleClick}
       >
         <ThumbnailFrame>
           <ThumbnailFallback aria-hidden="true">G</ThumbnailFallback>
@@ -52,7 +67,7 @@ export function StoreCard({
           <Address title={address}>{address}</Address>
           <SelectionHint>
             {isSelected
-              ? '지도에서 선택한 매장'
+              ? '한 번 더 누르면 매장 상세로 이동 →'
               : '선택하면 지도에서 확인할 수 있어요'}
           </SelectionHint>
         </Information>

@@ -85,6 +85,7 @@ const meta = {
   args: {
     storesState: successState,
     selectedStoreId: null,
+    onOpenStore: () => undefined,
     onSelectStore: () => undefined,
     onRetry: () => undefined,
   },

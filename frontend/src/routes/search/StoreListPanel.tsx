@@ -20,6 +20,7 @@ import {
 export interface StoreListPanelProps {
   storesState: AsyncState<NearbyStoresResponseDto>;
   selectedStoreId: number | null;
+  onOpenStore: (storeId: number) => void;
   onSelectStore: (storeId: number) => void;
   onRetry: () => void;
 }
@@ -37,6 +38,7 @@ function StoreListLoading() {
 export function StoreListPanel({
   storesState,
   selectedStoreId,
+  onOpenStore,
   onSelectStore,
   onRetry,
 }: StoreListPanelProps) {
@@ -83,6 +85,7 @@ export function StoreListPanel({
                 <StoreCard
                   store={store}
                   isSelected={selectedStoreId === store.storeId}
+                  onOpen={onOpenStore}
                   onSelect={onSelectStore}
                 />
               </ListItem>
