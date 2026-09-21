@@ -5,6 +5,7 @@ import { SelectedGachaSummary } from './SelectedGachaSummary';
 import { StoreResultsSection } from './StoreResultsSection';
 import { useSearchResults } from './useSearchResults';
 import { useSearchStores } from './useSearchStores';
+import { useStoreSearchArea } from './useStoreSearchArea';
 
 export interface SearchRouteProps {
   search?: string;
@@ -21,13 +22,19 @@ export function SearchRoute({
   search = window.location.search,
 }: SearchRouteProps) {
   const { selectedGachaId, selectedGacha } = useSearchResults(search);
+  const {
+    searchCenter,
+    isSearchAreaChanged,
+    updateViewportCenter,
+    commitViewportCenter,
+  } = useStoreSearchArea(HONGDAE_SEARCH_CENTER);
   const storeSearchParams =
     selectedGachaId === null
       ? null
       : {
           gachaId: selectedGachaId,
-          latitude: HONGDAE_SEARCH_CENTER.latitude,
-          longitude: HONGDAE_SEARCH_CENTER.longitude,
+          latitude: searchCenter.latitude,
+          longitude: searchCenter.longitude,
           radius: STORE_SEARCH_RADIUS_METERS,
         };
   const { storesState, retryStores } = useSearchStores(storeSearchParams);
@@ -36,9 +43,12 @@ export function SearchRoute({
     <Page>
       <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
       <StoreResultsSection
-        center={HONGDAE_SEARCH_CENTER}
+        center={searchCenter}
         storesState={storesState}
+        isSearchAreaChanged={isSearchAreaChanged}
         onRetry={retryStores}
+        onSearchArea={commitViewportCenter}
+        onViewportCenterChange={updateViewportCenter}
         listHeader={
           selectedGacha.status === 'idle' ? null : (
             <SelectedGachaArea>

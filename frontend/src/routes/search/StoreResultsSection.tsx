@@ -16,7 +16,10 @@ export interface StoreResultsSectionProps {
   center: MapCoordinate;
   listHeader?: ReactNode;
   storesState: AsyncState<NearbyStoresResponseDto>;
+  isSearchAreaChanged: boolean;
   onRetry: () => void;
+  onSearchArea: () => void;
+  onViewportCenterChange: (center: MapCoordinate) => void;
 }
 
 const EMPTY_STORES: readonly NearbyStoreResponseDto[] = [];
@@ -25,7 +28,10 @@ export function StoreResultsSection({
   center,
   listHeader,
   storesState,
+  isSearchAreaChanged,
   onRetry,
+  onSearchArea,
+  onViewportCenterChange,
 }: StoreResultsSectionProps) {
   const stores =
     storesState.status === 'success' ? storesState.data.stores : EMPTY_STORES;
@@ -47,7 +53,10 @@ export function StoreResultsSection({
           center={center}
           storesState={storesState}
           selectedStoreId={selectedStoreId}
+          isSearchAreaChanged={isSearchAreaChanged}
           onSelectStore={selectStore}
+          onSearchArea={onSearchArea}
+          onViewportCenterChange={onViewportCenterChange}
         />
       </MapArea>
     </Section>
