@@ -10,6 +10,7 @@ import com.gachi.gacha.server.member.presentation.dto.MemberRequest;
 import com.gachi.gacha.server.member.presentation.dto.MemberResponse;
 import com.gachi.gacha.server.member.presentation.dto.MyTradeResponse;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
+import com.gachi.gacha.server.trade.domain.TradeStatus;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -34,8 +36,8 @@ public class MemberController {
     }
 
     @GetMapping("/me/trades")
-    public BaseResponse<MyTradeResponse> readMemberTrades(@Auth Long memberId) {
-        List<TradeSummaryInfo> tradeInfos = memberService.getMemberTradeInfo(memberId);
+    public BaseResponse<MyTradeResponse> readMemberTrades(@Auth Long memberId, @RequestParam(required = false) TradeStatus status) {
+        List<TradeSummaryInfo> tradeInfos = memberService.getMemberTradeInfo(memberId, status);
         return BaseResponse.ok(MyTradeResponse.from(tradeInfos));
     }
 

@@ -7,6 +7,7 @@ import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.TradeService;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
+import com.gachi.gacha.server.trade.domain.TradeStatus;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -39,7 +40,7 @@ public class MemberService {
         return new MemberDeleteResult(memberId);
     }
 
-    public List<TradeSummaryInfo> getMemberTradeInfo(Long memberId) {
-        return tradeService.findAllByMemberId(memberId);
+    public List<TradeSummaryInfo> getMemberTradeInfo(Long memberId, TradeStatus status) {
+        return tradeService.findAllByMemberId(memberId, status);
     }
 }

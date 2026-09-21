@@ -30,6 +30,8 @@ public interface TradeJpaRepository extends JpaRepository<Trade, Long>, JpaSpeci
 
     List<Trade> findAllByMemberId(final Long memberId);
 
+    List<Trade> findAllByMemberIdAndStatus(Long memberId, TradeStatus status);
+
     @Query("SELECT t FROM Trade t " +
             "LEFT JOIN FETCH t.tradeCategories tc " +
             "LEFT JOIN FETCH tc.category c " +
