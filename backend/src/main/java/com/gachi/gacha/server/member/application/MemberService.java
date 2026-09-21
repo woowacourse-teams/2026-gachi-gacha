@@ -8,7 +8,6 @@ import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.TradeService;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
