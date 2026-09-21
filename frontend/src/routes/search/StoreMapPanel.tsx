@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import { KakaoMap } from '@/shared/map/KakaoMap';
@@ -23,6 +23,45 @@ export interface StoreMapPanelProps {
 
 const EMPTY_STORES: readonly NearbyStoreResponseDto[] = [];
 
+function useVisibleMapStores(
+  storesState: AsyncState<NearbyStoresResponseDto>,
+): readonly NearbyStoreResponseDto[] {
+  const previousStoresRef = useRef(EMPTY_STORES);
+
+  useEffect(() => {
+    if (storesState.status === 'success') {
+      previousStoresRef.current = storesState.data.stores;
+    }
+  }, [storesState]);
+
+  if (storesState.status === 'success') {
+    return storesState.data.stores;
+  }
+
+  if (storesState.status === 'loading') {
+    return previousStoresRef.current;
+  }
+
+  return EMPTY_STORES;
+}
+
+function useVisibleMapCenter(
+  storesState: AsyncState<NearbyStoresResponseDto>,
+  requestedCenter: MapCoordinate,
+): MapCoordinate {
+  const previousCenterRef = useRef(requestedCenter);
+
+  useEffect(() => {
+    if (storesState.status !== 'loading') {
+      previousCenterRef.current = requestedCenter;
+    }
+  }, [requestedCenter, storesState.status]);
+
+  return storesState.status === 'loading'
+    ? previousCenterRef.current
+    : requestedCenter;
+}
+
 export function StoreMapPanel({
   center,
   storesState,
@@ -33,17 +72,17 @@ export function StoreMapPanel({
   onSearchArea,
 }: StoreMapPanelProps) {
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
-  const stores =
-    storesState.status === 'success' ? storesState.data.stores : EMPTY_STORES;
+  const stores = useVisibleMapStores(storesState);
   const selectedStore = stores.find(
     (store) => store.storeId === selectedStoreId,
   );
-  const mapCenter = selectedStore
+  const requestedCenter = selectedStore
     ? {
         latitude: selectedStore.latitude,
         longitude: selectedStore.longitude,
       }
     : center;
+  const mapCenter = useVisibleMapCenter(storesState, requestedCenter);
 
   useStoreMarkers({ map, stores, selectedStoreId, onSelectStore });
 
