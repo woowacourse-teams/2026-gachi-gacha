@@ -4,7 +4,7 @@ export const Header = styled.header`
   position: sticky;
   z-index: 40;
   top: 0;
-  border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
+  border-bottom: 2px solid var(--color-border, #e8e6e3);
   background: rgb(255 255 255 / 96%);
   backdrop-filter: blur(12px);
 `;
