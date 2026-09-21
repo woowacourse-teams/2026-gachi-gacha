@@ -103,6 +103,21 @@ export const SelectedStore: Story = {
   },
 };
 
+export const MobileCarousel: Story = {
+  decorators: [
+    (Story) => (
+      <div style={{ margin: '-40px -20px' }}>
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
+
 export const Idle: Story = {
   args: {
     storesState: {
