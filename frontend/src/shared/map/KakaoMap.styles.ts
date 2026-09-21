@@ -19,8 +19,10 @@ export const MapFrame = styled.section`
   width: 100%;
   min-height: 360px;
   height: 100%;
+  border: 1px solid rgb(36 33 34 / 10%);
   border-radius: 20px;
   background: var(--color-surface-muted, #f3f1ed);
+  box-shadow: 0 8px 28px rgb(36 33 34 / 9%);
 `;
 
 export const MapCanvas = styled.div`
