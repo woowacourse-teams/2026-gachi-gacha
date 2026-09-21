@@ -4,15 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.common.infra.application.ImageUploader;
-import com.gachi.gacha.server.common.infra.domain.ImageType;
+import com.gachi.gacha.server.common.infra.application.MultipartUploader;
+import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
@@ -70,7 +69,7 @@ class TradeServiceTest {
     private MemberRepository memberRepository;
 
     @Mock
-    private ImageUploader imageUploader;
+    private MultipartUploader multipartUploader;
 
     @Mock
     private S3TransactionManager s3TransactionManager;
@@ -82,7 +81,6 @@ class TradeServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(tradeService, "s3RootFolder", "gachigacha");
         owner = Member.builder()
                 .id(OWNER_ID)
                 .nickname("주인")
@@ -119,7 +117,7 @@ class TradeServiceTest {
             // given
             given(memberRepository.findById(OWNER_ID)).willReturn(Optional.of(owner));
             given(categoryRepository.findAllById(anyList())).willReturn(List.of(new Category(1L, "피규어")));
-            given(imageUploader.upload(any(MultipartFile.class), anyString()))
+            given(multipartUploader.upload(any(MultipartFile.class), any()))
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/first.png")
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/second.png");
 
@@ -146,7 +144,7 @@ class TradeServiceTest {
         void registersRollbackHookBeforeUploading() {
             // given
             given(memberRepository.findById(OWNER_ID)).willReturn(Optional.of(owner));
-            given(imageUploader.upload(any(MultipartFile.class), anyString()))
+            given(multipartUploader.upload(any(MultipartFile.class), any()))
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/first.png")
                     .willThrow(new RuntimeException("업로드 실패"));
 
@@ -161,7 +159,7 @@ class TradeServiceTest {
 
             // then: 훅에 넘긴 리스트에 첫 번째 업로드 결과가 누적돼 있어야 롤백 시 삭제될 수 있다.
             verify(s3TransactionManager).deleteImagesOnRollback(
-                    eq(ImageType.TRADE),
+                    eq(DomainType.TRADE),
                     any(),
                     eq(List.of("https://bucket.s3.amazonaws.com/gachigacha/trade/first.png"))
             );
@@ -291,7 +289,7 @@ class TradeServiceTest {
             given(tradeImageRepository.findAllByTradeIdOrderByIdAsc(TRADE_ID)).willReturn(List.of(
                     TradeImage.builder().trade(trade).imageUrl("https://bucket.s3.amazonaws.com/old.png").build()
             ));
-            given(imageUploader.upload(any(MultipartFile.class), anyString()))
+            given(multipartUploader.upload(any(MultipartFile.class), any()))
                     .willReturn("https://bucket.s3.amazonaws.com/new.png");
 
             // when
@@ -301,7 +299,7 @@ class TradeServiceTest {
             // then
             assertThat(tradeInfo.imageUrls()).containsExactly("https://bucket.s3.amazonaws.com/new.png");
             verify(s3TransactionManager).trashImagesAfterRemoved(
-                    ImageType.TRADE, TRADE_ID, List.of("https://bucket.s3.amazonaws.com/old.png"));
+                    DomainType.TRADE, TRADE_ID, List.of("https://bucket.s3.amazonaws.com/old.png"));
         }
 
         @Test
@@ -370,7 +368,7 @@ class TradeServiceTest {
             // then
             verify(tradeRepository).delete(trade);
             verify(s3TransactionManager).trashImagesAfterRemoved(
-                    ImageType.TRADE, TRADE_ID, List.of("https://bucket.s3.amazonaws.com/one.png"));
+                    DomainType.TRADE, TRADE_ID, List.of("https://bucket.s3.amazonaws.com/one.png"));
         }
 
         @Test
