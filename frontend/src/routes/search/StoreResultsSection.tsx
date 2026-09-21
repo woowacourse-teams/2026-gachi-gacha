@@ -9,7 +9,12 @@ import type {
 } from './api/nearbyStoresResponseType';
 import { StoreListPanel } from './StoreListPanel';
 import { StoreMapPanel } from './StoreMapPanel';
-import { ListArea, MapArea, Section } from './StoreResultsSection.styles';
+import {
+  ListArea,
+  ListHeaderArea,
+  MapArea,
+  Section,
+} from './StoreResultsSection.styles';
 import { useSelectedStore } from './useSelectedStore';
 
 export interface StoreResultsSectionProps {
@@ -39,8 +44,8 @@ export function StoreResultsSection({
 
   return (
     <Section aria-label="가챠 보유 매장 검색 결과">
+      {listHeader && <ListHeaderArea>{listHeader}</ListHeaderArea>}
       <ListArea>
-        {listHeader}
         <StoreListPanel
           storesState={storesState}
           selectedStoreId={selectedStoreId}
