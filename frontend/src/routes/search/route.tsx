@@ -4,10 +4,10 @@ import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import { Page, PageTitle, SelectedGachaArea } from './route.styles';
-import { createSearchResultsUrl } from './searchParams';
 import { SelectedGachaSummary } from './SelectedGachaSummary';
 import { StoreResultsSection } from './StoreResultsSection';
 import { useSearchResults } from './useSearchResults';
+import { useSearchRouteNavigation } from './useSearchRouteNavigation';
 import { useSearchStores } from './useSearchStores';
 import { useStoreSearchArea } from './useStoreSearchArea';
 
@@ -27,15 +27,12 @@ function openStoreDetail(storeId: number) {
   window.location.assign(createStoreDetailUrl(storeId));
 }
 
-function openGachaSearchResult(gachaId: number) {
-  window.location.assign(createSearchResultsUrl(gachaId));
-}
-
-export function SearchRoute({
-  search = window.location.search,
-  onSelectGacha = openGachaSearchResult,
-}: SearchRouteProps) {
-  const { selectedGachaId, selectedGacha } = useSearchResults(search);
+export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
+  const { activeSearch, selectGacha } = useSearchRouteNavigation(
+    search,
+    onSelectGacha,
+  );
+  const { selectedGachaId, selectedGacha } = useSearchResults(activeSearch);
   const {
     searchCenter,
     isSearchAreaChanged,
@@ -58,7 +55,7 @@ export function SearchRoute({
       <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
       <AppHeader
         currentPath="/search"
-        search={<GachaSearchBar onSelect={onSelectGacha} />}
+        search={<GachaSearchBar onSelect={selectGacha} />}
       />
       <StoreResultsSection
         center={searchCenter}
