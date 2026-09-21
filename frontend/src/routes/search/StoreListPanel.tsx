@@ -16,6 +16,7 @@ import {
   StateMessage,
   Title,
 } from './StoreListPanel.styles';
+import { useStoreCarousel } from './useStoreCarousel';
 
 export interface StoreListPanelProps {
   storesState: AsyncState<NearbyStoresResponseDto>;
@@ -44,6 +45,10 @@ export function StoreListPanel({
 }: StoreListPanelProps) {
   const storeCount =
     storesState.status === 'success' ? storesState.data.stores.length : null;
+  const { listRef, handleScroll } = useStoreCarousel({
+    selectedStoreId,
+    onSelectStore,
+  });
 
   return (
     <Panel aria-labelledby="search-store-list-title">
@@ -79,9 +84,9 @@ export function StoreListPanel({
             </StateMessage>
           </StateArea>
         ) : (
-          <List>
+          <List ref={listRef} onScroll={handleScroll}>
             {storesState.data.stores.map((store) => (
-              <ListItem key={store.storeId}>
+              <ListItem key={store.storeId} data-store-id={store.storeId}>
                 <StoreCard
                   store={store}
                   isSelected={selectedStoreId === store.storeId}
