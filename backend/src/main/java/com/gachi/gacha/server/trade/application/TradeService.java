@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -73,22 +74,32 @@ public class TradeService {
         return TradeInfo.of(trade, imageUrls);
     }
 
-    public List<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status) {
-        List<Trade> trades = (status == null) ? tradeJpaRepository.findAllByMemberId(memberId) :
-                tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status);
-        List<Long> tradeIds = trades.stream()
+    public Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status, final Pageable pageable) {
+        Page<Trade> tradePage = (status == null) ? tradeJpaRepository.findAllByMemberId(memberId, pageable) :
+                tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status, pageable);
+        List<Long> tradeIds = tradePage.stream()
                 .map(Trade::getId)
                 .toList();
+
+        return getTradeSummaryInfos(pageable, tradeIds, tradePage);
+    }
+
+    private PageImpl<TradeSummaryInfo> getTradeSummaryInfos(final Pageable pageable, final List<Long> tradeIds,
+                                                                     final Page<Trade> tradePage) {
+        if (tradeIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, tradePage.getTotalElements());
+        }
 
         Map<Long, Trade> tradeById = tradeJpaRepository.findByIdsWithCategories(tradeIds).stream()
                 .collect(Collectors.toMap(Trade::getId, Function.identity()));
 
         Map<Long, List<String>> imageUrlsByTradeIds = findImageUrlsByTradeIds(tradeIds);
 
-        return tradeIds.stream()
+        List<TradeSummaryInfo> content = tradeIds.stream()
                 .map(tradeById::get)
                 .map(trade -> TradeSummaryInfo.of(trade, imageUrlsByTradeIds.getOrDefault(trade.getId(), List.of())))
                 .toList();
+        return new PageImpl<>(content, pageable, tradePage.getTotalElements());
     }
 
     public Page<TradeSummaryInfo> findTrades(final TradeSearchCondition condition, final Pageable pageable) {
@@ -102,25 +113,9 @@ public class TradeService {
         List<Long> tradeIds = tradePage.getContent().stream()
                 .map(Trade::getId)
                 .toList();
-        if (tradeIds.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, tradePage.getTotalElements());
-        }
-
         // 2단계: 이 페이지의 게시글만 카테고리와 함께 다시 가져온다(카테고리 N+1 제거).
         // 1단계와 같은 영속성 컨텍스트라 돌아오는 것은 같은 인스턴스이고, 이 조회로 컬렉션이 채워진다.
-        Map<Long, Trade> tradeById = tradeJpaRepository.findByIdsWithCategories(tradeIds).stream()
-                .collect(Collectors.toMap(Trade::getId, Function.identity()));
-
-        // 3단계: 이미지는 Trade 에 컬렉션 매핑이 없어(단방향) 한 번에 따로 조회해 조립한다(이미지 N+1 제거).
-        Map<Long, List<String>> imageUrlsByTradeId = findImageUrlsByTradeIds(tradeIds);
-
-        // 2단계 조회는 IN 절이라 정렬 순서가 보장되지 않는다. 1단계가 정한 ID 순서대로 다시 세운다.
-        List<TradeSummaryInfo> content = tradeIds.stream()
-                .map(tradeById::get)
-                .map(trade -> TradeSummaryInfo.of(trade, imageUrlsByTradeId.getOrDefault(trade.getId(), List.of())))
-                .toList();
-
-        return new PageImpl<>(content, pageable, tradePage.getTotalElements());
+        return getTradeSummaryInfos(pageable, tradeIds, tradePage);
     }
 
     public TradeInfo findTrade(final Long tradeId) {

@@ -11,9 +11,14 @@ import com.gachi.gacha.server.member.presentation.dto.MemberResponse;
 import com.gachi.gacha.server.member.presentation.dto.MyTradeResponse;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
+import com.gachi.gacha.server.trade.presentation.dto.TradeSummaryResponse;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -30,15 +35,19 @@ public class MemberController {
     private final MemberService memberService;
 
     @GetMapping("/me")
-    public BaseResponse<MemberResponse> readMember(@Auth Long memberId) {
+    public BaseResponse<MemberResponse> readMember(@Auth final Long memberId) {
         MemberInfo memberInfo = memberService.getMemberInfo(memberId);
         return BaseResponse.ok(MemberResponse.from(memberInfo));
     }
 
     @GetMapping("/me/trades")
-    public BaseResponse<MyTradeResponse> readMemberTrades(@Auth Long memberId, @RequestParam(required = false) TradeStatus status) {
-        List<TradeSummaryInfo> tradeInfos = memberService.getMemberTradeInfo(memberId, status);
-        return BaseResponse.ok(MyTradeResponse.from(tradeInfos));
+    public BaseResponse<Page<TradeSummaryResponse>> readMemberTrades(
+            @Auth final Long memberId,
+            @RequestParam(required = false) final TradeStatus status,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<TradeSummaryInfo> tradeInfos = memberService.getMemberTradeInfo(memberId, status, pageable);
+        return BaseResponse.ok(tradeInfos.map(TradeSummaryResponse::from));
     }
 
     @PatchMapping("/me")
