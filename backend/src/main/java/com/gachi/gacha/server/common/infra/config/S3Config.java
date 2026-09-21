@@ -11,7 +11,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
-public class ImageConfig {
+public class S3Config {
 
     private static final Duration SOCKET_TIMEOUT = Duration.ofSeconds(30);
     private static final Duration API_CALL_TIMEOUT = Duration.ofSeconds(60);
