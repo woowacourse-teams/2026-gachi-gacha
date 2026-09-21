@@ -16,12 +16,14 @@ import type { MapCoordinate } from './mapCoordinateType';
 import { useCurrentLocation } from './useCurrentLocation';
 import { useCurrentLocationMarker } from './useCurrentLocationMarker';
 import { useKakaoMap } from './useKakaoMap';
+import { useKakaoMapViewport } from './useKakaoMapViewport';
 
 export interface KakaoMapProps {
   center: MapCoordinate;
   level?: number;
   label?: string;
   onMapReady?: (map: kakao.maps.Map | null) => void;
+  onViewportCenterChange?: (center: MapCoordinate) => void;
 }
 
 const DEFAULT_MAP_LEVEL = 4;
@@ -31,6 +33,7 @@ export function KakaoMap({
   level = DEFAULT_MAP_LEVEL,
   label = '가챠 매장 지도',
   onMapReady,
+  onViewportCenterChange,
 }: KakaoMapProps) {
   const { containerRef, mapState, retryMap } = useKakaoMap({ center, level });
   const { locationState, requestCurrentLocation } = useCurrentLocation();
@@ -40,6 +43,7 @@ export function KakaoMap({
     locationState.status === 'success' ? locationState.data : null;
 
   useCurrentLocationMarker({ coordinate: currentLocation, map });
+  useKakaoMapViewport({ map, onCenterChange: onViewportCenterChange });
 
   onMapReadyRef.current = onMapReady;
 
