@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 
@@ -12,6 +14,7 @@ import { useSelectedStore } from './useSelectedStore';
 
 export interface StoreResultsSectionProps {
   center: MapCoordinate;
+  listHeader?: ReactNode;
   storesState: AsyncState<NearbyStoresResponseDto>;
   onRetry: () => void;
 }
@@ -20,6 +23,7 @@ const EMPTY_STORES: readonly NearbyStoreResponseDto[] = [];
 
 export function StoreResultsSection({
   center,
+  listHeader,
   storesState,
   onRetry,
 }: StoreResultsSectionProps) {
@@ -30,6 +34,7 @@ export function StoreResultsSection({
   return (
     <Section aria-label="가챠 보유 매장 검색 결과">
       <ListArea>
+        {listHeader}
         <StoreListPanel
           storesState={storesState}
           selectedStoreId={selectedStoreId}
