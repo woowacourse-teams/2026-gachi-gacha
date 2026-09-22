@@ -20,6 +20,7 @@ export const nearbyStoresMockResponse = {
         latitude: 37.5559,
         longitude: 126.9238,
         distance: 120,
+        gachaCount: 128,
       },
       {
         storeId: 2,
@@ -29,6 +30,7 @@ export const nearbyStoresMockResponse = {
         latitude: 37.5584,
         longitude: 126.9251,
         distance: 310,
+        gachaCount: 64,
       },
       {
         storeId: 3,
@@ -38,6 +40,7 @@ export const nearbyStoresMockResponse = {
         latitude: 37.5502,
         longitude: 126.9145,
         distance: 980,
+        gachaCount: 92,
       },
     ],
   },

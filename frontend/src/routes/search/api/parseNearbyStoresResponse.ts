@@ -25,7 +25,11 @@ function isNearbyStore(value: unknown): value is NearbyStoreResponseDto {
     typeof value.address === 'string' &&
     isFiniteNumber(value.latitude) &&
     isFiniteNumber(value.longitude) &&
-    isFiniteNumber(value.distance)
+    isFiniteNumber(value.distance) &&
+    (value.gachaCount === undefined ||
+      (isFiniteNumber(value.gachaCount) &&
+        Number.isInteger(value.gachaCount) &&
+        value.gachaCount >= 0))
   );
 }
 

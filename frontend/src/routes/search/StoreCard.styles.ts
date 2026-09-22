@@ -39,10 +39,10 @@ export const CardButton = styled.button<{ $isSelected: boolean }>`
   }
 
   @media (max-width: 767px) {
-    min-height: 156px;
-    padding: 12px;
-    grid-template-columns: 116px minmax(0, 1fr);
-    gap: 14px;
+    min-height: 124px;
+    padding: 10px;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
     border: 1px solid rgb(36 33 34 / 9%);
     border-radius: 20px;
     background: ${({ $isSelected }) =>
@@ -61,6 +61,12 @@ export const ThumbnailFrame = styled.div`
   border: 1px solid var(--color-border, #e8e6e3);
   border-radius: 14px;
   background: var(--color-primary-soft, #fbf0f2);
+
+  @media (max-width: 767px) {
+    height: 100%;
+    aspect-ratio: auto;
+    border-radius: 12px;
+  }
 `;
 
 export const ThumbnailFallback = styled.span`
@@ -106,7 +112,7 @@ export const StoreName = styled.h3`
   -webkit-line-clamp: 2;
 
   @media (max-width: 767px) {
-    font-size: 16px;
+    font-size: 15px;
   }
 `;
 
@@ -120,6 +126,26 @@ export const Address = styled.p`
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+
+  @media (max-width: 767px) {
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.4;
+    -webkit-line-clamp: 1;
+  }
+`;
+
+export const GachaCount = styled.p`
+  margin: 4px 0 0;
+  color: var(--color-text-muted, #777173);
+  font-size: 14px;
+  line-height: 1.55;
+
+  @media (max-width: 767px) {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
 `;
 
 export const SelectionHint = styled.span`
@@ -128,4 +154,9 @@ export const SelectionHint = styled.span`
   color: var(--color-text-subtle, #969092);
   font-size: 12px;
   line-height: 1.4;
+
+  @media (max-width: 767px) {
+    padding-top: 6px;
+    font-size: 10px;
+  }
 `;

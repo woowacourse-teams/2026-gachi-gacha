@@ -3,6 +3,7 @@ import {
   Address,
   Card,
   CardButton,
+  GachaCount,
   Heading,
   Information,
   SelectionHint,
@@ -25,7 +26,7 @@ export function StoreCard({
   onOpen,
   onSelect,
 }: StoreCardProps) {
-  const { storeId, name, thumbnailUrl, address } = store;
+  const { storeId, name, thumbnailUrl, address, gachaCount } = store;
   const handleClick = () => {
     if (isSelected) {
       onOpen(storeId);
@@ -65,10 +66,13 @@ export function StoreCard({
             <StoreName title={name}>{name}</StoreName>
           </Heading>
           <Address title={address}>{address}</Address>
+          {gachaCount !== undefined && (
+            <GachaCount>
+              보유 가챠 {gachaCount.toLocaleString('ko-KR')}개
+            </GachaCount>
+          )}
           <SelectionHint>
-            {isSelected
-              ? '한 번 더 누르면 매장 상세로 이동 →'
-              : '선택하면 지도에서 확인할 수 있어요'}
+            {isSelected ? '한 번 더 눌러 상세 보기 →' : '지도에서 위치 보기'}
           </SelectionHint>
         </Information>
       </CardButton>

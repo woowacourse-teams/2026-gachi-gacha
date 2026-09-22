@@ -6,6 +6,7 @@ export interface NearbyStoreResponseDto {
   latitude: number;
   longitude: number;
   distance: number;
+  gachaCount?: number;
 }
 
 export interface NearbyStoresResponseDto {

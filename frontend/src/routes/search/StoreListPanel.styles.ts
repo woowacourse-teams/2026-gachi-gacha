@@ -8,15 +8,16 @@ const shimmer = keyframes`
 `;
 
 export const Panel = styled.section`
+  position: relative;
   min-width: 0;
   color: var(--color-text, #242122);
 
   @media (max-width: 767px) {
-    padding-bottom: 4px;
+    padding-bottom: 0;
   }
 `;
 
-export const Header = styled.div`
+export const Header = styled.div<{ $showOnMobile: boolean }>`
   display: flex;
   padding: 18px 0;
   align-items: center;
@@ -26,14 +27,16 @@ export const Header = styled.div`
 
   @media (max-width: 767px) {
     width: fit-content;
-    min-height: 38px;
-    padding: 0 14px;
-    margin: 0 16px 10px;
+    min-height: 28px;
+    padding: 0 10px;
+    margin: 0 14px 7px auto;
     border: 1px solid rgb(36 33 34 / 9%);
     border-radius: 999px;
     background: rgb(255 255 255 / 94%);
     box-shadow: 0 5px 16px rgb(36 33 34 / 12%);
     backdrop-filter: blur(8px);
+    display: ${({ $showOnMobile }) => ($showOnMobile ? 'flex' : 'none')};
+    gap: 4px;
   }
 `;
 
@@ -42,12 +45,34 @@ export const Title = styled.h2`
   font-size: 18px;
   font-weight: 750;
   letter-spacing: -0.02em;
+
+  @media (max-width: 767px) {
+    font-size: 12px;
+  }
+`;
+
+export const DesktopTitle = styled.span`
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+export const MobileTitle = styled.span`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: inline;
+  }
 `;
 
 export const Count = styled.span`
   color: var(--color-text-muted, #777173);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+
+  @media (max-width: 767px) {
+    font-size: 12px;
+  }
 `;
 
 export const List = styled.ul`
@@ -57,13 +82,13 @@ export const List = styled.ul`
 
   @media (max-width: 767px) {
     display: grid;
-    padding: 0 16px 12px;
-    grid-auto-columns: min(380px, calc(100vw - 48px));
+    padding: 0 12px;
+    grid-auto-columns: min(340px, calc(100vw - 40px));
     grid-auto-flow: column;
-    gap: 12px;
+    gap: 10px;
     overflow-x: auto;
     overscroll-behavior-inline: contain;
-    scroll-padding-inline: 16px;
+    scroll-padding-inline: 12px;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
@@ -95,10 +120,10 @@ export const StateArea = styled.div`
   text-align: center;
 
   @media (max-width: 767px) {
-    min-height: 156px;
-    margin: 0 16px 12px;
+    min-height: 112px;
+    margin: 0 12px;
     border: 1px solid rgb(36 33 34 / 9%);
-    border-radius: 20px;
+    border-radius: 16px;
     background: rgb(255 255 255 / 96%);
     box-shadow: 0 8px 24px rgb(36 33 34 / 14%);
     backdrop-filter: blur(8px);
@@ -143,8 +168,8 @@ export const LoadingList = styled.div`
   gap: 18px;
 
   @media (max-width: 767px) {
-    padding: 0 16px 12px;
-    grid-auto-columns: min(380px, calc(100vw - 48px));
+    padding: 0 12px;
+    grid-auto-columns: min(340px, calc(100vw - 40px));
     grid-auto-flow: column;
     gap: 12px;
     overflow: hidden;
@@ -152,7 +177,7 @@ export const LoadingList = styled.div`
 `;
 
 export const LoadingCard = styled.div`
-  height: 148px;
+  height: 124px;
   border-radius: 16px;
   background: linear-gradient(100deg, #eeeae8 20%, #f8f6f5 38%, #eeeae8 56%);
   background-size: 220% 100%;

@@ -4,11 +4,13 @@ import type { NearbyStoresResponseDto } from './api/nearbyStoresResponseType';
 import { StoreCard } from './StoreCard';
 import {
   Count,
+  DesktopTitle,
   Header,
   List,
   ListItem,
   LoadingCard,
   LoadingList,
+  MobileTitle,
   Panel,
   RetryButton,
   StateArea,
@@ -52,8 +54,11 @@ export function StoreListPanel({
 
   return (
     <Panel aria-labelledby="search-store-list-title">
-      <Header>
-        <Title id="search-store-list-title">가챠 보유 매장</Title>
+      <Header $showOnMobile={storeCount !== null}>
+        <Title id="search-store-list-title">
+          <DesktopTitle>가챠 보유 매장</DesktopTitle>
+          <MobileTitle>검색 결과</MobileTitle>
+        </Title>
         {storeCount !== null && <Count>{storeCount}곳</Count>}
       </Header>
 

@@ -71,6 +71,7 @@ const meta = {
       latitude: 37.5559,
       longitude: 126.9238,
       distance: 120,
+      gachaCount: 128,
     },
     onOpen: () => undefined,
     onSelect: () => undefined,
@@ -99,6 +100,7 @@ export const WithoutThumbnail: Story = {
       latitude: 37.5584,
       longitude: 126.9251,
       distance: 310,
+      gachaCount: 64,
     },
   },
 };
@@ -114,6 +116,7 @@ export const LongContent: Story = {
       latitude: 37.5502,
       longitude: 126.9145,
       distance: 1480,
+      gachaCount: 92,
     },
   },
 };

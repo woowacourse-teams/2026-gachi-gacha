@@ -8,7 +8,7 @@ export const Panel = styled.div`
 
   @media (max-width: 767px) {
     min-height: 0;
-    --map-controls-bottom: 148px;
+    --map-controls-bottom: 178px;
   }
 `;
 
