@@ -14,6 +14,7 @@ import {
   StatusMessage,
 } from './KakaoMap.styles';
 import type { MapCoordinate } from './mapCoordinateType';
+import { MapZoomControls } from './MapZoomControls';
 import { useCurrentLocation } from './useCurrentLocation';
 import { useCurrentLocationMarker } from './useCurrentLocationMarker';
 import { useKakaoMap } from './useKakaoMap';
@@ -32,9 +33,23 @@ export interface KakaoMapProps {
 }
 
 const DEFAULT_MAP_LEVEL = 4;
+const MINIMUM_MAP_LEVEL = 1;
+const MAXIMUM_MAP_LEVEL = 14;
+const ZOOM_ANIMATION_DURATION_MS = 180;
 
 function keepPageScrollAvailable(event: WheelEvent<HTMLElement>) {
   event.stopPropagation();
+}
+
+function changeMapLevel(map: kakao.maps.Map, levelDelta: number) {
+  const nextLevel = Math.min(
+    MAXIMUM_MAP_LEVEL,
+    Math.max(MINIMUM_MAP_LEVEL, map.getLevel() + levelDelta),
+  );
+
+  map.setLevel(nextLevel, {
+    animate: { duration: ZOOM_ANIMATION_DURATION_MS },
+  });
 }
 
 export function KakaoMap({
@@ -105,6 +120,10 @@ export function KakaoMap({
               {locationState.errorMessage}
             </LocationErrorMessage>
           )}
+          <MapZoomControls
+            onZoomIn={() => changeMapLevel(mapState.data, -1)}
+            onZoomOut={() => changeMapLevel(mapState.data, 1)}
+          />
           <CurrentLocationButton
             isLocating={locationState.status === 'loading'}
             onLocate={requestCurrentLocation}
