@@ -41,4 +41,12 @@ public class ChatRoomMember extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
 
+    public static ChatRoomMember join(final ChatRoom chatRoom, final Member member) {
+        return new ChatRoomMember(
+                null,
+                chatRoom,
+                member,
+                0L,
+                LocalDateTime.now());
+    }
 }

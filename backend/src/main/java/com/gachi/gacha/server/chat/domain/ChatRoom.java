@@ -32,4 +32,14 @@ public class ChatRoom extends BaseTimeEntity {
     private Long lastMessageSequence = 0L;
     private String lastMessagePreview;
     private LocalDateTime lastMessageAt;
+
+    public static ChatRoom create(final Long tradeId) {
+        return new ChatRoom(
+                null,
+                tradeId,
+                0L,
+                null,
+                null
+        );
+    }
 }

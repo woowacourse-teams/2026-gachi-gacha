@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.chat.application;
 
+import com.gachi.gacha.server.chat.application.dto.ChatRoomCreateInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomExistenceInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
@@ -7,9 +8,12 @@ import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
+import com.gachi.gacha.server.chat.domain.exception.ChatRoomAlreadyExistException;
 import com.gachi.gacha.server.chat.domain.exception.SelfChatNotAllowedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.member.domain.MemberRepository;
+import com.gachi.gacha.server.member.domain.exception.MemberNotFoundException;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeImage;
 import com.gachi.gacha.server.trade.domain.TradeImageJpaRepository;
@@ -32,6 +36,7 @@ public class ChatRoomService {
     private final ChatRoomMemberJpaRepository chatRoomMemberJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
     private final TradeImageJpaRepository tradeImageJpaRepository;
+    private final MemberRepository memberRepository;
     private final ChatRoomJpaRepository chatRoomJpaRepository;
 
     public List<ChatRoomInfo> getRooms(final Long memberId) {
@@ -163,5 +168,30 @@ public class ChatRoomService {
                         )
                 );
 
+    }
+
+    @Transactional
+    public ChatRoomCreateInfo createRoom(final Long memberId, final Long tradeId) {
+        Trade trade = tradeJpaRepository.getById(tradeId);
+        validateNotOwner(trade, memberId);
+
+        Member requester = getMember(memberId);
+        Member tradeOwner = trade.getMember();
+
+        if (chatRoomMemberJpaRepository.findChatRoom(tradeId, memberId).isPresent()) {
+            throw new ChatRoomAlreadyExistException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+        }
+
+        ChatRoom newChatRoom = chatRoomJpaRepository.save(ChatRoom.create(tradeId));
+        ChatRoomMember ownerMemberShip = ChatRoomMember.join(newChatRoom, tradeOwner);
+        ChatRoomMember requesterMemberShip = ChatRoomMember.join(newChatRoom, requester);
+
+        chatRoomMemberJpaRepository.saveAll(List.of(ownerMemberShip, requesterMemberShip));
+        return ChatRoomCreateInfo.from(newChatRoom);
+    }
+
+    private Member getMember(final Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
     }
 }
