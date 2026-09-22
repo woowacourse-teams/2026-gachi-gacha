@@ -17,6 +17,14 @@ export const Popover = styled.section`
   box-shadow: 0 18px 50px rgb(35 31 32 / 14%);
   color: var(--color-text, #242122);
 
+  @media (min-width: 768px) and (max-width: 1100px) {
+    width: 100vw;
+    max-width: none;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0 0 24px 24px;
+  }
+
   @media (max-width: 767px) {
     top: calc(100% + 12px);
     right: auto;
