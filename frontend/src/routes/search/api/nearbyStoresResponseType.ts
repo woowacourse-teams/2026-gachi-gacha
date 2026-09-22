@@ -3,6 +3,8 @@ export interface NearbyStoreResponseDto {
   name: string;
   thumbnailUrl: string | null;
   address: string;
+  floor: number | null;
+  unit: readonly string[];
   latitude: number;
   longitude: number;
   distance: number;

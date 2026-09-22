@@ -13,6 +13,19 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function isFloor(value: unknown): value is number | null {
+  return (
+    value === null ||
+    (isFiniteNumber(value) && Number.isInteger(value) && value !== 0)
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === 'string')
+  );
+}
+
 function isNearbyStore(value: unknown): value is NearbyStoreResponseDto {
   if (!isRecord(value)) {
     return false;
@@ -23,6 +36,8 @@ function isNearbyStore(value: unknown): value is NearbyStoreResponseDto {
     typeof value.name === 'string' &&
     (typeof value.thumbnailUrl === 'string' || value.thumbnailUrl === null) &&
     typeof value.address === 'string' &&
+    isFloor(value.floor) &&
+    isStringArray(value.unit) &&
     isFiniteNumber(value.latitude) &&
     isFiniteNumber(value.longitude) &&
     isFiniteNumber(value.distance) &&

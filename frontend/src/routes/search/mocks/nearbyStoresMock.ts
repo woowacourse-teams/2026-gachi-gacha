@@ -17,6 +17,8 @@ export const nearbyStoresMockResponse = {
         name: '홍대 가챠 스테이션',
         thumbnailUrl: null,
         address: '서울 마포구 홍익로 1',
+        floor: 1,
+        unit: ['101호'],
         latitude: 37.5559,
         longitude: 126.9238,
         distance: 120,
@@ -27,6 +29,8 @@ export const nearbyStoresMockResponse = {
         name: '연남 캡슐토이',
         thumbnailUrl: null,
         address: '서울 마포구 동교로 2',
+        floor: null,
+        unit: [],
         latitude: 37.5584,
         longitude: 126.9251,
         distance: 310,
@@ -37,6 +41,8 @@ export const nearbyStoresMockResponse = {
         name: '합정 가챠샵',
         thumbnailUrl: null,
         address: '서울 마포구 양화로 3',
+        floor: -1,
+        unit: ['B101호'],
         latitude: 37.5502,
         longitude: 126.9145,
         distance: 980,
@@ -46,7 +52,6 @@ export const nearbyStoresMockResponse = {
   },
 } satisfies ApiResponse<NearbyStoresResponseDto>;
 
-// 가챠별 보유 매장 필터는 아직 백엔드 협의 전인 프론트 목 계약이다.
 export const mockStoreIdsByGachaId: Readonly<
   Record<number, readonly number[]>
 > = {
