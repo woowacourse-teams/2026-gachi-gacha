@@ -9,11 +9,11 @@ export function createNearbyStoreSearchUrl({
   radius,
 }: NearbyStoreSearchParams): string {
   const searchParams = new URLSearchParams({
-    gachaId: String(gachaId),
     latitude: String(latitude),
     longitude: String(longitude),
     radius: String(radius),
   });
+  const endpoint = `${NEARBY_STORES_API_PATH}/${encodeURIComponent(gachaId)}`;
 
-  return `${NEARBY_STORES_API_PATH}?${searchParams}`;
+  return `${endpoint}?${searchParams}`;
 }

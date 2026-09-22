@@ -5,8 +5,6 @@ import { parseNearbyStoresResponse } from './parseNearbyStoresResponse';
 
 const JSON_CONTENT_TYPE = 'application/json';
 
-// gachaId 필터는 백엔드 협의가 필요한 프론트 제안이다.
-// 현재 backend-dev는 이 파라미터를 지원하지 않으므로 실제 연결 전 확인해야 한다.
 export async function getNearbyStores(
   params: NearbyStoreSearchParams,
   signal?: AbortSignal,

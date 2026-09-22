@@ -35,9 +35,8 @@ export const searchHandlers = [
 
     return HttpResponse.json(response);
   }),
-  http.get('/api/v1/stores/nearby', ({ request }) => {
-    const searchParams = new URL(request.url).searchParams;
-    const gachaId = parseGachaId(searchParams.get('gachaId'));
+  http.get('/api/v1/stores/nearby/:gachaId', ({ params }) => {
+    const gachaId = parseGachaId(params.gachaId);
 
     if (gachaId === null) {
       return HttpResponse.json(
