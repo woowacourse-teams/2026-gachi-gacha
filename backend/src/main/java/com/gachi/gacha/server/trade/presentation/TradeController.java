@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
@@ -75,6 +76,16 @@ public class TradeController {
         Page<TradeSummaryInfo> trades = tradeService.findTrades(condition, pageable);
 
         return BaseResponse.ok(trades.map(TradeSummaryResponse::from));
+    }
+
+    @GetMapping("/me")
+    public BaseResponse<Page<TradeSummaryResponse>> readMemberTrades(
+            @Auth final Long memberId,
+            @RequestParam(required = false) final TradeStatus status,
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) final Pageable pageable
+    ) {
+        Page<TradeSummaryInfo> tradeInfos = tradeService.findAllByMemberId(memberId, status, pageable);
+        return BaseResponse.ok(tradeInfos.map(TradeSummaryResponse::from));
     }
 
     @GetMapping("/{tradeId}")

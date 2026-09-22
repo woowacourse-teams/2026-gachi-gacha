@@ -5,6 +5,8 @@ import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -28,7 +30,9 @@ public interface TradeJpaRepository extends JpaRepository<Trade, Long>, JpaSpeci
         return findByIdWithCategories(tradeId).orElseThrow(() -> new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND));
     }
 
-    List<Trade> findAllByMemberId(final Long memberId);
+    Page<Trade> findAllByMemberId(final Long memberId, final Pageable pageable);
+
+    Page<Trade> findAllByMemberIdAndStatus(final Long memberId, final TradeStatus status, final Pageable pageable);
 
     @Query("SELECT t FROM Trade t " +
             "LEFT JOIN FETCH t.tradeCategories tc " +
