@@ -7,6 +7,11 @@ export const Header = styled.header`
   border-bottom: 2px solid var(--color-border, #e8e6e3);
   background: rgb(255 255 255 / 96%);
   backdrop-filter: blur(12px);
+
+  @media (max-width: 767px) {
+    position: relative;
+    top: auto;
+  }
 `;
 
 export const HeaderContent = styled.div`

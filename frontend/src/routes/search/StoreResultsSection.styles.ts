@@ -30,7 +30,11 @@ export const ListHeaderArea = styled.div`
   grid-area: header;
 
   @media (max-width: 767px) {
-    padding: 0 14px;
+    z-index: 3;
+    padding: 0 14px 12px;
+    border-bottom: 1px solid rgb(36 33 34 / 7%);
+    background: var(--color-surface, #ffffff);
+    box-shadow: 0 10px 20px -20px rgb(36 33 34 / 45%);
   }
 `;
 
