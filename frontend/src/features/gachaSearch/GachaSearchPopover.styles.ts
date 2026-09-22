@@ -18,16 +18,15 @@ export const Popover = styled.section`
   color: var(--color-text, #242122);
 
   @media (max-width: 767px) {
-    position: fixed;
-    inset: auto 0 0;
-    width: auto;
-    height: min(82dvh, 680px);
+    top: calc(100% + 8px);
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: min(64dvh, 560px);
+    max-height: calc(100dvh - 152px);
     transform: none;
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: 24px 24px 0 0;
-    box-shadow: 0 -14px 42px rgb(35 31 32 / 16%);
+    border-radius: 18px;
+    box-shadow: 0 16px 36px rgb(35 31 32 / 16%);
   }
 `;
 
@@ -40,7 +39,8 @@ export const Header = styled.header`
   border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
 
   @media (max-width: 767px) {
-    padding: 22px 20px 18px;
+    gap: 14px;
+    padding: 16px 16px 14px;
   }
 `;
 
@@ -50,6 +50,10 @@ export const Title = styled.h2`
   font-weight: 750;
   line-height: 1.35;
   letter-spacing: -0.02em;
+
+  @media (max-width: 767px) {
+    font-size: 17px;
+  }
 `;
 
 export const HelperText = styled.p`
@@ -60,6 +64,7 @@ export const HelperText = styled.p`
 
   @media (max-width: 767px) {
     padding-right: 8px;
+    font-size: 12px;
   }
 `;
 
@@ -88,6 +93,12 @@ export const CloseButton = styled.button`
     outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: 2px;
   }
+
+  @media (max-width: 767px) {
+    width: 32px;
+    height: 32px;
+    font-size: 21px;
+  }
 `;
 
 export const Content = styled.div`
@@ -99,7 +110,7 @@ export const Content = styled.div`
   scrollbar-gutter: stable;
 
   @media (max-width: 767px) {
-    padding: 18px 20px 28px;
+    padding: 14px 14px 20px;
   }
 `;
 
@@ -132,7 +143,7 @@ export const ProductList = styled.ul`
 
   @media (max-width: 767px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px 12px;
+    gap: 18px 10px;
   }
 `;
 
@@ -208,6 +219,12 @@ export const ProductName = styled.strong`
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+
+  @media (max-width: 767px) {
+    height: 38px;
+    margin-top: 7px;
+    font-size: 13px;
+  }
 `;
 
 export const CategoryText = styled.span`
@@ -219,6 +236,11 @@ export const CategoryText = styled.span`
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  @media (max-width: 767px) {
+    margin-top: 2px;
+    font-size: 11px;
+  }
 `;
 
 export const EmptyState = styled.div`
@@ -270,7 +292,7 @@ export const LoadingGrid = styled.div`
 
   @media (max-width: 767px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 22px 12px;
+    gap: 18px 10px;
   }
 `;
 
@@ -289,6 +311,10 @@ export const LoadingCard = styled.div`
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
+  }
+
+  @media (max-width: 767px) {
+    min-height: 150px;
   }
 `;
 
