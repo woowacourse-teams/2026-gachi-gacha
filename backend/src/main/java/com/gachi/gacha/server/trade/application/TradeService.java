@@ -74,31 +74,10 @@ public class TradeService {
     }
 
     public Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status, final Pageable pageable) {
-        Page<Trade> tradePage = (status == null) ? tradeJpaRepository.findAllByMemberId(memberId, pageable) :
-                tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status, pageable);
-        List<Long> tradeIds = tradePage.stream()
-                .map(Trade::getId)
-                .toList();
-
-        return getTradeSummaryInfos(pageable, tradeIds, tradePage);
-    }
-
-    private PageImpl<TradeSummaryInfo> getTradeSummaryInfos(final Pageable pageable, final List<Long> tradeIds,
-                                                                     final Page<Trade> tradePage) {
-        if (tradeIds.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, tradePage.getTotalElements());
+        if (status == null) {
+            return findAllByMemberId(memberId, pageable);
         }
-
-        Map<Long, Trade> tradeById = tradeJpaRepository.findByIdsWithCategories(tradeIds).stream()
-                .collect(Collectors.toMap(Trade::getId, Function.identity()));
-
-        Map<Long, List<String>> imageUrlsByTradeIds = findImageUrlsByTradeIds(tradeIds);
-
-        List<TradeSummaryInfo> content = tradeIds.stream()
-                .map(tradeById::get)
-                .map(trade -> TradeSummaryInfo.of(trade, imageUrlsByTradeIds.getOrDefault(trade.getId(), List.of())))
-                .toList();
-        return new PageImpl<>(content, pageable, tradePage.getTotalElements());
+        return findAllByMemberIdAndStatus(memberId, status, pageable);
     }
 
     public Page<TradeSummaryInfo> findTrades(final TradeSearchCondition condition, final Pageable pageable) {
@@ -109,12 +88,9 @@ public class TradeService {
                 pageable
         );
 
-        List<Long> tradeIds = tradePage.getContent().stream()
-                .map(Trade::getId)
-                .toList();
         // 2단계: 이 페이지의 게시글만 카테고리와 함께 다시 가져온다(카테고리 N+1 제거).
         // 1단계와 같은 영속성 컨텍스트라 돌아오는 것은 같은 인스턴스이고, 이 조회로 컬렉션이 채워진다.
-        return getTradeSummaryInfos(pageable, tradeIds, tradePage);
+        return getTradeSummaryInfos(pageable, tradePage);
     }
 
     public TradeInfo findTrade(final Long tradeId) {
@@ -265,5 +241,36 @@ public class TradeService {
                         tradeImage -> tradeImage.getTrade().getId(),
                         Collectors.mapping(TradeImage::getImageUrl, Collectors.toList())
                 ));
+    }
+
+    private Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final Pageable pageable) {
+        Page<Trade> tradePage = tradeJpaRepository.findAllByMemberId(memberId, pageable);
+        return getTradeSummaryInfos(pageable, tradePage);
+    }
+
+    private Page<TradeSummaryInfo> findAllByMemberIdAndStatus(final Long memberId, final TradeStatus status, final Pageable pageable) {
+        Page<Trade> tradePage = tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status, pageable);
+        return getTradeSummaryInfos(pageable, tradePage);
+    }
+
+    private PageImpl<TradeSummaryInfo> getTradeSummaryInfos(final Pageable pageable, final Page<Trade> tradePage) {
+        List<Long> tradeIds = tradePage.stream()
+                .map(Trade::getId)
+                .toList();
+
+        if (tradeIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, tradePage.getTotalElements());
+        }
+
+        Map<Long, Trade> tradeById = tradeJpaRepository.findByIdsWithCategories(tradeIds).stream()
+                .collect(Collectors.toMap(Trade::getId, Function.identity()));
+
+        Map<Long, List<String>> imageUrlsByTradeIds = findImageUrlsByTradeIds(tradeIds);
+
+        List<TradeSummaryInfo> content = tradeIds.stream()
+                .map(tradeById::get)
+                .map(trade -> TradeSummaryInfo.of(trade, imageUrlsByTradeIds.getOrDefault(trade.getId(), List.of())))
+                .toList();
+        return new PageImpl<>(content, pageable, tradePage.getTotalElements());
     }
 }
