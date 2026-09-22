@@ -34,7 +34,7 @@ export const CarouselIndicators = styled.div`
     transform: translateX(-50%);
     border: 1px solid rgb(36 33 34 / 6%);
     border-radius: 999px;
-    background: rgb(74 70 71 / 16%);
+    background: rgb(255 255 255 / 52%);
     box-shadow: 0 4px 12px rgb(36 33 34 / 10%);
     backdrop-filter: blur(8px);
   }
