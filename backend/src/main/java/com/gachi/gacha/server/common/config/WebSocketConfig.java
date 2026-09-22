@@ -1,8 +1,10 @@
 package com.gachi.gacha.server.common.config;
 
+import com.gachi.gacha.server.common.auth.websocket.StompAuthInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -15,6 +17,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final CorsProperty corsProperty;
+    private final StompAuthInterceptor stompAuthInterceptor;
 
     @Override
     public void registerStompEndpoints(final StompEndpointRegistry registry) {
@@ -39,5 +42,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         scheduler.setPoolSize(1);
         scheduler.setThreadNamePrefix("stomp-heartbeat-");
         return scheduler;
+    }
+
+    @Override
+    public void configureClientInboundChannel(final ChannelRegistration registration) {
+        registration.interceptors(stompAuthInterceptor);
     }
 }

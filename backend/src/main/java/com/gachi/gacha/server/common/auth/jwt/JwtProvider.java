@@ -33,12 +33,16 @@ public class JwtProvider {
     }
 
     public Object extractMemberId(final String token) {
-        try{
-            return JWT.require(algorithm)
+        try {
+            Long memberId = JWT.require(algorithm)
                     .build()
                     .verify(token)
                     .getClaim("memberId")
                     .asLong();
+            if (memberId == null) {
+                throw new UnAuthorizationException(ErrorCode.UNAUTHORIZATION_TOKEN);
+            }
+            return memberId;
         } catch (JWTVerificationException e) {
             throw new UnAuthorizationException(ErrorCode.UNAUTHORIZATION_TOKEN);
         }
