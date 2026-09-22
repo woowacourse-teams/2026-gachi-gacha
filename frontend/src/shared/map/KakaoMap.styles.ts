@@ -23,6 +23,13 @@ export const MapFrame = styled.section`
   border-radius: 20px;
   background: var(--color-surface-muted, #f3f1ed);
   box-shadow: 0 8px 28px rgb(36 33 34 / 9%);
+
+  @media (max-width: 767px) {
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
 `;
 
 export const MapCanvas = styled.div`

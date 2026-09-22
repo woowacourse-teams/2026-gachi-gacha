@@ -13,13 +13,14 @@ export const Section = styled.section`
   background: var(--color-surface, #ffffff);
 
   @media (max-width: 767px) {
+    position: relative;
+    height: auto;
     min-height: 0;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(360px, 58svh) auto;
+    grid-template-rows: auto minmax(420px, calc(100dvh - 122px));
     grid-template-areas:
       'header'
-      'map'
-      'list';
+      'map';
   }
 `;
 
@@ -29,7 +30,7 @@ export const ListHeaderArea = styled.div`
   grid-area: header;
 
   @media (max-width: 767px) {
-    padding: 0 20px;
+    padding: 0 14px;
   }
 `;
 
@@ -41,9 +42,12 @@ export const ListArea = styled.div`
   overscroll-behavior: contain;
 
   @media (max-width: 767px) {
+    position: absolute;
+    right: 0;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 0;
     z-index: 2;
-    padding: 0 0 max(16px, env(safe-area-inset-bottom));
-    margin-top: -190px;
+    padding: 0;
     overflow: visible;
   }
 `;
@@ -56,6 +60,7 @@ export const MapArea = styled.div`
   background: var(--color-surface-muted, #faf9f8);
 
   @media (max-width: 767px) {
-    padding: 12px;
+    padding: 0;
+    background: var(--color-surface-muted, #f3f1ed);
   }
 `;

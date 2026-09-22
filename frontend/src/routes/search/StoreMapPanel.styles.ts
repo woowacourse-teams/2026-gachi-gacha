@@ -6,9 +6,9 @@ export const Panel = styled.div`
   height: 100%;
   min-height: 420px;
 
-  @media (max-width: 768px) {
-    min-height: 360px;
-    --map-controls-bottom: 190px;
+  @media (max-width: 767px) {
+    min-height: 0;
+    --map-controls-bottom: 148px;
   }
 `;
 
@@ -40,6 +40,13 @@ export const SearchAreaButton = styled.button`
   &:focus-visible {
     outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: 2px;
+  }
+
+  @media (max-width: 767px) {
+    top: 12px;
+    min-height: 38px;
+    padding: 0 14px;
+    font-size: 12px;
   }
 `;
 

@@ -17,6 +17,13 @@ export const Summary = styled.section`
   border-radius: 18px;
   background: var(--color-primary-soft, #fbf0f2);
   color: var(--color-text, #242122);
+
+  @media (max-width: 767px) {
+    min-height: 72px;
+    padding: 9px 12px;
+    gap: 10px;
+    border-radius: 14px;
+  }
 `;
 
 export const ThumbnailFrame = styled.div`
@@ -28,6 +35,12 @@ export const ThumbnailFrame = styled.div`
   border: 1px solid var(--color-border, #e8e6e3);
   border-radius: 14px;
   background: var(--color-primary-soft, #fbf0f2);
+
+  @media (max-width: 767px) {
+    width: 52px;
+    height: 52px;
+    border-radius: 11px;
+  }
 `;
 
 export const ThumbnailFallback = styled.span`
@@ -59,6 +72,11 @@ export const Eyebrow = styled.p`
   font-size: 13px;
   font-weight: 750;
   line-height: 1.4;
+
+  @media (max-width: 767px) {
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
 `;
 
 export const ProductName = styled.h2`
@@ -72,6 +90,11 @@ export const ProductName = styled.h2`
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+
+  @media (max-width: 767px) {
+    font-size: 15px;
+    -webkit-line-clamp: 1;
+  }
 `;
 
 export const CategoryText = styled.p`
@@ -82,6 +105,11 @@ export const CategoryText = styled.p`
   line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  @media (max-width: 767px) {
+    margin-top: 2px;
+    font-size: 11px;
+  }
 `;
 
 export const StateMessage = styled.div`
@@ -103,6 +131,12 @@ export const LoadingThumbnail = styled.div`
   background-size: 220% 100%;
   animation: ${shimmer} 1.4s ease-in-out infinite;
 
+  @media (max-width: 767px) {
+    width: 52px;
+    height: 52px;
+    border-radius: 11px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
@@ -115,6 +149,11 @@ export const LoadingText = styled.div`
   background: linear-gradient(100deg, #eeeae8 20%, #f8f6f5 38%, #eeeae8 56%);
   background-size: 220% 100%;
   animation: ${shimmer} 1.4s ease-in-out infinite;
+
+  @media (max-width: 767px) {
+    width: min(240px, 58vw);
+    height: 34px;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
