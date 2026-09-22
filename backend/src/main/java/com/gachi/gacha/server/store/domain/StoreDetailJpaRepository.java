@@ -14,6 +14,4 @@ public interface StoreDetailJpaRepository extends JpaRepository<StoreDetail, Lon
     default StoreDetail getByStoreId(@NonNull final Long storeId) {
         return findById(storeId).orElseThrow(() -> new StoreNotFoundException(ErrorCode.STORE_NOT_FOUND));
     }
-
-    Slice<StoreDetail> findAllByInstagramIdIsNotNull(Pageable pageable);
 }

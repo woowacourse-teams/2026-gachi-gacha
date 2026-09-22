@@ -9,12 +9,21 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
+@Table(
+        name = "store_gacha",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_store_gacha_gacha_store",
+                columnNames = {"gacha_id", "store_id"}
+        )
+)
 @Entity
 @Builder
 @NoArgsConstructor
