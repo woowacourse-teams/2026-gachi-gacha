@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.chat.domain;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -27,4 +28,13 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
               AND member.id <> :memberId
             """)
     List<ChatRoomMember> findOtherMembers(List<Long> roomIds, Long memberId);
+
+
+    @Query("""
+                SELECT chatRoomMember.chatRoom
+                FROM ChatRoomMember chatRoomMember
+                WHERE chatRoomMember.chatRoom.tradeId = :tradeId
+                  AND chatRoomMember.member.id = :memberId
+            """)
+    Optional<ChatRoom> findChatRoom(Long tradeId, Long memberId);
 }

@@ -1,10 +1,13 @@
 package com.gachi.gacha.server.chat.application;
 
+import com.gachi.gacha.server.chat.application.dto.ChatRoomExistenceInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
+import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
+import com.gachi.gacha.server.chat.domain.exception.SelfChatNotAllowedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.trade.domain.Trade;
@@ -15,6 +18,7 @@ import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +32,7 @@ public class ChatRoomService {
     private final ChatRoomMemberJpaRepository chatRoomMemberJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
     private final TradeImageJpaRepository tradeImageJpaRepository;
+    private final ChatRoomJpaRepository chatRoomJpaRepository;
 
     public List<ChatRoomInfo> getRooms(final Long memberId) {
         List<ChatRoomMember> myChatRoomMembers =
@@ -63,6 +68,22 @@ public class ChatRoomService {
                         tradeThumbnailUrlsByTradeId
                 ))
                 .toList();
+    }
+
+    public ChatRoomExistenceInfo findRoomExistence(final Long memberId, final Long tradeId) {
+        Trade trade = tradeJpaRepository.getById(tradeId);
+        validateNotOwner(trade, memberId);
+
+        Optional<ChatRoom> chatRoom = chatRoomMemberJpaRepository.findChatRoom(tradeId, memberId);
+        return chatRoom
+                .map(room -> ChatRoomExistenceInfo.of(true, room.getId()))
+                .orElseGet(() -> ChatRoomExistenceInfo.of(false, null));
+    }
+
+    private void validateNotOwner(final Trade trade, final Long memberId) {
+        if (trade.isOwnedBy(memberId)) {
+            throw new SelfChatNotAllowedException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
+        }
     }
 
     private Map<Long, Trade> findTradesById(final List<Long> tradeIds) {

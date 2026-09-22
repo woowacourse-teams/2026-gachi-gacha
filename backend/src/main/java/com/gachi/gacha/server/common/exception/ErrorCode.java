@@ -50,6 +50,7 @@ public enum ErrorCode {
 
     // Chat
     CHAT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE001", "채팅 상대방 정보를 찾을 수 없습니다."),
+    SELF_CHAT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "CHE002", "본인의 교환 게시글에는 채팅을 요청할 수 없습니다."),
 
     // Category
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CAE01", "존재하지 않는 카테고리입니다."),
