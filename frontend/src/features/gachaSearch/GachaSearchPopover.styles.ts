@@ -18,11 +18,11 @@ export const Popover = styled.section`
   color: var(--color-text, #242122);
 
   @media (max-width: 767px) {
-    top: 100%;
+    top: calc(100% + 12px);
     right: auto;
     left: 50%;
     width: 100vw;
-    height: calc(100dvh - 106px);
+    height: calc(100dvh - 118px);
     max-height: none;
     transform: translateX(-50%);
     border-right: 0;
