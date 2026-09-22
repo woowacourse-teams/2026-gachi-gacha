@@ -34,6 +34,7 @@ export const ListHeaderArea = styled.div`
     left: 12px;
     z-index: 3;
     padding: 0;
+    grid-area: auto;
   }
 `;
 
@@ -51,6 +52,7 @@ export const ListArea = styled.div`
     left: 0;
     z-index: 2;
     padding: 0;
+    grid-area: auto;
     overflow: visible;
   }
 `;
