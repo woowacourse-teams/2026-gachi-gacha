@@ -8,6 +8,7 @@ import com.gachi.gacha.server.chat.presentation.dto.ChatRoomCreateRequest;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomCreateResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomExistenceResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomListResponse;
+import com.gachi.gacha.server.chat.presentation.dto.ChatRoomResponse;
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,6 +44,15 @@ public class ChatRoomController {
     ) {
         ChatRoomExistenceInfo chatRoomExistenceInfo = chatRoomService.findRoomExistence(memberId, tradeId);
         return BaseResponse.ok(ChatRoomExistenceResponse.from(chatRoomExistenceInfo));
+    }
+
+    @GetMapping("/{roomId}")
+    public BaseResponse<ChatRoomResponse> readRoom(
+            @Auth final Long memberId,
+            @PathVariable final Long roomId
+    ) {
+        ChatRoomInfo chatRoomInfo = chatRoomService.getRoom(memberId, roomId);
+        return BaseResponse.ok(ChatRoomResponse.from(chatRoomInfo));
     }
 
     @PostMapping

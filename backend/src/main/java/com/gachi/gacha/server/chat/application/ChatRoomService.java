@@ -8,6 +8,7 @@ import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
+import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAlreadyExistException;
 import com.gachi.gacha.server.chat.domain.exception.SelfChatNotAllowedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
@@ -83,6 +84,29 @@ public class ChatRoomService {
         return chatRoom
                 .map(room -> ChatRoomExistenceInfo.of(true, room.getId()))
                 .orElseGet(() -> ChatRoomExistenceInfo.of(false, null));
+    }
+
+    public ChatRoomInfo getRoom(final Long memberId, final Long roomId) {
+        ChatRoom chatRoom = chatRoomJpaRepository.getById(roomId);
+
+        ChatRoomMember myChatRoomMember = chatRoomMemberJpaRepository
+                .findByRoomIdAndMemberId(roomId, memberId)
+                .orElseThrow(() -> new ChatRoomAccessDeniedException(ErrorCode.CHAT_ROOM_ACCESS_DENIED));
+
+        Member otherMember = chatRoomMemberJpaRepository.findOtherMember(roomId, memberId)
+                .orElseThrow(() -> new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
+
+        Trade trade = tradeJpaRepository.getById(chatRoom.getTradeId());
+        String tradeThumbnailUrl = findThumbnailUrlsByTradeId(List.of(trade.getId()))
+                .get(trade.getId());
+
+        return ChatRoomInfo.of(
+                chatRoom,
+                myChatRoomMember,
+                trade,
+                tradeThumbnailUrl,
+                otherMember
+        );
     }
 
     private void validateNotOwner(final Trade trade, final Long memberId) {
