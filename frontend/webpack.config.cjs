@@ -21,9 +21,13 @@ if (!KAKAO_MAP_KEY) {
 /** @type {import('webpack').ConfigurationFactory} */
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
+  const enablePromo = _env?.demo === true;
 
   return {
-    entry: path.resolve(__dirname, 'src/main.tsx'),
+    entry: path.resolve(
+      __dirname,
+      enablePromo ? 'src/demo/entry.tsx' : 'src/main.tsx',
+    ),
 
     output: {
       path: path.resolve(__dirname, 'dist'),
