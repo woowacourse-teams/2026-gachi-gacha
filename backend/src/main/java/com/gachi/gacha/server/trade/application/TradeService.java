@@ -6,8 +6,7 @@ import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
-import com.gachi.gacha.server.member.domain.MemberRepository;
-import com.gachi.gacha.server.member.domain.exception.MemberNotFoundException;
+import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
@@ -41,10 +40,10 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class TradeService {
 
-    private final TradeJpaRepository tradeRepository;
+    private final TradeJpaRepository tradeJpaRepository;
     private final TradeImageJpaRepository tradeImageRepository;
     private final CategoryJpaRepository categoryRepository;
-    private final MemberRepository memberRepository;
+    private final MemberJpaRepository memberJpaRepository;
     private final MultipartUploader multipartUploader;
     private final S3TransactionManager s3TransactionManager;
 
@@ -67,47 +66,35 @@ public class TradeService {
                 .status(TradeStatus.AVAILABLE)
                 .build();
         trade.replaceCategories(findCategories(command.categoryIds()));
-        tradeRepository.save(trade);
+        tradeJpaRepository.save(trade);
 
         List<String> imageUrls = uploadImages(trade, images);
 
         return TradeInfo.of(trade, imageUrls);
     }
 
+    public Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status, final Pageable pageable) {
+        if (status == null) {
+            return findAllByMemberId(memberId, pageable);
+        }
+        return findAllByMemberIdAndStatus(memberId, status, pageable);
+    }
+
     public Page<TradeSummaryInfo> findTrades(final TradeSearchCondition condition, final Pageable pageable) {
         // 1단계: 필터와 페이징만 적용한다. 컬렉션을 건드리지 않으므로 페이징이 DB에서 정상적으로 끝난다.
-        Page<Trade> tradePage = tradeRepository.findAll(
+        Page<Trade> tradePage = tradeJpaRepository.findAll(
                 TradeSpecifications.search(
                         normalizeKeyword(condition.keyword()), condition.categoryIds(), condition.status()),
                 pageable
         );
 
-        List<Long> tradeIds = tradePage.getContent().stream()
-                .map(Trade::getId)
-                .toList();
-        if (tradeIds.isEmpty()) {
-            return new PageImpl<>(List.of(), pageable, tradePage.getTotalElements());
-        }
-
         // 2단계: 이 페이지의 게시글만 카테고리와 함께 다시 가져온다(카테고리 N+1 제거).
         // 1단계와 같은 영속성 컨텍스트라 돌아오는 것은 같은 인스턴스이고, 이 조회로 컬렉션이 채워진다.
-        Map<Long, Trade> tradeById = tradeRepository.findByIdsWithCategories(tradeIds).stream()
-                .collect(Collectors.toMap(Trade::getId, Function.identity()));
-
-        // 3단계: 이미지는 Trade 에 컬렉션 매핑이 없어(단방향) 한 번에 따로 조회해 조립한다(이미지 N+1 제거).
-        Map<Long, List<String>> imageUrlsByTradeId = findImageUrlsByTradeIds(tradeIds);
-
-        // 2단계 조회는 IN 절이라 정렬 순서가 보장되지 않는다. 1단계가 정한 ID 순서대로 다시 세운다.
-        List<TradeSummaryInfo> content = tradeIds.stream()
-                .map(tradeById::get)
-                .map(trade -> TradeSummaryInfo.of(trade, imageUrlsByTradeId.getOrDefault(trade.getId(), List.of())))
-                .toList();
-
-        return new PageImpl<>(content, pageable, tradePage.getTotalElements());
+        return getTradeSummaryInfos(pageable, tradePage);
     }
 
     public TradeInfo findTrade(final Long tradeId) {
-        Trade trade = tradeRepository.getByIdWithCategories(tradeId);
+        Trade trade = tradeJpaRepository.getByIdWithCategories(tradeId);
 
         return TradeInfo.of(trade, findImageUrls(tradeId));
     }
@@ -119,7 +106,7 @@ public class TradeService {
             final TradeUpdateCommand command,
             final List<MultipartFile> images
     ) {
-        Trade trade = tradeRepository.getByIdWithCategories(tradeId);
+        Trade trade = tradeJpaRepository.getByIdWithCategories(tradeId);
         validateOwner(trade, memberId);
 
         trade.update(
@@ -139,7 +126,7 @@ public class TradeService {
 
     @Transactional
     public TradeInfo changeStatus(final Long memberId, final Long tradeId, final TradeStatus status) {
-        Trade trade = tradeRepository.getByIdWithCategories(tradeId);
+        Trade trade = tradeJpaRepository.getByIdWithCategories(tradeId);
         validateOwner(trade, memberId);
 
         trade.changeStatus(status);
@@ -149,7 +136,7 @@ public class TradeService {
 
     @Transactional
     public void removeTrade(final Long memberId, final Long tradeId) {
-        Trade trade = tradeRepository.getById(tradeId);
+        Trade trade = tradeJpaRepository.getById(tradeId);
         validateOwner(trade, memberId);
 
         List<TradeImage> tradeImages = tradeImageRepository.findAllByTradeIdOrderByIdAsc(tradeId);
@@ -158,7 +145,7 @@ public class TradeService {
                 .toList();
 
         tradeImageRepository.deleteAll(tradeImages);
-        tradeRepository.delete(trade);
+        tradeJpaRepository.delete(trade);
 
         // 사용자가 올린 콘텐츠라 오삭제·신고 대응 여지를 남기기 위해 완전 삭제가 아닌 휴지통으로 옮긴다.
         s3TransactionManager.trashImagesAfterRemoved(DomainType.TRADE, tradeId, imageUrls);
@@ -175,8 +162,7 @@ public class TradeService {
     }
 
     private Member getMember(final Long memberId) {
-        return memberRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+        return memberJpaRepository.getMemberById(memberId);
     }
 
     private void validateOwner(final Trade trade, final Long memberId) {
@@ -255,5 +241,36 @@ public class TradeService {
                         tradeImage -> tradeImage.getTrade().getId(),
                         Collectors.mapping(TradeImage::getImageUrl, Collectors.toList())
                 ));
+    }
+
+    private Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final Pageable pageable) {
+        Page<Trade> tradePage = tradeJpaRepository.findAllByMemberId(memberId, pageable);
+        return getTradeSummaryInfos(pageable, tradePage);
+    }
+
+    private Page<TradeSummaryInfo> findAllByMemberIdAndStatus(final Long memberId, final TradeStatus status, final Pageable pageable) {
+        Page<Trade> tradePage = tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status, pageable);
+        return getTradeSummaryInfos(pageable, tradePage);
+    }
+
+    private PageImpl<TradeSummaryInfo> getTradeSummaryInfos(final Pageable pageable, final Page<Trade> tradePage) {
+        List<Long> tradeIds = tradePage.stream()
+                .map(Trade::getId)
+                .toList();
+
+        if (tradeIds.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, tradePage.getTotalElements());
+        }
+
+        Map<Long, Trade> tradeById = tradeJpaRepository.findByIdsWithCategories(tradeIds).stream()
+                .collect(Collectors.toMap(Trade::getId, Function.identity()));
+
+        Map<Long, List<String>> imageUrlsByTradeIds = findImageUrlsByTradeIds(tradeIds);
+
+        List<TradeSummaryInfo> content = tradeIds.stream()
+                .map(tradeById::get)
+                .map(trade -> TradeSummaryInfo.of(trade, imageUrlsByTradeIds.getOrDefault(trade.getId(), List.of())))
+                .toList();
+        return new PageImpl<>(content, pageable, tradePage.getTotalElements());
     }
 }

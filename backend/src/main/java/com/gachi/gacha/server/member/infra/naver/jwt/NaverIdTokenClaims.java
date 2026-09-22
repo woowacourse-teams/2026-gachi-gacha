@@ -8,7 +8,7 @@ public record NaverIdTokenClaims(
         String profileImageUrl,
         String email
 ) {
-    public static NaverIdTokenClaims from(DecodedJWT jwt) {
+    public static NaverIdTokenClaims from(final DecodedJWT jwt) {
         return new NaverIdTokenClaims(
                 jwt.getSubject(),
                 jwt.getClaim("name").asString(),

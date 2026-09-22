@@ -15,7 +15,7 @@ import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
-import com.gachi.gacha.server.member.domain.MemberRepository;
+import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
@@ -46,7 +46,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,7 +65,7 @@ class TradeServiceTest {
     private CategoryJpaRepository categoryRepository;
 
     @Mock
-    private MemberRepository memberRepository;
+    private MemberJpaRepository memberJpaRepository;
 
     @Mock
     private MultipartUploader multipartUploader;
@@ -115,7 +114,7 @@ class TradeServiceTest {
         @DisplayName("게시글과 카테고리를 저장하고, 이미지를 업로드해 URL을 함께 반환한다.")
         void createsTradeWithImages() {
             // given
-            given(memberRepository.findById(OWNER_ID)).willReturn(Optional.of(owner));
+            given(memberJpaRepository.getMemberById(OWNER_ID)).willReturn(owner);
             given(categoryRepository.findAllById(anyList())).willReturn(List.of(new Category(1L, "피규어")));
             given(multipartUploader.upload(any(MultipartFile.class), any()))
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/first.png")
@@ -143,7 +142,7 @@ class TradeServiceTest {
         @DisplayName("업로드 전에 롤백 훅을 먼저 등록해, 중간에 실패해도 이미 올라간 파일이 정리되게 한다.")
         void registersRollbackHookBeforeUploading() {
             // given
-            given(memberRepository.findById(OWNER_ID)).willReturn(Optional.of(owner));
+            given(memberJpaRepository.getMemberById(OWNER_ID)).willReturn(owner);
             given(multipartUploader.upload(any(MultipartFile.class), any()))
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/first.png")
                     .willThrow(new RuntimeException("업로드 실패"));
@@ -169,7 +168,7 @@ class TradeServiceTest {
         @DisplayName("존재하지 않는 카테고리 ID가 섞여 있으면 등록을 거부한다.")
         void rejectsUnknownCategoryId() {
             // given
-            given(memberRepository.findById(OWNER_ID)).willReturn(Optional.of(owner));
+            given(memberJpaRepository.getMemberById(OWNER_ID)).willReturn(owner);
             given(categoryRepository.findAllById(anyList())).willReturn(List.of(new Category(1L, "피규어")));
 
             TradeCreateCommand command = TradeCreateCommand.builder()
