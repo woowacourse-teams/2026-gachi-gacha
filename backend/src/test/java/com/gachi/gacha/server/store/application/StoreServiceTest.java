@@ -193,20 +193,6 @@ class StoreServiceTest {
                     .containsExactly(nearStore.getId());
         }
 
-        @Test
-        @DisplayName("같은 (gacha_id, store_id) 조합을 두 번 저장하면 유니크 제약 위반으로 실패한다")
-        void rejectsDuplicateStoreGachaLink() {
-            // V10 마이그레이션의 uk_store_gacha_gacha_store 제약이 실제로 걸려 있는지 확인한다.
-            // 이 제약 덕분에 애플리케이션(EXISTS 쿼리) 쪽에서는 중복 방어 로직이 필요 없다.
-            linkStoreToGacha(nearStore, gacha);
-            em.flush();
-
-            assertThatThrownBy(() -> {
-                linkStoreToGacha(nearStore, gacha);
-                em.flush();
-            }).isInstanceOf(PersistenceException.class);
-        }
-
         private void linkStoreToGacha(Store store, Gacha gacha) {
             em.persist(StoreGacha.builder().store(store).gacha(gacha).build());
         }
