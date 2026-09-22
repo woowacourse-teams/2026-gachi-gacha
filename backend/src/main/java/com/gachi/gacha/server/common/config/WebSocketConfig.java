@@ -1,8 +1,8 @@
 package com.gachi.gacha.server.common.config;
 
+import com.gachi.gacha.server.chat.presentation.websocket.StompDestinationInterceptor;
 import com.gachi.gacha.server.common.auth.websocket.StompAuthInterceptor;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -18,6 +18,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final CorsProperty corsProperty;
     private final StompAuthInterceptor stompAuthInterceptor;
+    private final StompDestinationInterceptor stompDestinationInterceptor;
+    private final ThreadPoolTaskScheduler stompHeartbeatScheduler;
 
     @Override
     public void registerStompEndpoints(final StompEndpointRegistry registry) {
@@ -32,20 +34,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         registry.setApplicationDestinationPrefixes("/app");
         registry.enableSimpleBroker("/topic", "/queue")
                 .setHeartbeatValue(new long[]{10_000, 10_000})
-                .setTaskScheduler(stompHeartbeatScheduler());
+                .setTaskScheduler(stompHeartbeatScheduler);
         registry.setUserDestinationPrefix("/user");
-    }
-
-    @Bean
-    public ThreadPoolTaskScheduler stompHeartbeatScheduler() {
-        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-        scheduler.setPoolSize(1);
-        scheduler.setThreadNamePrefix("stomp-heartbeat-");
-        return scheduler;
     }
 
     @Override
     public void configureClientInboundChannel(final ChannelRegistration registration) {
-        registration.interceptors(stompAuthInterceptor);
+        registration.interceptors(stompAuthInterceptor, stompDestinationInterceptor);
     }
 }

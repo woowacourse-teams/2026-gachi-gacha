@@ -214,4 +214,8 @@ public class ChatRoomService {
     public long getUnreadCount(final Long memberId) {
         return chatRoomMemberJpaRepository.countUnreadMessage(memberId);
     }
+
+    public void validateMember(final Long roomId, final Long memberId) {
+        chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
+    }
 }
