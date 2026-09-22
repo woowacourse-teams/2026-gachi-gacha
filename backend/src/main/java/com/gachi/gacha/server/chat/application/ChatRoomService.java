@@ -216,4 +216,8 @@ public class ChatRoomService {
         return memberRepository.findById(memberId)
                 .orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
     }
+
+    public long getUnreadCount(final Long memberId) {
+        return chatRoomMemberJpaRepository.countUnreadMessage(memberId);
+    }
 }

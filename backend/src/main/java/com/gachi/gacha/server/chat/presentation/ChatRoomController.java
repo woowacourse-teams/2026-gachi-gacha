@@ -9,6 +9,7 @@ import com.gachi.gacha.server.chat.presentation.dto.ChatRoomCreateResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomExistenceResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomListResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomResponse;
+import com.gachi.gacha.server.chat.presentation.dto.ChatUnreadCountResponse;
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import jakarta.validation.Valid;
@@ -70,5 +71,11 @@ public class ChatRoomController {
                         .toUri(),
                 response
         );
+    }
+
+    @GetMapping("/unread-count")
+    public BaseResponse<ChatUnreadCountResponse> getUnreadCount(@Auth final Long memberId) {
+        ChatUnreadCountResponse response = ChatUnreadCountResponse.from(chatRoomService.getUnreadCount(memberId));
+        return BaseResponse.ok(response);
     }
 }

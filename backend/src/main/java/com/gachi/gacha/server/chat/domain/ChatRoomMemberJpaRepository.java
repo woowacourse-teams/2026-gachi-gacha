@@ -60,4 +60,23 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
               AND chatRoomMember.member.id = :memberId
             """)
     Optional<ChatRoom> findChatRoom(Long tradeId, Long memberId);
+
+    @Query("""
+            SELECT COALESCE(
+                SUM(
+                    CASE
+                        WHEN chatRoom.lastMessageSequence
+                             > chatRoomMember.lastReadMessageSequence
+                        THEN chatRoom.lastMessageSequence
+                             - chatRoomMember.lastReadMessageSequence
+                        ELSE 0
+                    END
+                ),
+                0
+            )
+            FROM ChatRoomMember chatRoomMember
+            JOIN chatRoomMember.chatRoom chatRoom
+            WHERE chatRoomMember.member.id = :memberId
+            """)
+    long countUnreadMessage(Long memberId);
 }
