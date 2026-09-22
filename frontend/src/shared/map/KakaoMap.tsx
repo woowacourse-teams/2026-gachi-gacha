@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { WheelEvent } from 'react';
 
 import { CurrentLocationButton } from './CurrentLocationButton';
 import {
@@ -27,6 +28,10 @@ export interface KakaoMapProps {
 }
 
 const DEFAULT_MAP_LEVEL = 4;
+
+function keepPageScrollAvailable(event: WheelEvent<HTMLElement>) {
+  event.stopPropagation();
+}
 
 export function KakaoMap({
   center,
@@ -81,6 +86,7 @@ export function KakaoMap({
       role="region"
       aria-label={label}
       aria-busy={mapState.status === 'loading'}
+      onWheelCapture={keepPageScrollAvailable}
     >
       <MapCanvas ref={containerRef} />
 

@@ -69,6 +69,7 @@ export function useKakaoMap({
             initialCenter.latitude,
             initialCenter.longitude,
           ),
+          draggable: true,
           level: initialLevel,
         });
 
