@@ -1,6 +1,8 @@
 import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
+
 const shimmer = keyframes`
   to {
     background-position-x: -220%;
@@ -49,13 +51,9 @@ export const ThumbnailFallback = styled.span`
   inset: 0;
   display: grid;
   place-items: center;
-  color: var(--color-primary, #d93b54);
-  font-size: 26px;
-  font-weight: 800;
-  opacity: 0.45;
 `;
 
-export const Thumbnail = styled.img`
+export const Thumbnail = styled(ImageWithFallback)`
   position: relative;
   display: block;
   width: 100%;

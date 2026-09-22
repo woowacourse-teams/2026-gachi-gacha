@@ -1,5 +1,7 @@
 import styled from '@emotion/styled';
 
+import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
+
 export const Popover = styled.section`
   position: absolute;
   z-index: 30;
@@ -214,13 +216,9 @@ export const ImageFallback = styled.span`
   inset: 0;
   display: grid;
   place-items: center;
-  color: var(--color-primary, #d93b54);
-  font-size: 34px;
-  font-weight: 800;
-  opacity: 0.45;
 `;
 
-export const ProductImage = styled.img`
+export const ProductImage = styled(ImageWithFallback)`
   position: relative;
   display: block;
   width: 100%;

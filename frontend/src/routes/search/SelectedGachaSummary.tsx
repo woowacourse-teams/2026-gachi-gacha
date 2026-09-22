@@ -1,5 +1,6 @@
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
+import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 import {
   CategoryText,
@@ -64,15 +65,15 @@ export function SelectedGachaSummary({
   return (
     <Summary aria-label="선택한 가챠">
       <ThumbnailFrame>
-        <ThumbnailFallback aria-hidden="true">G</ThumbnailFallback>
-        {thumbnailUrl && (
-          <Thumbnail
-            src={thumbnailUrl}
-            alt={`${name} 섬네일`}
-            decoding="async"
-            referrerPolicy="no-referrer"
-          />
-        )}
+        <ThumbnailFallback aria-hidden="true">
+          <LogoImagePlaceholder />
+        </ThumbnailFallback>
+        <Thumbnail
+          src={thumbnailUrl}
+          alt={`${name} 섬네일`}
+          decoding="async"
+          referrerPolicy="no-referrer"
+        />
       </ThumbnailFrame>
       <Information>
         <Eyebrow>이 가챠를 보유한 매장을 보고 있어요</Eyebrow>

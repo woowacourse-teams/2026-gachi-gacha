@@ -2,6 +2,7 @@ import type { UIEvent } from 'react';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
+import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 import {
   CategoryText,
@@ -71,16 +72,16 @@ function ProductCard({ product, query, onSelect }: ProductCardProps) {
         aria-label={`${product.name} 선택`}
       >
         <ProductImageFrame>
-          <ImageFallback aria-hidden="true">G</ImageFallback>
-          {product.thumbnailUrl && (
-            <ProductImage
-              src={product.thumbnailUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-            />
-          )}
+          <ImageFallback aria-hidden="true">
+            <LogoImagePlaceholder />
+          </ImageFallback>
+          <ProductImage
+            src={product.thumbnailUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
         </ProductImageFrame>
         <ProductName title={product.name}>{product.name}</ProductName>
         <CategoryText title={product.categories.join(', ')}>

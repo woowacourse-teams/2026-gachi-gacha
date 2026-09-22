@@ -1,5 +1,7 @@
 import styled from '@emotion/styled';
 
+import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
+
 export const Card = styled.article`
   border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
 
@@ -74,13 +76,9 @@ export const ThumbnailFallback = styled.span`
   inset: 0;
   display: grid;
   place-items: center;
-  color: var(--color-primary, #d93b54);
-  font-size: 34px;
-  font-weight: 800;
-  opacity: 0.45;
 `;
 
-export const Thumbnail = styled.img`
+export const Thumbnail = styled(ImageWithFallback)`
   position: relative;
   display: block;
   width: 100%;

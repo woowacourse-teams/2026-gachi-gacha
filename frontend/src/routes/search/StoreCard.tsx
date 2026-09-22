@@ -1,3 +1,5 @@
+import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
+
 import type { NearbyStoreResponseDto } from './api/nearbyStoresResponseType';
 import {
   Address,
@@ -50,16 +52,16 @@ export function StoreCard({
         onClick={handleClick}
       >
         <ThumbnailFrame>
-          <ThumbnailFallback aria-hidden="true">G</ThumbnailFallback>
-          {thumbnailUrl && (
-            <Thumbnail
-              src={thumbnailUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              referrerPolicy="no-referrer"
-            />
-          )}
+          <ThumbnailFallback aria-hidden="true">
+            <LogoImagePlaceholder />
+          </ThumbnailFallback>
+          <Thumbnail
+            src={thumbnailUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerPolicy="no-referrer"
+          />
         </ThumbnailFrame>
         <Information>
           <Heading>
