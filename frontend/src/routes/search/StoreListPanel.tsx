@@ -3,6 +3,8 @@ import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import type { NearbyStoresResponseDto } from './api/nearbyStoresResponseType';
 import { StoreCard } from './StoreCard';
 import {
+  CarouselIndicatorDot,
+  CarouselIndicators,
   Count,
   DesktopTitle,
   Header,
@@ -47,6 +49,15 @@ export function StoreListPanel({
 }: StoreListPanelProps) {
   const storeCount =
     storesState.status === 'success' ? storesState.data.stores.length : null;
+  const activeStoreIndex =
+    storesState.status === 'success'
+      ? Math.max(
+          storesState.data.stores.findIndex(
+            (store) => store.storeId === selectedStoreId,
+          ),
+          0,
+        )
+      : 0;
   const { listRef, handleScroll } = useStoreCarousel({
     selectedStoreId,
     onSelectStore,
@@ -61,6 +72,22 @@ export function StoreListPanel({
         </Title>
         {storeCount !== null && <Count>{storeCount}곳</Count>}
       </Header>
+
+      {storesState.status === 'success' &&
+        storesState.data.stores.length > 1 && (
+          <CarouselIndicators
+            role="status"
+            aria-label={`${storesState.data.stores.length}개 매장 중 ${activeStoreIndex + 1}번째 매장`}
+          >
+            {storesState.data.stores.map((store, index) => (
+              <CarouselIndicatorDot
+                key={store.storeId}
+                $isActive={index === activeStoreIndex}
+                aria-hidden="true"
+              />
+            ))}
+          </CarouselIndicators>
+        )}
 
       {storesState.status === 'idle' && (
         <StateArea>
