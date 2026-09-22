@@ -19,7 +19,7 @@ export const HeaderContent = styled.div`
   min-height: 76px;
   padding: 12px 32px;
   align-items: center;
-  grid-template-columns: minmax(180px, 1fr) minmax(280px, 720px) minmax(
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 720px) minmax(
       260px,
       1fr
     );
