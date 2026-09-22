@@ -16,8 +16,9 @@ export interface StoreMapPanelProps {
   storesState: AsyncState<NearbyStoresResponseDto>;
   selectedStoreId: number | null;
   isSearchAreaChanged: boolean;
+  onBackgroundClick: () => void;
+  onMapDragEnd: () => void;
   onSelectStore: (storeId: number) => void;
-  onRevealHeader: () => void;
   onViewportCenterChange: (center: MapCoordinate) => void;
   onSearchArea: () => void;
 }
@@ -68,12 +69,14 @@ export function StoreMapPanel({
   storesState,
   selectedStoreId,
   isSearchAreaChanged,
+  onBackgroundClick,
+  onMapDragEnd,
   onSelectStore,
-  onRevealHeader,
   onViewportCenterChange,
   onSearchArea,
 }: StoreMapPanelProps) {
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
+  const ignoreBackgroundClickRef = useRef(false);
   const stores = useVisibleMapStores(storesState);
   const selectedStore = stores.find(
     (store) => store.storeId === selectedStoreId,
@@ -86,15 +89,38 @@ export function StoreMapPanel({
     : center;
   const mapCenter = useVisibleMapCenter(storesState, requestedCenter);
 
-  useStoreMarkers({ map, stores, selectedStoreId, onSelectStore });
+  function selectStoreFromMarker(storeId: number) {
+    ignoreBackgroundClickRef.current = true;
+    onSelectStore(storeId);
+
+    window.setTimeout(() => {
+      ignoreBackgroundClickRef.current = false;
+    }, 0);
+  }
+
+  function handleBackgroundClick() {
+    if (ignoreBackgroundClickRef.current) {
+      ignoreBackgroundClickRef.current = false;
+      return;
+    }
+
+    onBackgroundClick();
+  }
+
+  useStoreMarkers({
+    map,
+    stores,
+    selectedStoreId,
+    onSelectStore: selectStoreFromMarker,
+  });
 
   return (
     <Panel>
       <KakaoMap
         center={mapCenter}
         label="검색된 가챠 보유 매장 지도"
-        onBackgroundClick={onRevealHeader}
-        onDownwardDrag={onRevealHeader}
+        onBackgroundClick={handleBackgroundClick}
+        onDragEnd={onMapDragEnd}
         onMapReady={setMap}
         onViewportCenterChange={onViewportCenterChange}
       />

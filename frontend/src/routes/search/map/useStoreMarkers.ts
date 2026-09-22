@@ -121,10 +121,7 @@ export function useStoreMarkers({
         title: store.name,
         zIndex: isSelected ? MARKER_Z_INDEX.selected : MARKER_Z_INDEX.default,
       });
-      const handleClick = () => {
-        maps.event.preventMap();
-        onSelectStoreRef.current(store.storeId);
-      };
+      const handleClick = () => onSelectStoreRef.current(store.storeId);
 
       maps.event.addListener(marker, 'click', handleClick);
       markerEntries.set(store.storeId, { marker, handleClick });

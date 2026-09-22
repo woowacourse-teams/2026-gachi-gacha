@@ -47,23 +47,37 @@ export function StoreResultsSection({
   const stores =
     storesState.status === 'success' ? storesState.data.stores : EMPTY_STORES;
   const { selectedStoreId, selectStore } = useSelectedStore(stores);
+  const showMapAsMainContent = useCallback(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) {
+      return;
+    }
+
+    sectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, []);
   const selectStoreAndRevealMap = useCallback(
     (storeId: number) => {
       selectStore(storeId);
-
-      if (!window.matchMedia('(max-width: 767px)').matches) {
-        return;
-      }
-
-      window.requestAnimationFrame(() => {
-        sectionRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start',
-        });
-      });
+      window.requestAnimationFrame(showMapAsMainContent);
     },
-    [selectStore],
+    [selectStore, showMapAsMainContent],
   );
+  const toggleMobileHeader = useCallback(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) {
+      return;
+    }
+
+    const mapTop = sectionRef.current?.getBoundingClientRect().top;
+
+    if (mapTop !== undefined && mapTop > 1) {
+      showMapAsMainContent();
+      return;
+    }
+
+    onRevealHeader();
+  }, [onRevealHeader, showMapAsMainContent]);
 
   return (
     <Section ref={sectionRef} aria-label="가챠 보유 매장 검색 결과">
@@ -83,8 +97,9 @@ export function StoreResultsSection({
           storesState={storesState}
           selectedStoreId={selectedStoreId}
           isSearchAreaChanged={isSearchAreaChanged}
+          onBackgroundClick={toggleMobileHeader}
+          onMapDragEnd={showMapAsMainContent}
           onSelectStore={selectStoreAndRevealMap}
-          onRevealHeader={onRevealHeader}
           onSearchArea={onSearchArea}
           onViewportCenterChange={onViewportCenterChange}
         />
