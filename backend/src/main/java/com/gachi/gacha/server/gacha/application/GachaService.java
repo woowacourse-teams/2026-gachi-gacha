@@ -35,6 +35,10 @@ public class GachaService {
         return GachaInfo.from(gachaRepository.getById(gachaId));
     }
 
+    public boolean existsGacha(final Long gachaId) {
+        return gachaRepository.existsById(gachaId);
+    }
+
     private Page<Gacha> toOrderedPage(final Page<Long> idPage) {
         List<Gacha> gachas = gachaRepository.findByIdsWithCategories(idPage.getContent());
 

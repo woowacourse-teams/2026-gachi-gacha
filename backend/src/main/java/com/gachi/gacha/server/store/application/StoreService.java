@@ -2,6 +2,8 @@ package com.gachi.gacha.server.store.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
+import com.gachi.gacha.server.gacha.application.GachaService;
+import com.gachi.gacha.server.gacha.domain.exception.GachaNotFoundException;
 import com.gachi.gacha.server.store.application.dto.StoreDetailResult;
 import com.gachi.gacha.server.store.application.dto.StoreListResult;
 import com.gachi.gacha.server.store.application.dto.StoreNearbyResult;
@@ -11,6 +13,7 @@ import com.gachi.gacha.server.store.domain.StoreDetailJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreImage;
 import com.gachi.gacha.server.store.domain.StoreImageJpaRepository;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
+import com.gachi.gacha.server.store.domain.StoreJpaRepository.StoreWithDistance;
 import com.gachi.gacha.server.store.domain.exception.InvalidNearbyRequestException;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import java.util.List;
@@ -31,6 +34,7 @@ public class StoreService {
     private static final int MIN_SEARCH_RADIUS = 100;
     private static final int MAX_SEARCH_RADIUS = 20_000;
 
+    private final GachaService gachaService;
     private final StoreJpaRepository storeJpaRepository;
     private final StoreDetailJpaRepository storeDetailJpaRepository;
     private final StoreImageJpaRepository storeImageJpaRepository;
@@ -46,21 +50,23 @@ public class StoreService {
         List<StoreJpaRepository.StoreWithDistance> nearbyStores = storeJpaRepository.findNearbyStores(latitude,
                 longitude, radius, floor);
 
-        List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
-                .map(result -> StoreNearbyResult.StoreInfo.builder()
-                        .name(result.getName())
-                        .storeId(result.getStoreId())
-                        .thumbnailUrl(result.getThumbnailUrl())
-                        .address(result.getAddress())
-                        .floor(result.getFloor())
-                        .unit(result.getUnit())
-                        .latitude(result.getLatitude())
-                        .longitude(result.getLongitude())
-                        .distance(result.getDistance())
-                        .build())
-                .toList();
+        return getStoreNearbyResult(latitude, longitude, radius, nearbyStores);
+    }
 
-        return StoreNearbyResult.of(latitude, longitude, radius, storeInfos);
+    public StoreNearbyResult findNearbyStoresByGachaId(
+            final Double latitude,
+            final Double longitude,
+            final Integer radius,
+            final Integer floor,
+            final Long gachaId
+    ) {
+        validateNearbyRequest(latitude, longitude, radius, floor);
+        if (!gachaService.existsGacha(gachaId)) {
+             throw new GachaNotFoundException(ErrorCode.GACHA_NOT_FOUND);
+        }
+        List<StoreJpaRepository.StoreWithDistance> nearbyStores = storeJpaRepository.findNearbyStoresByGachaId(latitude,
+                longitude, radius, floor, gachaId);
+        return getStoreNearbyResult(latitude, longitude, radius, nearbyStores);
     }
 
     public Page<StoreListResult> findStores(final Pageable pageable) {
@@ -125,5 +131,24 @@ public class StoreService {
         if (floor != null && floor == 0) {
             throw new InvalidNearbyRequestException(ErrorCode.INVALID_NEARBY_REQUEST);
         }
+    }
+
+    private StoreNearbyResult getStoreNearbyResult(Double latitude, Double longitude, Integer radius,
+                                                   List<StoreWithDistance> nearbyStores) {
+        List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
+                .map(result -> StoreNearbyResult.StoreInfo.builder()
+                        .name(result.getName())
+                        .storeId(result.getStoreId())
+                        .thumbnailUrl(result.getThumbnailUrl())
+                        .address(result.getAddress())
+                        .floor(result.getFloor())
+                        .unit(result.getUnit())
+                        .latitude(result.getLatitude())
+                        .longitude(result.getLongitude())
+                        .distance(result.getDistance())
+                        .build())
+                .toList();
+
+        return StoreNearbyResult.of(latitude, longitude, radius, storeInfos);
     }
 }

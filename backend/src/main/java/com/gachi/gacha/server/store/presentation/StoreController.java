@@ -39,7 +39,18 @@ public class StoreController {
             @RequestParam(required = false) final Integer floor
     ) {
         StoreNearbyResult result = storeService.findNearbyStores(latitude, longitude, radius, floor);
+        return ResponseEntity.ok(BaseResponse.ok(StoreNearbyResponse.from(result)));
+    }
 
+    @GetMapping("/nearby/{gachaId}")
+    public ResponseEntity<BaseResponse<StoreNearbyResponse>> readNearbyStores(
+            @RequestParam(required = false) final Double latitude,
+            @RequestParam(required = false) final Double longitude,
+            @RequestParam(defaultValue = "3000") final Integer radius,
+            @RequestParam(required = false) final Integer floor,
+            @PathVariable final Long gachaId
+    ) {
+        StoreNearbyResult result = storeService.findNearbyStoresByGachaId(latitude, longitude, radius, floor, gachaId);
         return ResponseEntity.ok(BaseResponse.ok(StoreNearbyResponse.from(result)));
     }
 

@@ -68,6 +68,44 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
             @Param("floor") final Integer floor
     );
 
+    @Query(value = """
+                        SELECT
+                            s.id AS storeId,
+                            s.name AS name,
+                            s.thumbnail_url AS thumbnailUrl,
+                            s.address AS address,
+                            s.floor AS floor,
+                            s.unit AS unit,
+                            s.latitude AS latitude,
+                            s.longitude AS longitude,
+                            ST_DistanceSphere(
+                               s.location,
+                               ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)
+                           ) AS distance
+                        FROM store s
+                        WHERE EXISTS (
+                            SELECT 1
+                            FROM store_gacha sg
+                            WHERE sg.store_id = s.id
+                                  AND sg.gacha_id = :gachaId
+                        )
+                        AND ST_DWithin(
+                           s.location::geography,
+                           ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
+                           :radius
+                        )
+                        AND (:floor IS NULL OR s.floor = :floor)
+                        
+                        ORDER BY distance ASC, s.id ASC    
+    """, nativeQuery = true)
+    List<StoreWithDistance> findNearbyStoresByGachaId(
+            @Param("latitude") final Double latitude,
+            @Param("longitude") final Double longitude,
+            @Param("radius") final Integer radius,
+            @Param("floor") final Integer floor,
+            @Param("gachaId") final Long gachaId
+    );
+
     @Override
     Page<Store> findAll(final Pageable pageable);
 }
