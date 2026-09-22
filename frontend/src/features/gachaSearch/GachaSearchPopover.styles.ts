@@ -38,9 +38,13 @@ export const Header = styled.header`
   padding: 24px 28px 20px;
   border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
 
+  & > div:first-of-type {
+    min-width: 0;
+  }
+
   @media (max-width: 767px) {
-    gap: 14px;
-    padding: 16px 16px 14px;
+    gap: 8px;
+    padding: 14px 12px 12px;
   }
 `;
 
@@ -52,7 +56,10 @@ export const Title = styled.h2`
   letter-spacing: -0.02em;
 
   @media (max-width: 767px) {
+    overflow: hidden;
     font-size: 17px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
@@ -63,8 +70,12 @@ export const HelperText = styled.p`
   line-height: 1.5;
 
   @media (max-width: 767px) {
-    padding-right: 8px;
-    font-size: 12px;
+    overflow: hidden;
+    padding-right: 0;
+    font-size: 10px;
+    letter-spacing: -0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
@@ -95,9 +106,9 @@ export const CloseButton = styled.button`
   }
 
   @media (max-width: 767px) {
-    width: 32px;
-    height: 32px;
-    font-size: 21px;
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
   }
 `;
 
@@ -221,9 +232,14 @@ export const ProductName = styled.strong`
   -webkit-line-clamp: 2;
 
   @media (max-width: 767px) {
-    height: 38px;
+    display: block;
+    height: 20px;
     margin-top: 7px;
+    overflow: hidden;
     font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    -webkit-line-clamp: unset;
   }
 `;
 
