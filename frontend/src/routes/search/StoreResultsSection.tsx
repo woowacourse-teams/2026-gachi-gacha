@@ -25,6 +25,7 @@ export interface StoreResultsSectionProps {
   isSearchAreaChanged: boolean;
   onOpenStore: (storeId: number) => void;
   onRetry: () => void;
+  onRevealHeader: () => void;
   onSearchArea: () => void;
   onViewportCenterChange: (center: MapCoordinate) => void;
 }
@@ -38,6 +39,7 @@ export function StoreResultsSection({
   isSearchAreaChanged,
   onOpenStore,
   onRetry,
+  onRevealHeader,
   onSearchArea,
   onViewportCenterChange,
 }: StoreResultsSectionProps) {
@@ -82,6 +84,7 @@ export function StoreResultsSection({
           selectedStoreId={selectedStoreId}
           isSearchAreaChanged={isSearchAreaChanged}
           onSelectStore={selectStoreAndRevealMap}
+          onRevealHeader={onRevealHeader}
           onSearchArea={onSearchArea}
           onViewportCenterChange={onViewportCenterChange}
         />

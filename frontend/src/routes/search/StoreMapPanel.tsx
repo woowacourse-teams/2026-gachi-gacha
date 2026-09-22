@@ -17,6 +17,7 @@ export interface StoreMapPanelProps {
   selectedStoreId: number | null;
   isSearchAreaChanged: boolean;
   onSelectStore: (storeId: number) => void;
+  onRevealHeader: () => void;
   onViewportCenterChange: (center: MapCoordinate) => void;
   onSearchArea: () => void;
 }
@@ -68,6 +69,7 @@ export function StoreMapPanel({
   selectedStoreId,
   isSearchAreaChanged,
   onSelectStore,
+  onRevealHeader,
   onViewportCenterChange,
   onSearchArea,
 }: StoreMapPanelProps) {
@@ -91,6 +93,8 @@ export function StoreMapPanel({
       <KakaoMap
         center={mapCenter}
         label="검색된 가챠 보유 매장 지도"
+        onBackgroundClick={onRevealHeader}
+        onDownwardDrag={onRevealHeader}
         onMapReady={setMap}
         onViewportCenterChange={onViewportCenterChange}
       />

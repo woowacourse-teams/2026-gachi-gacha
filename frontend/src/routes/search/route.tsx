@@ -27,6 +27,10 @@ function openStoreDetail(storeId: number) {
   window.location.assign(createStoreDetailUrl(storeId));
 }
 
+function revealPageHeader() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
   const { activeSearch, selectGacha } = useSearchRouteNavigation(
     search,
@@ -63,6 +67,7 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
         isSearchAreaChanged={isSearchAreaChanged}
         onOpenStore={openStoreDetail}
         onRetry={retryStores}
+        onRevealHeader={revealPageHeader}
         onSearchArea={commitViewportCenter}
         onViewportCenterChange={updateViewportCenter}
         listHeader={

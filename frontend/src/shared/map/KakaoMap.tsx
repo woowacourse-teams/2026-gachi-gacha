@@ -17,12 +17,15 @@ import type { MapCoordinate } from './mapCoordinateType';
 import { useCurrentLocation } from './useCurrentLocation';
 import { useCurrentLocationMarker } from './useCurrentLocationMarker';
 import { useKakaoMap } from './useKakaoMap';
+import { useKakaoMapInteractions } from './useKakaoMapInteractions';
 import { useKakaoMapViewport } from './useKakaoMapViewport';
 
 export interface KakaoMapProps {
   center: MapCoordinate;
   level?: number;
   label?: string;
+  onBackgroundClick?: () => void;
+  onDownwardDrag?: () => void;
   onMapReady?: (map: kakao.maps.Map | null) => void;
   onViewportCenterChange?: (center: MapCoordinate) => void;
 }
@@ -37,6 +40,8 @@ export function KakaoMap({
   center,
   level = DEFAULT_MAP_LEVEL,
   label = '가챠 매장 지도',
+  onBackgroundClick,
+  onDownwardDrag,
   onMapReady,
   onViewportCenterChange,
 }: KakaoMapProps) {
@@ -49,6 +54,13 @@ export function KakaoMap({
 
   useCurrentLocationMarker({ coordinate: currentLocation, map });
   useKakaoMapViewport({ map, onCenterChange: onViewportCenterChange });
+  const { handlePointerCancel, handlePointerDown, handlePointerUp } =
+    useKakaoMapInteractions({
+      containerRef,
+      map,
+      onBackgroundClick,
+      onDownwardDrag,
+    });
 
   onMapReadyRef.current = onMapReady;
 
@@ -86,6 +98,9 @@ export function KakaoMap({
       role="region"
       aria-label={label}
       aria-busy={mapState.status === 'loading'}
+      onPointerCancel={handlePointerCancel}
+      onPointerDownCapture={handlePointerDown}
+      onPointerUpCapture={handlePointerUp}
       onWheelCapture={keepPageScrollAvailable}
     >
       <MapCanvas ref={containerRef} />
