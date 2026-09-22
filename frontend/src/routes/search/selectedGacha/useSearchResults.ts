@@ -1,8 +1,8 @@
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import { getSelectedGachaId } from './searchParams';
 import { useSelectedGacha } from './useSelectedGacha';
+import { getSelectedGachaId } from '../routing/searchParams';
 
 export interface SearchResultsState {
   selectedGachaId: number | null;

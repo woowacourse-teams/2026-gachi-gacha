@@ -4,12 +4,12 @@ import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import { KakaoMap } from '@/shared/map/KakaoMap';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 
+import { Panel, RefreshIcon, SearchAreaButton } from './StoreMapPanel.styles';
+import { useStoreMarkers } from './useStoreMarkers';
 import type {
   NearbyStoreResponseDto,
   NearbyStoresResponseDto,
-} from './api/nearbyStoresResponseType';
-import { useStoreMarkers } from './map/useStoreMarkers';
-import { Panel, RefreshIcon, SearchAreaButton } from './StoreMapPanel.styles';
+} from '../../api/nearbyStoresResponseType';
 
 export interface StoreMapPanelProps {
   center: MapCoordinate;

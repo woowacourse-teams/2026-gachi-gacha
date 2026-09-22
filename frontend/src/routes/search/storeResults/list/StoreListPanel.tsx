@@ -1,6 +1,5 @@
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import type { NearbyStoresResponseDto } from './api/nearbyStoresResponseType';
 import { StoreCard } from './StoreCard';
 import {
   CarouselIndicatorDot,
@@ -21,6 +20,7 @@ import {
   Title,
 } from './StoreListPanel.styles';
 import { useStoreCarousel } from './useStoreCarousel';
+import type { NearbyStoresResponseDto } from '../../api/nearbyStoresResponseType';
 
 export interface StoreListPanelProps {
   storesState: AsyncState<NearbyStoresResponseDto>;

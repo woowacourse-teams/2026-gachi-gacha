@@ -4,12 +4,12 @@ import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import { Page, PageTitle, SelectedGachaArea } from './route.styles';
-import { SelectedGachaSummary } from './SelectedGachaSummary';
-import { StoreResultsSection } from './StoreResultsSection';
-import { useSearchResults } from './useSearchResults';
-import { useSearchRouteNavigation } from './useSearchRouteNavigation';
-import { useSearchStores } from './useSearchStores';
-import { useStoreSearchArea } from './useStoreSearchArea';
+import { useSearchRouteNavigation } from './routing/useSearchRouteNavigation';
+import { SelectedGachaSummary } from './selectedGacha/SelectedGachaSummary';
+import { useSearchResults } from './selectedGacha/useSearchResults';
+import { StoreResultsSection } from './storeResults/StoreResultsSection';
+import { useSearchStores } from './storeResults/useSearchStores';
+import { useStoreSearchArea } from './storeResults/useStoreSearchArea';
 
 export interface SearchRouteProps {
   search?: string;

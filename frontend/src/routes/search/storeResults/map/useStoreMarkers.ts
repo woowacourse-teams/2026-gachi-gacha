@@ -5,7 +5,7 @@ import {
   type StoreMarkerImage,
 } from '@/shared/map/storeMarkerImage';
 
-import type { NearbyStoreResponseDto } from '../api/nearbyStoresResponseType';
+import type { NearbyStoreResponseDto } from '../../api/nearbyStoresResponseType';
 
 interface StoreMarkersOptions {
   map: kakao.maps.Map | null;

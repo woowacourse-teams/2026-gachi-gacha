@@ -7,9 +7,9 @@ import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 import type {
   NearbyStoreResponseDto,
   NearbyStoresResponseDto,
-} from './api/nearbyStoresResponseType';
-import { StoreListPanel } from './StoreListPanel';
-import { StoreMapPanel } from './StoreMapPanel';
+} from '../api/nearbyStoresResponseType';
+import { StoreListPanel } from './list/StoreListPanel';
+import { StoreMapPanel } from './map/StoreMapPanel';
 import {
   ListArea,
   ListHeaderArea,

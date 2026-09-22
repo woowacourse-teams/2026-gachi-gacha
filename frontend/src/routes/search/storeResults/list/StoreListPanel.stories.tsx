@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import type { NearbyStoresResponseDto } from './api/nearbyStoresResponseType';
-import { nearbyStoresMockResponse } from './mocks/nearbyStoresMock';
 import { StoreListPanel, type StoreListPanelProps } from './StoreListPanel';
+import type { NearbyStoresResponseDto } from '../../api/nearbyStoresResponseType';
+import { nearbyStoresMockResponse } from '../../mocks/nearbyStoresMock';
 
 function createThumbnail(): string {
   const svg = `

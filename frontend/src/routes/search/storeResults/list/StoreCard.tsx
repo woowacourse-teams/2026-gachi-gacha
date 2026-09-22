@@ -1,6 +1,5 @@
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
-import type { NearbyStoreResponseDto } from './api/nearbyStoresResponseType';
 import {
   Address,
   Card,
@@ -14,6 +13,7 @@ import {
   ThumbnailFallback,
   ThumbnailFrame,
 } from './StoreCard.styles';
+import type { NearbyStoreResponseDto } from '../../api/nearbyStoresResponseType';
 
 export interface StoreCardProps {
   store: NearbyStoreResponseDto;

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import { getNearbyStores } from './api/getNearbyStores';
-import type { NearbyStoreSearchParams } from './api/nearbyStoreSearchParamsType';
-import type { NearbyStoresResponseDto } from './api/nearbyStoresResponseType';
+import { getNearbyStores } from '../api/getNearbyStores';
+import type { NearbyStoreSearchParams } from '../api/nearbyStoreSearchParamsType';
+import type { NearbyStoresResponseDto } from '../api/nearbyStoresResponseType';
 
 type SettledSearchStoresState = Extract<
   AsyncState<NearbyStoresResponseDto>,

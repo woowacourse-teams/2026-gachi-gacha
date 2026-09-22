@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { NearbyStoreResponseDto } from './api/nearbyStoresResponseType';
+import type { NearbyStoreResponseDto } from '../api/nearbyStoresResponseType';
 
 export interface UseSelectedStoreResult {
   selectedStoreId: number | null;

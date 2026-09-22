@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import { getGachaProductSummary } from './api/getGachaProductSummary';
+import { getGachaProductSummary } from '../api/getGachaProductSummary';
 
 type SettledSelectedGachaState = Extract<
   AsyncState<GachaProductSummary>,
