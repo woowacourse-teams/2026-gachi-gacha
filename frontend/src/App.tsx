@@ -1,42 +1,90 @@
-import { Global, css } from '@emotion/react';
-import styled from '@emotion/styled';
+import { lazy, Suspense, useEffect } from 'react';
 
-import MapPage from './pages/Map';
+import { GlobalStyles } from '@/shared/ui/GlobalStyles';
+import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
-const globalStyle = css`
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
+const SearchRoute = lazy(async () => {
+  const routeModule = await import('@/routes/search/route');
+
+  return { default: routeModule.SearchRoute };
+});
+
+const StoreDetailRoute = lazy(async () => {
+  const routeModule = await import('@/routes/stores.$storeId/route');
+
+  return { default: routeModule.StoreDetailRoute };
+});
+
+const UsedMarketRoute = lazy(async () => {
+  const routeModule = await import('@/routes/used-market/route');
+
+  return { default: routeModule.UsedMarketRoute };
+});
+
+const SEARCH_PATH = '/search';
+const USED_MARKET_PATH = '/used-market';
+const STORE_DETAIL_PATH_PATTERN = /^\/stores\/[1-9]\d*$/;
+
+type AppRoute = 'search' | 'storeDetail' | 'usedMarket';
+
+function removeTrailingSlash(pathname: string): string {
+  return pathname.length > 1 && pathname.endsWith('/')
+    ? pathname.slice(0, -1)
+    : pathname;
+}
+
+function resolveAppRoute(pathname: string): AppRoute {
+  const normalizedPathname = removeTrailingSlash(pathname);
+
+  if (normalizedPathname === USED_MARKET_PATH) {
+    return 'usedMarket';
   }
 
-  body {
-    margin: 0;
-    font-family: 'IBM Plex Sans KR', sans-serif;
+  if (STORE_DETAIL_PATH_PATTERN.test(normalizedPathname)) {
+    return 'storeDetail';
   }
 
-  button,
-  input,
-  select,
-  textarea {
-    font: inherit;
-  }
-`;
+  return 'search';
+}
 
-const MobileLayout = styled.div`
-  width: 100%;
-  max-width: 430px;
-  height: 100dvh;
-  margin: 0 auto;
-`;
+function createCanonicalSearchUrl(): string {
+  return `${SEARCH_PATH}${window.location.search}${window.location.hash}`;
+}
 
 export default function App() {
+  const route = resolveAppRoute(window.location.pathname);
+  const shouldRedirectToSearch =
+    route === 'search' && window.location.pathname !== SEARCH_PATH;
+
+  useEffect(() => {
+    if (!shouldRedirectToSearch) {
+      return;
+    }
+
+    window.history.replaceState(
+      window.history.state,
+      '',
+      createCanonicalSearchUrl(),
+    );
+  }, [shouldRedirectToSearch]);
+
+  const routeElement =
+    route === 'storeDetail' ? (
+      <StoreDetailRoute />
+    ) : route === 'usedMarket' ? (
+      <UsedMarketRoute />
+    ) : (
+      <SearchRoute />
+    );
+
   return (
     <>
-      <Global styles={globalStyle} />
-      <MobileLayout>
-        <MapPage />
-      </MobileLayout>
+      <GlobalStyles />
+      <Suspense
+        fallback={<PageLoadingFallback label="페이지를 준비하고 있어요." />}
+      >
+        {routeElement}
+      </Suspense>
     </>
   );
 }
