@@ -86,10 +86,6 @@ public class StoreService {
         return StoreDetailResult.of(store, storeDetail, storeImages);
     }
 
-    public Slice<StoreDetail> findStoresWithInstagram(final Pageable pageable) {
-        return storeDetailJpaRepository.findAllByInstagramIdIsNotNull(pageable);
-    }
-
     private Map<Long, StoreDetail> findStoreDetails(final Page<Store> stores) {
         List<Long> storeIds = stores.stream()
                 .map(Store::getId)
