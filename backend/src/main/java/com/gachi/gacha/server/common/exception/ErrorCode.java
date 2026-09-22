@@ -48,6 +48,9 @@ public enum ErrorCode {
     INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUE03", "로그인 요청이 유효하지 않습니다. 다시 로그인해주세요."),
     OAUTH_AUTHENTICATION_DENIED(HttpStatus.UNAUTHORIZED, "AUE04", "로그인이 취소되었거나 실패했습니다. 다시 시도해주세요."),
 
+    // Chat
+    CHAT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE001", "채팅 상대방 정보를 찾을 수 없습니다."),
+
     // Category
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CAE01", "존재하지 않는 카테고리입니다."),
 
