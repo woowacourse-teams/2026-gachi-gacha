@@ -86,7 +86,7 @@ public class StoreService {
         return StoreDetailResult.of(store, storeDetail, storeImages);
     }
 
-    public Slice<StoreDetail> findStoresWithInstagram(Pageable pageable) {
+    public Slice<StoreDetail> findStoresWithInstagram(final Pageable pageable) {
         return storeDetailJpaRepository.findAllByInstagramIdIsNotNull(pageable);
     }
 
@@ -133,8 +133,12 @@ public class StoreService {
         }
     }
 
-    private StoreNearbyResult getStoreNearbyResult(Double latitude, Double longitude, Integer radius,
-                                                   List<StoreWithDistance> nearbyStores) {
+    private StoreNearbyResult getStoreNearbyResult(
+            final Double latitude,
+            final Double longitude,
+            final Integer radius,
+            final List<StoreWithDistance> nearbyStores
+    ) {
         List<StoreNearbyResult.StoreInfo> storeInfos = nearbyStores.stream()
                 .map(result -> StoreNearbyResult.StoreInfo.builder()
                         .name(result.getName())
