@@ -18,6 +18,7 @@ import { useCurrentLocation } from './useCurrentLocation';
 import { useCurrentLocationMarker } from './useCurrentLocationMarker';
 import { useKakaoMap } from './useKakaoMap';
 import { useKakaoMapInteractions } from './useKakaoMapInteractions';
+import { useKakaoMapRelayout } from './useKakaoMapRelayout';
 import { useKakaoMapViewport } from './useKakaoMapViewport';
 
 export interface KakaoMapProps {
@@ -55,6 +56,7 @@ export function KakaoMap({
   useCurrentLocationMarker({ coordinate: currentLocation, map });
   useKakaoMapViewport({ map, onCenterChange: onViewportCenterChange });
   useKakaoMapInteractions({ map, onBackgroundClick, onDragEnd });
+  useKakaoMapRelayout({ containerRef, map });
 
   onMapReadyRef.current = onMapReady;
 
