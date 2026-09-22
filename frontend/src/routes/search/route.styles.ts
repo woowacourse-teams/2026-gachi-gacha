@@ -22,6 +22,6 @@ export const SelectedGachaArea = styled.div`
   padding-top: 24px;
 
   @media (max-width: 767px) {
-    padding-top: 10px;
+    padding-top: 0;
   }
 `;

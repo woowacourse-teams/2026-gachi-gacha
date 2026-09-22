@@ -79,10 +79,17 @@ export function useStoreCarousel({
       `[data-store-id="${selectedStoreId}"]`,
     );
 
-    selectedItem?.scrollIntoView({
+    if (!selectedItem) {
+      return;
+    }
+
+    const listLeft = list.getBoundingClientRect().left;
+    const itemLeft = selectedItem.getBoundingClientRect().left;
+    const scrollPadding = Number.parseFloat(getComputedStyle(list).paddingLeft);
+
+    list.scrollTo({
+      left: list.scrollLeft + itemLeft - listLeft - scrollPadding,
       behavior: 'smooth',
-      block: 'nearest',
-      inline: 'start',
     });
   }, [selectedStoreId]);
 

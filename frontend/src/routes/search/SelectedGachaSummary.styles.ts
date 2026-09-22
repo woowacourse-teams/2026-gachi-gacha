@@ -23,6 +23,7 @@ export const Summary = styled.section`
     padding: 9px 12px;
     gap: 10px;
     border-radius: 14px;
+    box-shadow: 0 8px 24px rgb(36 33 34 / 14%);
   }
 `;
 

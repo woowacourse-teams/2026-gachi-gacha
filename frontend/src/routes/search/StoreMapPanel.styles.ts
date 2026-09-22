@@ -43,7 +43,7 @@ export const SearchAreaButton = styled.button`
   }
 
   @media (max-width: 767px) {
-    top: 12px;
+    top: 96px;
     min-height: 38px;
     padding: 0 14px;
     font-size: 12px;

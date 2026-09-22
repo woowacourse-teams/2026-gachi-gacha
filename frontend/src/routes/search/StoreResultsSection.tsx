@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
@@ -40,19 +41,37 @@ export function StoreResultsSection({
   onSearchArea,
   onViewportCenterChange,
 }: StoreResultsSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
   const stores =
     storesState.status === 'success' ? storesState.data.stores : EMPTY_STORES;
   const { selectedStoreId, selectStore } = useSelectedStore(stores);
+  const selectStoreAndRevealMap = useCallback(
+    (storeId: number) => {
+      selectStore(storeId);
+
+      if (!window.matchMedia('(max-width: 767px)').matches) {
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        sectionRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    },
+    [selectStore],
+  );
 
   return (
-    <Section aria-label="가챠 보유 매장 검색 결과">
+    <Section ref={sectionRef} aria-label="가챠 보유 매장 검색 결과">
       {listHeader && <ListHeaderArea>{listHeader}</ListHeaderArea>}
       <ListArea>
         <StoreListPanel
           storesState={storesState}
           selectedStoreId={selectedStoreId}
           onOpenStore={onOpenStore}
-          onSelectStore={selectStore}
+          onSelectStore={selectStoreAndRevealMap}
           onRetry={onRetry}
         />
       </ListArea>
@@ -62,7 +81,7 @@ export function StoreResultsSection({
           storesState={storesState}
           selectedStoreId={selectedStoreId}
           isSearchAreaChanged={isSearchAreaChanged}
-          onSelectStore={selectStore}
+          onSelectStore={selectStoreAndRevealMap}
           onSearchArea={onSearchArea}
           onViewportCenterChange={onViewportCenterChange}
         />

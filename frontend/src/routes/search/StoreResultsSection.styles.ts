@@ -14,13 +14,11 @@ export const Section = styled.section`
 
   @media (max-width: 767px) {
     position: relative;
-    height: auto;
-    min-height: 0;
+    height: 100dvh;
+    min-height: 100dvh;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(420px, calc(100dvh - 122px));
-    grid-template-areas:
-      'header'
-      'map';
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: 'map';
   }
 `;
 
@@ -30,11 +28,12 @@ export const ListHeaderArea = styled.div`
   grid-area: header;
 
   @media (max-width: 767px) {
+    position: absolute;
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
+    left: 12px;
     z-index: 3;
-    padding: 0 14px 12px;
-    border-bottom: 1px solid rgb(36 33 34 / 7%);
-    background: var(--color-surface, #ffffff);
-    box-shadow: 0 10px 20px -20px rgb(36 33 34 / 45%);
+    padding: 0;
   }
 `;
 

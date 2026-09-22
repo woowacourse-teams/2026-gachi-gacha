@@ -83,7 +83,7 @@ export const List = styled.ul`
   @media (max-width: 767px) {
     display: grid;
     padding: 0 12px;
-    grid-auto-columns: min(340px, calc(100vw - 40px));
+    grid-auto-columns: calc(100vw - 24px);
     grid-auto-flow: column;
     gap: 10px;
     overflow-x: auto;
@@ -169,7 +169,7 @@ export const LoadingList = styled.div`
 
   @media (max-width: 767px) {
     padding: 0 12px;
-    grid-auto-columns: min(340px, calc(100vw - 40px));
+    grid-auto-columns: calc(100vw - 24px);
     grid-auto-flow: column;
     gap: 12px;
     overflow: hidden;
