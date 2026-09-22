@@ -18,14 +18,16 @@ export const Popover = styled.section`
   color: var(--color-text, #242122);
 
   @media (max-width: 767px) {
-    top: calc(100% + 8px);
-    right: 0;
-    left: 0;
-    width: 100%;
-    height: min(64dvh, 560px);
-    max-height: calc(100dvh - 152px);
-    transform: none;
-    border-radius: 18px;
+    top: 100%;
+    right: auto;
+    left: 50%;
+    width: 100vw;
+    height: calc(100dvh - 106px);
+    max-height: none;
+    transform: translateX(-50%);
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0 0 18px 18px;
     box-shadow: 0 16px 36px rgb(35 31 32 / 16%);
   }
 `;
@@ -72,7 +74,7 @@ export const HelperText = styled.p`
   @media (max-width: 767px) {
     overflow: hidden;
     padding-right: 0;
-    font-size: 10px;
+    font-size: clamp(10px, 3.333vw, 12px);
     letter-spacing: -0.04em;
     text-overflow: ellipsis;
     white-space: nowrap;
