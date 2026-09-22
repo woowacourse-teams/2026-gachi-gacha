@@ -54,6 +54,7 @@ public class ChatMessage extends MongoBaseTimeDocument {
     public static class MessageFile {
         private String mediaUrl;
         private String fileName;
+        private String contentType;
         private Long fileSize;
     }
 }

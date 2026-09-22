@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.chat.domain;
 
+import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
+import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.Member;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +39,11 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
               AND chatRoomMember.member.id = :memberId
             """)
     Optional<ChatRoomMember> findByRoomIdAndMemberId(Long roomId, Long memberId);
+
+    default ChatRoomMember getByRoomIdAndMemberId(final Long roomId, final Long memberId) {
+        return findByRoomIdAndMemberId(roomId, memberId)
+                .orElseThrow(() -> new ChatRoomAccessDeniedException(ErrorCode.CHAT_ROOM_ACCESS_DENIED));
+    }
 
     @Query("""
             SELECT chatRoomMember.member
