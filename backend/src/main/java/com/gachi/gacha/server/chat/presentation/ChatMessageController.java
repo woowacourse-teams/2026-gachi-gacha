@@ -3,11 +3,15 @@ package com.gachi.gacha.server.chat.presentation;
 import com.gachi.gacha.server.chat.application.ChatMessageService;
 import com.gachi.gacha.server.chat.application.dto.ChatMessagePageInfo;
 import com.gachi.gacha.server.chat.presentation.dto.ChatMessagePageResponse;
+import com.gachi.gacha.server.chat.presentation.dto.ChatMessageReadRequest;
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,5 +37,20 @@ public class ChatMessageController {
                 pageSize
         );
         return BaseResponse.ok(ChatMessagePageResponse.from(chatMessagePageInfo));
+    }
+
+    @PatchMapping("/read")
+    public BaseResponse<Void> readMessages(
+            @Auth final Long memberId,
+            @PathVariable final Long roomId,
+            @Valid @RequestBody final ChatMessageReadRequest request
+    ) {
+        chatMessageService.readMessage(
+                memberId,
+                roomId,
+                request.lastReadSequence()
+        );
+
+        return BaseResponse.updated(null);
     }
 }

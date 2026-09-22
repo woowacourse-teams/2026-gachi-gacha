@@ -3,8 +3,11 @@ package com.gachi.gacha.server.chat.application;
 import com.gachi.gacha.server.chat.application.dto.ChatMessagePageInfo;
 import com.gachi.gacha.server.chat.domain.ChatMessage;
 import com.gachi.gacha.server.chat.domain.ChatMessageMongoRepository;
+import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
+import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
+import com.gachi.gacha.server.chat.domain.exception.InvalidReadSequenceException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import java.util.List;
@@ -61,6 +64,28 @@ public class ChatMessageService {
         }
         if (lastSequence != null && lastSequence <= 0) {
             throw new InvalidPageRequestException(ErrorCode.INVALID_PAGE_REQUEST);
+        }
+    }
+
+    @Transactional
+    public void readMessage(
+            final Long memberId,
+            final Long roomId,
+            final Long lastReadSequence
+    ) {
+        ChatRoom chatRoom = chatRoomJpaRepository.getById(roomId);
+
+        ChatRoomMember chatRoomMember = chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
+        validateReadSequence(chatRoom, lastReadSequence);
+        chatRoomMember.read(lastReadSequence);
+    }
+
+    private void validateReadSequence(
+            final ChatRoom chatRoom,
+            final Long lastReadSequence
+    ) {
+        if (lastReadSequence == null || lastReadSequence < 0 || lastReadSequence > chatRoom.getLastMessageSequence()) {
+            throw new InvalidReadSequenceException(ErrorCode.INVALID_READ_SEQUENCE);
         }
     }
 }

@@ -54,7 +54,7 @@ public enum ErrorCode {
     CHAT_ROOM_ALREADY_EXISTS(HttpStatus.CONFLICT, "CHE003", "이미 생성된 채팅방입니다."),
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE004", "존재하지 않는 채팅방입니다."),
     CHAT_ROOM_ACCESS_DENIED(HttpStatus.FORBIDDEN, "CHE005", "채팅방에 접근할 권한이 없습니다."),
-
+    INVALID_READ_SEQUENCE(HttpStatus.BAD_REQUEST, "CHE006", "유효하지 않은 읽음 메시지 sequence 입니다"),
 
     // Category
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CAE01", "존재하지 않는 카테고리입니다."),

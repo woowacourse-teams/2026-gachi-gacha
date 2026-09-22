@@ -49,4 +49,10 @@ public class ChatRoomMember extends BaseTimeEntity {
                 0L,
                 LocalDateTime.now());
     }
+
+    public void read(final Long sequence) {
+        if (sequence > lastReadMessageSequence) {
+            lastReadMessageSequence = sequence;
+        }
+    }
 }
