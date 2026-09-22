@@ -2,6 +2,7 @@ package com.gachi.gacha.server.common.config;
 
 import com.gachi.gacha.server.chat.presentation.websocket.StompDestinationInterceptor;
 import com.gachi.gacha.server.common.auth.websocket.StompAuthInterceptor;
+import com.gachi.gacha.server.common.exception.StompErrorHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -20,6 +21,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final StompAuthInterceptor stompAuthInterceptor;
     private final StompDestinationInterceptor stompDestinationInterceptor;
     private final ThreadPoolTaskScheduler stompHeartbeatScheduler;
+    private final StompErrorHandler stompErrorHandler;
 
     @Override
     public void registerStompEndpoints(final StompEndpointRegistry registry) {
@@ -27,6 +29,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setAllowedOriginPatterns(
                         corsProperty.allowedOriginPatternsAsArray()
                 );
+        registry.setErrorHandler(stompErrorHandler);
     }
 
     @Override
