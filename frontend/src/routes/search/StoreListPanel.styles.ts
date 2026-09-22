@@ -32,9 +32,9 @@ export const CarouselIndicators = styled.div`
     justify-content: center;
     gap: 5px;
     transform: translateX(-50%);
-    border: 1px solid rgb(36 33 34 / 8%);
+    border: 1px solid rgb(36 33 34 / 6%);
     border-radius: 999px;
-    background: rgb(255 255 255 / 78%);
+    background: rgb(74 70 71 / 16%);
     box-shadow: 0 4px 12px rgb(36 33 34 / 10%);
     backdrop-filter: blur(8px);
   }
@@ -44,13 +44,11 @@ export const CarouselIndicatorDot = styled.span<{ $isActive: boolean }>`
   width: 7px;
   height: 7px;
   flex: 0 0 auto;
-  border: 1px solid
-    ${({ $isActive }) => ($isActive ? 'rgb(36 33 34 / 28%)' : 'transparent')};
   border-radius: 50%;
   background: ${({ $isActive }) =>
-    $isActive ? '#ffffff' : 'rgb(119 113 115 / 48%)'};
+    $isActive ? '#c94b59' : 'rgb(91 86 88 / 42%)'};
   box-shadow: ${({ $isActive }) =>
-    $isActive ? '0 1px 4px rgb(36 33 34 / 22%)' : 'none'};
+    $isActive ? '0 1px 4px rgb(127 37 52 / 28%)' : 'none'};
 `;
 
 export const Header = styled.div<{ $showOnMobile: boolean }>`
