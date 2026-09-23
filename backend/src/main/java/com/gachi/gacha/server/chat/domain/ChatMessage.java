@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.chat.domain;
 
 import com.gachi.gacha.server.chat.domain.exception.InvalidChatMessageException;
-import com.gachi.gacha.server.common.domain.MongoBaseTimeDocument;
+import com.gachi.gacha.server.common.domain.BaseTimeDocument;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +22,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
         def = "{'roomId': 1, 'sequence': 1}",
         unique = true
 )
-public class ChatMessage extends MongoBaseTimeDocument {
+public class ChatMessage extends BaseTimeDocument {
 
     private static final Set<MessageType> SENDABLE_TYPES =
             Set.of(MessageType.TEXT, MessageType.IMAGE, MessageType.FILE);
