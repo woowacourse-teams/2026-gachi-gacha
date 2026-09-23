@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 import CategoryFeed from './components/CategoryFeed';
+import Footer from './components/Footer';
 import Header from './components/Header';
 import SearchHero from './components/SearchHero';
 
@@ -14,6 +15,7 @@ export default function HomePage() {
         <CategoryFeed />
       </Main>
 
+      <Footer />
     </Page>
   );
 }
