@@ -1,7 +1,5 @@
 package com.gachi.gacha.server.store.domain;
 
-import static com.gachi.gacha.server.common.util.BaseUtils.valueOrCurrent;
-
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.store.domain.exception.InvalidStoreException;
 import jakarta.persistence.CollectionTable;
@@ -13,7 +11,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
-import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -33,12 +30,6 @@ public class StoreDetail extends BaseTimeEntity {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "store_id")
     private Store store;
-
-    @NotNull
-    private String name;
-
-    @NotNull
-    private String address;
 
     private String businessHours;
 
@@ -74,8 +65,6 @@ public class StoreDetail extends BaseTimeEntity {
     private StoreDetail(
             final Long id,
             final Store store,
-            final String name,
-            final String address,
             final String businessHours,
             final String paymentMethods,
             final String phone,
@@ -93,7 +82,6 @@ public class StoreDetail extends BaseTimeEntity {
             final Boolean hasRandomBox,
             final Boolean hasSelectGacha
     ) {
-        validateRequired(name, address);
         validateNonNegative(machineAmount, kujiAmount, coinPrice);
         validatePriceRange(gachaMinPrice, gachaMaxPrice);
         validatePriceRange(kujiMinPrice, kujiMaxPrice);
@@ -101,8 +89,6 @@ public class StoreDetail extends BaseTimeEntity {
 
         this.id = id;
         this.store = store;
-        this.name = name;
-        this.address = address;
         this.businessHours = businessHours;
         this.paymentMethods = paymentMethods;
         this.phone = phone;
@@ -119,41 +105,6 @@ public class StoreDetail extends BaseTimeEntity {
         this.selectGachaMaxPrice = selectGachaMaxPrice;
         this.hasRandomBox = hasRandomBox;
         this.hasSelectGacha = hasSelectGacha;
-    }
-
-    public StoreDetail patch(final StoreDetailUpdate update) {
-        return StoreDetail.builder()
-                .id(id)
-                .store(store)
-                .name(valueOrCurrent(update.name(), name))
-                .address(valueOrCurrent(update.address(), address))
-                .businessHours(valueOrCurrent(update.businessHours(), businessHours))
-                .paymentMethods(valueOrCurrent(update.paymentMethods(), paymentMethods))
-                .phone(valueOrCurrent(update.phone(), phone))
-                .facilities(update.facilities() == null ? facilities : update.facilities())
-                .instagramId(valueOrCurrent(update.instagramId(), instagramId))
-                .machineAmount(valueOrCurrent(update.machineAmount(), machineAmount))
-                .kujiAmount(valueOrCurrent(update.kujiAmount(), kujiAmount))
-                .coinPrice(valueOrCurrent(update.coinPrice(), coinPrice))
-                .gachaMinPrice(valueOrCurrent(update.gachaMinPrice(), gachaMinPrice))
-                .gachaMaxPrice(valueOrCurrent(update.gachaMaxPrice(), gachaMaxPrice))
-                .kujiMinPrice(valueOrCurrent(update.kujiMinPrice(), kujiMinPrice))
-                .kujiMaxPrice(valueOrCurrent(update.kujiMaxPrice(), kujiMaxPrice))
-                .selectGachaMinPrice(valueOrCurrent(update.selectGachaMinPrice(), selectGachaMinPrice))
-                .selectGachaMaxPrice(valueOrCurrent(update.selectGachaMaxPrice(), selectGachaMaxPrice))
-                .hasRandomBox(valueOrCurrent(update.hasRandomBox(), hasRandomBox))
-                .hasSelectGacha(valueOrCurrent(update.hasSelectGacha(), hasSelectGacha))
-                .build();
-    }
-
-    private void validateRequired(final String name, final String address) {
-        if (isBlank(name) || isBlank(address)) {
-            throw new InvalidStoreException();
-        }
-    }
-
-    private boolean isBlank(final String value) {
-        return value == null || value.isBlank();
     }
 
     private void validateNonNegative(

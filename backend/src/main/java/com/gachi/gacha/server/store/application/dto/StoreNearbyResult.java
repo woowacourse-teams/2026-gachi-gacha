@@ -1,7 +1,6 @@
 package com.gachi.gacha.server.store.application.dto;
 
 import com.gachi.gacha.server.common.util.BaseUtils;
-import com.gachi.gacha.server.store.domain.Store;
 import java.util.List;
 import lombok.Builder;
 
@@ -33,20 +32,14 @@ public record StoreNearbyResult(
     @Builder
     public record StoreInfo(
             Long storeId,
+            String name,
             String thumbnailUrl,
+            String address,
+            Integer floor,
+            String unit,
             Double latitude,
             Double longitude,
             Double distance
     ) {
-
-        public static StoreInfo of(final Store store, final Double distance) {
-            return new StoreInfo(
-                    store.getId(),
-                    store.getThumbnailUrl(),
-                    store.getLatitude(),
-                    store.getLongitude(),
-                    distance
-            );
-        }
     }
 }

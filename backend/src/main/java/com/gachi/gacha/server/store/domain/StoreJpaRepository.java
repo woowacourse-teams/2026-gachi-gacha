@@ -7,6 +7,8 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -16,7 +18,93 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
         return findById(storeId).orElseThrow(() -> new StoreNotFoundException(ErrorCode.STORE_NOT_FOUND));
     }
 
-    List<Store> findAllByLatitudeBetween(final Double minLatitude, final Double maxLatitude);
+    interface StoreWithDistance {
+        String getName();
+
+        Long getStoreId();
+
+        String getThumbnailUrl();
+
+        String getAddress();
+
+        Integer getFloor();
+
+        String getUnit();
+
+        Double getLatitude();
+
+        Double getLongitude();
+
+        Double getDistance();
+    }
+
+    @Query(value = """
+                        SELECT
+                            s.id AS storeId,
+                            s.name AS name,
+                            s.thumbnail_url AS thumbnailUrl,
+                            s.address AS address,
+                            s.floor AS floor,
+                            s.unit AS unit,
+                            s.latitude AS latitude,
+                            s.longitude AS longitude,
+                            ST_DistanceSphere(
+                               s.location,
+                               ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)
+                           ) AS distance
+                        FROM store s
+                        WHERE ST_DWithin(
+                           s.location::geography,
+                           ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
+                           :radius
+                        )
+                        AND (:floor IS NULL OR s.floor = :floor)
+                        ORDER BY distance ASC, s.id ASC
+            """, nativeQuery = true)
+    List<StoreWithDistance> findNearbyStores(
+            @Param("latitude") final Double latitude,
+            @Param("longitude") final Double longitude,
+            @Param("radius") final Integer radius,
+            @Param("floor") final Integer floor
+    );
+
+    @Query(value = """
+                        SELECT
+                            s.id AS storeId,
+                            s.name AS name,
+                            s.thumbnail_url AS thumbnailUrl,
+                            s.address AS address,
+                            s.floor AS floor,
+                            s.unit AS unit,
+                            s.latitude AS latitude,
+                            s.longitude AS longitude,
+                            ST_DistanceSphere(
+                               s.location,
+                               ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)
+                           ) AS distance
+                        FROM store s
+                        WHERE EXISTS (
+                            SELECT 1
+                            FROM store_gacha sg
+                            WHERE sg.store_id = s.id
+                                  AND sg.gacha_id = :gachaId
+                        )
+                        AND ST_DWithin(
+                           s.location::geography,
+                           ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
+                           :radius
+                        )
+                        AND (:floor IS NULL OR s.floor = :floor)
+                        
+                        ORDER BY distance ASC, s.id ASC    
+    """, nativeQuery = true)
+    List<StoreWithDistance> findNearbyStoresByGachaId(
+            @Param("latitude") final Double latitude,
+            @Param("longitude") final Double longitude,
+            @Param("radius") final Integer radius,
+            @Param("floor") final Integer floor,
+            @Param("gachaId") final Long gachaId
+    );
 
     @Override
     Page<Store> findAll(final Pageable pageable);

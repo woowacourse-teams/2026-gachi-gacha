@@ -25,6 +25,21 @@ jobs:
     name: Backend Build and Test
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_DB: ${{ secrets.CI_POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.CI_POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: backend
@@ -45,3 +60,7 @@ jobs:
 
       - name: 3️⃣ Build and test
         run: ./gradlew build
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/${{ secrets.CI_POSTGRES_DB }}
+          DB_USERNAME: ${{ secrets.CI_POSTGRES_USER }}
+          DB_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}

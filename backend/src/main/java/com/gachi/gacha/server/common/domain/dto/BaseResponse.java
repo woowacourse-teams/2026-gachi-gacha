@@ -3,6 +3,7 @@ package com.gachi.gacha.server.common.domain.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.gachi.gacha.server.common.domain.BaseCode;
 import java.net.URI;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 public record BaseResponse<T>(
@@ -17,6 +18,12 @@ public record BaseResponse<T>(
 
     public static <T> BaseResponse<T> ok() {
         return of(BaseCode.SUCCESS, null);
+    }
+
+    public static ResponseEntity<Void> redirect(final URI location) {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(location)
+                .build();
     }
 
     public static <T> ResponseEntity<BaseResponse<T>> created(final URI location, final T data) {

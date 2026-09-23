@@ -3,6 +3,8 @@ package com.gachi.gacha.server.store.domain;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.store.domain.exception.StoreNotFoundException;
 import org.jspecify.annotations.NonNull;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
