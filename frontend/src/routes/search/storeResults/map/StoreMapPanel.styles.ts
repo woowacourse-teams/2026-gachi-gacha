@@ -4,7 +4,7 @@ export const Panel = styled.div`
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: 420px;
+  min-height: 0;
 
   @media (max-width: 767px) {
     min-height: 0;
@@ -30,6 +30,7 @@ export const SearchAreaButton = styled.button`
   font: inherit;
   font-size: 14px;
   font-weight: 700;
+  white-space: nowrap;
   transform: translateX(-50%);
   cursor: pointer;
 
