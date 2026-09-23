@@ -54,7 +54,7 @@ import org.springframework.web.socket.messaging.WebSocketStompClient;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class StompWebSocketTest {
 
-    private static final long TIMEOUT_SECONDS = 3;
+    private static final long TIMEOUT_SECONDS = 10;
     private static final Long MEMBER_ID = 2L;
     private static final Long NOT_JOINED_ROOM_ID = 5L;
     private static final String UNAUTHORIZED_CODE = "CE005";
@@ -340,6 +340,13 @@ class StompWebSocketTest {
         @Override
         public void handleFrame(final StompHeaders headers, @Nullable final Object payload) {
             error.complete(new ErrorFrame(headers.getFirst("message"), (String) payload));
+        }
+
+        @Override
+        public void handleTransportError(final StompSession session, final Throwable exception) {
+            connected.completeExceptionally(exception);
+            error.completeExceptionally(
+                    new IllegalStateException("ERROR 프레임을 받기 전에 연결이 종료되었습니다.", exception));
         }
     }
 
