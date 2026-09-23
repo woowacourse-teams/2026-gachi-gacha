@@ -3,6 +3,7 @@ saveExact: true
 strictPeerDependencies: true
 autoInstallPeers: false
 allowBuilds:
+  core-js: false
   esbuild: true
   msw: false
   unrs-resolver: true

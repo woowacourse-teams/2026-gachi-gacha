@@ -8,6 +8,7 @@ import type {
   NearbyStoreResponseDto,
   NearbyStoresResponseDto,
 } from '../api/nearbyStoresResponseType';
+import { captureStoreSelected } from './analytics/storeResultsAnalytics';
 import { StoreListPanel } from './list/StoreListPanel';
 import { StoreMapPanel } from './map/StoreMapPanel';
 import {
@@ -20,6 +21,7 @@ import { useSelectedStore } from './useSelectedStore';
 
 export interface StoreResultsSectionProps {
   center: MapCoordinate;
+  gachaId: number | null;
   listHeader?: ReactNode;
   storesState: AsyncState<NearbyStoresResponseDto>;
   isSearchAreaChanged: boolean;
@@ -34,6 +36,7 @@ const EMPTY_STORES: readonly NearbyStoreResponseDto[] = [];
 
 export function StoreResultsSection({
   center,
+  gachaId,
   listHeader,
   storesState,
   isSearchAreaChanged,
@@ -57,12 +60,27 @@ export function StoreResultsSection({
       block: 'start',
     });
   }, []);
-  const selectStoreAndRevealMap = useCallback(
+  const selectStoreFromList = useCallback(
     (storeId: number) => {
+      if (gachaId !== null) {
+        captureStoreSelected(gachaId, storeId, 'list');
+      }
+
       selectStore(storeId);
       window.requestAnimationFrame(showMapAsMainContent);
     },
-    [selectStore, showMapAsMainContent],
+    [gachaId, selectStore, showMapAsMainContent],
+  );
+  const selectStoreFromMapMarker = useCallback(
+    (storeId: number) => {
+      if (gachaId !== null) {
+        captureStoreSelected(gachaId, storeId, 'map_marker');
+      }
+
+      selectStore(storeId);
+      window.requestAnimationFrame(showMapAsMainContent);
+    },
+    [gachaId, selectStore, showMapAsMainContent],
   );
   const toggleMobileHeader = useCallback(() => {
     if (!window.matchMedia('(max-width: 767px)').matches) {
@@ -87,7 +105,7 @@ export function StoreResultsSection({
           storesState={storesState}
           selectedStoreId={selectedStoreId}
           onOpenStore={onOpenStore}
-          onSelectStore={selectStoreAndRevealMap}
+          onSelectStore={selectStoreFromList}
           onRetry={onRetry}
         />
       </ListArea>
@@ -99,7 +117,7 @@ export function StoreResultsSection({
           isSearchAreaChanged={isSearchAreaChanged}
           onBackgroundClick={toggleMobileHeader}
           onMapDragEnd={showMapAsMainContent}
-          onSelectStore={selectStoreAndRevealMap}
+          onSelectStore={selectStoreFromMapMarker}
           onSearchArea={onSearchArea}
           onViewportCenterChange={onViewportCenterChange}
         />

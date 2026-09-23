@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
+import {
+  captureGachaSearchFailed,
+  captureGachaSearchResultsViewed,
+} from './analytics/gachaSearchAnalytics';
 import type { GachaSearchParams } from './api/gachaSearchParamsType';
 import { getGachaSearchResults } from './api/getGachaSearchResults';
 import type { GachaSearchResult } from './gachaSearchResultType';
@@ -114,15 +118,26 @@ export function useGachaSearch(keyword: string) {
         controller.signal,
       );
 
-      if (!controller.signal.aborted) {
-        setSnapshot({
-          request: activeRequest,
-          state: nextState,
-          lastLoadedPage: FIRST_PAGE,
-          isLoadingMore: false,
-          loadMoreErrorMessage: null,
-        });
+      if (controller.signal.aborted) {
+        return;
       }
+
+      if (nextState.status === 'success') {
+        captureGachaSearchResultsViewed(
+          activeRequest.keyword,
+          nextState.data.totalCount,
+        );
+      } else {
+        captureGachaSearchFailed(activeRequest.keyword);
+      }
+
+      setSnapshot({
+        request: activeRequest,
+        state: nextState,
+        lastLoadedPage: FIRST_PAGE,
+        isLoadingMore: false,
+        loadMoreErrorMessage: null,
+      });
     }
 
     void applyGachaSearchResult();

@@ -11,6 +11,11 @@ if (fs.existsSync(envPath)) {
 }
 
 const KAKAO_MAP_KEY = process.env.KAKAO_MAP_KEY;
+const POSTHOG_ENABLED = process.env.POSTHOG_ENABLED === 'true';
+const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY ?? '';
+const POSTHOG_API_HOST =
+  process.env.POSTHOG_API_HOST ?? 'https://us.i.posthog.com';
+const { version: APP_VERSION } = require('./package.json');
 
 if (!KAKAO_MAP_KEY) {
   throw new Error(
@@ -18,10 +23,16 @@ if (!KAKAO_MAP_KEY) {
   );
 }
 
+if (POSTHOG_ENABLED && !POSTHOG_API_KEY) {
+  throw new Error('POSTHOG_ENABLED가 true이지만 POSTHOG_API_KEY가 없습니다.');
+}
+
 /** @type {import('webpack').ConfigurationFactory} */
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
   const enablePromo = _env?.demo === true;
+  const appEnvironment =
+    process.env.APP_ENV ?? (isProduction ? 'production' : 'development');
 
   return {
     entry: path.resolve(
@@ -77,6 +88,11 @@ module.exports = (_env, argv) => {
         __USE_MSW__: JSON.stringify(
           !isProduction && process.env.MOCK_API === 'true',
         ),
+        __POSTHOG_ENABLED__: JSON.stringify(POSTHOG_ENABLED),
+        __POSTHOG_API_KEY__: JSON.stringify(POSTHOG_API_KEY),
+        __POSTHOG_API_HOST__: JSON.stringify(POSTHOG_API_HOST),
+        __APP_ENV__: JSON.stringify(appEnvironment),
+        __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),
     ],
 

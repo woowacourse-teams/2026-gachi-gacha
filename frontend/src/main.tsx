@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import App from '@/App';
+import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
 
 const container = document.getElementById('root');
 
@@ -20,6 +21,8 @@ async function enableMocking(): Promise<void> {
 }
 
 void enableMocking().then(() => {
+  initializeAnalytics();
+
   createRoot(container).render(
     <StrictMode>
       <App />
