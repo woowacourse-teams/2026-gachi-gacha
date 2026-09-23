@@ -1,9 +1,19 @@
 import styled from '@emotion/styled';
 
 export const Page = styled.main`
+  display: flex;
+  height: 100dvh;
   min-height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--color-surface, #ffffff);
   color: var(--color-text, #242122);
+
+  @media (max-width: 767px) {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
 `;
 
 export const PageTitle = styled.h1`
