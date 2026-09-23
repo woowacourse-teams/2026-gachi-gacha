@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -111,21 +112,44 @@ public class ChatMessageService {
         String preview = ChatMessage.preview(command.type(), command.content());
         long sequence = chatRoom.appendMessage(preview, LocalDateTime.now());
 
-        ChatMessage savedMessage = chatMessageMongoRepository.save(
-                ChatMessage.create(
-                        roomId,
-                        senderId,
-                        sequence,
-                        command.type(),
-                        command.content(),
-                        files
-                )
-        );
+        ChatMessage savedMessage = saveMessage(roomId, senderId, sequence, command, files);
         registerRollbackCompensation(savedMessage);
 
         sender.read(sequence);
 
         return ChatMessageInfo.from(savedMessage);
+    }
+
+    /**
+     * 방 행 락(FOR UPDATE)을 쥔 상태이므로, 이 sequence로 이미 존재하는 문서는
+     * 커밋되지 못한 고아 문서다. 그 번호를 커밋한 트랜잭션이 있었다면
+     * chat_room.last_message_sequence가 이미 앞서 있어 이 번호를 발급받을 수 없기 때문이다.
+     * 락 방식을 바꾸면(예: TTL이 있는 분산 락) 이 전제가 깨지므로 함께 검토해야 한다.
+     */
+    private ChatMessage saveMessage(
+            final Long roomId,
+            final Long senderId,
+            final long sequence,
+            final ChatMessageSendCommand command,
+            final List<ChatMessage.MessageFile> files
+    ) {
+        try {
+            return chatMessageMongoRepository.save(newMessage(roomId, senderId, sequence, command, files));
+        } catch (DuplicateKeyException e) {
+            log.warn("고아 채팅 메시지 정리 후 재시도. roomId={}, sequence={}", roomId, sequence);
+            chatMessageMongoRepository.deleteByRoomIdAndSequence(roomId, sequence);
+            return chatMessageMongoRepository.save(newMessage(roomId, senderId, sequence, command, files));
+        }
+    }
+
+    private ChatMessage newMessage(
+            final Long roomId,
+            final Long senderId,
+            final long sequence,
+            final ChatMessageSendCommand command,
+            final List<ChatMessage.MessageFile> files
+    ) {
+        return ChatMessage.create(roomId, senderId, sequence, command.type(), command.content(), files);
     }
 
     /**

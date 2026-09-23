@@ -15,4 +15,6 @@ public interface ChatMessageMongoRepository extends MongoRepository<ChatMessage,
             Long sequence,
             Pageable pageable
     );
+
+    void deleteByRoomIdAndSequence(Long roomId, Long sequence);
 }
