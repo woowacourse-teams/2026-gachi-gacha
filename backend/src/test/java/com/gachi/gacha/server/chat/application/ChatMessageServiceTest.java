@@ -54,7 +54,7 @@ class ChatMessageServiceTest {
 
     @BeforeEach
     void setUp() {
-        chatRoom = ChatRoom.create(ROOM_ID);
+        chatRoom = ChatRoom.create(ROOM_ID, SENDER_ID);
         sender = ChatRoomMember.join(chatRoom, Member.builder().nickname("개발용 요청자").build());
     }
 

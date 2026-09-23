@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -211,11 +212,7 @@ public class ChatRoomService {
         Member requester = memberJpaRepository.getMemberById(memberId);
         Member tradeOwner = trade.getMember();
 
-        if (chatRoomMemberJpaRepository.findChatRoom(tradeId, memberId).isPresent()) {
-            throw new ChatRoomAlreadyExistException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
-        }
-
-        ChatRoom newChatRoom = chatRoomJpaRepository.save(ChatRoom.create(tradeId));
+        ChatRoom newChatRoom = saveChatRoom(tradeId, memberId);
         ChatRoomMember ownerMemberShip = ChatRoomMember.join(newChatRoom, tradeOwner);
         ChatRoomMember requesterMemberShip = ChatRoomMember.join(newChatRoom, requester);
 
@@ -229,5 +226,13 @@ public class ChatRoomService {
 
     public void validateMember(final Long roomId, final Long memberId) {
         chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
+    }
+
+    private ChatRoom saveChatRoom(final Long tradeId, final Long requesterId) {
+        try {
+            return chatRoomJpaRepository.saveAndFlush(ChatRoom.create(tradeId, requesterId));
+        } catch (DataIntegrityViolationException e) {
+            throw new ChatRoomAlreadyExistException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
+        }
     }
 }

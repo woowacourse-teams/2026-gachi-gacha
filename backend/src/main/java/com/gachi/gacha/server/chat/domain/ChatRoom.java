@@ -29,14 +29,18 @@ public class ChatRoom extends BaseTimeEntity {
     private Long tradeId;
 
     @Column(nullable = false)
+    private Long requesterId;
+
+    @Column(nullable = false)
     private Long lastMessageSequence = 0L;
     private String lastMessagePreview;
     private LocalDateTime lastMessageAt;
 
-    public static ChatRoom create(final Long tradeId) {
+    public static ChatRoom create(final Long tradeId, final Long requesterId) {
         return new ChatRoom(
                 null,
                 tradeId,
+                requesterId,
                 0L,
                 null,
                 null
