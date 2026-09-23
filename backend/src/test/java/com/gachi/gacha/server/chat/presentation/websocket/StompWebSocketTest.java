@@ -279,10 +279,22 @@ class StompWebSocketTest {
     }
 
     private void assertRejected(final TestSessionHandler handler, final String expectedCode) throws Exception {
-        ErrorFrame error = handler.error.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        ErrorFrame error = awaitErrorFrame(handler);
 
         assertThat(error.code()).isEqualTo(expectedCode);
         assertThat(error.body()).contains("\"code\":\"" + expectedCode + "\"");
+    }
+
+    private ErrorFrame awaitErrorFrame(final TestSessionHandler handler) throws Exception {
+        try {
+            return handler.error.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            Throwable transportError = handler.transportError;
+            if (transportError != null) {
+                throw new AssertionError("ERROR 프레임을 받기 전에 연결이 종료되었습니다.", transportError);
+            }
+            throw e;
+        }
     }
 
     private CompletableFuture<String> subscribe(final StompSession session, final String destination) {
@@ -327,6 +339,9 @@ class StompWebSocketTest {
         private final CompletableFuture<StompSession> connected = new CompletableFuture<>();
         private final CompletableFuture<ErrorFrame> error = new CompletableFuture<>();
 
+        @Nullable
+        private volatile Throwable transportError;
+
         @Override
         public void afterConnected(final StompSession session, final StompHeaders connectedHeaders) {
             connected.complete(session);
@@ -342,11 +357,15 @@ class StompWebSocketTest {
             error.complete(new ErrorFrame(headers.getFirst("message"), (String) payload));
         }
 
+        /**
+         * 서버는 ERROR 프레임을 보낸 뒤 곧바로 연결을 닫는다(STOMP 명세).
+         * 따라서 정상 동작에서도 연결 종료는 항상 발생하므로 실패로 확정하지 않고,
+         * 프레임을 끝내 받지 못했을 때의 원인으로만 사용한다.
+         */
         @Override
         public void handleTransportError(final StompSession session, final Throwable exception) {
+            transportError = exception;
             connected.completeExceptionally(exception);
-            error.completeExceptionally(
-                    new IllegalStateException("ERROR 프레임을 받기 전에 연결이 종료되었습니다.", exception));
         }
     }
 

@@ -102,7 +102,6 @@ public class ChatRoomService {
 
         return ChatRoomInfo.of(
                 chatRoom,
-                myChatRoomMember,
                 trade,
                 tradeThumbnailUrl,
                 otherMember,
@@ -165,7 +164,6 @@ public class ChatRoomService {
 
         return ChatRoomInfo.of(
                 chatRoom,
-                myChatRoomMember,
                 trade,
                 tradeThumbnail,
                 otherMember,

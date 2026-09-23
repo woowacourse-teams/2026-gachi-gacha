@@ -1,7 +1,6 @@
 package com.gachi.gacha.server.chat.application.dto;
 
 import com.gachi.gacha.server.chat.domain.ChatRoom;
-import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
@@ -20,7 +19,6 @@ public record ChatRoomInfo(
 ) {
     public static ChatRoomInfo of(
             final ChatRoom chatRoom,
-            final ChatRoomMember chatRoomMember,
             final Trade trade,
             @Nullable final String tradeThumbnailUrl,
             final Member otherMember,
@@ -59,13 +57,6 @@ public record ChatRoomInfo(
                 .preview(chatRoom.getLastMessagePreview())
                 .sendAt(chatRoom.getLastMessageAt())
                 .build();
-    }
-
-    private static long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
-        return Math.max(
-                0L,
-                chatRoom.getLastMessageSequence() - chatRoomMember.getLastReadMessageSequence()
-        );
     }
 
     @Builder

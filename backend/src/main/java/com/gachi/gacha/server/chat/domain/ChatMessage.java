@@ -86,7 +86,7 @@ public class ChatMessage extends BaseTimeDocument {
                 .sequence(sequence)
                 .type(type)
                 .content(content)
-                .files(files == null ? List.of() : files)
+                .files((files == null) ? List.of() : files)
                 .build();
     }
 

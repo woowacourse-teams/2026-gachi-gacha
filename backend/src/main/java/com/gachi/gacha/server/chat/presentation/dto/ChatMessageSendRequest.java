@@ -18,7 +18,7 @@ public record ChatMessageSendRequest(
         return new ChatMessageSendCommand(
                 type,
                 content,
-                files == null ? List.of() : files.stream().map(FileRequest::toCommand).toList()
+                (files == null) ? List.of() : files.stream().map(FileRequest::toCommand).toList()
         );
     }
 
