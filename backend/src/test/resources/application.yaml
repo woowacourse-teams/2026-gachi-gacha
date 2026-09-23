@@ -16,6 +16,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  mongodb:
+    uri: ${TEST_MONGODB_URI:mongodb://localhost:27017/gachi_gacha_test}
+  data:
+    mongodb:
+      auto-index-creation: true
   jpa:
     hibernate:
       ddl-auto: validate
