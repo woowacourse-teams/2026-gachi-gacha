@@ -1,5 +1,6 @@
-type StoreSearchTrigger = 'gacha_selected' | 'map_area_researched' | 'retry';
-type StoreSelectionSource = 'list' | 'map_marker';
+export type StoreSearchTrigger =
+  'gacha_selected' | 'map_area_researched' | 'retry';
+export type StoreSelectionSource = 'list' | 'map_marker';
 
 interface StoreSearchContext {
   gacha_id: number;

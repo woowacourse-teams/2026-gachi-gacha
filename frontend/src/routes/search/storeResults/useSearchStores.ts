@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import type { StoreSearchTrigger } from '@/shared/analytics/analyticsEventType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { getNearbyStores } from '../api/getNearbyStores';
 import type { NearbyStoreSearchParams } from '../api/nearbyStoreSearchParamsType';
 import type { NearbyStoresResponseDto } from '../api/nearbyStoresResponseType';
+import {
+  captureStoreSearchFailed,
+  captureStoreSearchSucceeded,
+} from './analytics/storeResultsAnalytics';
 
 type SettledSearchStoresState = Extract<
   AsyncState<NearbyStoresResponseDto>,
@@ -41,6 +46,28 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE;
 }
 
+function getStoreSearchTrigger(
+  previousRequest: SearchStoresRequest | null,
+  currentRequest: SearchStoresRequest,
+): StoreSearchTrigger {
+  if (
+    previousRequest === null ||
+    previousRequest.gachaId !== currentRequest.gachaId
+  ) {
+    return 'gacha_selected';
+  }
+
+  if (
+    previousRequest.latitude !== currentRequest.latitude ||
+    previousRequest.longitude !== currentRequest.longitude ||
+    previousRequest.radius !== currentRequest.radius
+  ) {
+    return 'map_area_researched';
+  }
+
+  return 'retry';
+}
+
 async function loadSearchStores(
   params: NearbyStoreSearchParams,
   signal: AbortSignal,
@@ -64,6 +91,7 @@ export function useSearchStores(
   const [attempt, setAttempt] = useState(0);
   const [settledResult, setSettledResult] =
     useState<SettledSearchResult | null>(null);
+  const lastSettledRequestRef = useRef<SearchStoresRequest | null>(null);
   const gachaId = params?.gachaId;
   const latitude = params?.latitude;
   const longitude = params?.longitude;
@@ -96,6 +124,10 @@ export function useSearchStores(
     }
 
     const activeRequestParams = requestParams;
+    const trigger = getStoreSearchTrigger(
+      lastSettledRequestRef.current,
+      activeRequestParams,
+    );
     const controller = new AbortController();
 
     async function applySearchResult() {
@@ -104,9 +136,28 @@ export function useSearchStores(
         controller.signal,
       );
 
-      if (!controller.signal.aborted) {
-        setSettledResult({ request: activeRequestParams, state: nextState });
+      if (controller.signal.aborted) {
+        return;
       }
+
+      lastSettledRequestRef.current = activeRequestParams;
+
+      if (nextState.status === 'success') {
+        captureStoreSearchSucceeded(
+          activeRequestParams.gachaId,
+          activeRequestParams.radius,
+          trigger,
+          nextState.data.stores.length,
+        );
+      } else {
+        captureStoreSearchFailed(
+          activeRequestParams.gachaId,
+          activeRequestParams.radius,
+          trigger,
+        );
+      }
+
+      setSettledResult({ request: activeRequestParams, state: nextState });
     }
 
     void applySearchResult();

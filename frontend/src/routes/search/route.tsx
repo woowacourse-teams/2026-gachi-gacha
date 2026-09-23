@@ -7,6 +7,7 @@ import { Page, PageTitle, SelectedGachaArea } from './route.styles';
 import { useSearchRouteNavigation } from './routing/useSearchRouteNavigation';
 import { SelectedGachaSummary } from './selectedGacha/SelectedGachaSummary';
 import { useSearchResults } from './selectedGacha/useSearchResults';
+import { captureMapAreaResearched } from './storeResults/analytics/storeResultsAnalytics';
 import { StoreResultsSection } from './storeResults/StoreResultsSection';
 import { useSearchStores } from './storeResults/useSearchStores';
 import { useStoreSearchArea } from './storeResults/useStoreSearchArea';
@@ -54,6 +55,14 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
         };
   const { storesState, retryStores } = useSearchStores(storeSearchParams);
 
+  function searchCurrentMapArea() {
+    if (selectedGachaId !== null) {
+      captureMapAreaResearched(selectedGachaId, STORE_SEARCH_RADIUS_METERS);
+    }
+
+    commitViewportCenter();
+  }
+
   return (
     <Page>
       <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
@@ -63,12 +72,13 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
       />
       <StoreResultsSection
         center={searchCenter}
+        gachaId={selectedGachaId}
         storesState={storesState}
         isSearchAreaChanged={isSearchAreaChanged}
         onOpenStore={openStoreDetail}
         onRetry={retryStores}
         onRevealHeader={revealPageHeader}
-        onSearchArea={commitViewportCenter}
+        onSearchArea={searchCurrentMapArea}
         onViewportCenterChange={updateViewportCenter}
         listHeader={
           selectedGacha.status === 'idle' ? null : (
