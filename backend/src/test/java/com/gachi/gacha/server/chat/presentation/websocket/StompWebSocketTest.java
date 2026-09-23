@@ -3,6 +3,8 @@ package com.gachi.gacha.server.chat.presentation.websocket;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,13 +12,18 @@ import static org.mockito.Mockito.verify;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.gachi.gacha.server.chat.application.ChatMessageService;
 import com.gachi.gacha.server.chat.application.ChatRoomService;
+import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
+import com.gachi.gacha.server.chat.domain.MessageType;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
 import com.gachi.gacha.server.common.auth.jwt.JwtProperty;
 import com.gachi.gacha.server.common.auth.jwt.JwtProvider;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -39,6 +46,7 @@ import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -66,6 +74,9 @@ class StompWebSocketTest {
 
     @MockitoBean
     private ChatRoomService chatRoomService;
+
+    @MockitoBean
+    private ChatMessageService chatMessageService;
 
     private WebSocketStompClient stompClient;
 
@@ -197,16 +208,51 @@ class StompWebSocketTest {
         }
 
         @Test
-        @DisplayName("애플리케이션 목적지(/app)로 전송하면 거부하지 않는다")
+        @DisplayName("애플리케이션 목적지(/app)로 전송하면 저장 후 채팅방 구독자에게 발행한다")
         void send_toApplicationDestination() throws Exception {
-            TestSessionHandler handler = connectAsMemberHandler();
-            StompSession session = awaitConnected(handler);
+            given(chatMessageService.sendMessage(eq(MEMBER_ID), eq(1L), any()))
+                    .willReturn(textMessageInfo());
+            StompSession session = connectAsMember();
+            CompletableFuture<String> received = subscribe(session, "/topic/chat/rooms/1/messages");
 
-            session.send("/app/chat/rooms/1/messages", "{}");
+            String payload = awaitDelivery(received, () -> sendTextMessage(session));
 
-            assertThatThrownBy(() -> handler.error.get(1, TimeUnit.SECONDS))
-                    .isInstanceOf(TimeoutException.class);
+            assertThat(payload).contains("\"sequence\":11").contains("\"content\":\"안녕하세요\"");
             assertThat(session.isConnected()).isTrue();
+        }
+
+        @Test
+        @DisplayName("전송 처리에 실패하면 개인 오류 채널로 알리고 연결은 유지한다")
+        void send_failure() throws Exception {
+            given(chatMessageService.sendMessage(eq(MEMBER_ID), eq(1L), any()))
+                    .willThrow(new ChatRoomAccessDeniedException(ErrorCode.CHAT_ROOM_ACCESS_DENIED));
+            StompSession session = connectAsMember();
+            CompletableFuture<String> received = subscribe(session, "/user/queue/chat/errors");
+
+            String payload = awaitDelivery(received, () -> sendTextMessage(session));
+
+            assertThat(payload).contains("\"code\":\"" + ACCESS_DENIED_CODE + "\"");
+            assertThat(session.isConnected()).isTrue();
+        }
+
+        private void sendTextMessage(final StompSession session) {
+            StompHeaders headers = new StompHeaders();
+            headers.setDestination("/app/chat/rooms/1/messages");
+            headers.setContentType(MimeTypeUtils.APPLICATION_JSON);
+            session.send(headers, "{\"type\":\"TEXT\",\"content\":\"안녕하세요\",\"files\":[]}");
+        }
+
+        private ChatMessageInfo textMessageInfo() {
+            return ChatMessageInfo.builder()
+                    .messageId("68c7ea86f3dd2a2fa8123456")
+                    .sequence(11L)
+                    .roomId(1L)
+                    .senderId(MEMBER_ID)
+                    .type(MessageType.TEXT)
+                    .content("안녕하세요")
+                    .files(List.of())
+                    .createdAt(LocalDateTime.now())
+                    .build();
         }
     }
 
