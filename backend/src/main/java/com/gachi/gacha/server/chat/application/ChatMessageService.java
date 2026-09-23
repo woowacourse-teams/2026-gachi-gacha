@@ -1,6 +1,8 @@
 package com.gachi.gacha.server.chat.application;
 
+import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatMessagePageInfo;
+import com.gachi.gacha.server.chat.application.dto.ChatMessageSendCommand;
 import com.gachi.gacha.server.chat.domain.ChatMessage;
 import com.gachi.gacha.server.chat.domain.ChatMessageMongoRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
@@ -10,6 +12,7 @@ import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.InvalidReadSequenceException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -87,5 +90,36 @@ public class ChatMessageService {
         if (lastReadSequence == null || lastReadSequence < 0 || lastReadSequence > chatRoom.getLastMessageSequence()) {
             throw new InvalidReadSequenceException(ErrorCode.INVALID_READ_SEQUENCE);
         }
+    }
+
+    @Transactional
+    public ChatMessageInfo sendMessage(
+            final Long senderId,
+            final Long roomId,
+            final ChatMessageSendCommand command
+    ) {
+        List<ChatMessage.MessageFile> files = command.toMessageFiles();
+        ChatMessage.validate(command.type(), command.content(), files);
+
+        ChatRoom chatRoom = chatRoomJpaRepository.getByIdForUpdate(roomId);
+        ChatRoomMember sender = chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, senderId);
+
+        String preview = ChatMessage.preview(command.type(), command.content());
+        long sequence = chatRoom.appendMessage(preview, LocalDateTime.now());
+
+        ChatMessage savedMessage = chatMessageMongoRepository.save(
+                ChatMessage.create(
+                        roomId,
+                        senderId,
+                        sequence,
+                        command.type(),
+                        command.content(),
+                        files
+                )
+        );
+
+        sender.read(sequence);
+
+        return ChatMessageInfo.from(savedMessage);
     }
 }

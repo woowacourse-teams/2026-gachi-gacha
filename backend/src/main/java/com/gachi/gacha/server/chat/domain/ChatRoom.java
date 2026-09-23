@@ -42,4 +42,11 @@ public class ChatRoom extends BaseTimeEntity {
                 null
         );
     }
+
+    public long appendMessage(final String preview, final LocalDateTime sentAt) {
+        lastMessageSequence++;
+        lastMessagePreview = preview;
+        lastMessageAt = sentAt;
+        return lastMessageSequence;
+    }
 }
