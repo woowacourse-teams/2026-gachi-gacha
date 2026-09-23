@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 
+import { captureGachaSearchSubmitted } from './analytics/gachaSearchAnalytics';
 import {
   SearchForm,
   SearchIcon,
@@ -74,6 +75,7 @@ export function GachaSearchBar({
       return;
     }
 
+    captureGachaSearchSubmitted(normalizedQuery);
     setSubmittedQuery(normalizedQuery);
     setIsOpen(true);
   }

@@ -4,6 +4,7 @@ import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
+import { captureGachaSelected } from './analytics/gachaSearchAnalytics';
 import {
   CategoryText,
   CloseButton,
@@ -50,10 +51,16 @@ const LOAD_MORE_THRESHOLD = 120;
 interface ProductCardProps {
   product: GachaProductSummary;
   query: string;
+  resultPosition: number;
   onSelect: (gachaId: number) => void;
 }
 
-function ProductCard({ product, query, onSelect }: ProductCardProps) {
+function ProductCard({
+  product,
+  query,
+  resultPosition,
+  onSelect,
+}: ProductCardProps) {
   const visibleCategories = getVisibleCategories(product.categories, query);
   const hiddenCategoryCount = Math.max(
     product.categories.length - visibleCategories.length,
@@ -68,7 +75,10 @@ function ProductCard({ product, query, onSelect }: ProductCardProps) {
     <ProductItem>
       <ProductButton
         type="button"
-        onClick={() => onSelect(product.gachaId)}
+        onClick={() => {
+          captureGachaSelected(product.gachaId, resultPosition);
+          onSelect(product.gachaId);
+        }}
         aria-label={`${product.name} 선택`}
       >
         <ProductImageFrame>
@@ -182,11 +192,12 @@ export function GachaSearchPopover({
                 </ResultCount>
               </ResultSummary>
               <ProductList>
-                {searchState.data.products.map((product) => (
+                {searchState.data.products.map((product, index) => (
                   <ProductCard
                     key={product.gachaId}
                     product={product}
                     query={trimmedQuery}
+                    resultPosition={index + 1}
                     onSelect={onSelect}
                   />
                 ))}
