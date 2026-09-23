@@ -45,7 +45,7 @@ async function loadAnalyticsClient() {
 let clientPromise: ReturnType<typeof loadAnalyticsClient> | undefined;
 
 function getAnalyticsClient() {
-  if (!__POSTHOG_ENABLED__) {
+  if (!__POSTHOG_ENABLED__ || getIsInternalUser()) {
     return null;
   }
 
