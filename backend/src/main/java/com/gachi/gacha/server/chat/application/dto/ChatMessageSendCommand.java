@@ -12,7 +12,7 @@ public record ChatMessageSendCommand(
 ) {
 
     public ChatMessageSendCommand {
-        files = files == null ? List.of() : List.copyOf(files);
+        files = (files == null) ? List.of() : List.copyOf(files);
     }
 
     public List<ChatMessage.MessageFile> toMessageFiles() {
