@@ -1,33 +1,24 @@
 import styled from '@emotion/styled';
 
-interface Category {
-  label: string;
+import { CATEGORIES } from '../../model/categories';
+
+interface Props {
+  selected: string;
+  onSelect: (category: string) => void;
 }
 
-const categories: Category[] = [
-  { label: '전체' },
-  { label: '산리오' },
-  { label: '치이카와' },
-  { label: '포켓몬' },
-  { label: '짱구' },
-  { label: '디즈니' },
-  { label: '애니메이션' },
-  { label: '게임' },
-  { label: '피규어' },
-  { label: '키링' },
-  { label: '미니어처' },
-];
-
-export default function CategoryNav() {
+export default function CategoryNav(props: Props) {
+  //고민되는 부분 props로 카테고리를 넘기는게 좋을지? 아니면 카테고리를 여기내부에서 사용하는게 좋을지?
   return (
     <Wrapper>
-      {categories.map((category, index) => (
+      {CATEGORIES.map((category) => (
         <CategoryItem
-          key={category.label}
+          key={category}
           type="button"
-          aria-pressed={index === 0}
+          aria-pressed={category === props.selected}
+          onClick={() => props.onSelect(category)}
         >
-          <Label>{category.label}</Label>
+          <Label>{category}</Label>
         </CategoryItem>
       ))}
     </Wrapper>
@@ -41,6 +32,7 @@ const Wrapper = styled.div`
   gap: 20px;
   padding: 16px 24px;
   overflow-x: auto;
+  border-bottom: 1px solid #eeeaec;
 `;
 
 const CategoryItem = styled.button`

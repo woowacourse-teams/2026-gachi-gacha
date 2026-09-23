@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 
-import Logo from './Logo';
+import Logo from '../Logo';
 
 export default function Header() {
   return (

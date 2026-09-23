@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import routes from './routes';
+import HomePage from './HomePage';
 
-const meta: Meta<typeof routes> = {
-  title: 'routes/home/routes',
-  component: routes,
+const meta: Meta<typeof HomePage> = {
+  title: 'routes/home/HomePage',
+  component: HomePage,
   parameters: {
     layout: 'fullscreen',
   },
@@ -12,6 +12,6 @@ const meta: Meta<typeof routes> = {
 
 export default meta;
 
-type Story = StoryObj<typeof routes>;
+type Story = StoryObj<typeof HomePage>;
 
 export const Default: Story = {};

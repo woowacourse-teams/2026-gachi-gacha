@@ -123,6 +123,54 @@ const mockStoreDetails: Record<number, StoreDetailDto> = {
 };
 
 export const handlers = [
+  http.get('/api/v1/gachas/category/:categoryName', ({ params, request }) => {
+    const categoryName = String(params.categoryName);
+    const searchParams = new URL(request.url).searchParams;
+    const page = Number(searchParams.get('page') ?? 0);
+    const size = Math.max(Number(searchParams.get('size') ?? 20), 1);
+    const total = 48;
+    const from = page * size;
+    const content = Array.from(
+      { length: Math.max(Math.min(size, total - from), 0) },
+      (_, index) => {
+        const gachaId = from + index + 1;
+
+        return {
+          gachaId,
+          name: `${categoryName} 가챠 컬렉션 ${gachaId}`,
+          caption: `${categoryName} 카테고리의 가챠입니다.`,
+          thumbnailUrl:
+            mockStoreImages[(from + index) % mockStoreImages.length] ??
+            storeFrontPhoto,
+          productCode: `MOCK-${String(gachaId).padStart(3, '0')}`,
+          categories: [categoryName],
+          source: 'BANDAI',
+          createdAt: '2026-09-16T10:30:00',
+          updatedAt: '2026-09-16T10:30:00',
+        };
+      },
+    );
+
+    return HttpResponse.json({
+      code: SUCCESS_CODE,
+      message: '정상',
+      data: {
+        content,
+        pageable: {
+          pageNumber: page,
+          pageSize: size,
+        },
+        totalElements: total,
+        totalPages: Math.ceil(total / size),
+        first: page === 0,
+        last: (page + 1) * size >= total,
+        size,
+        number: page,
+        numberOfElements: content.length,
+        empty: content.length === 0,
+      },
+    });
+  }),
   http.get('/api/v1/stores/nearby', ({ request }) => {
     const params = new URL(request.url).searchParams;
     const latitude = Number(params.get('latitude'));
