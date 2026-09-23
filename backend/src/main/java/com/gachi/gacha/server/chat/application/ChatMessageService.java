@@ -71,7 +71,7 @@ public class ChatMessageService {
     }
 
     @Transactional
-    public void readMessage(
+    public void checkReadMessage(
             final Long memberId,
             final Long roomId,
             final Long lastReadSequence

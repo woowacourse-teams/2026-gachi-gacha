@@ -45,7 +45,7 @@ public class ChatMessageController {
             @PathVariable final Long roomId,
             @Valid @RequestBody final ChatMessageReadRequest request
     ) {
-        chatMessageService.readMessage(
+        chatMessageService.checkReadMessage(
                 memberId,
                 roomId,
                 request.lastReadSequence()
