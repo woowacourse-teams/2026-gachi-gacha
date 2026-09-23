@@ -97,12 +97,22 @@ public class ChatRoomService {
         String tradeThumbnailUrl = findThumbnailUrlsByTradeId(List.of(trade.getId()))
                 .get(trade.getId());
 
+        long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
+
         return ChatRoomInfo.of(
                 chatRoom,
                 myChatRoomMember,
                 trade,
                 tradeThumbnailUrl,
-                otherMember
+                otherMember,
+                unreadCount
+        );
+    }
+
+    private static long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
+        return Math.max(
+                0L,
+                chatRoom.getLastMessageSequence() - chatRoomMember.getLastReadMessageSequence()
         );
     }
 
@@ -150,13 +160,15 @@ public class ChatRoomService {
         Member otherMember = findOtherMember(otherMembersByRoomId, chatRoomId);
         Trade trade = findTrade(tradesById, tradeId);
         String tradeThumbnail = tradeThumbnailUrlsByTradeId.get(tradeId);
+        long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
 
         return ChatRoomInfo.of(
                 chatRoom,
                 myChatRoomMember,
                 trade,
                 tradeThumbnail,
-                otherMember
+                otherMember,
+                unreadCount
         );
     }
 

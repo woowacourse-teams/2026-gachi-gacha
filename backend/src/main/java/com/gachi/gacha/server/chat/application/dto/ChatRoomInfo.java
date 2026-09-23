@@ -23,7 +23,8 @@ public record ChatRoomInfo(
             final ChatRoomMember chatRoomMember,
             final Trade trade,
             @Nullable final String tradeThumbnailUrl,
-            final Member otherMember
+            final Member otherMember,
+            final long unreadCount
     ) {
         TradeSummary tradeSummary = TradeSummary.builder()
                 .tradeId(trade.getId())
@@ -39,8 +40,6 @@ public record ChatRoomInfo(
                 .build();
 
         LastMessageSummary lastMessageSummary = getLastMessageSummary(chatRoom);
-
-        long unreadCount = calculateUnreadCount(chatRoom, chatRoomMember);
 
         return ChatRoomInfo.builder()
                 .roomId(chatRoom.getId())
