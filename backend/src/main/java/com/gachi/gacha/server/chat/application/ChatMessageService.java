@@ -15,11 +15,15 @@ import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -117,9 +121,46 @@ public class ChatMessageService {
                         files
                 )
         );
+        registerRollbackCompensation(savedMessage);
 
         sender.read(sequence);
 
         return ChatMessageInfo.from(savedMessage);
+    }
+
+    /**
+     * Mongo 저장은 JPA 트랜잭션에 묶이지 않는다.
+     * Postgres가 롤백되면 sequence는 되돌아가지만 Mongo 문서는 남아,
+     * 이후 같은 sequence로 저장을 시도하는 모든 요청이 유니크 인덱스에 걸려
+     * 채팅방이 영구히 메시지를 보낼 수 없는 상태가 된다.
+     * 이를 막기 위해 롤백 시 저장했던 문서를 보상 삭제한다.
+     */
+    private void registerRollbackCompensation(final ChatMessage savedMessage) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(final int status) {
+                if (status != STATUS_ROLLED_BACK) {
+                    return;
+                }
+                deleteCompensated(savedMessage);
+            }
+        });
+    }
+
+    private void deleteCompensated(final ChatMessage savedMessage) {
+        try {
+            chatMessageMongoRepository.deleteById(savedMessage.getId());
+        } catch (Exception e) {
+            log.error(
+                    "채팅 메시지 보상 삭제 실패. 수동 삭제 필요. roomId={}, sequence={}, messageId={}",
+                    savedMessage.getRoomId(),
+                    savedMessage.getSequence(),
+                    savedMessage.getId(),
+                    e
+            );
+        }
     }
 }
