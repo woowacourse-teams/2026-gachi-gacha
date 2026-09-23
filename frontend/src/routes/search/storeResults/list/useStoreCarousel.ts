@@ -71,7 +71,7 @@ export function useStoreCarousel({
 
     const list = listRef.current;
 
-    if (!list || !isHorizontalCarousel(list)) {
+    if (!list) {
       return;
     }
 
@@ -80,6 +80,15 @@ export function useStoreCarousel({
     );
 
     if (!selectedItem) {
+      return;
+    }
+
+    if (!isHorizontalCarousel(list)) {
+      selectedItem.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
+      });
       return;
     }
 
