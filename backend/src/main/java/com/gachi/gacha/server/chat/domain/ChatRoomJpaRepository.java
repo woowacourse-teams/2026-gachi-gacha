@@ -30,4 +30,6 @@ public interface ChatRoomJpaRepository extends JpaRepository<ChatRoom, Long> {
         return findByIdForUpdate(roomId)
                 .orElseThrow(() -> new ChatRoomNotFoundException(ErrorCode.CHAT_ROOM_NOT_FOUND));
     }
+
+    Optional<ChatRoom> findByTradeIdAndRequesterId(Long tradeId, Long requesterId);
 }

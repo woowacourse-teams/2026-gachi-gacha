@@ -54,14 +54,6 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
     Optional<Member> findOtherMember(Long roomId, Long memberId);
 
     @Query("""
-            SELECT chatRoomMember.chatRoom
-            FROM ChatRoomMember chatRoomMember
-            WHERE chatRoomMember.chatRoom.tradeId = :tradeId
-              AND chatRoomMember.member.id = :memberId
-            """)
-    Optional<ChatRoom> findChatRoom(Long tradeId, Long memberId);
-
-    @Query("""
             SELECT COALESCE(
                 SUM(
                     CASE

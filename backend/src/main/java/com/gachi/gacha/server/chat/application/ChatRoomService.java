@@ -79,7 +79,7 @@ public class ChatRoomService {
         Trade trade = tradeJpaRepository.getById(tradeId);
         validateNotOwner(trade, memberId);
 
-        Optional<ChatRoom> chatRoom = chatRoomMemberJpaRepository.findChatRoom(tradeId, memberId);
+        Optional<ChatRoom> chatRoom = chatRoomJpaRepository.findByTradeIdAndRequesterId(tradeId, memberId);
         return chatRoom
                 .map(room -> ChatRoomExistenceInfo.of(true, room.getId()))
                 .orElseGet(() -> ChatRoomExistenceInfo.of(false, null));
