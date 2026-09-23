@@ -9,10 +9,10 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.jspecify.annotations.Nullable;
 
 @Getter
 @Document("chat_message")
@@ -95,7 +95,7 @@ public class ChatMessage extends MongoBaseTimeDocument {
             @Nullable final String content,
             @Nullable final List<MessageFile> files
     ) {
-        List<MessageFile> messageFiles = files == null ? List.of() : files;
+        List<MessageFile> messageFiles = (files == null) ? List.of() : files;
         if (type == null || !SENDABLE_TYPES.contains(type)) {
             throw new InvalidChatMessageException(ErrorCode.INVALID_CHAT_MESSAGE);
         }
