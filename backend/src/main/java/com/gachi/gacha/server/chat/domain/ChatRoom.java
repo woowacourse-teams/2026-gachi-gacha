@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -18,7 +17,6 @@ import lombok.NoArgsConstructor;
         name = "chat_room"
 )
 @Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatRoom extends BaseTimeEntity {
 
@@ -37,15 +35,13 @@ public class ChatRoom extends BaseTimeEntity {
     private String lastMessagePreview;
     private LocalDateTime lastMessageAt;
 
+    private ChatRoom(final Long tradeId, final Long requesterId) {
+        this.tradeId = tradeId;
+        this.requesterId = requesterId;
+    }
+
     public static ChatRoom create(final Long tradeId, final Long requesterId) {
-        return new ChatRoom(
-                null,
-                tradeId,
-                requesterId,
-                0L,
-                null,
-                null
-        );
+        return new ChatRoom(tradeId, requesterId);
     }
 
     public long appendMessage(final String preview, final LocalDateTime sentAt) {

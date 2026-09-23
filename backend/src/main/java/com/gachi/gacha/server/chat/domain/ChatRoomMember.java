@@ -13,14 +13,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "chat_room_member")
 @Getter
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatRoomMember extends BaseTimeEntity {
 
@@ -42,13 +40,15 @@ public class ChatRoomMember extends BaseTimeEntity {
     @Column(nullable = false)
     private LocalDateTime joinedAt;
 
+    private ChatRoomMember(final ChatRoom chatRoom, final Member member) {
+        this.chatRoom = chatRoom;
+        this.member = member;
+        this.lastReadMessageSequence = 0L;
+        this.joinedAt = LocalDateTime.now();
+    }
+
     public static ChatRoomMember join(final ChatRoom chatRoom, final Member member) {
-        return new ChatRoomMember(
-                null,
-                chatRoom,
-                member,
-                0L,
-                LocalDateTime.now());
+        return new ChatRoomMember(chatRoom, member);
     }
 
     public void read(final Long sequence) {
