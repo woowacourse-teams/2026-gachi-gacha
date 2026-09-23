@@ -3,8 +3,8 @@ import styled from '@emotion/styled';
 export const Section = styled.section`
   display: grid;
   width: 100%;
-  height: 100%;
-  min-height: 620px;
+  min-height: 0;
+  flex: 1 1 auto;
   grid-template-columns: minmax(400px, 56%) minmax(360px, 44%);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
@@ -16,6 +16,7 @@ export const Section = styled.section`
     position: relative;
     height: 100dvh;
     min-height: 100dvh;
+    flex: none;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
     grid-template-areas: 'map';
@@ -40,10 +41,12 @@ export const ListHeaderArea = styled.div`
 
 export const ListArea = styled.div`
   min-width: 0;
-  padding: 0 32px;
+  min-height: 0;
+  padding: 0 32px 24px;
   grid-area: list;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 
   @media (max-width: 767px) {
     position: absolute;
@@ -54,6 +57,7 @@ export const ListArea = styled.div`
     padding: 0;
     grid-area: auto;
     overflow: visible;
+    scrollbar-gutter: auto;
   }
 `;
 
