@@ -42,9 +42,6 @@ public record TradeUpdateRequest(
                 .build();
     }
 
-    /**
-     * 장소는 선택값이라, 보내지 않으면 {@code null}을 그대로 넘겨 "장소 없음"으로 저장한다.
-     */
     private Place toPlace(final PlaceRequest placeRequest) {
         if (placeRequest == null) {
             return null;

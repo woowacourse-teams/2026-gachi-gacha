@@ -11,9 +11,6 @@ public record PlaceResponse(
         Double latitude,
         Double longitude
 ) {
-    /**
-     * 장소를 등록하지 않은 게시글은 컬럼이 전부 비어 있어 {@code Place} 자체가 {@code null}이다.
-     */
     public static PlaceResponse from(@Nullable final Place place) {
         if (place == null) {
             return null;
