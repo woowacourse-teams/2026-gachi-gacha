@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.trade.presentation.dto;
 
-import com.gachi.gacha.server.trade.application.dto.PlaceCommand;
+import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -36,8 +36,8 @@ public record TradeCreateRequest(
                 .categoryIds(categoryIds)
                 .description(description)
                 .desiredProduction(desiredProduction)
-                .purchaseStore(toCommand(purchaseStore))
-                .tradePlace(toCommand(tradePlace))
+                .purchaseStore(toPlace(purchaseStore))
+                .tradePlace(toPlace(tradePlace))
                 .availableTime(availableTime)
                 .build();
     }
@@ -45,10 +45,10 @@ public record TradeCreateRequest(
     /**
      * 장소는 선택값이라, 보내지 않으면 {@code null}을 그대로 넘겨 "장소 없음"으로 저장한다.
      */
-    private PlaceCommand toCommand(final PlaceRequest placeRequest) {
+    private Place toPlace(final PlaceRequest placeRequest) {
         if (placeRequest == null) {
             return null;
         }
-        return placeRequest.toCommand();
+        return placeRequest.toPlace();
     }
 }

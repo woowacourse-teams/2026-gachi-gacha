@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.trade.application.dto;
 
 import com.gachi.gacha.server.gacha.domain.Category;
+import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeCategory;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
@@ -17,8 +18,8 @@ public record TradeInfo(
         String desiredProduction,
         List<String> categories,
         TradeStatus status,
-        PlaceInfo purchaseStore,
-        PlaceInfo tradePlace,
+        Place purchaseStore,
+        Place tradePlace,
         LocalDateTime availableTime,
         List<String> imageUrls,
         LocalDateTime createdAt,
@@ -41,8 +42,8 @@ public record TradeInfo(
                 .desiredProduction(trade.getDesiredProduction())
                 .categories(categories)
                 .status(trade.getStatus())
-                .purchaseStore(PlaceInfo.from(trade.getPurchaseStore()))
-                .tradePlace(PlaceInfo.from(trade.getTradePlace()))
+                .purchaseStore(trade.getPurchaseStore())
+                .tradePlace(trade.getTradePlace())
                 .availableTime(trade.getAvailableTime())
                 .imageUrls(imageUrls)
                 .createdAt(trade.getCreatedAt())

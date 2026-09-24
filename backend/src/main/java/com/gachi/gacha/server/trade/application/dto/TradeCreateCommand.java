@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.trade.application.dto;
 
+import com.gachi.gacha.server.trade.domain.Place;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Builder;
@@ -10,8 +11,8 @@ public record TradeCreateCommand(
         List<Long> categoryIds,
         String description,
         String desiredProduction,
-        PlaceCommand purchaseStore,
-        PlaceCommand tradePlace,
+        Place purchaseStore,
+        Place tradePlace,
         LocalDateTime availableTime
 ) {
 }

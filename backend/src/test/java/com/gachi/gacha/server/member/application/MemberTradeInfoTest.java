@@ -111,7 +111,7 @@ public class MemberTradeInfoTest {
         TradeSummaryInfo info = findAll(owner, null).getContent().get(0);
 
         assertThat(info.title()).isEqualTo("제목");
-        assertThat(info.tradePlace().name()).isEqualTo("강남역");
+        assertThat(info.tradePlace().getName()).isEqualTo("강남역");
         assertThat(info.categories()).containsExactlyInAnyOrder("피규어", "애니");
         assertThat(info.status()).isEqualTo(TradeStatus.AVAILABLE);
     }

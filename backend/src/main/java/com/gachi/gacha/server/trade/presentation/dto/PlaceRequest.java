@@ -1,6 +1,5 @@
 package com.gachi.gacha.server.trade.presentation.dto;
 
-import com.gachi.gacha.server.trade.application.dto.PlaceCommand;
 import com.gachi.gacha.server.trade.domain.Place;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -29,12 +28,7 @@ public record PlaceRequest(
         @NotNull
         Double longitude
 ) {
-    public PlaceCommand toCommand() {
-        return PlaceCommand.builder()
-                .name(name)
-                .address(address)
-                .latitude(latitude)
-                .longitude(longitude)
-                .build();
+    public Place toPlace() {
+        return new Place(name, address, latitude, longitude);
     }
 }

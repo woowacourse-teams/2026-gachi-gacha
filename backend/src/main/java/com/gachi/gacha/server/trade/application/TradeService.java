@@ -7,7 +7,6 @@ import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
-import com.gachi.gacha.server.trade.application.dto.PlaceCommand;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
@@ -22,7 +21,6 @@ import com.gachi.gacha.server.trade.domain.TradeSpecifications;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import com.gachi.gacha.server.trade.domain.exception.CategoryNotFoundException;
 import com.gachi.gacha.server.trade.domain.exception.TradeAccessDeniedException;
-import com.gachi.gacha.server.trade.domain.Place;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -62,8 +60,8 @@ public class TradeService {
                 .title(command.title())
                 .description(command.description())
                 .desiredProduction(command.desiredProduction())
-                .purchaseStore(toPlace(command.purchaseStore()))
-                .tradePlace(toPlace(command.tradePlace()))
+                .purchaseStore(command.purchaseStore())
+                .tradePlace(command.tradePlace())
                 .availableTime(command.availableTime())
                 .status(TradeStatus.AVAILABLE)
                 .build();
@@ -115,8 +113,8 @@ public class TradeService {
                 command.title(),
                 command.description(),
                 command.desiredProduction(),
-                toPlace(command.purchaseStore()),
-                toPlace(command.tradePlace()),
+                command.purchaseStore(),
+                command.tradePlace(),
                 command.availableTime()
         );
         trade.replaceCategories(findCategories(command.categoryIds()));
@@ -161,17 +159,6 @@ public class TradeService {
             return null;
         }
         return keyword.trim();
-    }
-
-    /**
-     * 장소는 선택값이라 보내지 않으면 {@code null}로 저장한다. 값이 있으면 Place 생성자가 좌표 범위와
-     * "주소·위경도 세트" 규칙을 검증한다.
-     */
-    private Place toPlace(final PlaceCommand placeCommand) {
-        if (placeCommand == null) {
-            return null;
-        }
-        return placeCommand.toPlace();
     }
 
     private Member getMember(final Long memberId) {
