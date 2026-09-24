@@ -16,6 +16,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  mongodb:
+    uri: ${TEST_MONGODB_URI:mongodb://localhost:27017/gachi_gacha_test}
+  data:
+    mongodb:
+      auto-index-creation: true
   jpa:
     hibernate:
       ddl-auto: validate
@@ -40,3 +45,7 @@ instagram:
 jwt:
   secret-key: "test-secret-key-for-testing-purposes-only-1234567890"
   access-token-expiration-day: 3600000
+
+cors:
+  allowed-origin-patterns:
+    - http://localhost:*
