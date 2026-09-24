@@ -10,8 +10,8 @@ public record TradeCreateCommand(
         List<Long> categoryIds,
         String description,
         String desiredProduction,
-        String purchaseStoreAddress,
-        String tradePlace,
+        PlaceCommand purchaseStore,
+        PlaceCommand tradePlace,
         LocalDateTime availableTime
 ) {
 }

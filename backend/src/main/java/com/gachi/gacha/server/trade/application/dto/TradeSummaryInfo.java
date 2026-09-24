@@ -16,7 +16,7 @@ public record TradeSummaryInfo(
         TradeStatus status,
         List<String> categories,
         @Nullable String thumbnailUrl,
-        String tradePlace,
+        @Nullable PlaceSummaryInfo tradePlace,
         LocalDateTime createdAt
 ) {
     /**
@@ -37,7 +37,7 @@ public record TradeSummaryInfo(
                 .status(trade.getStatus())
                 .categories(categories)
                 .thumbnailUrl(thumbnailUrl)
-                .tradePlace(trade.getTradePlace())
+                .tradePlace(PlaceSummaryInfo.from(trade.getTradePlace()))
                 .createdAt(trade.getCreatedAt())
                 .build();
     }

@@ -17,8 +17,8 @@ public record TradeInfo(
         String desiredProduction,
         List<String> categories,
         TradeStatus status,
-        String purchaseStoreAddress,
-        String tradePlace,
+        PlaceInfo purchaseStore,
+        PlaceInfo tradePlace,
         LocalDateTime availableTime,
         List<String> imageUrls,
         LocalDateTime createdAt,
@@ -41,8 +41,8 @@ public record TradeInfo(
                 .desiredProduction(trade.getDesiredProduction())
                 .categories(categories)
                 .status(trade.getStatus())
-                .purchaseStoreAddress(trade.getPurchaseStoreAddress())
-                .tradePlace(trade.getTradePlace())
+                .purchaseStore(PlaceInfo.from(trade.getPurchaseStore()))
+                .tradePlace(PlaceInfo.from(trade.getTradePlace()))
                 .availableTime(trade.getAvailableTime())
                 .imageUrls(imageUrls)
                 .createdAt(trade.getCreatedAt())

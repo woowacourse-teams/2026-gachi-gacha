@@ -5,8 +5,11 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.gacha.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.trade.domain.exception.InvalidTradeException;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -47,11 +50,23 @@ public class Trade extends BaseTimeEntity {
     @Column(length = 255)
     private String desiredProduction;
 
-    @Column(length = 255)
-    private String purchaseStoreAddress;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "purchase_store_name", length = 255)),
+            @AttributeOverride(name = "address", column = @Column(name = "purchase_store_address", length = 255)),
+            @AttributeOverride(name = "latitude", column = @Column(name = "purchase_store_latitude")),
+            @AttributeOverride(name = "longitude", column = @Column(name = "purchase_store_longitude"))
+    })
+    private Place purchaseStore;
 
-    @Column(length = 255)
-    private String tradePlace;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "trade_place_name", length = 255)),
+            @AttributeOverride(name = "address", column = @Column(name = "trade_place_address", length = 255)),
+            @AttributeOverride(name = "latitude", column = @Column(name = "trade_place_latitude")),
+            @AttributeOverride(name = "longitude", column = @Column(name = "trade_place_longitude"))
+    })
+    private Place tradePlace;
 
     private LocalDateTime availableTime;
 
@@ -69,8 +84,8 @@ public class Trade extends BaseTimeEntity {
             final String title,
             final String description,
             final String desiredProduction,
-            final String purchaseStoreAddress,
-            final String tradePlace,
+            final Place purchaseStore,
+            final Place tradePlace,
             final LocalDateTime availableTime,
             final TradeStatus status
     ) {
@@ -81,7 +96,7 @@ public class Trade extends BaseTimeEntity {
         this.title = title;
         this.description = description;
         this.desiredProduction = desiredProduction;
-        this.purchaseStoreAddress = purchaseStoreAddress;
+        this.purchaseStore = purchaseStore;
         this.tradePlace = tradePlace;
         this.availableTime = availableTime;
         this.status = status != null ? status : TradeStatus.AVAILABLE;
@@ -95,8 +110,8 @@ public class Trade extends BaseTimeEntity {
             final String title,
             final String description,
             final String desiredProduction,
-            final String purchaseStoreAddress,
-            final String tradePlace,
+            final Place purchaseStore,
+            final Place tradePlace,
             final LocalDateTime availableTime
     ) {
         validateRequired(this.member, title);
@@ -104,7 +119,7 @@ public class Trade extends BaseTimeEntity {
         this.title = title;
         this.description = description;
         this.desiredProduction = desiredProduction;
-        this.purchaseStoreAddress = purchaseStoreAddress;
+        this.purchaseStore = purchaseStore;
         this.tradePlace = tradePlace;
         this.availableTime = availableTime;
     }
