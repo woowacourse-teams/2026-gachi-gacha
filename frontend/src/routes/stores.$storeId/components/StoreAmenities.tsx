@@ -63,7 +63,7 @@ export function StoreAmenities({ store }: StoreAmenitiesProps) {
 
   return (
     <Section aria-labelledby={titleId}>
-      <SectionTitle id={titleId}>편의시설 및 취급 상품</SectionTitle>
+      <SectionTitle id={titleId}>편의시설</SectionTitle>
       <AmenityList>
         {amenities.map(({ icon, id, label }) => (
           <AmenityItem key={id}>

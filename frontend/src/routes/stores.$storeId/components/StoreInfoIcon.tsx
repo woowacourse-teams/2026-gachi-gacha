@@ -7,6 +7,8 @@ export type StoreInfoIconName =
   | 'restroom'
   | 'accessibility'
   | 'lounge'
+  | 'airConditioner'
+  | 'capsuleBin'
   | 'randomBox'
   | 'selectGacha'
   | 'facility';
@@ -37,6 +39,19 @@ export function getStoreFacilityIconName(facility: string): StoreInfoIconName {
     normalizedFacility.includes('좌석')
   ) {
     return 'lounge';
+  }
+  if (
+    normalizedFacility.includes('에어컨') ||
+    normalizedFacility.includes('냉방') ||
+    normalizedFacility.includes('냉난방')
+  ) {
+    return 'airConditioner';
+  }
+  if (
+    normalizedFacility.includes('캡슐수거') ||
+    (normalizedFacility.includes('캡슐') && normalizedFacility.includes('수거'))
+  ) {
+    return 'capsuleBin';
   }
 
   return 'facility';
@@ -101,6 +116,18 @@ export function StoreInfoIcon({ name }: StoreInfoIconProps) {
         <>
           <path d="M6 12h12a2 2 0 0 1 2 2v4H4v-4a2 2 0 0 1 2-2Z" />
           <path d="M6 12V8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v4M6 18v2M18 18v2" />
+        </>
+      )}
+      {name === 'airConditioner' && (
+        <>
+          <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
+          <path d="m9.5 5.5 2.5 2.2 2.5-2.2M9.5 18.5l2.5-2.2 2.5 2.2" />
+        </>
+      )}
+      {name === 'capsuleBin' && (
+        <>
+          <path d="M6 8h12l-1 13H7L6 8ZM5 8h14M9 4h6l1 4H8l1-4Z" />
+          <path d="M10 12.5a2 2 0 0 1 4 0v2a2 2 0 0 1-4 0v-2ZM10 13.5h4" />
         </>
       )}
       {name === 'randomBox' && (

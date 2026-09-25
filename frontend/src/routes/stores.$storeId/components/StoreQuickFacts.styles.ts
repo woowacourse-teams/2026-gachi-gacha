@@ -39,30 +39,23 @@ export const FactList = styled.ul`
 export const FactCard = styled.li`
   display: flex;
   min-width: 0;
-  min-height: 124px;
-  padding: ${space.lg};
-  justify-content: space-between;
-  flex-direction: column;
-  border: 1px solid ${color.border};
-  border-radius: ${radius.card};
-  background: ${color.surface};
-
-  @media (max-width: ${breakpoint.compact}) {
-    min-height: 108px;
-    padding: ${space.md};
-  }
+  align-items: center;
+  gap: ${space.sm};
 `;
 
 export const FactIcon = styled.span`
-  display: block;
-  width: 26px;
-  height: 26px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: ${radius.control};
+  background: ${color.surfaceMuted};
   color: ${color.text};
+  place-items: center;
 
   svg {
-    display: block;
-    width: 100%;
-    height: 100%;
+    width: 22px;
+    height: 22px;
   }
 `;
 
