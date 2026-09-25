@@ -16,6 +16,7 @@ import {
   PhotoCountBadge,
   Title,
 } from './StoreDetailOverview.styles';
+import { StoreGachaCatalog } from './StoreGachaCatalog';
 import { StorePhotoViewer } from './StorePhotoViewer';
 import { StorePriceGuide } from './StorePriceGuide';
 import { StoreQuickFacts } from './StoreQuickFacts';
@@ -112,6 +113,7 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
       <StoreAmenities store={store} />
       <StorePriceGuide store={store} />
       <StoreVisitInfo store={store} />
+      <StoreGachaCatalog storeId={store.storeId} />
 
       {viewerStartIndex !== null && (
         <StorePhotoViewer
