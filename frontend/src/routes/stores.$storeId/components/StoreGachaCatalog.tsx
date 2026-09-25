@@ -1,14 +1,12 @@
 import { useId } from 'react';
 
+import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 import {
   CatalogHeader,
   EmptyState,
   ErrorMessage,
-  GachaFallback,
-  GachaFrame,
-  GachaImage,
   GachaItem,
   GachaList,
   LoadMoreArea,
@@ -78,24 +76,14 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
         storeGachaState.data.gachas.length > 0 && (
           <>
             <GachaList>
-              {storeGachaState.data.gachas.map(
-                ({ gachaId, thumbnailUrl }, index) => (
-                  <GachaItem key={gachaId}>
-                    <GachaFrame>
-                      <GachaFallback aria-hidden="true">
-                        <LogoImagePlaceholder />
-                      </GachaFallback>
-                      <GachaImage
-                        src={thumbnailUrl}
-                        alt={`${index + 1}번째 보유 가챠`}
-                        loading="lazy"
-                        decoding="async"
-                        referrerPolicy="no-referrer"
-                      />
-                    </GachaFrame>
-                  </GachaItem>
-                ),
-              )}
+              {storeGachaState.data.gachas.map((gacha) => (
+                <GachaItem key={gacha.gachaId}>
+                  <GachaSummaryCard
+                    product={gacha}
+                    imageAlt={`${gacha.name} 섬네일`}
+                  />
+                </GachaItem>
+              ))}
             </GachaList>
 
             {(hasMore || isLoadingMore || loadMoreErrorMessage) && (

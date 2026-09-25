@@ -13,7 +13,6 @@ import {
   radius,
   space,
 } from '@/shared/styles/tokens';
-import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
 
 const breathe = keyframes`
   0%, 100% { opacity: 0.35; }
@@ -69,36 +68,6 @@ export const GachaItem = styled.li`
   min-width: 0;
 `;
 
-export const GachaFrame = styled.div`
-  position: relative;
-  display: grid;
-  overflow: hidden;
-  border: 1px solid ${color.border};
-  border-radius: ${radius.card};
-  aspect-ratio: 1;
-  background: ${color.surfaceMuted};
-  place-items: center;
-`;
-
-export const GachaFallback = styled.div`
-  display: grid;
-  width: 100%;
-  height: 100%;
-  place-items: center;
-
-  img {
-    width: 22%;
-  }
-`;
-
-export const GachaImage = styled(ImageWithFallback)`
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  inset: 0;
-  object-fit: cover;
-`;
-
 export const LoadingGrid = styled.div`
   display: grid;
   margin-top: ${space.lg};
@@ -119,7 +88,7 @@ export const LoadingCard = styled.div`
   display: grid;
   border: 1px solid ${color.borderSubtle};
   border-radius: ${radius.card};
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   background: ${color.surfaceMuted};
   place-items: center;
 
