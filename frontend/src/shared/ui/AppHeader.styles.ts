@@ -19,23 +19,23 @@ export const HeaderContent = styled.div`
   min-height: 76px;
   padding: 12px 32px;
   align-items: center;
-  grid-template-columns: minmax(260px, 1fr) minmax(280px, 720px) minmax(
-      260px,
-      1fr
-    );
-  gap: 28px;
+  grid-template-columns:
+    minmax(210px, 0.8fr) minmax(280px, 720px) auto
+    auto;
+  gap: 20px;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     padding: 10px 20px;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas:
-      'brand navigation'
-      'search search';
+      'brand navigation actions'
+      'search search search';
     gap: 10px 18px;
   }
 
   @media (max-width: 520px) {
-    padding: 10px 16px;
+    padding: 10px 12px;
+    gap: 10px 6px;
   }
 `;
 
@@ -56,11 +56,11 @@ export const Brand = styled.a`
     outline-offset: 4px;
   }
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     grid-area: brand;
   }
 
-  @media (max-width: 520px) {
+  @media (max-width: 767px) {
     font-size: 0;
     gap: 0;
   }
@@ -77,7 +77,7 @@ export const SearchArea = styled.div`
   width: 100%;
   min-width: 0;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     grid-area: search;
   }
 `;
@@ -88,8 +88,12 @@ export const Navigation = styled.nav`
   justify-content: flex-end;
   gap: 8px;
 
-  @media (max-width: 900px) {
+  @media (max-width: 1180px) {
     grid-area: navigation;
+  }
+
+  @media (max-width: 520px) {
+    gap: 2px;
   }
 `;
 
@@ -125,7 +129,88 @@ export const NavigationLink = styled.a<{ $isActive: boolean }>`
 
   @media (max-width: 520px) {
     min-height: 38px;
-    padding: 0 11px;
+    padding: 0 8px;
     font-size: 13px;
   }
+`;
+
+export const Actions = styled.nav`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+
+  @media (max-width: 1180px) {
+    grid-area: actions;
+  }
+
+  @media (max-width: 520px) {
+    gap: 2px;
+  }
+`;
+
+export const ActionLink = styled.a<{
+  $isActive: boolean;
+  $isAccount?: boolean;
+}>`
+  display: inline-flex;
+  min-width: 42px;
+  height: 42px;
+  padding: ${({ $isAccount }) => ($isAccount ? '0 13px' : '0')};
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid
+    ${({ $isActive }) =>
+      $isActive
+        ? 'var(--color-primary, #d93b54)'
+        : 'var(--color-border, #e8e6e3)'};
+  border-radius: 999px;
+  background: ${({ $isActive }) =>
+    $isActive ? 'var(--color-primary, #d93b54)' : '#ffffff'};
+  color: ${({ $isActive }) =>
+    $isActive ? '#ffffff' : 'var(--color-text, #242122)'};
+  font-size: 13px;
+  font-weight: 750;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &:hover {
+    border-color: ${({ $isActive }) =>
+      $isActive
+        ? 'var(--color-primary-hover, #c73149)'
+        : 'var(--color-primary, #d93b54)'};
+    background: ${({ $isActive }) =>
+      $isActive
+        ? 'var(--color-primary-hover, #c73149)'
+        : 'var(--color-primary-soft, #fff1f3)'};
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(217 59 84 / 24%);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 520px) {
+    min-width: 36px;
+    height: 36px;
+    padding: ${({ $isAccount }) => ($isAccount ? '0 9px' : '0')};
+    gap: 4px;
+    font-size: 12px;
+  }
+`;
+
+export const ActionIcon = styled.svg`
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+`;
+
+export const AccountLabel = styled.span``;
+
+export const Avatar = styled.img`
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
 `;
