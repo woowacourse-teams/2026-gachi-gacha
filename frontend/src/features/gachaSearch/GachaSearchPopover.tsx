@@ -1,30 +1,25 @@
 import type { UIEvent } from 'react';
 
+import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
-import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 import { captureGachaSelected } from './analytics/gachaSearchAnalytics';
 import {
-  CategoryText,
   CloseButton,
   Content,
   EmptyState,
   ErrorMessage,
   Header,
   HelperText,
-  ImageFallback,
   LoadingCard,
   LoadingGrid,
   LoadMoreError,
   LoadMoreStatus,
   Popover,
   ProductButton,
-  ProductImage,
-  ProductImageFrame,
   ProductItem,
   ProductList,
-  ProductName,
   ResultCount,
   ResultSummary,
   RetryButton,
@@ -81,22 +76,7 @@ function ProductCard({
         }}
         aria-label={`${product.name} 선택`}
       >
-        <ProductImageFrame>
-          <ImageFallback aria-hidden="true">
-            <LogoImagePlaceholder />
-          </ImageFallback>
-          <ProductImage
-            src={product.thumbnailUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            referrerPolicy="no-referrer"
-          />
-        </ProductImageFrame>
-        <ProductName title={product.name}>{product.name}</ProductName>
-        <CategoryText title={product.categories.join(', ')}>
-          {categoryLabel || '카테고리 미등록'}
-        </CategoryText>
+        <GachaSummaryCard product={product} categoryLabel={categoryLabel} />
       </ProductButton>
     </ProductItem>
   );

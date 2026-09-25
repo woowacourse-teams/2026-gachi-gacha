@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 
-import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
+import { GachaImageFrame } from '@/domains/product/components/GachaSummaryCard.styles';
 
 export const Popover = styled.section`
   position: absolute;
@@ -185,7 +185,7 @@ export const ProductButton = styled.button`
   text-align: left;
   cursor: pointer;
 
-  &:hover > div:first-of-type {
+  &:hover ${GachaImageFrame} {
     border-color: var(--color-primary, #d93b54);
     transform: translateY(-2px);
     box-shadow: 0 9px 20px rgb(35 31 32 / 12%);
@@ -195,75 +195,6 @@ export const ProductButton = styled.button`
     outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: 4px;
     border-radius: 14px;
-  }
-`;
-
-export const ProductImageFrame = styled.div`
-  position: relative;
-  overflow: hidden;
-  aspect-ratio: 4 / 3;
-  border: 1px solid var(--color-border, #e8e6e3);
-  border-radius: 14px;
-  background: var(--color-primary-soft, #fbf0f2);
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease;
-`;
-
-export const ImageFallback = styled.span`
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-`;
-
-export const ProductImage = styled(ImageWithFallback)`
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-`;
-
-export const ProductName = styled.strong`
-  display: -webkit-box;
-  height: 44px;
-  margin-top: 10px;
-  overflow: hidden;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.45;
-  letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-
-  @media (max-width: 767px) {
-    display: block;
-    height: 20px;
-    margin-top: 7px;
-    overflow: hidden;
-    font-size: 13px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    -webkit-line-clamp: unset;
-  }
-`;
-
-export const CategoryText = styled.span`
-  display: block;
-  margin-top: 4px;
-  overflow: hidden;
-  color: var(--color-text-muted, #827c7e);
-  font-size: 12px;
-  line-height: 1.4;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-
-  @media (max-width: 767px) {
-    margin-top: 2px;
-    font-size: 11px;
   }
 `;
 
