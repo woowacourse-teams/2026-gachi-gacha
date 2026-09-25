@@ -3,13 +3,19 @@ import styled from '@emotion/styled';
 export const Page = styled.main`
   display: flex;
   min-height: 100dvh;
-  padding: 32px 20px;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   background:
     radial-gradient(circle at 50% 38%, rgb(217 59 84 / 10%), transparent 34%),
     var(--color-surface, #ffffff);
   color: var(--color-text, #242122);
+`;
+
+export const Main = styled.div`
+  display: flex;
+  padding: 32px 20px;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
   text-align: center;
 `;
 

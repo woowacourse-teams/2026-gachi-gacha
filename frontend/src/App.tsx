@@ -4,6 +4,7 @@ import {
   isOAuthProvider,
   type OAuthProvider,
 } from '@/features/auth/oauthProviderType';
+import { RequireAuth } from '@/features/auth/RequireAuth';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -37,9 +38,30 @@ const AuthCallbackRoute = lazy(async () => {
   return { default: routeModule.AuthCallbackRoute };
 });
 
+const ChatRoute = lazy(async () => {
+  const routeModule = await import('@/routes/chat/route');
+
+  return { default: routeModule.ChatRoute };
+});
+
+const NotificationsRoute = lazy(async () => {
+  const routeModule = await import('@/routes/notifications/route');
+
+  return { default: routeModule.NotificationsRoute };
+});
+
+const MyPageRoute = lazy(async () => {
+  const routeModule = await import('@/routes/mypage/route');
+
+  return { default: routeModule.MyPageRoute };
+});
+
 const SEARCH_PATH = '/search';
 const USED_MARKET_PATH = '/used-market';
 const LOGIN_PATH = '/login';
+const CHAT_PATH = '/chat';
+const NOTIFICATIONS_PATH = '/notifications';
+const MY_PAGE_PATH = '/mypage';
 const STORE_DETAIL_PATH_PATTERN = /^\/stores\/[1-9]\d*$/;
 const AUTH_CALLBACK_PATH_PATTERN = /^\/auth\/callback\/([^/]+)$/;
 
@@ -48,6 +70,9 @@ type AppRoute =
   | { page: 'storeDetail' }
   | { page: 'usedMarket' }
   | { page: 'login' }
+  | { page: 'chat' }
+  | { page: 'notifications' }
+  | { page: 'mypage' }
   | { page: 'authCallback'; provider: OAuthProvider };
 
 function removeTrailingSlash(pathname: string): string {
@@ -65,6 +90,18 @@ function resolveAppRoute(pathname: string): AppRoute {
 
   if (normalizedPathname === LOGIN_PATH) {
     return { page: 'login' };
+  }
+
+  if (normalizedPathname === CHAT_PATH) {
+    return { page: 'chat' };
+  }
+
+  if (normalizedPathname === NOTIFICATIONS_PATH) {
+    return { page: 'notifications' };
+  }
+
+  if (normalizedPathname === MY_PAGE_PATH) {
+    return { page: 'mypage' };
   }
 
   if (STORE_DETAIL_PATH_PATTERN.test(normalizedPathname)) {
@@ -111,6 +148,18 @@ export default function App() {
       <LoginRoute />
     ) : route.page === 'authCallback' ? (
       <AuthCallbackRoute provider={route.provider} />
+    ) : route.page === 'chat' ? (
+      <RequireAuth>
+        <ChatRoute />
+      </RequireAuth>
+    ) : route.page === 'notifications' ? (
+      <RequireAuth>
+        <NotificationsRoute />
+      </RequireAuth>
+    ) : route.page === 'mypage' ? (
+      <RequireAuth>
+        <MyPageRoute />
+      </RequireAuth>
     ) : (
       <SearchRoute />
     );
