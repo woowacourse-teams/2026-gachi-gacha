@@ -47,53 +47,63 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-function getInitialState(): AuthState {
-  return readAccessToken()
-    ? { status: 'loading', member: null, errorMessage: null }
-    : GUEST_STATE;
-}
-
 export interface AuthSessionProviderProps {
   children: ReactNode;
+  initialAccessToken?: string | null;
 }
 
-export function AuthSessionProvider({ children }: AuthSessionProviderProps) {
-  const [state, setState] = useState<AuthState>(getInitialState);
+export function AuthSessionProvider({
+  children,
+  initialAccessToken,
+}: AuthSessionProviderProps) {
+  const readSessionAccessToken = useCallback(
+    () =>
+      initialAccessToken === undefined ? readAccessToken() : initialAccessToken,
+    [initialAccessToken],
+  );
+  const [state, setState] = useState<AuthState>(() =>
+    readSessionAccessToken()
+      ? { status: 'loading', member: null, errorMessage: null }
+      : GUEST_STATE,
+  );
 
-  const restoreSession = useCallback(async (signal?: AbortSignal) => {
-    const accessToken = readAccessToken();
+  const restoreSession = useCallback(
+    async (signal?: AbortSignal) => {
+      const accessToken = readSessionAccessToken();
 
-    if (!accessToken) {
-      setState(GUEST_STATE);
-      return;
-    }
-
-    setState({ status: 'loading', member: null, errorMessage: null });
-
-    try {
-      const member = await getCurrentMember(accessToken, signal);
-      setState({ status: 'authenticated', member, errorMessage: null });
-    } catch (error) {
-      if (isAbortError(error)) {
-        return;
-      }
-
-      if (error instanceof AuthApiError && error.status === 401) {
-        clearAccessToken();
+      if (!accessToken) {
         setState(GUEST_STATE);
         return;
       }
 
-      setState({
-        status: 'error',
-        member: null,
-        errorMessage:
-          error instanceof Error
-            ? error.message
-            : '로그인 상태를 확인하지 못했습니다.',
-      });
-    }
-  }, []);
+      setState({ status: 'loading', member: null, errorMessage: null });
+
+      try {
+        const member = await getCurrentMember(accessToken, signal);
+        setState({ status: 'authenticated', member, errorMessage: null });
+      } catch (error) {
+        if (isAbortError(error)) {
+          return;
+        }
+
+        if (error instanceof AuthApiError && error.status === 401) {
+          clearAccessToken();
+          setState(GUEST_STATE);
+          return;
+        }
+
+        setState({
+          status: 'error',
+          member: null,
+          errorMessage:
+            error instanceof Error
+              ? error.message
+              : '로그인 상태를 확인하지 못했습니다.',
+        });
+      }
+    },
+    [readSessionAccessToken],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
