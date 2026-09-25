@@ -17,6 +17,7 @@ import {
   Title,
 } from './StoreDetailOverview.styles';
 import { StorePhotoViewer } from './StorePhotoViewer';
+import { StorePriceGuide } from './StorePriceGuide';
 import { StoreQuickFacts } from './StoreQuickFacts';
 
 export interface StoreDetailOverviewProps {
@@ -108,6 +109,7 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
 
       <StoreQuickFacts store={store} />
       <StoreAmenities store={store} />
+      <StorePriceGuide store={store} />
 
       {viewerStartIndex !== null && (
         <StorePhotoViewer
