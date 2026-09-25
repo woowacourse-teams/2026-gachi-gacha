@@ -32,6 +32,12 @@ const LoginRoute = lazy(async () => {
   return { default: routeModule.LoginRoute };
 });
 
+const PrivacyRoute = lazy(async () => {
+  const routeModule = await import('@/routes/privacy/route');
+
+  return { default: routeModule.PrivacyRoute };
+});
+
 const AuthCallbackRoute = lazy(async () => {
   const routeModule = await import('@/routes/auth-callback/route');
 
@@ -59,6 +65,7 @@ const MyPageRoute = lazy(async () => {
 const SEARCH_PATH = '/search';
 const USED_MARKET_PATH = '/used-market';
 const LOGIN_PATH = '/login';
+const PRIVACY_PATH = '/privacy';
 const CHAT_PATH = '/chat';
 const NOTIFICATIONS_PATH = '/notifications';
 const MY_PAGE_PATH = '/mypage';
@@ -70,6 +77,7 @@ type AppRoute =
   | { page: 'storeDetail' }
   | { page: 'usedMarket' }
   | { page: 'login' }
+  | { page: 'privacy' }
   | { page: 'chat' }
   | { page: 'notifications' }
   | { page: 'mypage' }
@@ -90,6 +98,10 @@ function resolveAppRoute(pathname: string): AppRoute {
 
   if (normalizedPathname === LOGIN_PATH) {
     return { page: 'login' };
+  }
+
+  if (normalizedPathname === PRIVACY_PATH) {
+    return { page: 'privacy' };
   }
 
   if (normalizedPathname === CHAT_PATH) {
@@ -146,6 +158,8 @@ export default function App() {
       <UsedMarketRoute />
     ) : route.page === 'login' ? (
       <LoginRoute />
+    ) : route.page === 'privacy' ? (
+      <PrivacyRoute />
     ) : route.page === 'authCallback' ? (
       <AuthCallbackRoute provider={route.provider} />
     ) : route.page === 'chat' ? (
