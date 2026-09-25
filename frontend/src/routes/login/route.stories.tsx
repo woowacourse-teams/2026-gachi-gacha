@@ -56,3 +56,20 @@ export const Mobile: Story = {
     },
   },
 };
+
+export const TallDesktop: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: 'desktopTall',
+      options: {
+        desktopTall: {
+          name: 'Desktop 1440 × 1280',
+          styles: {
+            width: '1440px',
+            height: '1280px',
+          },
+        },
+      },
+    },
+  },
+};

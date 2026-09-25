@@ -13,27 +13,25 @@ import {
 } from '@/shared/styles/tokens';
 
 export const Page = styled.div`
-  display: grid;
+  display: flex;
   min-height: 100vh;
   min-height: 100dvh;
+  padding: clamp(${space.lg}, 5vh, ${space.huge}) ${space.md};
+  align-items: center;
+  justify-content: center;
   background:
-    radial-gradient(circle at 50% 18%, rgb(217 59 84 / 9%), transparent 34%),
+    radial-gradient(circle at 50% 42%, rgb(217 59 84 / 10%), transparent 38%),
     ${color.surface};
-  grid-template-rows: auto 1fr;
-`;
-
-export const Header = styled.header`
-  padding: ${space.lg} clamp(${space.md}, 4vw, ${space.xxl});
-  border-bottom: 1px solid ${color.border};
-  background: rgb(255 255 255 / 92%);
 `;
 
 export const Brand = styled.a`
   display: inline-flex;
+  width: fit-content;
   align-items: center;
+  justify-content: center;
   gap: ${space.sm};
   color: ${color.primary};
-  font-size: ${fontSize.sectionTitle};
+  font-size: clamp(20px, 3vw, 24px);
   font-weight: ${fontWeight.extraBold};
   letter-spacing: ${letterSpacing.heading};
   text-decoration: none;
@@ -47,62 +45,79 @@ export const Brand = styled.a`
 
 export const BrandLogo = styled.img`
   width: auto;
-  height: 30px;
+  height: clamp(32px, 5vw, 40px);
   object-fit: contain;
 `;
 
+export const BrandName = styled.span``;
+
 export const Main = styled.main`
-  display: grid;
-  padding: clamp(${space.xxl}, 8vh, 88px) ${space.md};
-  place-items: start center;
+  width: min(100%, 540px);
 `;
 
 export const Card = styled.section`
-  width: min(100%, 440px);
-  padding: clamp(${space.xxl}, 6vw, ${space.huge});
+  display: flex;
+  width: 100%;
+  padding: clamp(${space.xxl}, 6vw, 56px);
   border: 1px solid ${color.border};
   border-radius: ${radius.dialog};
+  align-items: center;
   background: ${color.surface};
   box-shadow: ${shadow.card};
+  flex-direction: column;
   text-align: center;
+
+  @media (max-width: 520px) {
+    padding: ${space.xxl} ${space.lg};
+    border-radius: ${radius.card};
+  }
 `;
 
 export const Title = styled.h1`
-  margin: 0;
+  margin: clamp(${space.xxl}, 6vh, ${space.huge}) 0 0;
   color: ${color.text};
-  font-size: ${fontSize.pageTitle};
+  font-size: clamp(26px, 5vw, 36px);
   font-weight: ${fontWeight.extraBold};
   letter-spacing: ${letterSpacing.title};
-  line-height: ${lineHeight.heading};
+  line-height: 1.35;
 `;
 
-export const Description = styled.p`
-  margin: ${space.sm} 0 0;
-  color: ${color.textMuted};
-  font-size: ${fontSize.body};
-  line-height: ${lineHeight.relaxed};
+export const Accent = styled.span`
+  color: ${color.primary};
 `;
 
 export const ProviderList = styled.div`
   display: grid;
-  margin-top: ${space.xxl};
-  justify-items: center;
+  width: 100%;
+  margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
   gap: ${space.sm};
 `;
 
-export const ProviderLink = styled.a`
+export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
   display: flex;
-  width: 232px;
-  min-height: 52px;
+  width: 100%;
+  height: 56px;
+  padding: 0 ${space.xl};
   align-items: center;
   justify-content: center;
-  border-radius: ${radius.control};
+  gap: ${space.sm};
+  border: 1px solid
+    ${({ $provider }) => ($provider === 'kakao' ? '#f0d85e' : '#b8e3c9')};
+  border-radius: ${radius.card};
+  background: ${({ $provider }) =>
+    $provider === 'kakao' ? '#fff1a8' : '#def4e7'};
+  color: ${({ $provider }) => ($provider === 'kakao' ? '#3b3100' : '#176b3b')};
+  font-size: ${fontSize.subheading};
+  font-weight: ${fontWeight.bold};
+  text-decoration: none;
   transition:
-    opacity 160ms ease,
-    transform 160ms ease;
+    background 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
 
   &:hover {
-    opacity: 0.9;
+    background: ${({ $provider }) =>
+      $provider === 'kakao' ? '#ffe97a' : '#c9edd8'};
     transform: translateY(-1px);
   }
 
@@ -116,10 +131,21 @@ export const ProviderLink = styled.a`
   }
 `;
 
-export const ProviderImage = styled.img`
-  display: block;
-  max-width: 224px;
-  height: auto;
+export const ProviderIcon = styled.span`
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1;
+  place-items: center;
+
+  svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
 `;
 
 export const ErrorMessage = styled.p`
@@ -146,23 +172,25 @@ export const RetryButton = styled.button`
 `;
 
 export const PrivacyNote = styled.p`
-  margin: ${space.xl} 0 0;
+  margin: ${space.lg} 0 0;
   color: ${color.textSubtle};
-  font-size: ${fontSize.caption};
+  font-size: ${fontSize.bodySmall};
   line-height: ${lineHeight.relaxed};
 `;
 
-export const BackLink = styled.a`
-  display: inline-flex;
-  margin-top: ${space.xl};
+export const PrivacyLink = styled.a`
   color: ${color.textMuted};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.medium};
-  text-decoration: none;
+  font-weight: ${fontWeight.bold};
+  text-decoration: underline;
+  text-underline-offset: 3px;
 
   &:hover {
-    color: ${color.text};
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    color: ${color.primary};
+  }
+
+  &:focus-visible {
+    border-radius: 3px;
+    box-shadow: ${focusRing};
+    outline: none;
   }
 `;
