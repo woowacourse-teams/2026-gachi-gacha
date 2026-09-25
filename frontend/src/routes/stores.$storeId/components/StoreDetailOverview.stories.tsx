@@ -33,3 +33,12 @@ export const WithoutPhotos: Story = {
     store: sparseStoreResponse.data,
   },
 };
+
+export const LongStoreName: Story = {
+  args: {
+    store: {
+      ...richStoreResponse.data,
+      name: '홍대입구 산리오 캐릭터즈 프리미엄 캡슐토이 컬렉션 스테이션',
+    },
+  },
+};

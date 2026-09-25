@@ -13,19 +13,13 @@ export const HeadingCopy = styled.div`
   min-width: 0;
 `;
 
-export const Eyebrow = styled.p`
-  margin: 0 0 8px;
-  color: var(--color-primary, #d93b54);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-`;
-
 export const Title = styled.h1`
   margin: 0;
-  font-size: clamp(28px, 3vw, 42px);
+  overflow-wrap: anywhere;
+  font-size: clamp(28px, 3vw, 40px);
   line-height: 1.2;
   letter-spacing: -0.045em;
+  word-break: keep-all;
 `;
 
 export const Address = styled.p`

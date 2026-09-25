@@ -7,24 +7,26 @@ const breathe = keyframes`
 `;
 
 export const Page = styled.div`
+  display: flex;
   min-height: 100dvh;
+  flex-direction: column;
   background: var(--color-surface, #ffffff);
 `;
 
 export const Main = styled.main`
   width: min(100% - 40px, 1280px);
-  padding: clamp(36px, 5vw, 72px) 0 80px;
+  padding: 20px 0 80px;
   margin: 0 auto;
 
   @media (max-width: 520px) {
     width: min(100% - 28px, 1280px);
-    padding-top: 28px;
+    padding-top: 16px;
   }
 `;
 
 export const LoadingArea = styled.div`
   display: grid;
-  min-height: min(620px, calc(100dvh - 100px));
+  flex: 1;
   place-items: center;
 `;
 
@@ -41,7 +43,7 @@ export const LoadingLogo = styled.img`
 
 export const ErrorPanel = styled.section`
   display: flex;
-  min-height: min(560px, calc(100dvh - 140px));
+  flex: 1;
   padding: 48px 20px;
   align-items: center;
   justify-content: center;

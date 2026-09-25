@@ -6,7 +6,6 @@ import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 import {
   Address,
   EmptyGalleryLabel,
-  Eyebrow,
   Gallery,
   GalleryFrame,
   GalleryImage,
@@ -48,7 +47,6 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
     <>
       <Heading>
         <HeadingCopy>
-          <Eyebrow>매장 상세</Eyebrow>
           <Title>{store.name}</Title>
           <Address>{store.address}</Address>
         </HeadingCopy>
