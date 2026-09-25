@@ -89,6 +89,39 @@ export const GalleryImage = styled(ImageWithFallback)`
   object-fit: cover;
 `;
 
+export const GalleryOpenButton = styled.button`
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  padding: 12px;
+  align-items: flex-end;
+  justify-content: flex-end;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  inset: 0;
+
+  &:focus-visible {
+    outline: 3px solid rgb(217 59 84 / 38%);
+    outline-offset: -4px;
+  }
+`;
+
+export const PhotoCountBadge = styled.span`
+  display: inline-flex;
+  min-height: 38px;
+  padding: 0 14px;
+  align-items: center;
+  border: 1px solid rgb(36 33 34 / 13%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 5px 16px rgb(36 33 34 / 15%);
+  color: var(--color-text, #242122);
+  font-size: 13px;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+`;
+
 export const EmptyGalleryLabel = styled.span`
   position: absolute;
   bottom: 18%;

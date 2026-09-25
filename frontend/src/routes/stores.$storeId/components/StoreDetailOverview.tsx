@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
@@ -9,16 +9,19 @@ import {
   Gallery,
   GalleryFrame,
   GalleryImage,
+  GalleryOpenButton,
   Heading,
   HeadingCopy,
+  PhotoCountBadge,
   Title,
 } from './StoreDetailOverview.styles';
+import { StorePhotoViewer } from './StorePhotoViewer';
 
 export interface StoreDetailOverviewProps {
   store: StoreDetailResponseDto;
 }
 
-const MAX_GALLERY_IMAGE_COUNT = 5;
+const MAX_GALLERY_PREVIEW_COUNT = 5;
 
 function createImageUrls(store: StoreDetailResponseDto): readonly string[] {
   const imageUrls = [
@@ -26,22 +29,39 @@ function createImageUrls(store: StoreDetailResponseDto): readonly string[] {
     ...store.images.map(({ imageUrl }) => imageUrl),
   ].filter((imageUrl): imageUrl is string => Boolean(imageUrl?.trim()));
 
-  return Array.from(new Set(imageUrls)).slice(0, MAX_GALLERY_IMAGE_COUNT);
+  return Array.from(new Set(imageUrls));
 }
 
 function ImageFrame({
   children,
   isMain = false,
+  label,
+  photoCount,
+  onOpen,
 }: {
   children: ReactNode;
   isMain?: boolean;
+  label: string;
+  photoCount: number | null;
+  onOpen: () => void;
 }) {
-  return <GalleryFrame $isMain={isMain}>{children}</GalleryFrame>;
+  return (
+    <GalleryFrame $isMain={isMain}>
+      {children}
+      <GalleryOpenButton type="button" aria-label={label} onClick={onOpen}>
+        {photoCount !== null && (
+          <PhotoCountBadge>전체 {photoCount}장 보기</PhotoCountBadge>
+        )}
+      </GalleryOpenButton>
+    </GalleryFrame>
+  );
 }
 
 export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
   const imageUrls = createImageUrls(store);
+  const previewImageUrls = imageUrls.slice(0, MAX_GALLERY_PREVIEW_COUNT);
   const hasGalleryImage = imageUrls.length > 0;
+  const [viewerStartIndex, setViewerStartIndex] = useState<number | null>(null);
 
   return (
     <>
@@ -54,8 +74,19 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
 
       <Gallery $isSingle={imageUrls.length <= 1} aria-label="매장 사진">
         {hasGalleryImage ? (
-          imageUrls.map((imageUrl, index) => (
-            <ImageFrame key={imageUrl} isMain={index === 0}>
+          previewImageUrls.map((imageUrl, index) => (
+            <ImageFrame
+              key={imageUrl}
+              isMain={index === 0}
+              label={`${index + 1}번째 매장 사진 크게 보기`}
+              photoCount={
+                index === previewImageUrls.length - 1 &&
+                imageUrls.length > MAX_GALLERY_PREVIEW_COUNT
+                  ? imageUrls.length
+                  : null
+              }
+              onOpen={() => setViewerStartIndex(index)}
+            >
               <LogoImagePlaceholder />
               <GalleryImage
                 src={imageUrl}
@@ -66,12 +97,21 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
             </ImageFrame>
           ))
         ) : (
-          <ImageFrame isMain>
+          <GalleryFrame $isMain>
             <LogoImagePlaceholder />
             <EmptyGalleryLabel>매장 사진을 준비하고 있어요</EmptyGalleryLabel>
-          </ImageFrame>
+          </GalleryFrame>
         )}
       </Gallery>
+
+      {viewerStartIndex !== null && (
+        <StorePhotoViewer
+          imageUrls={imageUrls}
+          initialIndex={viewerStartIndex}
+          storeName={store.name}
+          onClose={() => setViewerStartIndex(null)}
+        />
+      )}
     </>
   );
 }
