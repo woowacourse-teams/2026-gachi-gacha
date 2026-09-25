@@ -1,12 +1,24 @@
 import styled from '@emotion/styled';
 
+import {
+  breakpoint,
+  color,
+  focusRing,
+  fontSize,
+  fontWeight,
+  letterSpacing,
+  lineHeight,
+  radius,
+  shadow,
+  space,
+} from '@/shared/styles/tokens';
 import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
 
 export const Heading = styled.header`
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
+  gap: ${space.xl};
 `;
 
 export const HeadingCopy = styled.div`
@@ -16,31 +28,32 @@ export const HeadingCopy = styled.div`
 export const Title = styled.h1`
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: clamp(28px, 3vw, 40px);
-  line-height: 1.2;
-  letter-spacing: -0.045em;
+  font-size: ${fontSize.display};
+  font-weight: ${fontWeight.extraBold};
+  line-height: ${lineHeight.tight};
+  letter-spacing: ${letterSpacing.title};
   word-break: keep-all;
 `;
 
 export const Address = styled.p`
-  margin: 10px 0 0;
-  color: var(--color-text-muted, #696466);
-  font-size: 15px;
-  line-height: 1.5;
+  margin: ${space.xs} 0 0;
+  color: ${color.textMuted};
+  font-size: ${fontSize.body};
+  line-height: ${lineHeight.body};
 `;
 
 export const Gallery = styled.section<{ $isSingle: boolean }>`
   display: grid;
   height: clamp(360px, 42vw, 520px);
-  margin-top: 28px;
+  margin-top: ${space.xxl};
   grid-template-columns: ${({ $isSingle }) =>
     $isSingle ? 'minmax(0, 1fr)' : 'minmax(0, 2fr) repeat(2, minmax(0, 1fr))'};
   grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: ${space.xs};
 
-  @media (max-width: 767px) {
+  @media (max-width: ${breakpoint.mobile}) {
     height: auto;
-    padding-bottom: 4px;
+    padding-bottom: ${space.xxs};
     overflow-x: auto;
     grid-auto-columns: 86%;
     grid-auto-flow: column;
@@ -60,9 +73,9 @@ export const GalleryFrame = styled.div<{ $isMain?: boolean }>`
   display: grid;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--color-border, #e8e6e3);
-  border-radius: 16px;
-  background: var(--color-surface-muted, #faf9f8);
+  border: 1px solid ${color.border};
+  border-radius: ${radius.card};
+  background: ${color.surfaceMuted};
   place-items: center;
 
   ${({ $isMain }) =>
@@ -73,7 +86,7 @@ export const GalleryFrame = styled.div<{ $isMain?: boolean }>`
       `
       : ''}
 
-  @media (max-width: 767px) {
+  @media (max-width: ${breakpoint.mobile}) {
     grid-column: auto;
     grid-row: auto;
     scroll-snap-align: center;
@@ -93,7 +106,7 @@ export const GalleryOpenButton = styled.button`
   position: absolute;
   z-index: 2;
   display: flex;
-  padding: 12px;
+  padding: ${space.sm};
   align-items: flex-end;
   justify-content: flex-end;
   border: 0;
@@ -102,30 +115,31 @@ export const GalleryOpenButton = styled.button`
   inset: 0;
 
   &:focus-visible {
-    outline: 3px solid rgb(217 59 84 / 38%);
+    outline: none;
     outline-offset: -4px;
+    box-shadow: inset ${focusRing};
   }
 `;
 
 export const PhotoCountBadge = styled.span`
   display: inline-flex;
   min-height: 38px;
-  padding: 0 14px;
+  padding: 0 ${space.sm};
   align-items: center;
-  border: 1px solid rgb(36 33 34 / 13%);
-  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, ${color.text} 13%, transparent);
+  border-radius: ${radius.pill};
   background: rgb(255 255 255 / 92%);
-  box-shadow: 0 5px 16px rgb(36 33 34 / 15%);
-  color: var(--color-text, #242122);
-  font-size: 13px;
-  font-weight: 800;
+  box-shadow: ${shadow.float};
+  color: ${color.text};
+  font-size: ${fontSize.label};
+  font-weight: ${fontWeight.extraBold};
   backdrop-filter: blur(8px);
 `;
 
 export const EmptyGalleryLabel = styled.span`
   position: absolute;
   bottom: 18%;
-  color: var(--color-text-muted, #696466);
-  font-size: 14px;
-  font-weight: 700;
+  color: ${color.textMuted};
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.bold};
 `;

@@ -1,6 +1,20 @@
 import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import {
+  breakpoint,
+  color,
+  focusRing,
+  fontSize,
+  fontWeight,
+  layout,
+  letterSpacing,
+  lineHeight,
+  motion,
+  radius,
+  space,
+} from '@/shared/styles/tokens';
+
 const breathe = keyframes`
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.85; }
@@ -10,17 +24,17 @@ export const Page = styled.div`
   display: flex;
   min-height: 100dvh;
   flex-direction: column;
-  background: var(--color-surface, #ffffff);
+  background: ${color.surface};
 `;
 
 export const Main = styled.main`
-  width: min(100% - 40px, 1280px);
-  padding: 20px 0 80px;
+  width: min(calc(100% - ${space.xxxl}), ${layout.contentMaxWidth});
+  padding: ${space.lg} 0 80px;
   margin: 0 auto;
 
-  @media (max-width: 520px) {
-    width: min(100% - 28px, 1280px);
-    padding-top: 16px;
+  @media (max-width: ${breakpoint.compact}) {
+    width: min(calc(100% - ${space.xxl}), ${layout.contentMaxWidth});
+    padding-top: ${space.md};
   }
 `;
 
@@ -33,7 +47,7 @@ export const LoadingArea = styled.div`
 export const LoadingLogo = styled.img`
   width: clamp(64px, 8vw, 92px);
   height: auto;
-  animation: ${breathe} 1.35s ease-in-out infinite;
+  animation: ${breathe} ${motion.loading} ease-in-out infinite;
 
   @media (prefers-reduced-motion: reduce) {
     opacity: 0.7;
@@ -44,7 +58,7 @@ export const LoadingLogo = styled.img`
 export const ErrorPanel = styled.section`
   display: flex;
   flex: 1;
-  padding: 48px 20px;
+  padding: ${space.huge} ${space.lg};
   align-items: center;
   justify-content: center;
   flex-direction: column;
@@ -53,34 +67,38 @@ export const ErrorPanel = styled.section`
 
 export const ErrorTitle = styled.h1`
   margin: 0;
-  font-size: clamp(24px, 4vw, 34px);
-  letter-spacing: -0.035em;
+  font-size: ${fontSize.pageTitle};
+  font-weight: ${fontWeight.extraBold};
+  line-height: ${lineHeight.heading};
+  letter-spacing: ${letterSpacing.title};
 `;
 
 export const ErrorDescription = styled.p`
-  margin: 14px 0 0;
-  color: var(--color-text-muted, #696466);
-  line-height: 1.6;
+  margin: ${space.sm} 0 0;
+  color: ${color.textMuted};
+  font-size: ${fontSize.body};
+  line-height: ${lineHeight.relaxed};
 `;
 
 export const RetryButton = styled.button`
   min-height: 46px;
-  padding: 0 22px;
+  padding: 0 ${space.xl};
   border: 0;
-  border-radius: 999px;
-  margin-top: 28px;
-  background: var(--color-primary, #d93b54);
-  color: #ffffff;
+  border-radius: ${radius.pill};
+  margin-top: ${space.xxl};
+  background: ${color.primary};
+  color: ${color.surface};
   cursor: pointer;
-  font-weight: 800;
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.extraBold};
 
   &:hover {
-    background: var(--color-primary-hover, #c73149);
+    background: ${color.primaryHover};
   }
 
   &:focus-visible {
-    outline: 3px solid rgb(217 59 84 / 24%);
-    outline-offset: 3px;
+    outline: none;
+    box-shadow: ${focusRing};
   }
 `;
 
