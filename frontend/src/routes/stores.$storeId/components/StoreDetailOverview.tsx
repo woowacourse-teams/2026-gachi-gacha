@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
+import { StoreAmenities } from './StoreAmenities';
 import {
   Address,
   EmptyGalleryLabel,
@@ -106,6 +107,7 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
       </Gallery>
 
       <StoreQuickFacts store={store} />
+      <StoreAmenities store={store} />
 
       {viewerStartIndex !== null && (
         <StorePhotoViewer

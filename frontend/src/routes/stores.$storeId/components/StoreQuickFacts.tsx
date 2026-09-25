@@ -3,10 +3,15 @@ import { useId } from 'react';
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
 
 import {
+  getStoreFacilityIconName,
+  StoreInfoIcon,
+  type StoreInfoIconName,
+} from './StoreInfoIcon';
+import {
   FactCard,
-  FactLabel,
+  FactIcon,
   FactList,
-  FactValue,
+  FactText,
   Section,
   SectionTitle,
 } from './StoreQuickFacts.styles';
@@ -14,71 +19,89 @@ import {
 interface StoreQuickFactsProps {
   store: Pick<
     StoreDetailResponseDto,
-    'gachaMachineAmount' | 'kujiAmount' | 'hasRandomBox' | 'hasSelectGacha'
+    'gachaMachineAmount' | 'kujiAmount' | 'paymentMethods' | 'facilities'
   >;
 }
 
 interface StoreFact {
-  label: string;
-  value: string;
-  isPending: boolean;
+  id: string;
+  icon: StoreInfoIconName;
+  text: string;
 }
 
 const numberFormatter = new Intl.NumberFormat('ko-KR');
 
-function formatAmount(amount: number | null, unit: string): StoreFact['value'] {
-  if (amount === null) {
-    return '정보 준비 중';
+function createPaymentSummary(paymentMethods: string | null): string | null {
+  if (!paymentMethods?.trim()) {
+    return null;
   }
 
-  if (amount <= 0) {
-    return '없음';
-  }
+  const methods = Array.from(
+    new Set(
+      paymentMethods
+        .split(',')
+        .map((method) => method.trim())
+        .filter(Boolean),
+    ),
+  );
 
-  return `${numberFormatter.format(amount)}${unit}`;
-}
-
-function formatAvailability(isAvailable: boolean | null) {
-  if (isAvailable === null) {
-    return '정보 준비 중';
-  }
-
-  return isAvailable ? '취급' : '미취급';
+  return methods.length > 0 ? `${methods.join(' · ')} 결제` : null;
 }
 
 export function StoreQuickFacts({ store }: StoreQuickFactsProps) {
   const titleId = useId();
-  const facts: readonly StoreFact[] = [
-    {
-      label: '가챠 기계',
-      value: formatAmount(store.gachaMachineAmount, '대'),
-      isPending: store.gachaMachineAmount === null,
-    },
-    {
-      label: '쿠지',
-      value: formatAmount(store.kujiAmount, '개'),
-      isPending: store.kujiAmount === null,
-    },
-    {
-      label: '랜덤박스',
-      value: formatAvailability(store.hasRandomBox),
-      isPending: false,
-    },
-    {
-      label: '선택 가챠',
-      value: formatAvailability(store.hasSelectGacha),
-      isPending: store.hasSelectGacha === null,
-    },
-  ];
+  const facts: StoreFact[] = [];
+
+  if (store.gachaMachineAmount !== null && store.gachaMachineAmount > 0) {
+    facts.push({
+      id: 'gacha-machine',
+      icon: 'gacha',
+      text: `가챠 ${numberFormatter.format(store.gachaMachineAmount)}대 운영`,
+    });
+  }
+
+  if (store.kujiAmount !== null && store.kujiAmount > 0) {
+    facts.push({
+      id: 'kuji',
+      icon: 'kuji',
+      text: `쿠지 ${numberFormatter.format(store.kujiAmount)}개 운영`,
+    });
+  }
+
+  const paymentSummary = createPaymentSummary(store.paymentMethods);
+
+  if (paymentSummary) {
+    facts.push({
+      id: 'payment',
+      icon: 'payment',
+      text: paymentSummary,
+    });
+  }
+
+  const primaryFacility = store.facilities.find((facility) => facility.trim());
+
+  if (primaryFacility) {
+    facts.push({
+      id: 'primary-facility',
+      icon: getStoreFacilityIconName(primaryFacility),
+      text: primaryFacility.trim(),
+    });
+  }
+
+  if (facts.length === 0) {
+    return null;
+  }
 
   return (
     <Section aria-labelledby={titleId}>
       <SectionTitle id={titleId}>매장 정보</SectionTitle>
       <FactList>
-        {facts.map(({ isPending, label, value }) => (
-          <FactCard key={label}>
-            <FactLabel>{label}</FactLabel>
-            <FactValue $isPending={isPending}>{value}</FactValue>
+        {facts.map(({ icon, id, text }) => (
+          <FactCard key={id}>
+            <FactIcon>
+              <StoreInfoIcon name={icon} />
+            </FactIcon>
+            <FactText>{text}</FactText>
           </FactCard>
         ))}
       </FactList>
