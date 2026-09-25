@@ -10,38 +10,41 @@ import sanrioMini from '@/demo/assets/sanrio-mini.jpg';
 import sanrioNote from '@/demo/assets/sanrio-note.jpg';
 import sanrioPenlight from '@/demo/assets/sanrio-penlight.jpg';
 import sanrioPlush from '@/demo/assets/sanrio-plush.jpg';
+import type { GachaProductSummary } from '@/domains/product/gachaProductType';
+import { gachaProductsMock } from '@/domains/product/mocks/gachaProductsMock';
 import type { ApiResponse } from '@/shared/api/apiResponseType';
 
-import type { StoreGachaSummary } from '../api/storeGachaType';
-
 interface StoreGachaPageMockData {
-  content: readonly StoreGachaSummary[];
+  content: readonly GachaProductSummary[];
   totalElements: number;
   number: number;
   totalPages: number;
 }
 
-const storeGachasByStoreId = new Map<number, readonly StoreGachaSummary[]>([
-  [
-    1,
-    [
-      sanrioBaby,
-      sanrioCaseTwo,
-      sanrioCase,
-      sanrioClock,
-      sanrioKeychain,
-      sanrioLight,
-      sanrioMini,
-      sanrioNote,
-      sanrioPenlight,
-      sanrioPlush,
-      pokemonDiorama,
-      pokemonLight,
-    ].map((thumbnailUrl, index) => ({
-      gachaId: index + 10,
-      thumbnailUrl,
-    })),
-  ],
+const storeOneGachaThumbnails = [
+  sanrioBaby,
+  sanrioCaseTwo,
+  sanrioCase,
+  sanrioClock,
+  sanrioKeychain,
+  sanrioLight,
+  sanrioMini,
+  sanrioNote,
+  sanrioPenlight,
+  sanrioPlush,
+  pokemonDiorama,
+  pokemonLight,
+] as const;
+
+const storeOneGachas = gachaProductsMock
+  .slice(0, storeOneGachaThumbnails.length)
+  .map((gacha, index) => ({
+    ...gacha,
+    thumbnailUrl: storeOneGachaThumbnails[index] ?? null,
+  }));
+
+const storeGachasByStoreId = new Map<number, readonly GachaProductSummary[]>([
+  [1, storeOneGachas],
   [2, []],
 ]);
 

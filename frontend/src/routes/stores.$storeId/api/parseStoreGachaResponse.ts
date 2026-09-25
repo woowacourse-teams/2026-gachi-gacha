@@ -1,6 +1,7 @@
+import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
-import type { StoreGachaPage, StoreGachaSummary } from './storeGachaType';
+import type { StoreGachaPage } from './storeGachaType';
 
 interface StoreGachaPageData {
   content: readonly unknown[];
@@ -17,15 +18,19 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-function isStoreGachaSummary(value: unknown): value is StoreGachaSummary {
+function isStoreGachaSummary(value: unknown): value is GachaProductSummary {
   if (!isRecord(value)) {
     return false;
   }
 
   return (
+    typeof value.gachaId === 'number' &&
     Number.isSafeInteger(value.gachaId) &&
-    Number(value.gachaId) > 0 &&
-    (typeof value.thumbnailUrl === 'string' || value.thumbnailUrl === null)
+    value.gachaId > 0 &&
+    typeof value.name === 'string' &&
+    (typeof value.thumbnailUrl === 'string' || value.thumbnailUrl === null) &&
+    Array.isArray(value.categories) &&
+    value.categories.every((category) => typeof category === 'string')
   );
 }
 
@@ -60,10 +65,14 @@ export function parseStoreGachaResponse(value: unknown): StoreGachaPage {
   }
 
   return {
-    gachas: value.data.content.map(({ gachaId, thumbnailUrl }) => ({
-      gachaId,
-      thumbnailUrl,
-    })),
+    gachas: value.data.content.map(
+      ({ gachaId, name, thumbnailUrl, categories }) => ({
+        gachaId,
+        name,
+        thumbnailUrl,
+        categories,
+      }),
+    ),
     totalCount: value.data.totalElements,
     page: value.data.number,
     totalPages: value.data.totalPages,
