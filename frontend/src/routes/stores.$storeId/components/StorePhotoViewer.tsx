@@ -37,6 +37,7 @@ export function StorePhotoViewer({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const thumbnailListRef = useRef<HTMLDivElement>(null);
+  const pendingIndexRef = useRef<number | null>(null);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
 
   const moveTo = useCallback(
@@ -47,6 +48,7 @@ export function StorePhotoViewer({
         return;
       }
 
+      pendingIndexRef.current = index;
       rail.scrollTo({ left: rail.clientWidth * index, behavior });
       setActiveIndex(index);
     },
@@ -124,6 +126,18 @@ export function StorePhotoViewer({
       return;
     }
 
+    const pendingIndex = pendingIndexRef.current;
+
+    if (pendingIndex !== null) {
+      const pendingLeft = rail.clientWidth * pendingIndex;
+
+      if (Math.abs(rail.scrollLeft - pendingLeft) <= 2) {
+        pendingIndexRef.current = null;
+      }
+
+      return;
+    }
+
     const nextIndex = Math.round(rail.scrollLeft / rail.clientWidth);
 
     if (nextIndex >= 0 && nextIndex < imageUrls.length) {
@@ -163,7 +177,16 @@ export function StorePhotoViewer({
         </TopBar>
 
         <Viewer>
-          <Rail ref={railRef} onScroll={updateActiveIndex}>
+          <Rail
+            ref={railRef}
+            onPointerDown={() => {
+              pendingIndexRef.current = null;
+            }}
+            onWheel={() => {
+              pendingIndexRef.current = null;
+            }}
+            onScroll={updateActiveIndex}
+          >
             {imageUrls.map((imageUrl, index) => (
               <Slide key={imageUrl}>
                 <LogoImagePlaceholder />
