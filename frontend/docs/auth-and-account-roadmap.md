@@ -18,16 +18,16 @@
 
 `backend-dev` 기준으로 카카오와 네이버 OIDC 로그인이 모두 구현되어 있다.
 
-| 목적 | 계약 |
-| --- | --- |
-| 로그인 시작 | `GET /api/v1/oauth/{provider}` (`kakao`, `naver`) |
-| 로그인 완료 | `GET /api/v1/oauth/login/{provider}` |
-| 로그인 응답 | `data.token`에 GachiGacha JWT 반환 |
-| 내 정보 | `GET /api/v1/members/me` |
+| 목적         | 계약                                                 |
+| ------------ | ---------------------------------------------------- |
+| 로그인 시작  | `GET /api/v1/oauth/{provider}` (`kakao`, `naver`)    |
+| 로그인 완료  | `GET /api/v1/oauth/login/{provider}`                 |
+| 로그인 응답  | `data.token`에 GachiGacha JWT 반환                   |
+| 내 정보      | `GET /api/v1/members/me`                             |
 | 내 정보 필드 | `nickname`, `profileImageUrl`, `desireTradeLocation` |
-| 인증 전달 | `Authorization: Bearer {token}` |
+| 인증 전달    | `Authorization: Bearer {token}`                      |
 
-현재 refresh token 발급·갱신, 서버 로그아웃, 토큰 폐기 API는 없다. 따라서 프런트 MVP는 접근 토큰 만료와 `401`을 일관되게 처리하되, 공개 운영 전에 refresh token 회전과 로그아웃 계약을 백엔드와 별도로 확정한다.
+현재 refresh token 발급·갱신, 서버 로그아웃, 토큰 폐기 API는 없다. 따라서 프런트 MVP는 access token을 탭 단위 `sessionStorage`에 보관하고 만료와 `401`을 일관되게 처리한다. 공개 운영 전에는 HttpOnly 쿠키 기반 refresh token 회전과 로그아웃 계약을 백엔드와 별도로 확정한다.
 
 현재 OAuth 완료 엔드포인트는 JSON을 반환한다. 브라우저가 JSON 화면에 머물지 않도록 제공자 콘솔과 서버 환경 변수의 redirect URI를 프런트 콜백(`/auth/callback/{provider}`)으로 맞추고, 콜백 화면이 기존 로그인 완료 API를 호출하는 흐름을 우선 검증한다. 이때 OAuth 시작 과정에서 발급된 서버 세션을 전달하기 위해 콜백 요청에는 credentials 설정이 필요하다.
 

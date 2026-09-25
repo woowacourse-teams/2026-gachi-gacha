@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import App from '@/App';
+import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
 
 const container = document.getElementById('root');
@@ -25,7 +26,9 @@ void enableMocking().then(() => {
 
   createRoot(container).render(
     <StrictMode>
-      <App />
+      <AuthSessionProvider>
+        <App />
+      </AuthSessionProvider>
     </StrictMode>,
   );
 });
