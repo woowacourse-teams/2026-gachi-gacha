@@ -51,7 +51,7 @@ export const GachaList = styled.ul`
   padding: 0;
   margin: ${space.lg} 0 0;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: ${space.md};
+  gap: ${space.lg};
   list-style: none;
 
   @media (max-width: ${breakpoint.tablet}) {
@@ -72,7 +72,7 @@ export const LoadingGrid = styled.div`
   display: grid;
   margin-top: ${space.lg};
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: ${space.md};
+  gap: ${space.lg};
 
   @media (max-width: ${breakpoint.tablet}) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
