@@ -15,6 +15,8 @@ const POSTHOG_ENABLED = process.env.POSTHOG_ENABLED === 'true';
 const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY ?? '';
 const POSTHOG_API_HOST =
   process.env.POSTHOG_API_HOST ?? 'https://us.i.posthog.com';
+const API_PROXY_TARGET =
+  process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
 const { version: APP_VERSION } = require('./package.json');
 
 if (!KAKAO_MAP_KEY) {
@@ -98,6 +100,13 @@ module.exports = (_env, argv) => {
       port: 3000,
       hot: true,
       historyApiFallback: true,
+      proxy: [
+        {
+          context: ['/api'],
+          target: API_PROXY_TARGET,
+          changeOrigin: true,
+        },
+      ],
     },
 
     optimization: {

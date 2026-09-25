@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/react-webpack5';
 
+import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 
 const preview: Preview = {
@@ -7,7 +8,9 @@ const preview: Preview = {
     (Story) => (
       <>
         <GlobalStyles />
-        <Story />
+        <AuthSessionProvider>
+          <Story />
+        </AuthSessionProvider>
       </>
     ),
   ],
