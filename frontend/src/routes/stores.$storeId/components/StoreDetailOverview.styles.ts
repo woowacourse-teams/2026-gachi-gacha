@@ -55,9 +55,9 @@ export const Gallery = styled.section<{ $isSingle: boolean }>`
     height: auto;
     padding-bottom: ${space.xxs};
     overflow-x: auto;
-    grid-auto-columns: 86%;
+    grid-auto-columns: 100%;
     grid-auto-flow: column;
-    grid-template-columns: 86%;
+    grid-template-columns: 100%;
     grid-template-rows: 260px;
     scroll-snap-type: x mandatory;
     scrollbar-width: none;
