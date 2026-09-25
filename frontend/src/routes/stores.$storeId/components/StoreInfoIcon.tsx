@@ -9,6 +9,10 @@ export type StoreInfoIconName =
   | 'lounge'
   | 'airConditioner'
   | 'capsuleBin'
+  | 'clock'
+  | 'phone'
+  | 'instagram'
+  | 'updated'
   | 'randomBox'
   | 'selectGacha'
   | 'facility';
@@ -128,6 +132,28 @@ export function StoreInfoIcon({ name }: StoreInfoIconProps) {
         <>
           <path d="M6 8h12l-1 13H7L6 8ZM5 8h14M9 4h6l1 4H8l1-4Z" />
           <path d="M10 12.5a2 2 0 0 1 4 0v2a2 2 0 0 1-4 0v-2ZM10 13.5h4" />
+        </>
+      )}
+      {name === 'clock' && (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3.5 2" />
+        </>
+      )}
+      {name === 'phone' && (
+        <path d="M7.2 3.5 10 7.7 8.1 9.5a15.4 15.4 0 0 0 6.4 6.4l1.8-1.9 4.2 2.8-.8 3a2 2 0 0 1-2 1.5C10 20.5 3.5 14 2.7 6.3a2 2 0 0 1 1.5-2l3-.8Z" />
+      )}
+      {name === 'instagram' && (
+        <>
+          <rect x="3" y="3" width="18" height="18" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="M17.5 6.5h.01" />
+        </>
+      )}
+      {name === 'updated' && (
+        <>
+          <path d="M20 11a8 8 0 1 0-2.3 5.7" />
+          <path d="M20 5v6h-6" />
         </>
       )}
       {name === 'randomBox' && (
