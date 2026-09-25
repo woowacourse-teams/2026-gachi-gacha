@@ -16,6 +16,16 @@ export const Card = styled.div`
   min-width: 0;
 `;
 
+export const GachaDetails = styled.div`
+  display: grid;
+  margin-top: ${space.sm};
+  gap: ${space.xxs};
+
+  @media (max-width: ${breakpoint.mobile}) {
+    margin-top: ${space.xs};
+  }
+`;
+
 export const GachaImageFrame = styled.div`
   position: relative;
   overflow: hidden;
@@ -50,8 +60,6 @@ export const GachaImage = styled(ImageWithFallback)`
 
 export const GachaName = styled.strong`
   display: -webkit-box;
-  height: 44px;
-  margin-top: ${space.sm};
   overflow: hidden;
   color: ${color.text};
   font-size: ${fontSize.body};
@@ -63,8 +71,6 @@ export const GachaName = styled.strong`
 
   @media (max-width: ${breakpoint.mobile}) {
     display: block;
-    height: 20px;
-    margin-top: ${space.xs};
     overflow: hidden;
     font-size: ${fontSize.label};
     line-height: ${lineHeight.body};
@@ -76,7 +82,6 @@ export const GachaName = styled.strong`
 
 export const CategoryText = styled.span`
   display: block;
-  margin-top: ${space.xxs};
   overflow: hidden;
   color: ${color.textMuted};
   font-size: ${fontSize.caption};

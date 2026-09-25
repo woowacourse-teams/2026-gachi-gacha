@@ -7,6 +7,7 @@ import {
   GachaImage,
   GachaImageFallback,
   GachaImageFrame,
+  GachaDetails,
   GachaName,
 } from './GachaSummaryCard.styles';
 
@@ -54,10 +55,12 @@ export function GachaSummaryCard({
           referrerPolicy="no-referrer"
         />
       </GachaImageFrame>
-      <GachaName title={product.name}>{product.name}</GachaName>
-      <CategoryText title={product.categories.join(', ')}>
-        {visibleCategoryLabel}
-      </CategoryText>
+      <GachaDetails>
+        <GachaName title={product.name}>{product.name}</GachaName>
+        <CategoryText title={product.categories.join(', ')}>
+          {visibleCategoryLabel}
+        </CategoryText>
+      </GachaDetails>
     </Card>
   );
 }
