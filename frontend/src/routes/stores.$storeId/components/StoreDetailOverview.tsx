@@ -16,6 +16,7 @@ import {
   Title,
 } from './StoreDetailOverview.styles';
 import { StorePhotoViewer } from './StorePhotoViewer';
+import { StoreQuickFacts } from './StoreQuickFacts';
 
 export interface StoreDetailOverviewProps {
   store: StoreDetailResponseDto;
@@ -103,6 +104,8 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
           </GalleryFrame>
         )}
       </Gallery>
+
+      <StoreQuickFacts store={store} />
 
       {viewerStartIndex !== null && (
         <StorePhotoViewer
