@@ -33,8 +33,14 @@ function openGachaSearchResults(gachaId: number) {
   window.location.assign(createGachaSearchResultsUrl(gachaId));
 }
 
-export function StoreDetailRoute() {
-  const storeId = getStoreId(window.location.pathname);
+export interface StoreDetailRouteProps {
+  pathname?: string;
+}
+
+export function StoreDetailRoute({
+  pathname = window.location.pathname,
+}: StoreDetailRouteProps = {}) {
+  const storeId = getStoreId(pathname);
   const { storeDetailState, retryStoreDetail } = useStoreDetail(storeId);
 
   return (

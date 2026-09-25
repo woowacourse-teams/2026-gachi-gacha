@@ -28,6 +28,8 @@ export function MockWorkerBoundary({
   useEffect(() => {
     let isMounted = true;
 
+    setWorkerState('loading');
+
     async function prepareMockWorker() {
       try {
         await startMockWorker();
