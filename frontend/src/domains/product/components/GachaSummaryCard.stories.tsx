@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import sanrioStand from '@/demo/assets/sanrio-stand.jpg';
+import sanrioStand from '@/mocks/assets/sanrio-stand.jpg';
 
 import { GachaSummaryCard } from './GachaSummaryCard';
 

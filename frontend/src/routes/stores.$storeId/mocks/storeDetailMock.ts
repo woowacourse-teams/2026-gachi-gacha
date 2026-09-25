@@ -1,9 +1,9 @@
-import storeGoods from '@/demo/assets/store-goods.webp';
-import storeInterior from '@/demo/assets/store-interior.webp';
-import storeMachinesTwo from '@/demo/assets/store-machines-two.webp';
-import storeMachines from '@/demo/assets/store-machines.webp';
-import storeMowajul from '@/demo/assets/store-mowajul.webp';
-import storeOcean from '@/demo/assets/store-ocean.webp';
+import storeGoods from '@/mocks/assets/store-goods.webp';
+import storeInterior from '@/mocks/assets/store-interior.webp';
+import storeMachinesTwo from '@/mocks/assets/store-machines-two.webp';
+import storeMachines from '@/mocks/assets/store-machines.webp';
+import storeMowajul from '@/mocks/assets/store-mowajul.webp';
+import storeOcean from '@/mocks/assets/store-ocean.webp';
 import type { ApiResponse } from '@/shared/api/apiResponseType';
 
 import type { StoreDetailResponseDto } from '../api/storeDetailResponseType';

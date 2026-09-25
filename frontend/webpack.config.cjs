@@ -30,15 +30,11 @@ if (POSTHOG_ENABLED && !POSTHOG_API_KEY) {
 /** @type {import('webpack').ConfigurationFactory} */
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
-  const enablePromo = _env?.demo === true;
   const appEnvironment =
     process.env.APP_ENV ?? (isProduction ? 'production' : 'development');
 
   return {
-    entry: path.resolve(
-      __dirname,
-      enablePromo ? 'src/demo/entry.tsx' : 'src/main.tsx',
-    ),
+    entry: path.resolve(__dirname, 'src/main.tsx'),
 
     output: {
       path: path.resolve(__dirname, 'dist'),

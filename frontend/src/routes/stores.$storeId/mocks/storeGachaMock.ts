@@ -1,17 +1,17 @@
-import pokemonDiorama from '@/demo/assets/pokemon-diorama.jpg';
-import pokemonLight from '@/demo/assets/pokemon-light.jpg';
-import sanrioBaby from '@/demo/assets/sanrio-baby.jpg';
-import sanrioCaseTwo from '@/demo/assets/sanrio-case-two.jpg';
-import sanrioCase from '@/demo/assets/sanrio-case.jpg';
-import sanrioClock from '@/demo/assets/sanrio-clock.jpg';
-import sanrioKeychain from '@/demo/assets/sanrio-keychain.jpg';
-import sanrioLight from '@/demo/assets/sanrio-light.jpg';
-import sanrioMini from '@/demo/assets/sanrio-mini.jpg';
-import sanrioNote from '@/demo/assets/sanrio-note.jpg';
-import sanrioPenlight from '@/demo/assets/sanrio-penlight.jpg';
-import sanrioPlush from '@/demo/assets/sanrio-plush.jpg';
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import { gachaProductsMock } from '@/domains/product/mocks/gachaProductsMock';
+import pokemonDiorama from '@/mocks/assets/pokemon-diorama.jpg';
+import pokemonLight from '@/mocks/assets/pokemon-light.jpg';
+import sanrioBaby from '@/mocks/assets/sanrio-baby.jpg';
+import sanrioCaseTwo from '@/mocks/assets/sanrio-case-two.jpg';
+import sanrioCase from '@/mocks/assets/sanrio-case.jpg';
+import sanrioClock from '@/mocks/assets/sanrio-clock.jpg';
+import sanrioKeychain from '@/mocks/assets/sanrio-keychain.jpg';
+import sanrioLight from '@/mocks/assets/sanrio-light.jpg';
+import sanrioMini from '@/mocks/assets/sanrio-mini.jpg';
+import sanrioNote from '@/mocks/assets/sanrio-note.jpg';
+import sanrioPenlight from '@/mocks/assets/sanrio-penlight.jpg';
+import sanrioPlush from '@/mocks/assets/sanrio-plush.jpg';
 import type { ApiResponse } from '@/shared/api/apiResponseType';
 
 interface StoreGachaPageMockData {
