@@ -31,6 +31,20 @@
 
 현재 OAuth 완료 엔드포인트는 JSON을 반환한다. 브라우저가 JSON 화면에 머물지 않도록 제공자 콘솔과 서버 환경 변수의 redirect URI를 프런트 콜백(`/auth/callback/{provider}`)으로 맞추고, 콜백 화면이 기존 로그인 완료 API를 호출하는 흐름을 우선 검증한다. 이때 OAuth 시작 과정에서 발급된 서버 세션을 전달하기 위해 콜백 요청에는 credentials 설정이 필요하다.
 
+### 환경별 OAuth 콜백 설정
+
+백엔드의 `KAKAO_REDIRECT_URL`, `NAVER_REDIRECT_URL`과 각 소셜 제공자 콘솔에 등록한 callback URL은 반드시 동일해야 한다.
+
+| 환경 | 카카오                                      | 네이버                                      |
+| ---- | ------------------------------------------- | ------------------------------------------- |
+| 로컬 | `http://localhost:3000/auth/callback/kakao` | `http://localhost:3000/auth/callback/naver` |
+| DEV  | `{DEV_FRONTEND_URL}/auth/callback/kakao`    | `{DEV_FRONTEND_URL}/auth/callback/naver`    |
+| PROD | `{PROD_FRONTEND_URL}/auth/callback/kakao`   | `{PROD_FRONTEND_URL}/auth/callback/naver`   |
+
+- 로컬 Webpack 서버는 `/api`를 `API_PROXY_TARGET`(기본 `http://localhost:8080`)으로 전달한다.
+- 배포 Nginx도 프런트 도메인의 `/api/v1`을 백엔드로 전달해야 한다.
+- OAuth 시작부터 콜백의 토큰 교환까지 동일한 브라우저 세션을 사용해야 하며, 서버의 세션 쿠키가 `/api/v1/oauth/login/{provider}` 요청에 포함되어야 한다.
+
 ## 이슈 #132 구현 순서와 커밋 단위
 
 1. `docs: 인증 계약과 사용자 기능 로드맵 기록`
