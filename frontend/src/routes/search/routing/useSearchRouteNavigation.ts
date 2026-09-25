@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { createSearchResultsUrl } from './searchParams';
+import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 
 export interface UseSearchRouteNavigationResult {
   activeSearch: string;
@@ -38,7 +38,7 @@ export function useSearchRouteNavigation(
         return;
       }
 
-      const nextUrl = createSearchResultsUrl(gachaId);
+      const nextUrl = createGachaSearchResultsUrl(gachaId);
       const nextSearch = new URL(nextUrl, window.location.origin).search;
 
       if (nextSearch === window.location.search) {

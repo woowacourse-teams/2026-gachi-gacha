@@ -12,11 +12,3 @@ export function getSelectedGachaId(search: string): number | null {
 
   return Number.isSafeInteger(gachaId) ? gachaId : null;
 }
-
-export function createSearchResultsUrl(gachaId: number): string {
-  const searchParams = new URLSearchParams({
-    [SELECTED_GACHA_PARAM]: String(gachaId),
-  });
-
-  return `/search?${searchParams}`;
-}
