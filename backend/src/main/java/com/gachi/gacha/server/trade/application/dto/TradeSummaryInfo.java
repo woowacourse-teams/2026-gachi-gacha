@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.trade.application.dto;
 
+import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeCategory;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
@@ -16,7 +17,7 @@ public record TradeSummaryInfo(
         TradeStatus status,
         List<String> categories,
         @Nullable String thumbnailUrl,
-        String tradePlace,
+        @Nullable Place tradePlace,
         LocalDateTime createdAt
 ) {
     /**

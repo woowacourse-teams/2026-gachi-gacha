@@ -10,6 +10,7 @@ import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.trade.application.TradeService;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.domain.Trade;
+import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.domain.TradeImage;
 import com.gachi.gacha.server.trade.domain.TradeImageJpaRepository;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
@@ -110,7 +111,7 @@ public class MemberTradeInfoTest {
         TradeSummaryInfo info = findAll(owner, null).getContent().get(0);
 
         assertThat(info.title()).isEqualTo("제목");
-        assertThat(info.tradePlace()).isEqualTo("강남역");
+        assertThat(info.tradePlace().getName()).isEqualTo("강남역");
         assertThat(info.categories()).containsExactlyInAnyOrder("피규어", "애니");
         assertThat(info.status()).isEqualTo(TradeStatus.AVAILABLE);
     }
@@ -367,8 +368,8 @@ public class MemberTradeInfoTest {
                 .title(title)
                 .description("개봉만 한 상품입니다.")
                 .desiredProduction("시나모롤")
-                .purchaseStoreAddress("서울특별시 마포구 홍대 가챠샵")
-                .tradePlace(tradePlace)
+                .purchaseStore(new Place("가챠샵 홍대점", "서울특별시 마포구 양화로 100", 37.5563, 126.9236))
+                .tradePlace(new Place(tradePlace, "서울특별시 강남구 강남대로 396", 37.4979, 127.0276))
                 .availableTime(LocalDateTime.of(2026, 9, 20, 19, 0))
                 .status(status)
                 .build();
