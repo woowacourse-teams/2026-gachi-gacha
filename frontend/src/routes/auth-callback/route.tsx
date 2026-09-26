@@ -17,7 +17,6 @@ import {
   Description,
   Logo,
   Page,
-  SecondaryLink,
   Title,
 } from './route.styles';
 
@@ -74,7 +73,6 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         <Title>로그인을 완료하지 못했어요</Title>
         <Description>{errorMessage}</Description>
         <ActionLink href={createLoginUrl(returnPath)}>다시 로그인</ActionLink>
-        <SecondaryLink href={returnPath}>로그인 없이 둘러보기</SecondaryLink>
       </Card>
     </Page>
   );

@@ -102,11 +102,11 @@ export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
   justify-content: center;
   gap: ${space.sm};
   border: 1px solid
-    ${({ $provider }) => ($provider === 'kakao' ? '#f0d85e' : '#b8e3c9')};
+    ${({ $provider }) => ($provider === 'kakao' ? '#dbc600' : '#009f49')};
   border-radius: ${radius.card};
   background: ${({ $provider }) =>
-    $provider === 'kakao' ? '#fff1a8' : '#def4e7'};
-  color: ${({ $provider }) => ($provider === 'kakao' ? '#3b3100' : '#176b3b')};
+    $provider === 'kakao' ? '#f1da19' : '#08b957'};
+  color: ${({ $provider }) => ($provider === 'kakao' ? '#191919' : '#ffffff')};
   font-size: ${fontSize.subheading};
   font-weight: ${fontWeight.bold};
   text-decoration: none;
@@ -117,7 +117,7 @@ export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
 
   &:hover {
     background: ${({ $provider }) =>
-      $provider === 'kakao' ? '#ffe97a' : '#c9edd8'};
+      $provider === 'kakao' ? '#e6cf08' : '#00a94e'};
     transform: translateY(-1px);
   }
 
