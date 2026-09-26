@@ -28,6 +28,7 @@ async function loadAnalyticsClient() {
       person_profiles: 'identified_only',
       session_recording: {
         maskAllInputs: true,
+        maskTextSelector: '[data-private]',
       },
       loaded: (client) => {
         client.register(analyticsContext);
