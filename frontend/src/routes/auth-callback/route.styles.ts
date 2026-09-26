@@ -77,16 +77,3 @@ export const ActionLink = styled.a`
     outline: none;
   }
 `;
-
-export const SecondaryLink = styled.a`
-  margin-top: ${space.md};
-  color: ${color.textMuted};
-  font-size: ${fontSize.bodySmall};
-  text-decoration: none;
-
-  &:hover {
-    color: ${color.text};
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-`;
