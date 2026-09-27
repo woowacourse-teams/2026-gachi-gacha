@@ -8,7 +8,6 @@ interface Props {
 }
 
 export default function CategoryNav(props: Props) {
-  //고민되는 부분 props로 카테고리를 넘기는게 좋을지? 아니면 카테고리를 여기내부에서 사용하는게 좋을지?
   return (
     <Wrapper>
       {CATEGORIES.map((category) => (
