@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import SecondhandPage from './SecondhandPage';
-import { SECONDHAND_ITEMS } from '../storybook/secondhandMocks';
+import { SECONDHAND_ITEMS } from './storybook/secondhandMocks';
 
 const meta: Meta<typeof SecondhandPage> = {
   title: 'routes/secondhand/SecondhandPage',

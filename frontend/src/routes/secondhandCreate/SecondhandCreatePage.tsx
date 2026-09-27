@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 
 import StickyActionBar from './components/StickyActionBar';
 import TradeForm from './components/TradeForm';
-import Header from '../../home/components/Header';
+import Header from '../home/components/Header';
 
 export default function SecondhandCreatePage() {
   return (

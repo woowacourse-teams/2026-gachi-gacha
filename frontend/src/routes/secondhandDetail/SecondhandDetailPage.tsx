@@ -5,9 +5,9 @@ import ChatDrawer from './components/ChatDrawer';
 import TradeDetail from './components/TradeDetail';
 import type { ChatRoom } from './model/chatRoom';
 import type { SecondhandDetail } from './model/secondhandDetail';
-import Header from '../../home/components/Header';
-import ProductCard from '../components/ProductCard';
-import type { SecondhandItem } from '../model/secondhandItem';
+import Header from '../home/components/Header';
+import ProductCard from '../secondhand/components/ProductCard';
+import type { SecondhandItem } from '../secondhand/model/secondhandItem';
 
 interface SecondhandDetailPageProps {
   detail: SecondhandDetail;
