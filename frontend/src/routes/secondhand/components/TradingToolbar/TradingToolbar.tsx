@@ -33,10 +33,16 @@ export default function TradingToolbar({
           </LocationButton>
         </LeftActions>
 
-        <ActionButton type="button">
-          <MapIcon aria-hidden="true" />
-          지도에서 보기
-        </ActionButton>
+        <RightActions>
+          <RegisterButton type="button">
+            <PlusIcon aria-hidden="true" />
+            등록하기
+          </RegisterButton>
+          <ActionButton type="button">
+            <MapIcon aria-hidden="true" />
+            지도에서 보기
+          </ActionButton>
+        </RightActions>
       </Actions>
     </Wrapper>
   );
@@ -93,6 +99,19 @@ function LocationIcon(props: React.SVGProps<SVGSVGElement>) {
       <circle cx="12" cy="12" r="2.5" fill="currentColor" />
       <path
         d="M12 2v3M12 19v3M2 12h3M19 12h3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" {...props}>
+      <path
+        d="M12 5v14M5 12h14"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -173,6 +192,17 @@ const LeftActions = styled.div`
   }
 `;
 
+const RightActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  @media (max-width: 720px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
+
 const ActionButton = styled.button`
   display: inline-flex;
   min-height: 48px;
@@ -197,6 +227,12 @@ const LocationButton = styled(ActionButton)`
   @media (max-width: 720px) {
     grid-column: 1 / -1;
   }
+`;
+
+const RegisterButton = styled(ActionButton)`
+  border-color: #ed174c;
+  background: #ed174c;
+  color: #ffffff;
 `;
 
 const Divider = styled.span`
