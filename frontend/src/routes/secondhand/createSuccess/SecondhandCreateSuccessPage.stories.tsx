@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import SecondhandCreateSuccessPage from './SecondhandCreateSuccessPage';
-import { SECONDHAND_CREATED_TRADE } from './storybook/secondhandMocks';
+import { SECONDHAND_CREATED_TRADE } from '../storybook/secondhandMocks';
 
 const meta: Meta<typeof SecondhandCreateSuccessPage> = {
   title: 'routes/secondhand/SecondhandCreateSuccessPage',

@@ -2,12 +2,12 @@ import { useState } from 'react';
 import styled from '@emotion/styled';
 
 import ChatDrawer from './components/ChatDrawer';
-import ProductCard from './components/ProductCard';
 import TradeDetail from './components/TradeDetail';
 import type { ChatRoom } from './model/chatRoom';
 import type { SecondhandDetail } from './model/secondhandDetail';
-import type { SecondhandItem } from './model/secondhandItem';
-import Header from '../home/components/Header';
+import Header from '../../home/components/Header';
+import ProductCard from '../components/ProductCard';
+import type { SecondhandItem } from '../model/secondhandItem';
 
 interface SecondhandDetailPageProps {
   detail: SecondhandDetail;

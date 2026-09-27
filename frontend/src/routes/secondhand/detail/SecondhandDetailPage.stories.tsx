@@ -5,7 +5,7 @@ import {
   SECONDHAND_DETAIL,
   SECONDHAND_ITEMS,
   SECONDHAND_CHAT_ROOM,
-} from './storybook/secondhandMocks';
+} from '../storybook/secondhandMocks';
 
 const meta: Meta<typeof SecondhandDetailPage> = {
   title: 'routes/secondhand/SecondhandDetailPage',

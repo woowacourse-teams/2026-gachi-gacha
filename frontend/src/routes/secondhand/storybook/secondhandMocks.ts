@@ -1,6 +1,6 @@
-import type { ChatRoom } from '../model/chatRoom';
-import type { CreatedTrade } from '../model/createdTrade';
-import type { SecondhandDetail } from '../model/secondhandDetail';
+import type { CreatedTrade } from '../createSuccess/model/createdTrade';
+import type { ChatRoom } from '../detail/model/chatRoom';
+import type { SecondhandDetail } from '../detail/model/secondhandDetail';
 import type { SecondhandItem } from '../model/secondhandItem';
 
 function createMockImage(symbol: string, background: string) {

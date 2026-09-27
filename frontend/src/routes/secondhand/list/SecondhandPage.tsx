@@ -1,9 +1,9 @@
 import styled from '@emotion/styled';
 
-import ProductCard from './components/ProductCard';
 import TradingToolbar from './components/TradingToolbar';
-import type { SecondhandItem } from './model/secondhandItem';
-import Header from '../home/components/Header';
+import Header from '../../home/components/Header';
+import ProductCard from '../components/ProductCard';
+import type { SecondhandItem } from '../model/secondhandItem';
 
 interface SecondhandPageProps {
   items: SecondhandItem[];
