@@ -33,10 +33,11 @@ export function useCategoryFeed() {
       setLoadMoreError(false);
 
       try {
-        const firstPage = await getCategoryGachas(
-          { categoryName: selectedCategory, page: 0 },
-          { signal: controller.signal },
-        );
+        const firstPage = await getCategoryGachas({
+          categoryName: selectedCategory,
+          page: 0,
+          signal: controller.signal,
+        });
 
         if (controller.signal.aborted) return;
 
@@ -84,10 +85,11 @@ export function useCategoryFeed() {
 
     const fetchNextPage = async () => {
       try {
-        const nextPageData = await getCategoryGachas(
-          { categoryName: selectedCategory, page: nextPage },
-          { signal: controller.signal },
-        );
+        const nextPageData = await getCategoryGachas({
+          categoryName: selectedCategory,
+          page: nextPage,
+          signal: controller.signal,
+        });
 
         if (controller.signal.aborted) return;
 
