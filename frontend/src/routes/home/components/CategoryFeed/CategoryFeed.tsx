@@ -31,11 +31,7 @@ export default function CategoryFeed() {
         {itemsState.status === 'success' && (
           <CardListSection
             title={selectedCategory}
-            items={itemsState.data.map((gacha) => ({
-              id: gacha.gachaId,
-              imageUrl: gacha.thumbnailUrl,
-              name: gacha.name,
-            }))}
+            items={itemsState.data}
             hasNextPage={hasNextPage}
             isLoadingMore={isLoadingMore}
             loadMoreError={loadMoreError}
