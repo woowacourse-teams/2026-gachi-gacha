@@ -1,4 +1,5 @@
 import type { ChatRoom } from '../model/chatRoom';
+import type { CreatedTrade } from '../model/createdTrade';
 import type { SecondhandDetail } from '../model/secondhandDetail';
 import type { SecondhandItem } from '../model/secondhandItem';
 
@@ -138,4 +139,13 @@ export const SECONDHAND_CHAT_ROOM: ChatRoom = {
       sentAt: '오후 7:21',
     },
   ],
+};
+
+export const SECONDHAND_CREATED_TRADE: CreatedTrade = {
+  id: SECONDHAND_DETAIL.id,
+  title: SECONDHAND_DETAIL.title,
+  imageUrl: SECONDHAND_DETAIL.imageUrls[0]!,
+  place: SECONDHAND_DETAIL.place,
+  availableTime: SECONDHAND_DETAIL.availableTime,
+  wantedTrade: SECONDHAND_DETAIL.wantedTrade,
 };
