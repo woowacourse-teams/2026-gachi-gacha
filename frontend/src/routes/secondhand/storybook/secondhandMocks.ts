@@ -1,3 +1,4 @@
+import type { ChatRoom } from '../model/chatRoom';
 import type { SecondhandDetail } from '../model/secondhandDetail';
 import type { SecondhandItem } from '../model/secondhandItem';
 
@@ -105,4 +106,36 @@ export const SECONDHAND_DETAIL: SecondhandDetail = {
     neighborhood: '신당동',
     completedTradeCount: 8,
   },
+};
+
+export const SECONDHAND_CHAT_ROOM: ChatRoom = {
+  partner: {
+    nickname: '가챠좋아',
+    isOnline: true,
+    completedTradeCount: 8,
+  },
+  product: {
+    title: '쿠로미 미니 피규어 vol.2 교환해요',
+    imageUrl: SECONDHAND_DETAIL.imageUrls[0]!,
+  },
+  messages: [
+    {
+      id: 'message-1',
+      sender: 'other',
+      text: '안녕하세요! 올리신 쿠로미 피규어 아직 교환 가능할까요?',
+      sentAt: '오후 7:18',
+    },
+    {
+      id: 'message-2',
+      sender: 'me',
+      text: '네, 아직 가능해요! 어떤 가챠와 교환 원하시나요?',
+      sentAt: '오후 7:20',
+    },
+    {
+      id: 'message-3',
+      sender: 'other',
+      text: '시나모롤 키링이 있어요. 사진 보내드려도 될까요?',
+      sentAt: '오후 7:21',
+    },
+  ],
 };

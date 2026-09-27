@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import ChatDrawer from './components/ChatDrawer';
 import ProductCard from './components/ProductCard';
 import TradeDetail from './components/TradeDetail';
+import type { ChatRoom } from './model/chatRoom';
 import type { SecondhandDetail } from './model/secondhandDetail';
 import type { SecondhandItem } from './model/secondhandItem';
 import Header from '../home/components/Header';
@@ -9,18 +12,24 @@ import Header from '../home/components/Header';
 interface SecondhandDetailPageProps {
   detail: SecondhandDetail;
   relatedItems: SecondhandItem[];
+  chatRoom: ChatRoom;
+  initialChatOpen?: boolean;
 }
 
 export default function SecondhandDetailPage({
   detail,
   relatedItems,
+  chatRoom,
+  initialChatOpen = false,
 }: SecondhandDetailPageProps) {
+  const [isChatOpen, setIsChatOpen] = useState(initialChatOpen);
+
   return (
     <Page>
       <Header activeItem="중고거래" />
 
       <Main>
-        <TradeDetail detail={detail} />
+        <TradeDetail detail={detail} onChatClick={() => setIsChatOpen(true)} />
 
         <RelatedSection>
           <RelatedHeader>
@@ -35,6 +44,10 @@ export default function SecondhandDetailPage({
           </ProductGrid>
         </RelatedSection>
       </Main>
+
+      {isChatOpen && (
+        <ChatDrawer room={chatRoom} onClose={() => setIsChatOpen(false)} />
+      )}
     </Page>
   );
 }

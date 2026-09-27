@@ -5,9 +5,10 @@ import type { SecondhandDetail } from '../../model/secondhandDetail';
 
 interface TradeDetailProps {
   detail: SecondhandDetail;
+  onChatClick: () => void;
 }
 
-export default function TradeDetail({ detail }: TradeDetailProps) {
+export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
 
@@ -77,7 +78,9 @@ export default function TradeDetail({ detail }: TradeDetailProps) {
             <WishButton type="button" aria-label="찜하기">
               ♡
             </WishButton>
-            <ChatButton type="button">채팅하기</ChatButton>
+            <ChatButton type="button" onClick={onChatClick}>
+              채팅하기
+            </ChatButton>
             <TradeButton type="button">교환 제안하기</TradeButton>
           </ActionGroup>
         </Info>
