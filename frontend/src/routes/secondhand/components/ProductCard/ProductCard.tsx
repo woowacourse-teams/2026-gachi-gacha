@@ -14,11 +14,11 @@ export default function ProductCard({ item }: ProductCardProps) {
 
   return (
     <Card>
-      <Thumbnail $backgroundColor={item.visualColor}>
+      <Thumbnail>
         {item.imageUrl ? (
           <Image src={item.imageUrl} alt="" />
         ) : (
-          <Visual>{item.visual}</Visual>
+          <Visual>🎁</Visual>
         )}
       </Thumbnail>
 
@@ -36,7 +36,7 @@ const Card = styled.article`
   min-width: 0;
 `;
 
-const Thumbnail = styled.div<{ $backgroundColor: string }>`
+const Thumbnail = styled.div`
   display: grid;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -45,7 +45,7 @@ const Thumbnail = styled.div<{ $backgroundColor: string }>`
   place-items: center;
   border: 1px solid #ececef;
   border-radius: 16px;
-  background: ${({ $backgroundColor }) => $backgroundColor};
+  background: #f3f3f5;
 `;
 
 const Image = styled.img`

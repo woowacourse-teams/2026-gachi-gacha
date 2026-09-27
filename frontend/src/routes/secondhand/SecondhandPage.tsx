@@ -2,10 +2,14 @@ import styled from '@emotion/styled';
 
 import ProductCard from './components/ProductCard';
 import TradingToolbar from './components/TradingToolbar';
-import { SECONDHAND_ITEMS } from './model/secondhandItem';
+import type { SecondhandItem } from './model/secondhandItem';
 import Header from '../home/components/Header';
 
-export default function SecondhandPage() {
+interface SecondhandPageProps {
+  items: SecondhandItem[];
+}
+
+export default function SecondhandPage({ items }: SecondhandPageProps) {
   return (
     <Page>
       <Header activeItem="중고거래" />
@@ -18,7 +22,7 @@ export default function SecondhandPage() {
 
         <ResultsPanel>
           <ProductGrid>
-            {SECONDHAND_ITEMS.map((item) => (
+            {items.map((item) => (
               <ProductCard key={item.id} item={item} />
             ))}
           </ProductGrid>

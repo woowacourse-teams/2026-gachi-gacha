@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import ProductCard from './ProductCard';
-import { SECONDHAND_ITEMS } from '../../model/secondhandItem';
+import { SECONDHAND_ITEMS } from '../../storybook/secondhandMocks';
 
 const meta: Meta<typeof ProductCard> = {
   title: 'routes/secondhand/ProductCard',
