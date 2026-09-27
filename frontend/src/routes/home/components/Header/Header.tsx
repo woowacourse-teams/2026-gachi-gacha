@@ -2,15 +2,25 @@ import styled from '@emotion/styled';
 
 import Logo from '../Logo';
 
-export default function Header() {
+const NAV_ITEMS = ['찾기', '지도', '중고거래'] as const;
+
+export type HeaderNavItem = (typeof NAV_ITEMS)[number];
+
+interface HeaderProps {
+  activeItem?: HeaderNavItem;
+}
+
+export default function Header({ activeItem = '찾기' }: HeaderProps) {
   return (
     <Wrapper>
       <Logo />
 
-      <Nav>
-        <NavItem>찾기</NavItem>
-        <NavItem>지도</NavItem>
-        <NavItem>중고거래</NavItem>
+      <Nav aria-label="주요 메뉴">
+        {NAV_ITEMS.map((item) => (
+          <NavItem key={item} type="button" data-active={item === activeItem}>
+            {item}
+          </NavItem>
+        ))}
       </Nav>
 
       <AuthGroup>
@@ -37,16 +47,17 @@ const Nav = styled.nav`
   gap: 24px;
 `;
 
-const NavItem = styled.p`
-  margin: 0;
+const NavItem = styled.button`
   padding: 8px 12px;
+  border: 0;
   border-radius: 999px;
+  background: transparent;
   font-size: 15px;
   font-weight: 400;
   color: #6f6469;
   cursor: pointer;
 
-  &:first-of-type {
+  &[data-active='true'] {
     background: #ed174c;
     color: white;
     font-weight: 700;

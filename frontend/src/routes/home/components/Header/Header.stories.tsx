@@ -15,3 +15,9 @@ export default meta;
 type Story = StoryObj<typeof Header>;
 
 export const Default: Story = {};
+
+export const SecondhandActive: Story = {
+  args: {
+    activeItem: '중고거래',
+  },
+};
