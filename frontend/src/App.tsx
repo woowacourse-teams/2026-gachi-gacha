@@ -1,9 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 
-import {
-  isOAuthProvider,
-  type OAuthProvider,
-} from '@/features/auth/oauthProviderType';
+import { parseOAuthCallbackProvider } from '@/features/auth/oauthCallbackPath';
+import type { OAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
@@ -70,7 +68,6 @@ const CHAT_PATH = '/chat';
 const NOTIFICATIONS_PATH = '/notifications';
 const MY_PAGE_PATH = '/mypage';
 const STORE_DETAIL_PATH_PATTERN = /^\/stores\/[1-9]\d*$/;
-const AUTH_CALLBACK_PATH_PATTERN = /^\/oauth\/login\/([^/]+)$/;
 
 type AppRoute =
   | { page: 'search' }
@@ -120,10 +117,9 @@ function resolveAppRoute(pathname: string): AppRoute {
     return { page: 'storeDetail' };
   }
 
-  const callbackMatch = AUTH_CALLBACK_PATH_PATTERN.exec(normalizedPathname);
-  const provider = callbackMatch?.[1];
+  const provider = parseOAuthCallbackProvider(normalizedPathname);
 
-  if (provider && isOAuthProvider(provider)) {
+  if (provider) {
     return { page: 'authCallback', provider };
   }
 

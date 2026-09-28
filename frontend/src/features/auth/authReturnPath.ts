@@ -1,8 +1,10 @@
+import { isOAuthCallbackPath } from './oauthCallbackPath';
+
 const AUTH_RETURN_PATH_STORAGE_KEY = 'gachi-gacha:auth-return-path';
 const DEFAULT_RETURN_PATH = '/search';
 
 function isAuthFlowPath(pathname: string): boolean {
-  return pathname === '/login' || pathname.startsWith('/oauth/login/');
+  return pathname === '/login' || isOAuthCallbackPath(pathname);
 }
 
 export function normalizeAuthReturnPath(candidate: string | null): string {

@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import { ProfileEditDialog } from './ProfileEditDialog';
 
 const member = {
+  name: '김민지',
   nickname: '가챠러 민지',
   profileImageUrl: null,
   desireTradeLocation: '홍대입구역',

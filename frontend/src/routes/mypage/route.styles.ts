@@ -80,6 +80,10 @@ export const ProfileIdentity = styled.div`
   gap: ${space.md};
 `;
 
+export const ProfileNameCopy = styled.div`
+  min-width: 0;
+`;
+
 export const ProfileEditButton = styled.button`
   display: flex;
   width: 100%;
@@ -143,6 +147,16 @@ export const MemberDescription = styled.p`
   color: ${color.textMuted};
   font-size: ${fontSize.bodySmall};
   line-height: ${lineHeight.body};
+`;
+
+export const MemberRealName = styled.p`
+  overflow: hidden;
+  margin: ${space.xxs} 0 0;
+  color: ${color.textMuted};
+  font-size: ${fontSize.bodySmall};
+  line-height: ${lineHeight.body};
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const ProfileDetails = styled.div`
