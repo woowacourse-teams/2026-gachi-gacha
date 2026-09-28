@@ -38,6 +38,8 @@ import {
   Main,
   MemberDescription,
   MemberName,
+  MemberRealName,
+  MemberRealNameLabel,
   Page,
   PageHeader,
   PageNotice,
@@ -54,6 +56,7 @@ import {
   ProfileFallback,
   ProfileIdentity,
   ProfileImage,
+  ProfileNameCopy,
   RetryButton,
   Sidebar,
   StateDescription,
@@ -178,14 +181,21 @@ export function MyPageRoute() {
                     {member.nickname?.trim().slice(0, 1) || 'G'}
                   </ProfileFallback>
                 )}
-                <div>
+                <ProfileNameCopy>
                   <MemberName>
                     {member.nickname || '가치가챠 사용자'}
                   </MemberName>
-                  <MemberDescription>
-                    로그인한 계정의 활동을 관리해요
-                  </MemberDescription>
-                </div>
+                  {member.name?.trim() ? (
+                    <MemberRealName>
+                      <MemberRealNameLabel>이름</MemberRealNameLabel>
+                      <span>{member.name}</span>
+                    </MemberRealName>
+                  ) : (
+                    <MemberDescription>
+                      로그인한 계정의 활동을 관리해요
+                    </MemberDescription>
+                  )}
+                </ProfileNameCopy>
               </ProfileIdentity>
 
               <ProfileEditButton

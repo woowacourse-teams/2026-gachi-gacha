@@ -80,6 +80,10 @@ export const ProfileIdentity = styled.div`
   gap: ${space.md};
 `;
 
+export const ProfileNameCopy = styled.div`
+  min-width: 0;
+`;
+
 export const ProfileEditButton = styled.button`
   display: flex;
   width: 100%;
@@ -143,6 +147,28 @@ export const MemberDescription = styled.p`
   color: ${color.textMuted};
   font-size: ${fontSize.bodySmall};
   line-height: ${lineHeight.body};
+`;
+
+export const MemberRealName = styled.p`
+  display: flex;
+  min-width: 0;
+  margin: ${space.xxs} 0 0;
+  color: ${color.textMuted};
+  font-size: ${fontSize.bodySmall};
+  gap: ${space.xxs};
+  line-height: ${lineHeight.body};
+
+  span:last-of-type {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+`;
+
+export const MemberRealNameLabel = styled.span`
+  flex: 0 0 auto;
+  color: ${color.textSubtle};
+  font-weight: ${fontWeight.bold};
 `;
 
 export const ProfileDetails = styled.div`

@@ -128,7 +128,10 @@ export const memberUpdateSuccessHandler = http.patch(
     return HttpResponse.json({
       code: 'C002',
       message: '정상 수정',
-      data: body,
+      data: {
+        name: '김민지',
+        ...body,
+      },
     });
   },
 );

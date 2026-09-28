@@ -9,7 +9,15 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === 'string';
 }
 
-function isAuthMember(value: unknown): value is AuthMember {
+interface MemberResponseData {
+  name?: unknown;
+  oauthUsername?: unknown;
+  nickname: string | null;
+  profileImageUrl: string | null;
+  desireTradeLocation: string | null;
+}
+
+function isMemberResponseData(value: unknown): value is MemberResponseData {
   if (!isRecord(value)) {
     return false;
   }
@@ -19,6 +27,16 @@ function isAuthMember(value: unknown): value is AuthMember {
     isNullableString(value.profileImageUrl) &&
     isNullableString(value.desireTradeLocation)
   );
+}
+
+function parseMemberName(value: MemberResponseData): string | null {
+  const name = value.name ?? value.oauthUsername ?? null;
+
+  if (!isNullableString(name)) {
+    throw new Error('사용자 이름 응답 형식이 올바르지 않습니다.');
+  }
+
+  return name;
 }
 
 export function parseMemberResponse(
@@ -33,9 +51,14 @@ export function parseMemberResponse(
     throw new Error(value.message);
   }
 
-  if (!isAuthMember(value.data)) {
+  if (!isMemberResponseData(value.data)) {
     throw new Error('사용자 정보 응답 형식이 올바르지 않습니다.');
   }
 
-  return value.data;
+  return {
+    name: parseMemberName(value.data),
+    nickname: value.data.nickname,
+    profileImageUrl: value.data.profileImageUrl,
+    desireTradeLocation: value.data.desireTradeLocation,
+  };
 }

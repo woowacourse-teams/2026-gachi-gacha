@@ -18,6 +18,7 @@ export const authenticatedMemberHandler = http.get(
       code: 'C000',
       message: '요청에 성공했습니다.',
       data: {
+        name: '김민지',
         nickname: '가챠러 민지',
         profileImageUrl: null,
         desireTradeLocation: '홍대입구역',

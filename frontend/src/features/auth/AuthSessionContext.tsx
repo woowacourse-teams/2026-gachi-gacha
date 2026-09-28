@@ -158,11 +158,14 @@ export function AuthSessionProvider({
   const updateProfile = useCallback(async (input: UpdateCurrentMemberInput) => {
     const updatedMember = await updateCurrentMember(input);
 
-    setState({
+    setState((currentState) => ({
       status: 'authenticated',
-      member: updatedMember,
+      member: {
+        ...updatedMember,
+        name: updatedMember.name ?? currentState.member?.name ?? null,
+      },
       errorMessage: null,
-    });
+    }));
   }, []);
 
   const deleteAccount = useCallback(async () => {
