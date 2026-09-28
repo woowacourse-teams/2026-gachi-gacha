@@ -32,12 +32,12 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
     let isCurrent = true;
 
     void exchangeOAuthCodeOnce(provider, window.location.search)
-      .then(async (accessToken) => {
+      .then(async (authTokens) => {
         if (!isCurrent) {
           return;
         }
 
-        await authenticate(accessToken);
+        await authenticate(authTokens);
 
         if (isCurrent) {
           window.location.replace(consumeAuthReturnPath());

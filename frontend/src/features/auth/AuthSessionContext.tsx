@@ -12,16 +12,20 @@ import { AuthApiError } from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
 import { deleteCurrentMember } from './api/deleteCurrentMember';
 import { getCurrentMember } from './api/getCurrentMember';
+import { logoutAuthSession } from './api/logoutAuthSession';
+import { refreshAuthTokensOnce } from './api/refreshAuthTokens';
 import {
   updateCurrentMember,
   type UpdateCurrentMemberInput,
 } from './api/updateCurrentMember';
 import type { AuthMember } from './authMemberType';
 import {
-  clearAccessToken,
+  clearAuthTokens,
   readAccessToken,
-  storeAccessToken,
+  readRefreshToken,
+  storeAuthTokens,
 } from './authTokenStorage';
+import type { AuthTokens } from './authTokensType';
 
 type AuthStatus = 'loading' | 'guest' | 'authenticated' | 'error';
 
@@ -29,7 +33,7 @@ interface AuthSessionValue {
   status: AuthStatus;
   member: AuthMember | null;
   errorMessage: string | null;
-  authenticate: (accessToken: string) => Promise<void>;
+  authenticate: (tokens: AuthTokens) => Promise<void>;
   updateProfile: (input: UpdateCurrentMemberInput) => Promise<void>;
   deleteAccount: () => Promise<void>;
   logout: () => void;
@@ -69,16 +73,19 @@ export function AuthSessionProvider({
     [initialAccessToken],
   );
   const [state, setState] = useState<AuthState>(() =>
-    readSessionAccessToken()
+    readSessionAccessToken() ||
+    (initialAccessToken === undefined && readRefreshToken())
       ? { status: 'loading', member: null, errorMessage: null }
       : GUEST_STATE,
   );
 
   const restoreSession = useCallback(
     async (signal?: AbortSignal) => {
-      const accessToken = readSessionAccessToken();
+      let accessToken = readSessionAccessToken();
+      const refreshToken =
+        initialAccessToken === undefined ? readRefreshToken() : null;
 
-      if (!accessToken) {
+      if (!accessToken && !refreshToken) {
         setState(GUEST_STATE);
         return;
       }
@@ -86,6 +93,59 @@ export function AuthSessionProvider({
       setState({ status: 'loading', member: null, errorMessage: null });
 
       try {
+        if (accessToken) {
+          try {
+            const member = await getCurrentMember(accessToken, signal);
+
+            setState({ status: 'authenticated', member, errorMessage: null });
+            return;
+          } catch (error) {
+            if (isAbortError(error)) {
+              return;
+            }
+
+            if (!(error instanceof AuthApiError && error.status === 401)) {
+              throw error;
+            }
+          }
+        }
+
+        if (!refreshToken) {
+          clearAuthTokens();
+          setState(GUEST_STATE);
+          return;
+        }
+
+        let refreshedTokens: AuthTokens;
+
+        try {
+          refreshedTokens = await refreshAuthTokensOnce(refreshToken);
+        } catch {
+          if (signal?.aborted) {
+            return;
+          }
+
+          clearAuthTokens();
+          setState(GUEST_STATE);
+          return;
+        }
+
+        if (signal?.aborted) {
+          return;
+        }
+
+        const currentRefreshToken = readRefreshToken();
+
+        if (
+          currentRefreshToken !== refreshToken &&
+          currentRefreshToken !== refreshedTokens.refreshToken
+        ) {
+          return;
+        }
+
+        storeAuthTokens(refreshedTokens);
+        accessToken = refreshedTokens.accessToken;
+
         const member = await getCurrentMember(accessToken, signal);
         setState({ status: 'authenticated', member, errorMessage: null });
       } catch (error) {
@@ -94,7 +154,7 @@ export function AuthSessionProvider({
         }
 
         if (error instanceof AuthApiError && error.status === 401) {
-          clearAccessToken();
+          clearAuthTokens();
           setState(GUEST_STATE);
           return;
         }
@@ -109,7 +169,7 @@ export function AuthSessionProvider({
         });
       }
     },
-    [readSessionAccessToken],
+    [initialAccessToken, readSessionAccessToken],
   );
 
   useEffect(() => {
@@ -130,21 +190,23 @@ export function AuthSessionProvider({
     [],
   );
 
-  const authenticate = useCallback(async (accessToken: string) => {
-    const normalizedToken = accessToken.trim();
+  const authenticate = useCallback(async (tokens: AuthTokens) => {
+    const accessToken = tokens.accessToken.trim();
+    const refreshToken = tokens.refreshToken.trim();
 
-    if (!normalizedToken) {
-      throw new Error('로그인 토큰이 없습니다.');
+    if (!accessToken || !refreshToken) {
+      throw new Error('로그인 토큰 정보가 올바르지 않습니다.');
     }
 
     setState({ status: 'loading', member: null, errorMessage: null });
 
     try {
-      const member = await getCurrentMember(normalizedToken);
-      storeAccessToken(normalizedToken);
+      const member = await getCurrentMember(accessToken);
+
+      storeAuthTokens({ accessToken, refreshToken });
       setState({ status: 'authenticated', member, errorMessage: null });
     } catch (error) {
-      clearAccessToken();
+      clearAuthTokens();
       setState({
         status: 'error',
         member: null,
@@ -170,13 +232,19 @@ export function AuthSessionProvider({
 
   const deleteAccount = useCallback(async () => {
     await deleteCurrentMember();
-    clearAccessToken();
+    clearAuthTokens();
     setState(GUEST_STATE);
   }, []);
 
   const logout = useCallback(() => {
-    clearAccessToken();
+    const refreshToken = readRefreshToken();
+
+    clearAuthTokens();
     setState(GUEST_STATE);
+
+    if (refreshToken) {
+      void logoutAuthSession(refreshToken).catch(() => undefined);
+    }
   }, []);
 
   const retry = useCallback(() => {
