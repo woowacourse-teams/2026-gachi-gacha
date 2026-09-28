@@ -22,7 +22,7 @@ export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
             {selectedImageUrl ? (
               <MainPhoto src={selectedImageUrl} alt={`${detail.title} 사진`} />
             ) : (
-              <ImagePlaceholder>사진 준비 중</ImagePlaceholder>
+              <ImagePlaceholder>이미지 없음</ImagePlaceholder>
             )}
             {detail.imageUrls.length > 0 && (
               <ImageCount>
@@ -56,10 +56,6 @@ export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
           <Divider />
 
           <InfoList>
-            <InfoRow>
-              <InfoLabel>상품 상태</InfoLabel>
-              <InfoValue>{detail.status}</InfoValue>
-            </InfoRow>
             <InfoRow>
               <InfoLabel>원하는 교환</InfoLabel>
               <InfoValue>{detail.wantedTrade}</InfoValue>
@@ -145,7 +141,7 @@ const MainImage = styled.div`
   place-items: center;
   border: 1px solid #ececef;
   border-radius: 20px;
-  background: linear-gradient(145deg, #eee8ff, #fff0f5);
+  background: #f3f3f5;
 `;
 
 const MainPhoto = styled.img`

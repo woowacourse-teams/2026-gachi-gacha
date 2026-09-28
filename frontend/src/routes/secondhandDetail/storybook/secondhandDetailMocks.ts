@@ -1,17 +1,11 @@
-import { createMockImage } from '../../secondhand/storybook/secondhandMocks';
 import type { ChatRoom } from '../model/chatRoom';
 import type { SecondhandDetail } from '../model/secondhandDetail';
 
 export const SECONDHAND_DETAIL: SecondhandDetail = {
   id: 101,
-  imageUrls: [
-    createMockImage('💜', '#eee8ff'),
-    createMockImage('🎀', '#fff0f5'),
-    createMockImage('🎁', '#f4edff'),
-  ],
+  imageUrls: [],
   title: '쿠로미 미니 피규어 vol.2 교환해요',
   category: '피규어',
-  status: '개봉 후 미사용',
   postedAt: '20시간 전',
   viewCount: 128,
   wishCount: 12,
@@ -35,7 +29,6 @@ export const SECONDHAND_CHAT_ROOM: ChatRoom = {
   },
   product: {
     title: SECONDHAND_DETAIL.title,
-    imageUrl: SECONDHAND_DETAIL.imageUrls[0]!,
   },
   messages: [
     {

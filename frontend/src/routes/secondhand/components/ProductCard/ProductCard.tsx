@@ -18,7 +18,7 @@ export default function ProductCard({ item }: ProductCardProps) {
         {item.imageUrl ? (
           <Image src={item.imageUrl} alt="" />
         ) : (
-          <Visual>🎁</Visual>
+          <ImagePlaceholder>이미지 없음</ImagePlaceholder>
         )}
       </Thumbnail>
 
@@ -54,9 +54,10 @@ const Image = styled.img`
   object-fit: cover;
 `;
 
-const Visual = styled.span`
-  font-size: clamp(52px, 7vw, 88px);
-  filter: drop-shadow(0 12px 16px rgb(36 35 40 / 10%));
+const ImagePlaceholder = styled.span`
+  color: #aaa5a8;
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 const Title = styled.h3`

@@ -5,7 +5,6 @@ import * as S from './StoreDetailSheet.styles';
 import StoreDetailSheetContainer from './StoreDetailSheetContainer';
 import { useStoreDetailSheet } from '../hooks/useStoreDetailSheet';
 import { mockStoreDetail } from '../mocks/storeDetail.mock';
-import { mockStoreImages } from '../mocks/storePhotos.mock';
 import { toStoreDetail } from '../model/toStoreDetail';
 
 const store = toStoreDetail(mockStoreDetail, { distanceMeters: 380 });
@@ -17,26 +16,6 @@ const storeWithInstagramWithoutGachaImages = toStoreDetail(
   {
     distanceMeters: 380,
     gachaImageUrls: [],
-    isGachaCatalogLoaded: true,
-  },
-);
-const storeWithGallery = toStoreDetail(
-  {
-    ...mockStoreDetail,
-    thumbnailUrl: mockStoreImages[0] ?? null,
-    images: mockStoreImages.map((imageUrl, index) => ({
-      storeImageId: index + 1,
-      imageUrl,
-    })),
-  },
-  {
-    distanceMeters: 380,
-    gachaImageUrls: Array.from(
-      { length: 20 },
-      (_, index) =>
-        `${mockStoreImages[index % mockStoreImages.length] ?? ''}#g${index + 1}`,
-    ),
-    gachaTotalPages: 3,
     isGachaCatalogLoaded: true,
   },
 );
@@ -109,37 +88,12 @@ export const SuccessWithoutImage: Story = {
   ),
 };
 
-export const GalleryWithGachaImages: Story = {
-  render: () => (
-    <StoreDetailSheet
-      state="full"
-      status="success"
-      store={storeWithGallery}
-      onClose={doNothing}
-      onStateChange={doNothing}
-    />
-  ),
-};
-
 export const GachaInterestWithInstagram: Story = {
   render: () => (
     <StoreDetailSheet
       state="full"
       status="success"
       store={storeWithInstagramWithoutGachaImages}
-      onClose={doNothing}
-      onStateChange={doNothing}
-    />
-  ),
-};
-
-/** 2단계에서 대표 사진이 얼마나 차지하는지 본다. */
-export const SummaryWithPhotos: Story = {
-  render: () => (
-    <StoreDetailSheet
-      state="summary"
-      status="success"
-      store={storeWithGallery}
       onClose={doNothing}
       onStateChange={doNothing}
     />
@@ -164,19 +118,6 @@ export const Collapsed: Story = {
       state="collapsed"
       status="success"
       store={store}
-      onClose={doNothing}
-      onStateChange={doNothing}
-    />
-  ),
-};
-
-/** 사진을 눌러 전체화면으로 여는 흐름. 히어로와 가챠 사진 둘 다 열린다. */
-export const PhotoViewerFlow: Story = {
-  render: () => (
-    <StoreDetailSheet
-      state="full"
-      status="success"
-      store={storeWithGallery}
       onClose={doNothing}
       onStateChange={doNothing}
     />

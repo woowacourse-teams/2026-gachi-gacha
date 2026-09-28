@@ -73,7 +73,7 @@ export default function ChatDrawer({ room, onClose }: ChatDrawerProps) {
             {room.product.imageUrl ? (
               <ProductImage src={room.product.imageUrl} alt="" />
             ) : (
-              '🎁'
+              <ProductImagePlaceholder>이미지 없음</ProductImagePlaceholder>
             )}
           </ProductThumbnail>
           <ProductInfo>
@@ -229,6 +229,12 @@ const ProductImage = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
+`;
+
+const ProductImagePlaceholder = styled.span`
+  color: #aaa5a8;
+  font-size: 10px;
+  font-weight: 700;
 `;
 
 const ProductInfo = styled.div`

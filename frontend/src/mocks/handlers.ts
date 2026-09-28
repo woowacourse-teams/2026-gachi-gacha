@@ -10,12 +10,6 @@ import {
 import type { StoreDetailDto } from '@/features/storeDetail/api/storeDetail.dto';
 import type { StoreGachaPageDto } from '@/features/storeDetail/api/storeGacha.dto';
 import { mockStoreDetail } from '@/features/storeDetail/mocks/storeDetail.mock';
-import {
-  entrancePhoto,
-  machinePhoto,
-  mockStoreImages,
-  storeFrontPhoto,
-} from '@/features/storeDetail/mocks/storePhotos.mock';
 
 type MockStoreLocation = Omit<NearbyStore, 'distance'>;
 
@@ -87,12 +81,6 @@ function getMockNearbyStores(
     .filter((store) => store.distance <= radius);
 }
 
-const withImages = (imageUrls: string[]) =>
-  imageUrls.map((imageUrl, index) => ({
-    storeImageId: index + 1,
-    imageUrl,
-  }));
-
 const mockStoreDetails: Record<number, StoreDetailDto> = {
   // 1번은 사진이 없는 매장. 대표 사진 없이 이름부터 시작하는 화면을 본다.
   1: mockStoreDetail,
@@ -101,24 +89,24 @@ const mockStoreDetails: Record<number, StoreDetailDto> = {
     storeId: 2,
     name: '가챠스테이션 홍대입구점',
     address: '서울 마포구 양화로 160',
-    thumbnailUrl: storeFrontPhoto,
-    images: withImages(mockStoreImages),
+    thumbnailUrl: null,
+    images: [],
   },
   3: {
     ...mockStoreDetail,
     storeId: 3,
     name: '가챠스테이션 연남점',
     address: '서울 마포구 동교로 242',
-    thumbnailUrl: machinePhoto,
-    images: withImages([machinePhoto, entrancePhoto]),
+    thumbnailUrl: null,
+    images: [],
   },
   4: {
     ...mockStoreDetail,
     storeId: 4,
     name: '국제전자센터 가챠샵',
     address: '서울 서초구 효령로 304',
-    thumbnailUrl: storeFrontPhoto,
-    images: withImages(mockStoreImages),
+    thumbnailUrl: null,
+    images: [],
   },
 };
 
@@ -139,9 +127,7 @@ export const handlers = [
           gachaId,
           name: `${categoryName} 가챠 컬렉션 ${gachaId}`,
           caption: `${categoryName} 카테고리의 가챠입니다.`,
-          thumbnailUrl:
-            mockStoreImages[(from + index) % mockStoreImages.length] ??
-            storeFrontPhoto,
+          thumbnailUrl: '',
           productCode: `MOCK-${String(gachaId).padStart(3, '0')}`,
           categories: [categoryName],
           source: 'BANDAI',
@@ -218,12 +204,7 @@ export const handlers = [
       { length: Math.max(Math.min(size, total - from), 0) },
       (_, index) => ({
         gachaId: from + index + 1,
-        // 목 사진은 몇 장뿐이라 돌려쓴다. 프래그먼트로 URL 을 다르게 만들지
-        // 않으면 중복 제거에 걸려 한 페이지로 접힌다.
-        thumbnailUrl: `${
-          mockStoreImages[(from + index) % mockStoreImages.length] ??
-          storeFrontPhoto
-        }#g${from + index + 1}`,
+        thumbnailUrl: '',
       }),
     );
 

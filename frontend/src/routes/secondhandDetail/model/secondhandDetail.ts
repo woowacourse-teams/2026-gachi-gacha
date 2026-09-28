@@ -3,7 +3,6 @@ export interface SecondhandDetail {
   imageUrls: string[];
   title: string;
   category: string;
-  status: string;
   postedAt: string;
   viewCount: number;
   wishCount: number;

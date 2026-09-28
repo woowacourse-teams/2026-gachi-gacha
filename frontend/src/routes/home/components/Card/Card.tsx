@@ -8,7 +8,13 @@ export interface CardProps {
 export default function Card(props: CardProps) {
   return (
     <Wrapper>
-      <Thumbnail src={props.imageUrl} alt="" />
+      <Thumbnail>
+        {props.imageUrl ? (
+          <ThumbnailImage src={props.imageUrl} alt="" />
+        ) : (
+          <ImagePlaceholder>이미지 없음</ImagePlaceholder>
+        )}
+      </Thumbnail>
       <Name>{props.name}</Name>
     </Wrapper>
   );
@@ -22,12 +28,26 @@ const Wrapper = styled.div`
   gap: 6px;
 `;
 
-const Thumbnail = styled.img`
+const Thumbnail = styled.div`
+  display: grid;
   width: 100%;
   aspect-ratio: 1 / 1;
+  overflow: hidden;
+  place-items: center;
   border-radius: 12px;
-  object-fit: cover;
   background: #faf7f8;
+`;
+
+const ThumbnailImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+`;
+
+const ImagePlaceholder = styled.span`
+  color: #aaa5a8;
+  font-size: 13px;
+  font-weight: 700;
 `;
 
 const Name = styled.p`

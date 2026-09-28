@@ -15,7 +15,7 @@ export default function CreatedTradeSummary({
         {trade.imageUrl ? (
           <Image src={trade.imageUrl} alt="" />
         ) : (
-          <ImagePlaceholder>🎁</ImagePlaceholder>
+          <ImagePlaceholder>이미지 없음</ImagePlaceholder>
         )}
       </Thumbnail>
 
@@ -70,7 +70,9 @@ const Image = styled.img`
 `;
 
 const ImagePlaceholder = styled.span`
-  font-size: 36px;
+  color: #aaa5a8;
+  font-size: 11px;
+  font-weight: 700;
 `;
 
 const Content = styled.div`
