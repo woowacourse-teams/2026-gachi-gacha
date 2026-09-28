@@ -39,7 +39,6 @@ import {
   MemberDescription,
   MemberName,
   MemberRealName,
-  MemberRealNameLabel,
   Page,
   PageHeader,
   PageNotice,
@@ -186,10 +185,7 @@ export function MyPageRoute() {
                     {member.nickname || '가치가챠 사용자'}
                   </MemberName>
                   {member.name?.trim() ? (
-                    <MemberRealName>
-                      <MemberRealNameLabel>이름</MemberRealNameLabel>
-                      <span>{member.name}</span>
-                    </MemberRealName>
+                    <MemberRealName>{member.name}</MemberRealName>
                   ) : (
                     <MemberDescription>
                       로그인한 계정의 활동을 관리해요

@@ -150,25 +150,13 @@ export const MemberDescription = styled.p`
 `;
 
 export const MemberRealName = styled.p`
-  display: flex;
-  min-width: 0;
+  overflow: hidden;
   margin: ${space.xxs} 0 0;
   color: ${color.textMuted};
   font-size: ${fontSize.bodySmall};
-  gap: ${space.xxs};
   line-height: ${lineHeight.body};
-
-  span:last-of-type {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-`;
-
-export const MemberRealNameLabel = styled.span`
-  flex: 0 0 auto;
-  color: ${color.textSubtle};
-  font-weight: ${fontWeight.bold};
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const ProfileDetails = styled.div`
