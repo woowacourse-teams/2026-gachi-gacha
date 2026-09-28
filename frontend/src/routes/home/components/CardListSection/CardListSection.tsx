@@ -3,31 +3,25 @@ import styled from '@emotion/styled';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 
+import type { LoadMoreStatus } from '../../model/loadMoreStatus';
 import Card from '../Card';
 
 interface Props {
   title: string;
   items: GachaProductSummary[];
   hasNextPage?: boolean;
-  isLoadingMore?: boolean;
-  loadMoreError?: boolean;
+  loadMoreStatus?: LoadMoreStatus;
   onEndReached?: () => void;
 }
 
 export default function CardListSection(props: Props) {
   const endMarkerRef = useRef<HTMLDivElement>(null);
-  const { hasNextPage, isLoadingMore, loadMoreError, onEndReached } = props;
+  const { hasNextPage, loadMoreStatus = 'idle', onEndReached } = props;
 
   useEffect(() => {
     const marker = endMarkerRef.current;
 
-    if (
-      !marker ||
-      !hasNextPage ||
-      isLoadingMore ||
-      loadMoreError ||
-      !onEndReached
-    ) {
+    if (!marker || !hasNextPage || loadMoreStatus !== 'idle' || !onEndReached) {
       return;
     }
 
@@ -41,7 +35,7 @@ export default function CardListSection(props: Props) {
     observer.observe(marker);
 
     return () => observer.disconnect();
-  }, [hasNextPage, isLoadingMore, loadMoreError, onEndReached]);
+  }, [hasNextPage, loadMoreStatus, onEndReached]);
 
   if (props.items.length === 0) {
     return (
@@ -61,13 +55,13 @@ export default function CardListSection(props: Props) {
         ))}
       </List>
 
-      {props.isLoadingMore && (
+      {props.loadMoreStatus === 'loading' && (
         <PageMessage role="status">
           다음 페이지를 불러오는 중이에요.
         </PageMessage>
       )}
 
-      {props.loadMoreError && (
+      {props.loadMoreStatus === 'error' && (
         <RetryButton type="button" onClick={props.onEndReached}>
           다음 페이지 다시 불러오기
         </RetryButton>

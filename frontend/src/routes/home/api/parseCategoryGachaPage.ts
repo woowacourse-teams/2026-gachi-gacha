@@ -6,7 +6,7 @@ import type { GachaCardPage } from '../model/gachaCardPage';
 interface CategoryGachaPageData {
   content: unknown[];
   number: number;
-  totalPages: number;
+  last: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -25,7 +25,7 @@ function isCategoryGachaPageData(
   return (
     Array.isArray(value.content) &&
     isNonNegativeSafeInteger(value.number) &&
-    isNonNegativeSafeInteger(value.totalPages)
+    typeof value.last === 'boolean'
   );
 }
 
@@ -67,7 +67,6 @@ export function parseCategoryGachaPage(value: unknown): GachaCardPage {
         categories,
       }),
     ),
-    page: value.data.number,
-    totalPages: value.data.totalPages,
+    nextPage: value.data.last ? null : value.data.number + 1,
   };
 }

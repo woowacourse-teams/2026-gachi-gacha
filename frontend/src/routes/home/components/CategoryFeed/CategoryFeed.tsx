@@ -1,45 +1,58 @@
+import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import { DEFAULT_CATEGORY } from '../../model/categories';
 import CardListSection from '../CardListSection';
 import CategoryNav from '../CategoryNav';
-import { useCategoryFeed } from './useCategoryFeed';
+import { useInfiniteCategoryGachas } from './useInfiniteCategoryGachas';
 
 export default function CategoryFeed() {
-  const {
-    selectedCategory,
-    selectCategory,
-    itemsState,
-    hasNextPage,
-    isLoadingMore,
-    loadMoreError,
-    loadNextPage,
-  } = useCategoryFeed();
+  const [selectedCategory, selectCategory] = useState(DEFAULT_CATEGORY);
 
   return (
     <>
       <CategoryNav selected={selectedCategory} onSelect={selectCategory} />
-
-      <SectionList>
-        {itemsState.status === 'loading' && (
-          <Message role="status">불러오는 중이에요.</Message>
-        )}
-
-        {itemsState.status === 'error' && (
-          <Message role="alert">목록을 불러오지 못했어요.</Message>
-        )}
-
-        {itemsState.status === 'success' && (
-          <CardListSection
-            title={selectedCategory}
-            items={itemsState.data}
-            hasNextPage={hasNextPage}
-            isLoadingMore={isLoadingMore}
-            loadMoreError={loadMoreError}
-            onEndReached={loadNextPage}
-          />
-        )}
-      </SectionList>
+      <CategoryFeedContent categoryName={selectedCategory} />
     </>
+  );
+}
+
+interface CategoryFeedContentProps {
+  categoryName: string;
+}
+
+function CategoryFeedContent({ categoryName }: CategoryFeedContentProps) {
+  const { itemsState, hasNextPage, loadMoreStatus, loadNextPage } =
+    useInfiniteCategoryGachas(categoryName);
+
+  if (itemsState.status === 'idle') return null;
+
+  if (itemsState.status === 'loading') {
+    return (
+      <SectionList>
+        <Message role="status">불러오는 중이에요.</Message>
+      </SectionList>
+    );
+  }
+
+  if (itemsState.status === 'error') {
+    return (
+      <SectionList>
+        <Message role="alert">목록을 불러오지 못했어요.</Message>
+      </SectionList>
+    );
+  }
+
+  return (
+    <SectionList>
+      <CardListSection
+        title={categoryName}
+        items={itemsState.data}
+        hasNextPage={hasNextPage}
+        loadMoreStatus={loadMoreStatus}
+        onEndReached={loadNextPage}
+      />
+    </SectionList>
   );
 }
 
