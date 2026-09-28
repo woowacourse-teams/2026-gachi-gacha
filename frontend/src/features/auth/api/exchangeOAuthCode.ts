@@ -12,7 +12,7 @@ const CALLBACK_PARAMETER_NAMES = [
 ] as const;
 
 interface OAuthLoginResponse {
-  token: string;
+  accessToken: string;
 }
 
 function isOAuthLoginResponse(value: unknown): value is OAuthLoginResponse {
@@ -22,7 +22,10 @@ function isOAuthLoginResponse(value: unknown): value is OAuthLoginResponse {
 
   const response = value as Record<string, unknown>;
 
-  return typeof response.token === 'string' && response.token.trim().length > 0;
+  return (
+    typeof response.accessToken === 'string' &&
+    response.accessToken.trim().length > 0
+  );
 }
 
 function parseOAuthLoginResponse(value: unknown): string {
@@ -38,7 +41,7 @@ function parseOAuthLoginResponse(value: unknown): string {
     throw new Error('소셜 로그인 응답 형식이 올바르지 않습니다.');
   }
 
-  return value.data.token;
+  return value.data.accessToken;
 }
 
 function createLoginCallbackUrl(
