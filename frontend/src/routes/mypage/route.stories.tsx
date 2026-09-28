@@ -16,6 +16,10 @@ import {
   emptyMyTradesHandler,
   failedMyTradesHandler,
   loadingMyTradesHandler,
+  memberDeleteFailureHandler,
+  memberDeleteSuccessHandler,
+  memberUpdateFailureHandler,
+  memberUpdateSuccessHandler,
   myTradesHandler,
 } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
@@ -51,7 +55,12 @@ const meta = {
   },
   render: () => (
     <MockWorkerBoundary
-      handlers={[authenticatedMemberHandler, myTradesHandler]}
+      handlers={[
+        authenticatedMemberHandler,
+        myTradesHandler,
+        memberUpdateSuccessHandler,
+        memberDeleteSuccessHandler,
+      ]}
     >
       <AuthenticatedStory>
         <MyPageRoute />
@@ -116,6 +125,40 @@ export const FailedActivities: Story = {
   render: () => (
     <MockWorkerBoundary
       handlers={[authenticatedMemberHandler, failedMyTradesHandler]}
+    >
+      <AuthenticatedStory>
+        <MyPageRoute />
+      </AuthenticatedStory>
+    </MockWorkerBoundary>
+  ),
+};
+
+export const FailedProfileUpdate: Story = {
+  render: () => (
+    <MockWorkerBoundary
+      handlers={[
+        authenticatedMemberHandler,
+        myTradesHandler,
+        memberUpdateFailureHandler,
+        memberDeleteSuccessHandler,
+      ]}
+    >
+      <AuthenticatedStory>
+        <MyPageRoute />
+      </AuthenticatedStory>
+    </MockWorkerBoundary>
+  ),
+};
+
+export const FailedAccountDeletion: Story = {
+  render: () => (
+    <MockWorkerBoundary
+      handlers={[
+        authenticatedMemberHandler,
+        myTradesHandler,
+        memberUpdateSuccessHandler,
+        memberDeleteFailureHandler,
+      ]}
     >
       <AuthenticatedStory>
         <MyPageRoute />

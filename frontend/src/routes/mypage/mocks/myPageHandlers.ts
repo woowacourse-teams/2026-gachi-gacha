@@ -4,6 +4,7 @@ import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 import { AUTH_STORY_TOKEN } from '@/features/auth/mocks/authHandlers';
 
 const MY_TRADES_API_PATH = '/api/v1/trades/me';
+const CURRENT_MEMBER_API_PATH = '/api/v1/members/me';
 const SUPPORT_INQUIRY_API_PATH = '/api/v1/support-inquiries';
 
 const tradeSummaries: TradeSummary[] = [
@@ -105,5 +106,73 @@ export const supportInquirySuccessHandler = http.post(
         data: { inquiryId: 1 },
       },
       { status: 201 },
+    ),
+);
+
+export const memberUpdateSuccessHandler = http.patch(
+  CURRENT_MEMBER_API_PATH,
+  async ({ request }) => {
+    if (request.headers.get('Authorization') !== `Bearer ${AUTH_STORY_TOKEN}`) {
+      return HttpResponse.json(
+        { code: 'A001', message: '인증이 필요합니다.', data: null },
+        { status: 401 },
+      );
+    }
+
+    const body = (await request.json()) as {
+      nickname: string;
+      profileImageUrl: string | null;
+      desireTradeLocation: string | null;
+    };
+
+    return HttpResponse.json({
+      code: 'C002',
+      message: '정상 수정',
+      data: body,
+    });
+  },
+);
+
+export const memberUpdateFailureHandler = http.patch(
+  CURRENT_MEMBER_API_PATH,
+  () =>
+    HttpResponse.json(
+      {
+        code: 'S001',
+        message: '회원 정보를 저장하지 못했습니다.',
+        data: null,
+      },
+      { status: 500 },
+    ),
+);
+
+export const memberDeleteSuccessHandler = http.delete(
+  CURRENT_MEMBER_API_PATH,
+  ({ request }) => {
+    if (request.headers.get('Authorization') !== `Bearer ${AUTH_STORY_TOKEN}`) {
+      return HttpResponse.json(
+        { code: 'A001', message: '인증이 필요합니다.', data: null },
+        { status: 401 },
+      );
+    }
+
+    return HttpResponse.json({
+      code: 'C003',
+      message: '정상 삭제',
+      data: { memberId: 1 },
+    });
+  },
+);
+
+export const memberDeleteFailureHandler = http.delete(
+  CURRENT_MEMBER_API_PATH,
+  () =>
+    HttpResponse.json(
+      {
+        code: 'S001',
+        message: '회원 탈퇴를 완료하지 못했습니다.',
+        data: null,
+      },
+      { status: 500 },
     ),
 );
