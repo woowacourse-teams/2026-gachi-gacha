@@ -67,7 +67,7 @@ oauth:
     scope:
       - openid
 jwt:
-  access-token-expiration-minutes: ${JWT_EXPIRATION_DAY}
+  access-token-expiration-minutes: ${JWT_EXPIRATION_MINUTES}
   refresh-token-expirationDay: ${JWT_REFRESH_EXPIRATION_DAY}
   refresh-cleanup:
     cron: ${REFRESH_CLEAN_TIME:0 0 4 * * *}
