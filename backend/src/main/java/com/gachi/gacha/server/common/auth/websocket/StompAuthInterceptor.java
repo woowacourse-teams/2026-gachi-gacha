@@ -33,7 +33,7 @@ public class StompAuthInterceptor implements ChannelInterceptor {
         }
 
         String token = extractToken(accessor.getFirstNativeHeader(AUTHORIZATION_HEADER));
-        Long memberId = (Long) jwtProvider.extractMemberId(token);
+        Long memberId = jwtProvider.extractMemberId(token);
         accessor.setUser(new StompPrincipal(memberId));
 
         return message;

@@ -47,7 +47,10 @@ public enum ErrorCode {
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "AUE02", "존재하지 않는 사용자입니다."),
     INVALID_OAUTH_STATE(HttpStatus.BAD_REQUEST, "AUE03", "로그인 요청이 유효하지 않습니다. 다시 로그인해주세요."),
     OAUTH_AUTHENTICATION_DENIED(HttpStatus.UNAUTHORIZED, "AUE04", "로그인이 취소되었거나 실패했습니다. 다시 시도해주세요."),
-
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE05", "유효하지 않은 refresh token입니다."),
+    EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE06", "만료된 refresh token입니다."),
+    REUSED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE07", "이미 사용된 refresh token입니다. 다시 로그인해 주세요."),
+    
     // Chat
     CHAT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE001", "채팅 상대방 정보를 찾을 수 없습니다."),
     SELF_CHAT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "CHE002", "본인의 교환 게시글에는 채팅을 요청할 수 없습니다."),
