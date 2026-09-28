@@ -11,7 +11,7 @@ permissions:
 jobs:
   build-and-deploy-dev:
     name: Build & Deploy to DEV
-    
+
     runs-on:
       - self-hosted
       - Linux
@@ -33,12 +33,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      # Runner 내장 npm 대신 프로젝트 Node의 정상 npm으로 pnpm을 설치한다.
+      - name: Set up Node.js before pnpm installer
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 11.9.0
 
-      - name: Set up Node.js
+      # pnpm 설치 후에만 pnpm store 경로를 조회하여 캐시할 수 있다.
+      - name: Restore pnpm cache
         uses: actions/setup-node@v7
         with:
           node-version-file: frontend/.nvmrc
@@ -50,7 +57,11 @@ jobs:
 
       - name: Build development artifact
         env:
+          APP_ENV: development
           KAKAO_MAP_KEY: ${{ vars.DEV_KAKAO_MAP_KEY }}
+          POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST }}
+          POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
+          POSTHOG_ENABLED: ${{ vars.POSTHOG_ENABLED }}
         run: pnpm build
 
       - name: Deploy to Nginx Directory
@@ -59,7 +70,6 @@ jobs:
           release_dir="${DEPLOY_ROOT}/releases/${GITHUB_SHA}"
           mkdir -p "${release_dir}"
           cp -a dist/. "${release_dir}/"
-          
+
           ln -sfn "${release_dir}" "${DEPLOY_ROOT}/current.next"
           mv -Tf "${DEPLOY_ROOT}/current.next" "${DEPLOY_ROOT}/current"
-          

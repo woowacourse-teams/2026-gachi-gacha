@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { AsyncState } from '@/types/asyncState';
+import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { getCategoryGachas } from '../../api/getCategoryGachas';
 import { DEFAULT_CATEGORY } from '../../model/categories';
@@ -11,6 +11,8 @@ export function useCategoryFeed() {
   const [selectedCategory, selectCategory] = useState(DEFAULT_CATEGORY);
   const [itemsState, setItemsState] = useState<AsyncState<GachaCard[]>>({
     status: 'loading',
+    data: null,
+    errorMessage: null,
   });
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -26,7 +28,7 @@ export function useCategoryFeed() {
     isLoadingMoreRef.current = false;
 
     const fetchCategoryGachas = async () => {
-      setItemsState({ status: 'loading' });
+      setItemsState({ status: 'loading', data: null, errorMessage: null });
       setPage(0);
       setTotalPages(0);
       setIsLoadingMore(false);
@@ -44,6 +46,7 @@ export function useCategoryFeed() {
         setItemsState({
           status: 'success',
           data: firstPage.content.map(toGachaCard),
+          errorMessage: null,
         });
         setPage(firstPage.number);
         setTotalPages(firstPage.totalPages);
@@ -52,7 +55,9 @@ export function useCategoryFeed() {
 
         setItemsState({
           status: 'error',
-          error: error instanceof Error ? error : new Error('Unknown error'),
+          data: null,
+          errorMessage:
+            error instanceof Error ? error.message : 'Unknown error',
         });
       }
     };
@@ -104,6 +109,7 @@ export function useCategoryFeed() {
           return {
             status: 'success',
             data: [...currentState.data, ...newItems],
+            errorMessage: null,
           };
         });
         setPage(nextPageData.number);
