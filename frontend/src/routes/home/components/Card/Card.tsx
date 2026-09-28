@@ -1,21 +1,23 @@
 import styled from '@emotion/styled';
 
+import type { GachaProductSummary } from '@/domains/product/gachaProductType';
+import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
+import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
+
 export interface CardProps {
-  imageUrl: string;
-  name: string;
+  product: GachaProductSummary;
 }
 
-export default function Card(props: CardProps) {
+export default function Card({ product }: CardProps) {
   return (
     <Wrapper>
       <Thumbnail>
-        {props.imageUrl ? (
-          <ThumbnailImage src={props.imageUrl} alt="" />
-        ) : (
-          <ImagePlaceholder>이미지 없음</ImagePlaceholder>
-        )}
+        <ImagePlaceholder aria-hidden="true">
+          <LogoImagePlaceholder />
+        </ImagePlaceholder>
+        <ThumbnailImage src={product.thumbnailUrl} alt="" loading="lazy" />
       </Thumbnail>
-      <Name>{props.name}</Name>
+      <Name>{product.name}</Name>
     </Wrapper>
   );
 }
@@ -29,6 +31,7 @@ const Wrapper = styled.div`
 `;
 
 const Thumbnail = styled.div`
+  position: relative;
   display: grid;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -38,16 +41,22 @@ const Thumbnail = styled.div`
   background: #faf7f8;
 `;
 
-const ThumbnailImage = styled.img`
+const ThumbnailImage = styled(ImageWithFallback)`
+  position: relative;
   width: 100%;
   height: 100%;
   object-fit: cover;
 `;
 
 const ImagePlaceholder = styled.span`
-  color: #aaa5a8;
-  font-size: 13px;
-  font-weight: 700;
+  position: absolute;
+  display: grid;
+  inset: 0;
+  place-items: center;
+
+  img {
+    width: 28%;
+  }
 `;
 
 const Name = styled.p`

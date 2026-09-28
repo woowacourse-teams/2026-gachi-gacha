@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
-import { getCategoryGachas } from '../../api/getCategoryGachas';
+import { getCategoryGachaPage } from '../../api/getCategoryGachaPage';
 import { DEFAULT_CATEGORY } from '../../model/categories';
-import type { GachaCard } from '../../model/gachaCard';
-import { toGachaCard } from '../../model/toGachaCard';
 
 export function useCategoryFeed() {
   const [selectedCategory, selectCategory] = useState(DEFAULT_CATEGORY);
-  const [itemsState, setItemsState] = useState<AsyncState<GachaCard[]>>({
+  const [itemsState, setItemsState] = useState<
+    AsyncState<GachaProductSummary[]>
+  >({
     status: 'loading',
     data: null,
     errorMessage: null,
@@ -35,7 +36,7 @@ export function useCategoryFeed() {
       setLoadMoreError(false);
 
       try {
-        const firstPage = await getCategoryGachas({
+        const firstPage = await getCategoryGachaPage({
           categoryName: selectedCategory,
           page: 0,
           signal: controller.signal,
@@ -45,10 +46,10 @@ export function useCategoryFeed() {
 
         setItemsState({
           status: 'success',
-          data: firstPage.content.map(toGachaCard),
+          data: firstPage.items,
           errorMessage: null,
         });
-        setPage(firstPage.number);
+        setPage(firstPage.page);
         setTotalPages(firstPage.totalPages);
       } catch (error: unknown) {
         if (controller.signal.aborted) return;
@@ -90,7 +91,7 @@ export function useCategoryFeed() {
 
     const fetchNextPage = async () => {
       try {
-        const nextPageData = await getCategoryGachas({
+        const nextPageData = await getCategoryGachaPage({
           categoryName: selectedCategory,
           page: nextPage,
           signal: controller.signal,
@@ -101,10 +102,12 @@ export function useCategoryFeed() {
         setItemsState((currentState) => {
           if (currentState.status !== 'success') return currentState;
 
-          const loadedIds = new Set(currentState.data.map((gacha) => gacha.id));
-          const newItems = nextPageData.content
-            .map(toGachaCard)
-            .filter((gacha) => !loadedIds.has(gacha.id));
+          const loadedIds = new Set(
+            currentState.data.map((gacha) => gacha.gachaId),
+          );
+          const newItems = nextPageData.items.filter(
+            (gacha) => !loadedIds.has(gacha.gachaId),
+          );
 
           return {
             status: 'success',
@@ -112,7 +115,7 @@ export function useCategoryFeed() {
             errorMessage: null,
           };
         });
-        setPage(nextPageData.number);
+        setPage(nextPageData.page);
         setTotalPages(nextPageData.totalPages);
       } catch {
         if (!controller.signal.aborted) setLoadMoreError(true);

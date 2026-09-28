@@ -16,7 +16,11 @@ type Story = StoryObj<typeof Card>;
 
 export const Default: Story = {
   args: {
-    imageUrl: '',
-    name: '산리오 스탠드 피규어',
+    product: {
+      gachaId: 1,
+      name: '산리오 스탠드 피규어',
+      thumbnailUrl: null,
+      categories: ['산리오'],
+    },
   },
 };

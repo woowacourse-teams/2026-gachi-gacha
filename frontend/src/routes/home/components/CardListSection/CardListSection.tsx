@@ -1,16 +1,13 @@
 import { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 
-import Card from '../Card';
-import type { CardProps } from '../Card';
+import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 
-interface CardListItem extends CardProps {
-  id: number;
-}
+import Card from '../Card';
 
 interface Props {
   title: string;
-  items: CardListItem[];
+  items: GachaProductSummary[];
   hasNextPage?: boolean;
   isLoadingMore?: boolean;
   loadMoreError?: boolean;
@@ -60,7 +57,7 @@ export default function CardListSection(props: Props) {
       <Title>{props.title}</Title>
       <List>
         {props.items.map((item) => (
-          <Card key={item.id} imageUrl={item.imageUrl} name={item.name} />
+          <Card key={item.gachaId} product={item} />
         ))}
       </List>
 
