@@ -4,7 +4,7 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.UnsupportedTypeException;
 
 public class UnSupportedProviderTypeException extends UnsupportedTypeException {
-    public UnSupportedProviderTypeException(ErrorCode errorCode) {
+    public UnSupportedProviderTypeException(final ErrorCode errorCode) {
         super(errorCode);
     }
 }

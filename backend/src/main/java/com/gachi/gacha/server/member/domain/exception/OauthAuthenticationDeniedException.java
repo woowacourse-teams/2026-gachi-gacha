@@ -4,7 +4,7 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.UnAuthorizationException;
 
 public class OauthAuthenticationDeniedException extends UnAuthorizationException {
-    public OauthAuthenticationDeniedException(ErrorCode errorCode) {
+    public OauthAuthenticationDeniedException(final ErrorCode errorCode) {
         super(errorCode);
     }
 }

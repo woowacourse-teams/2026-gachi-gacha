@@ -4,7 +4,7 @@ import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.UnAuthorizationException;
 
 public class ExpiredRefreshTokenException extends UnAuthorizationException {
-    public ExpiredRefreshTokenException(ErrorCode errorCode) {
+    public ExpiredRefreshTokenException(final ErrorCode errorCode) {
         super(errorCode);
     }
 }
