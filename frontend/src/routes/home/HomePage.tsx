@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 
-import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+import { AppHeader } from '@/shared/ui/AppHeader';
 
 import CategoryFeed from './components/CategoryFeed';
 import Footer from './components/Footer';
@@ -9,7 +9,7 @@ import SearchHero from './components/SearchHero';
 export default function HomePage() {
   return (
     <Page>
-      <AppGachaSearchHeader currentPath="/" />
+      <AppHeader currentPath="/" />
 
       <Main>
         <SearchHero />

@@ -1,14 +1,9 @@
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
-import { GachaSearchBar } from './GachaSearchBar';
+import { GachaSearchNavigationBar } from './GachaSearchNavigationBar';
 
 interface AppGachaSearchHeaderProps {
   currentPath: string;
-}
-
-function openGachaSearchResults(gachaId: number) {
-  window.location.assign(createGachaSearchResultsUrl(gachaId));
 }
 
 export function AppGachaSearchHeader({
@@ -17,7 +12,7 @@ export function AppGachaSearchHeader({
   return (
     <AppHeader
       currentPath={currentPath}
-      search={<GachaSearchBar onSelect={openGachaSearchResults} />}
+      search={<GachaSearchNavigationBar />}
     />
   );
 }
