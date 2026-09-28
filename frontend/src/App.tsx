@@ -6,6 +6,12 @@ import { RequireAuth } from '@/features/auth/RequireAuth';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
+const HomeRoute = lazy(async () => {
+  const routeModule = await import('@/routes/home');
+
+  return { default: routeModule.HomePage };
+});
+
 const SearchRoute = lazy(async () => {
   const routeModule = await import('@/routes/search/route');
 
@@ -60,6 +66,7 @@ const MyPageRoute = lazy(async () => {
   return { default: routeModule.MyPageRoute };
 });
 
+const HOME_PATH = '/';
 const SEARCH_PATH = '/search';
 const USED_MARKET_PATH = '/used-market';
 const LOGIN_PATH = '/login';
@@ -70,6 +77,7 @@ const MY_PAGE_PATH = '/mypage';
 const STORE_DETAIL_PATH_PATTERN = /^\/stores\/[1-9]\d*$/;
 
 type AppRoute =
+  | { page: 'home' }
   | { page: 'search' }
   | { page: 'storeDetail' }
   | { page: 'usedMarket' }
@@ -88,6 +96,14 @@ function removeTrailingSlash(pathname: string): string {
 
 function resolveAppRoute(pathname: string): AppRoute {
   const normalizedPathname = removeTrailingSlash(pathname);
+
+  if (normalizedPathname === HOME_PATH) {
+    return { page: 'home' };
+  }
+
+  if (normalizedPathname === SEARCH_PATH) {
+    return { page: 'search' };
+  }
 
   if (normalizedPathname === USED_MARKET_PATH) {
     return { page: 'usedMarket' };
@@ -123,32 +139,40 @@ function resolveAppRoute(pathname: string): AppRoute {
     return { page: 'authCallback', provider };
   }
 
-  return { page: 'search' };
+  return { page: 'home' };
 }
 
-function createCanonicalSearchUrl(): string {
-  return `${SEARCH_PATH}${window.location.search}${window.location.hash}`;
+function createCanonicalUrl(pathname: string): string {
+  return `${pathname}${window.location.search}${window.location.hash}`;
 }
 
 export default function App() {
   const route = resolveAppRoute(window.location.pathname);
-  const shouldRedirectToSearch =
-    route.page === 'search' && window.location.pathname !== SEARCH_PATH;
+  const canonicalPath =
+    route.page === 'home'
+      ? HOME_PATH
+      : route.page === 'search'
+        ? SEARCH_PATH
+        : null;
+  const shouldReplacePath =
+    canonicalPath !== null && window.location.pathname !== canonicalPath;
 
   useEffect(() => {
-    if (!shouldRedirectToSearch) {
+    if (!shouldReplacePath || canonicalPath === null) {
       return;
     }
 
     window.history.replaceState(
       window.history.state,
       '',
-      createCanonicalSearchUrl(),
+      createCanonicalUrl(canonicalPath),
     );
-  }, [shouldRedirectToSearch]);
+  }, [canonicalPath, shouldReplacePath]);
 
   const routeElement =
-    route.page === 'storeDetail' ? (
+    route.page === 'home' ? (
+      <HomeRoute />
+    ) : route.page === 'storeDetail' ? (
       <StoreDetailRoute />
     ) : route.page === 'usedMarket' ? (
       <UsedMarketRoute />
