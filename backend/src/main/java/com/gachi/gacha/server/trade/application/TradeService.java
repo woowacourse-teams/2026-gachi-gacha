@@ -60,7 +60,7 @@ public class TradeService {
                 .title(command.title())
                 .description(command.description())
                 .desiredProduction(command.desiredProduction())
-                .purchaseStoreAddress(command.purchaseStoreAddress())
+                .purchaseStore(command.purchaseStore())
                 .tradePlace(command.tradePlace())
                 .availableTime(command.availableTime())
                 .status(TradeStatus.AVAILABLE)
@@ -113,7 +113,7 @@ public class TradeService {
                 command.title(),
                 command.description(),
                 command.desiredProduction(),
-                command.purchaseStoreAddress(),
+                command.purchaseStore(),
                 command.tradePlace(),
                 command.availableTime()
         );

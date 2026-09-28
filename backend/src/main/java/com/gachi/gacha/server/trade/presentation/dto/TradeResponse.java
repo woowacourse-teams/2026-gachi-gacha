@@ -15,8 +15,8 @@ public record TradeResponse(
         String desiredProduction,
         List<String> categories,
         TradeStatus status,
-        String purchaseStoreAddress,
-        String tradePlace,
+        PlaceResponse purchaseStore,
+        PlaceResponse tradePlace,
         LocalDateTime availableTime,
         List<String> imageUrls,
         LocalDateTime createdAt,
@@ -31,8 +31,8 @@ public record TradeResponse(
                 .desiredProduction(tradeInfo.desiredProduction())
                 .categories(tradeInfo.categories())
                 .status(tradeInfo.status())
-                .purchaseStoreAddress(tradeInfo.purchaseStoreAddress())
-                .tradePlace(tradeInfo.tradePlace())
+                .purchaseStore(PlaceResponse.from(tradeInfo.purchaseStore()))
+                .tradePlace(PlaceResponse.from(tradeInfo.tradePlace()))
                 .availableTime(tradeInfo.availableTime())
                 .imageUrls(tradeInfo.imageUrls())
                 .createdAt(tradeInfo.createdAt())

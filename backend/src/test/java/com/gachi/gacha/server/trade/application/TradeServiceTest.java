@@ -29,9 +29,9 @@ import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import com.gachi.gacha.server.trade.domain.exception.CategoryNotFoundException;
 import com.gachi.gacha.server.trade.domain.exception.TradeAccessDeniedException;
+import com.gachi.gacha.server.trade.domain.Place;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -93,8 +93,8 @@ class TradeServiceTest {
                 .title("쿠로미 피규어 교환해요")
                 .description("개봉만 한 상품입니다.")
                 .desiredProduction("시나모롤")
-                .purchaseStoreAddress("서울특별시 마포구 홍대 가챠샵")
-                .tradePlace("홍대입구역 8번 출구")
+                .purchaseStore(new Place("가챠샵 홍대점", "서울특별시 마포구 양화로 100", 37.5563, 126.9236))
+                .tradePlace(new Place("홍대입구역 8번 출구", "서울특별시 마포구 양화로 160", 37.5570, 126.9245))
                 .availableTime(LocalDateTime.of(2026, 9, 20, 19, 0))
                 .status(TradeStatus.AVAILABLE)
                 .build();

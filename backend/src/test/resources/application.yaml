@@ -44,8 +44,9 @@ instagram:
 
 jwt:
   secret-key: "test-secret-key-for-testing-purposes-only-1234567890"
-  access-token-expiration-day: 3600000
-
+  access-token-expiration-minutes: 30
+  refresh-token-expiration-day: 14
+  
 cors:
   allowed-origin-patterns:
     - http://localhost:*

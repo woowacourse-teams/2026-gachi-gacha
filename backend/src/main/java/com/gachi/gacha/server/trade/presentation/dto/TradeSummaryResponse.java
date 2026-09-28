@@ -14,7 +14,7 @@ public record TradeSummaryResponse(
         TradeStatus status,
         List<String> categories,
         String thumbnailUrl,
-        String tradePlace,
+        PlaceSummaryResponse tradePlace,
         LocalDateTime createdAt
 ) {
     public static TradeSummaryResponse from(final TradeSummaryInfo tradeSummaryInfo) {
@@ -25,7 +25,7 @@ public record TradeSummaryResponse(
                 .status(tradeSummaryInfo.status())
                 .categories(tradeSummaryInfo.categories())
                 .thumbnailUrl(tradeSummaryInfo.thumbnailUrl())
-                .tradePlace(tradeSummaryInfo.tradePlace())
+                .tradePlace(PlaceSummaryResponse.from(tradeSummaryInfo.tradePlace()))
                 .createdAt(tradeSummaryInfo.createdAt())
                 .build();
     }
