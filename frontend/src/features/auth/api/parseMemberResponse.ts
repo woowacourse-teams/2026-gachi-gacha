@@ -21,12 +21,15 @@ function isAuthMember(value: unknown): value is AuthMember {
   );
 }
 
-export function parseMemberResponse(value: unknown): AuthMember {
+export function parseMemberResponse(
+  value: unknown,
+  successCodes: readonly string[] = ['C000'],
+): AuthMember {
   if (!isApiResponse(value)) {
     throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
   }
 
-  if (value.code !== 'C000') {
+  if (!successCodes.includes(value.code)) {
     throw new Error(value.message);
   }
 

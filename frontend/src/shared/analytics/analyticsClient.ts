@@ -27,7 +27,9 @@ async function loadAnalyticsClient() {
       disable_session_recording: false,
       person_profiles: 'identified_only',
       session_recording: {
+        blockSelector: '[data-private-media]',
         maskAllInputs: true,
+        maskTextSelector: '[data-private]',
       },
       loaded: (client) => {
         client.register(analyticsContext);

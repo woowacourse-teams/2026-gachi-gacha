@@ -70,7 +70,7 @@ const CHAT_PATH = '/chat';
 const NOTIFICATIONS_PATH = '/notifications';
 const MY_PAGE_PATH = '/mypage';
 const STORE_DETAIL_PATH_PATTERN = /^\/stores\/[1-9]\d*$/;
-const AUTH_CALLBACK_PATH_PATTERN = /^\/auth\/callback\/([^/]+)$/;
+const AUTH_CALLBACK_PATH_PATTERN = /^\/oauth\/login\/([^/]+)$/;
 
 type AppRoute =
   | { page: 'search' }

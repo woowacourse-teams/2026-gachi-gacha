@@ -137,7 +137,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
             title={isAuthenticated ? '마이페이지' : '로그인'}
           >
             {isAuthenticated && member?.profileImageUrl ? (
-              <Avatar src={member.profileImageUrl} alt="" />
+              <Avatar src={member.profileImageUrl} alt="" data-private-media />
             ) : (
               <AccountIcon />
             )}

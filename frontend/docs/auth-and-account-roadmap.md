@@ -29,17 +29,17 @@
 
 현재 refresh token 발급·갱신, 서버 로그아웃, 토큰 폐기 API는 없다. 따라서 프런트 MVP는 access token을 탭 단위 `sessionStorage`에 보관하고 만료와 `401`을 일관되게 처리한다. 공개 운영 전에는 HttpOnly 쿠키 기반 refresh token 회전과 로그아웃 계약을 백엔드와 별도로 확정한다.
 
-현재 OAuth 완료 엔드포인트는 JSON을 반환한다. 브라우저가 JSON 화면에 머물지 않도록 제공자 콘솔과 서버 환경 변수의 redirect URI를 프런트 콜백(`/auth/callback/{provider}`)으로 맞추고, 콜백 화면이 기존 로그인 완료 API를 호출하는 흐름을 우선 검증한다. 이때 OAuth 시작 과정에서 발급된 서버 세션을 전달하기 위해 콜백 요청에는 credentials 설정이 필요하다.
+현재 OAuth 완료 엔드포인트는 JSON을 반환한다. 브라우저가 JSON 화면에 머물지 않도록 제공자 콘솔과 서버 환경 변수의 redirect URI를 프런트 콜백(`/oauth/login/{provider}`)으로 맞추고, 콜백 화면이 기존 로그인 완료 API를 호출하는 흐름을 우선 검증한다. 이때 OAuth 시작 과정에서 발급된 서버 세션을 전달하기 위해 콜백 요청에는 credentials 설정이 필요하다.
 
 ### 환경별 OAuth 콜백 설정
 
 백엔드의 `KAKAO_REDIRECT_URL`, `NAVER_REDIRECT_URL`과 각 소셜 제공자 콘솔에 등록한 callback URL은 반드시 동일해야 한다.
 
-| 환경 | 카카오                                      | 네이버                                      |
-| ---- | ------------------------------------------- | ------------------------------------------- |
-| 로컬 | `http://localhost:3000/auth/callback/kakao` | `http://localhost:3000/auth/callback/naver` |
-| DEV  | `{DEV_FRONTEND_URL}/auth/callback/kakao`    | `{DEV_FRONTEND_URL}/auth/callback/naver`    |
-| PROD | `{PROD_FRONTEND_URL}/auth/callback/kakao`   | `{PROD_FRONTEND_URL}/auth/callback/naver`   |
+| 환경 | 카카오                                    | 네이버                                    |
+| ---- | ----------------------------------------- | ----------------------------------------- |
+| 로컬 | `http://localhost:3000/oauth/login/kakao` | `http://localhost:3000/oauth/login/naver` |
+| DEV  | `{DEV_FRONTEND_URL}/oauth/login/kakao`    | `{DEV_FRONTEND_URL}/oauth/login/naver`    |
+| PROD | `{PROD_FRONTEND_URL}/oauth/login/kakao`   | `{PROD_FRONTEND_URL}/oauth/login/naver`   |
 
 - 로컬 Webpack 서버는 `/api`를 `API_PROXY_TARGET`(기본 `http://localhost:8080`)으로 전달한다.
 - 배포 Nginx도 프런트 도메인의 `/api/v1`을 백엔드로 전달해야 한다.
@@ -52,7 +52,7 @@
 2. `feat: 인증 API와 세션 상태 기반 추가`
    - 로그인 응답·회원 응답 파서, 토큰 저장소, 인증 요청, 복원·만료·`401` 처리를 구현한다.
 3. `feat: 소셜 로그인과 콜백 흐름 추가`
-   - `/login`, `/auth/callback/kakao`, `/auth/callback/naver`, 안전한 `returnTo` 복귀를 구현한다.
+   - `/login`, `/oauth/login/kakao`, `/oauth/login/naver`, 안전한 `returnTo` 복귀를 구현한다.
 4. `feat: 로그인 상태별 헤더 액션 추가`
    - 데스크톱과 모바일에서 채팅·알림·로그인/마이페이지 상태를 구현한다.
 5. `feat: 사용자 기능 보호 라우팅 추가`
