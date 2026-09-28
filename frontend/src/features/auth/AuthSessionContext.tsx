@@ -10,7 +10,12 @@ import {
 
 import { AuthApiError } from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
+import { deleteCurrentMember } from './api/deleteCurrentMember';
 import { getCurrentMember } from './api/getCurrentMember';
+import {
+  updateCurrentMember,
+  type UpdateCurrentMemberInput,
+} from './api/updateCurrentMember';
 import type { AuthMember } from './authMemberType';
 import {
   clearAccessToken,
@@ -25,6 +30,8 @@ interface AuthSessionValue {
   member: AuthMember | null;
   errorMessage: string | null;
   authenticate: (accessToken: string) => Promise<void>;
+  updateProfile: (input: UpdateCurrentMemberInput) => Promise<void>;
+  deleteAccount: () => Promise<void>;
   logout: () => void;
   retry: () => void;
 }
@@ -148,6 +155,22 @@ export function AuthSessionProvider({
     }
   }, []);
 
+  const updateProfile = useCallback(async (input: UpdateCurrentMemberInput) => {
+    const updatedMember = await updateCurrentMember(input);
+
+    setState({
+      status: 'authenticated',
+      member: updatedMember,
+      errorMessage: null,
+    });
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    await deleteCurrentMember();
+    clearAccessToken();
+    setState(GUEST_STATE);
+  }, []);
+
   const logout = useCallback(() => {
     clearAccessToken();
     setState(GUEST_STATE);
@@ -161,10 +184,12 @@ export function AuthSessionProvider({
     () => ({
       ...state,
       authenticate,
+      updateProfile,
+      deleteAccount,
       logout,
       retry,
     }),
-    [authenticate, logout, retry, state],
+    [authenticate, deleteAccount, logout, retry, state, updateProfile],
   );
 
   return (
