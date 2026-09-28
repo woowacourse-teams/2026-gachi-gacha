@@ -67,7 +67,11 @@ oauth:
     scope:
       - openid
 jwt:
-  access-token-expiration-day: ${JWT_EXPIRATION_DAY}
+  access-token-expiration-minutes: ${JWT_EXPIRATION_DAY}
+  refresh-token-expirationDay: ${JWT_REFRESH_EXPIRATION_DAY}
+  refresh-cleanup:
+    cron: ${REFRESH_CLEAN_TIME:0 0 4 * * *}
   secret-key: ${JWT_SECRET_KEY}
+
 cors:
   allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS}
