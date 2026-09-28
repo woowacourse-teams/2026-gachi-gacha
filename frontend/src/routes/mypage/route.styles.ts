@@ -80,6 +80,32 @@ export const ProfileIdentity = styled.div`
   gap: ${space.md};
 `;
 
+export const ProfileEditButton = styled.button`
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  margin-top: ${space.lg};
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(217 59 84 / 24%);
+  border-radius: ${radius.control};
+  background: rgb(255 255 255 / 68%);
+  color: ${color.primary};
+  cursor: pointer;
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.bold};
+  gap: ${space.xs};
+
+  &:hover {
+    background: ${color.surface};
+  }
+
+  &:focus-visible {
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+`;
+
 export const ProfileImage = styled.img`
   width: 72px;
   height: 72px;
@@ -146,6 +172,43 @@ export const ProfileDetail = styled.a`
     box-shadow: ${focusRing};
     outline: none;
   }
+`;
+
+export const ProfileDetailButton = styled.button`
+  display: grid;
+  width: 100%;
+  min-height: 56px;
+  padding: ${space.sm};
+  align-items: center;
+  border: 0;
+  border-radius: ${radius.control};
+  background: transparent;
+  color: ${color.text};
+  cursor: pointer;
+  font: inherit;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: ${space.sm};
+  text-align: left;
+
+  &:hover {
+    background: rgb(255 255 255 / 70%);
+  }
+
+  &:focus-visible {
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+`;
+
+export const PageNotice = styled.p`
+  padding: ${space.sm} ${space.md};
+  border-radius: ${radius.control};
+  margin: ${space.md} 0 0;
+  background: ${color.primarySoft};
+  color: ${color.primary};
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.bold};
+  line-height: ${lineHeight.body};
 `;
 
 export const ProfileDetailIcon = styled.span`
@@ -511,5 +574,9 @@ export const AccountMenuDescription = styled.span`
 `;
 
 export const LogoutMenuButton = styled(AccountMenuButton)`
+  color: ${color.primary};
+`;
+
+export const DeleteAccountMenuButton = styled(AccountMenuButton)`
   color: ${color.primary};
 `;

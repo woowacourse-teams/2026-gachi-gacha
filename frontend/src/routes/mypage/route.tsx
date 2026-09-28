@@ -11,7 +11,9 @@ import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
+import { AccountDeletionDialog } from './components/AccountDeletionDialog';
 import { MyPageIcon } from './components/MyPageIcon';
+import { ProfileEditDialog } from './components/ProfileEditDialog';
 import { SupportInquiryDialog } from './components/SupportInquiryDialog';
 import {
   AccountMenu,
@@ -27,6 +29,7 @@ import {
   CardTitle,
   Content,
   Dashboard,
+  DeleteAccountMenuButton,
   EmptyIcon,
   Heading,
   InterestBody,
@@ -37,14 +40,17 @@ import {
   MemberName,
   Page,
   PageHeader,
+  PageNotice,
   PreparationBadge,
   ProfileCard,
   ProfileDetail,
+  ProfileDetailButton,
   ProfileDetailCopy,
   ProfileDetailIcon,
   ProfileDetailLabel,
   ProfileDetailValue,
   ProfileDetails,
+  ProfileEditButton,
   ProfileFallback,
   ProfileIdentity,
   ProfileImage,
@@ -102,7 +108,7 @@ function getTradeMeta(trade: TradeSummary): string {
 }
 
 export function MyPageRoute() {
-  const { member, logout } = useAuthSession();
+  const { member, deleteAccount, logout, updateProfile } = useAuthSession();
   const {
     recentTrades,
     totalTradeCount,
@@ -112,6 +118,9 @@ export function MyPageRoute() {
     retry,
   } = useMyPageTrades();
   const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
+  const [profileNotice, setProfileNotice] = useState<string | null>(null);
 
   if (!member) {
     return <PageLoadingFallback label="회원 정보를 확인하고 있어요." />;
@@ -130,6 +139,11 @@ export function MyPageRoute() {
     window.location.replace('/search');
   }
 
+  async function handleDeleteAccount() {
+    await deleteAccount();
+    window.location.replace('/search');
+  }
+
   return (
     <Page>
       <AppHeader
@@ -144,6 +158,10 @@ export function MyPageRoute() {
             내 교환 활동과 관심 가챠·매장을 한곳에서 확인해요.
           </Subheading>
         </PageHeader>
+
+        {profileNotice && (
+          <PageNotice role="status">{profileNotice}</PageNotice>
+        )}
 
         <Dashboard>
           <Sidebar>
@@ -170,8 +188,19 @@ export function MyPageRoute() {
                 </div>
               </ProfileIdentity>
 
+              <ProfileEditButton
+                type="button"
+                onClick={() => setIsProfileDialogOpen(true)}
+              >
+                <MyPageIcon name="edit" size={18} />
+                프로필 수정
+              </ProfileEditButton>
+
               <ProfileDetails>
-                <ProfileDetail href="/search">
+                <ProfileDetailButton
+                  type="button"
+                  onClick={() => setIsProfileDialogOpen(true)}
+                >
                   <ProfileDetailIcon>
                     <MyPageIcon name="location" size={20} />
                   </ProfileDetailIcon>
@@ -182,7 +211,7 @@ export function MyPageRoute() {
                     </ProfileDetailValue>
                   </ProfileDetailCopy>
                   <MyPageIcon name="chevron" size={18} />
-                </ProfileDetail>
+                </ProfileDetailButton>
                 <ProfileDetail href="/notifications">
                   <ProfileDetailIcon>
                     <MyPageIcon name="bell" size={20} />
@@ -368,6 +397,21 @@ export function MyPageRoute() {
                   </AccountMenuCopy>
                   <MyPageIcon name="chevron" size={18} />
                 </LogoutMenuButton>
+                <DeleteAccountMenuButton
+                  type="button"
+                  onClick={() => setIsDeletionDialogOpen(true)}
+                >
+                  <AccountMenuIcon>
+                    <MyPageIcon name="delete" />
+                  </AccountMenuIcon>
+                  <AccountMenuCopy>
+                    <AccountMenuLabel>회원 탈퇴</AccountMenuLabel>
+                    <AccountMenuDescription>
+                      가치가챠 계정을 삭제해요
+                    </AccountMenuDescription>
+                  </AccountMenuCopy>
+                  <MyPageIcon name="chevron" size={18} />
+                </DeleteAccountMenuButton>
               </AccountMenu>
             </Card>
           </Content>
@@ -377,6 +421,18 @@ export function MyPageRoute() {
       <SupportInquiryDialog
         open={isSupportDialogOpen}
         onClose={() => setIsSupportDialogOpen(false)}
+      />
+      <ProfileEditDialog
+        open={isProfileDialogOpen}
+        member={member}
+        onClose={() => setIsProfileDialogOpen(false)}
+        onSave={updateProfile}
+        onSaved={() => setProfileNotice('프로필 정보를 저장했어요.')}
+      />
+      <AccountDeletionDialog
+        open={isDeletionDialogOpen}
+        onClose={() => setIsDeletionDialogOpen(false)}
+        onDelete={handleDeleteAccount}
       />
     </Page>
   );

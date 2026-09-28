@@ -1,6 +1,8 @@
 export type MyPageIconName =
   | 'bell'
   | 'chevron'
+  | 'delete'
+  | 'edit'
   | 'exchange'
   | 'heart'
   | 'location'
@@ -134,6 +136,34 @@ export function MyPageIcon({ name, size = 22 }: MyPageIconProps) {
       <svg {...commonProps}>
         <path
           d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (name === 'edit') {
+    return (
+      <svg {...commonProps}>
+        <path
+          d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  if (name === 'delete') {
+    return (
+      <svg {...commonProps}>
+        <path
+          d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinecap="round"
