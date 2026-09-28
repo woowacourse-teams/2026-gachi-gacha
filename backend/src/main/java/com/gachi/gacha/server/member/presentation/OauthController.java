@@ -1,10 +1,11 @@
 package com.gachi.gacha.server.member.presentation;
 
-import com.gachi.gacha.server.common.auth.jwt.JwtProvider;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.application.OauthService;
+import com.gachi.gacha.server.member.application.TokenService;
 import com.gachi.gacha.server.member.application.dto.LoginInfo;
+import com.gachi.gacha.server.member.application.dto.TokenInfo;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.member.domain.exception.InvalidOauthStateException;
 import com.gachi.gacha.server.member.domain.exception.OauthAuthenticationDeniedException;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class OauthController {
 
     private final OauthService oauthService;
-    private final JwtProvider jwtProvider;
+    private final TokenService tokenService;
     private final OauthNonceSessionManager oauthNonceSessionManager;
 
     @GetMapping("/{provider}")
@@ -60,7 +61,7 @@ public class OauthController {
             throw new OauthAuthenticationDeniedException(ErrorCode.OAUTH_AUTHENTICATION_DENIED);
         }
         LoginInfo info = oauthService.login(provider, code, nonce);
-        String token = jwtProvider.createToken(info.memberId());
-        return BaseResponse.ok(new LoginResponse(token));
+        TokenInfo tokens = tokenService.issue(info.memberId());
+        return BaseResponse.ok(new LoginResponse(tokens.accessToken(), tokens.refreshToken()));
     }
 }
