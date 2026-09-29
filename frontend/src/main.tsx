@@ -5,6 +5,14 @@ import { BrowserRouter } from 'react-router';
 import App from '@/App';
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
+import { AppErrorBoundary } from '@/shared/errorMonitoring/AppErrorBoundary';
+import {
+  getReactRootErrorHandlers,
+  initializeErrorMonitoring,
+} from '@/shared/errorMonitoring/errorMonitoringClient';
+import { ErrorMonitoringContext } from '@/shared/errorMonitoring/ErrorMonitoringContext';
+
+initializeErrorMonitoring();
 
 const container = document.getElementById('root');
 
@@ -25,13 +33,21 @@ async function enableMocking(): Promise<void> {
 void enableMocking().then(() => {
   initializeAnalytics();
 
-  createRoot(container).render(
+  const errorHandlers = getReactRootErrorHandlers();
+  const root = errorHandlers
+    ? createRoot(container, errorHandlers)
+    : createRoot(container);
+
+  root.render(
     <StrictMode>
-      <BrowserRouter>
-        <AuthSessionProvider>
-          <App />
-        </AuthSessionProvider>
-      </BrowserRouter>
+      <AppErrorBoundary>
+        <BrowserRouter>
+          <AuthSessionProvider>
+            <ErrorMonitoringContext />
+            <App />
+          </AuthSessionProvider>
+        </BrowserRouter>
+      </AppErrorBoundary>
     </StrictMode>,
   );
 });

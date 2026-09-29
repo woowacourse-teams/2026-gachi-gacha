@@ -3,6 +3,9 @@ declare const __USE_MSW__: boolean;
 declare const __POSTHOG_ENABLED__: boolean;
 declare const __POSTHOG_API_KEY__: string;
 declare const __POSTHOG_API_HOST__: string;
+declare const __SENTRY_ENABLED__: boolean;
+declare const __SENTRY_DSN__: string;
+declare const __SENTRY_RELEASE__: string;
 declare const __APP_ENV__: string;
 declare const __APP_VERSION__: string;
 
