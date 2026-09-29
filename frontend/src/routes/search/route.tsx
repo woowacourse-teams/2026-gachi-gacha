@@ -1,5 +1,6 @@
 import { createStoreDetailUrl } from '@/domains/store/storeRoute';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
+import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
@@ -25,7 +26,7 @@ const HONGDAE_SEARCH_CENTER = {
 const STORE_SEARCH_RADIUS_METERS = 3000;
 
 function openStoreDetail(storeId: number) {
-  window.location.assign(createStoreDetailUrl(storeId));
+  assignBrowserLocation(createStoreDetailUrl(storeId));
 }
 
 function revealPageHeader() {

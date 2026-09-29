@@ -7,6 +7,7 @@ import {
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
@@ -67,7 +68,7 @@ export function LoginRoute() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      window.location.replace(returnPath);
+      replaceBrowserLocation(returnPath);
     }
   }, [returnPath, status]);
 

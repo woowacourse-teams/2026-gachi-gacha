@@ -1,9 +1,10 @@
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
+import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 
 import { GachaSearchBar } from './GachaSearchBar';
 
 function openGachaSearchResults(gachaId: number) {
-  window.location.assign(createGachaSearchResultsUrl(gachaId));
+  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
 }
 
 export function GachaSearchNavigationBar() {

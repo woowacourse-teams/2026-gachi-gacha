@@ -8,6 +8,10 @@ import type {
 } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
+import {
+  assignBrowserLocation,
+  replaceBrowserLocation,
+} from '@/shared/browser/browserNavigation';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -91,7 +95,7 @@ const tradeDateFormatter = new Intl.DateTimeFormat('ko-KR', {
 });
 
 function openGachaSearchResults(gachaId: number) {
-  window.location.assign(createGachaSearchResultsUrl(gachaId));
+  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
 }
 
 function formatTradeDate(createdAt: string): string {
@@ -138,12 +142,12 @@ export function MyPageRoute() {
 
   function handleLogout() {
     logout();
-    window.location.replace('/search');
+    replaceBrowserLocation('/search');
   }
 
   async function handleDeleteAccount() {
     await deleteAccount();
-    window.location.replace('/search');
+    replaceBrowserLocation('/search');
   }
 
   return (
