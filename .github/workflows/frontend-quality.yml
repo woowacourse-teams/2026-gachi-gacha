@@ -1,0 +1,77 @@
+name: Frontend Quality
+
+on:
+  pull_request:
+    branches:
+      - frontend-dev
+      - main
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-quality.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Frontend Quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Check formatting
+        run: pnpm format:check
+
+      - name: Check types
+        run: pnpm typecheck
+
+      - name: Run unit and integration tests
+        run: pnpm test --runInBand --coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage-${{ github.run_id }}
+          path: frontend/coverage
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build Storybook
+        run: pnpm build-storybook
+
+      - name: Build application
+        env:
+          APP_ENV: ci
+          KAKAO_MAP_KEY: ci-placeholder
+          POSTHOG_ENABLED: "false"
+        run: pnpm build
