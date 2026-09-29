@@ -14,22 +14,24 @@ export const Header = styled.header`
   }
 `;
 
-export const HeaderContent = styled.div`
+export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
   display: grid;
   min-height: 76px;
   padding: 12px 32px;
   align-items: center;
-  grid-template-columns:
-    minmax(210px, 0.8fr) minmax(280px, 720px) auto
-    auto;
+  grid-template-columns: ${({ $hasSearch }) =>
+    $hasSearch
+      ? 'minmax(210px, 0.8fr) minmax(280px, 720px) auto auto'
+      : 'minmax(210px, 1fr) auto auto'};
   gap: 20px;
 
   @media (max-width: 1180px) {
     padding: 10px 20px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'brand navigation actions'
-      'search search search';
+    grid-template-areas: ${({ $hasSearch }) =>
+      $hasSearch
+        ? "'brand navigation actions' 'search search search'"
+        : "'brand navigation actions'"};
     gap: 10px 18px;
   }
 

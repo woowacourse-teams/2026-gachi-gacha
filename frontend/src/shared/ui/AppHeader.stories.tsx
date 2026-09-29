@@ -77,6 +77,7 @@ export const MapActive: Story = {};
 export const HomeActive: Story = {
   args: {
     currentPath: '/',
+    search: undefined,
   },
 };
 

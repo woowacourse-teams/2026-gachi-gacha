@@ -1,9 +1,10 @@
 import styled from '@emotion/styled';
 
+import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+
 import ProductCard from './components/ProductCard';
 import TradingToolbar from './components/TradingToolbar';
 import type { SecondhandItem } from './model/secondhandItem';
-import Header from '../home/components/Header';
 
 interface SecondhandPageProps {
   items: SecondhandItem[];
@@ -12,7 +13,7 @@ interface SecondhandPageProps {
 export default function SecondhandPage({ items }: SecondhandPageProps) {
   return (
     <Page>
-      <Header activeItem="중고거래" />
+      <AppGachaSearchHeader currentPath="/used-market" />
 
       <Main>
         <TradingToolbar

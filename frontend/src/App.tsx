@@ -1,8 +1,17 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense } from 'react';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+} from 'react-router';
 
-import { parseOAuthCallbackProvider } from '@/features/auth/oauthCallbackPath';
-import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { OAUTH_CALLBACK_PATH_PREFIX } from '@/features/auth/oauthCallbackPath';
+import { isOAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { HomePage } from '@/routes/home';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -60,127 +69,98 @@ const MyPageRoute = lazy(async () => {
   return { default: routeModule.MyPageRoute };
 });
 
-const SEARCH_PATH = '/search';
-const USED_MARKET_PATH = '/used-market';
-const LOGIN_PATH = '/login';
-const PRIVACY_PATH = '/privacy';
-const CHAT_PATH = '/chat';
-const NOTIFICATIONS_PATH = '/notifications';
-const MY_PAGE_PATH = '/mypage';
-const STORE_DETAIL_PATH_PATTERN = /^\/stores\/[1-9]\d*$/;
+const HOME_PATH = '/';
+const STORE_ID_PATTERN = /^[1-9]\d*$/;
 
-type AppRoute =
-  | { page: 'search' }
-  | { page: 'storeDetail' }
-  | { page: 'usedMarket' }
-  | { page: 'login' }
-  | { page: 'privacy' }
-  | { page: 'chat' }
-  | { page: 'notifications' }
-  | { page: 'mypage' }
-  | { page: 'authCallback'; provider: OAuthProvider };
+function RedirectToHome() {
+  const { search, hash } = useLocation();
 
-function removeTrailingSlash(pathname: string): string {
-  return pathname.length > 1 && pathname.endsWith('/')
-    ? pathname.slice(0, -1)
-    : pathname;
+  return (
+    <Navigate
+      replace
+      to={{
+        pathname: HOME_PATH,
+        search,
+        hash,
+      }}
+    />
+  );
 }
 
-function resolveAppRoute(pathname: string): AppRoute {
-  const normalizedPathname = removeTrailingSlash(pathname);
+function CanonicalRoutes() {
+  const location = useLocation();
 
-  if (normalizedPathname === USED_MARKET_PATH) {
-    return { page: 'usedMarket' };
+  if (location.pathname.length > 1 && location.pathname.endsWith('/')) {
+    return (
+      <Navigate
+        replace
+        to={{
+          pathname: location.pathname.slice(0, -1),
+          search: location.search,
+          hash: location.hash,
+        }}
+      />
+    );
   }
 
-  if (normalizedPathname === LOGIN_PATH) {
-    return { page: 'login' };
-  }
-
-  if (normalizedPathname === PRIVACY_PATH) {
-    return { page: 'privacy' };
-  }
-
-  if (normalizedPathname === CHAT_PATH) {
-    return { page: 'chat' };
-  }
-
-  if (normalizedPathname === NOTIFICATIONS_PATH) {
-    return { page: 'notifications' };
-  }
-
-  if (normalizedPathname === MY_PAGE_PATH) {
-    return { page: 'mypage' };
-  }
-
-  if (STORE_DETAIL_PATH_PATTERN.test(normalizedPathname)) {
-    return { page: 'storeDetail' };
-  }
-
-  const provider = parseOAuthCallbackProvider(normalizedPathname);
-
-  if (provider) {
-    return { page: 'authCallback', provider };
-  }
-
-  return { page: 'search' };
+  return (
+    <Routes>
+      <Route path={HOME_PATH} element={<HomePage />} />
+      <Route path="/search" element={<SearchRoute />} />
+      <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
+      <Route path="/used-market" element={<UsedMarketRoute />} />
+      <Route path="/login" element={<LoginRoute />} />
+      <Route path="/privacy" element={<PrivacyRoute />} />
+      <Route
+        path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}
+        element={<AuthCallbackRouteElement />}
+      />
+      <Route element={<ProtectedRoutes />}>
+        <Route path="/chat" element={<ChatRoute />} />
+        <Route path="/notifications" element={<NotificationsRoute />} />
+        <Route path="/mypage" element={<MyPageRoute />} />
+      </Route>
+      <Route path="*" element={<RedirectToHome />} />
+    </Routes>
+  );
 }
 
-function createCanonicalSearchUrl(): string {
-  return `${SEARCH_PATH}${window.location.search}${window.location.hash}`;
+function ProtectedRoutes() {
+  return (
+    <RequireAuth>
+      <Outlet />
+    </RequireAuth>
+  );
+}
+
+function StoreDetailRouteElement() {
+  const { storeId } = useParams<'storeId'>();
+
+  if (!storeId || !STORE_ID_PATTERN.test(storeId)) {
+    return <RedirectToHome />;
+  }
+
+  return <StoreDetailRoute pathname={`/stores/${storeId}`} />;
+}
+
+function AuthCallbackRouteElement() {
+  const { provider } = useParams<'provider'>();
+
+  if (!provider || !isOAuthProvider(provider)) {
+    return <RedirectToHome />;
+  }
+
+  return <AuthCallbackRoute provider={provider} />;
 }
 
 export default function App() {
-  const route = resolveAppRoute(window.location.pathname);
-  const shouldRedirectToSearch =
-    route.page === 'search' && window.location.pathname !== SEARCH_PATH;
-
-  useEffect(() => {
-    if (!shouldRedirectToSearch) {
-      return;
-    }
-
-    window.history.replaceState(
-      window.history.state,
-      '',
-      createCanonicalSearchUrl(),
-    );
-  }, [shouldRedirectToSearch]);
-
-  const routeElement =
-    route.page === 'storeDetail' ? (
-      <StoreDetailRoute />
-    ) : route.page === 'usedMarket' ? (
-      <UsedMarketRoute />
-    ) : route.page === 'login' ? (
-      <LoginRoute />
-    ) : route.page === 'privacy' ? (
-      <PrivacyRoute />
-    ) : route.page === 'authCallback' ? (
-      <AuthCallbackRoute provider={route.provider} />
-    ) : route.page === 'chat' ? (
-      <RequireAuth>
-        <ChatRoute />
-      </RequireAuth>
-    ) : route.page === 'notifications' ? (
-      <RequireAuth>
-        <NotificationsRoute />
-      </RequireAuth>
-    ) : route.page === 'mypage' ? (
-      <RequireAuth>
-        <MyPageRoute />
-      </RequireAuth>
-    ) : (
-      <SearchRoute />
-    );
-
   return (
     <>
       <GlobalStyles />
       <Suspense
         fallback={<PageLoadingFallback label="페이지를 준비하고 있어요." />}
       >
-        {routeElement}
+        <CanonicalRoutes />
       </Suspense>
     </>
   );

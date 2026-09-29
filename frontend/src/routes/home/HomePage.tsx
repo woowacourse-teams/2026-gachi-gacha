@@ -1,14 +1,15 @@
 import styled from '@emotion/styled';
 
+import { AppHeader } from '@/shared/ui/AppHeader';
+
 import CategoryFeed from './components/CategoryFeed';
 import Footer from './components/Footer';
-import Header from './components/Header';
 import SearchHero from './components/SearchHero';
 
 export default function HomePage() {
   return (
     <Page>
-      <Header />
+      <AppHeader currentPath="/" />
 
       <Main>
         <SearchHero />

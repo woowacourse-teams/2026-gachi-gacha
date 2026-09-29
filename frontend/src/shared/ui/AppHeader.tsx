@@ -21,7 +21,7 @@ import {
 
 export interface AppHeaderProps {
   currentPath: string;
-  search: ReactNode;
+  search?: ReactNode;
 }
 
 const NAVIGATION_ITEMS = [
@@ -87,13 +87,13 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
 
   return (
     <Header>
-      <HeaderContent>
+      <HeaderContent $hasSearch={Boolean(search)}>
         <Brand href="/" aria-label="GachiGacha 홈">
           <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
           <span>GachiGacha</span>
         </Brand>
 
-        <SearchArea>{search}</SearchArea>
+        {search && <SearchArea>{search}</SearchArea>}
 
         <Navigation aria-label="주요 메뉴">
           {NAVIGATION_ITEMS.map(({ href, label }) => {
