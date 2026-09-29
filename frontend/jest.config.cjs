@@ -25,10 +25,18 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(gif|jpe?g|png|svg|webp)$': '<rootDir>/src/test/fileMock.ts',
   },
+  setupFiles: ['<rootDir>/src/test/polyfills.cjs'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   testEnvironment: 'jsdom',
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
   testMatch: ['<rootDir>/src/**/*.test.{ts,tsx}'],
   transform: {
-    '^.+\\.[jt]sx?$': 'babel-jest',
+    '^.+\\.[cm]?[jt]sx?$': 'babel-jest',
   },
+  transformIgnorePatterns: [
+    '<rootDir>/node_modules/.pnpm/(?!(?:@open-draft\\+(?:deferred-promise|logger|until)|headers-polyfill|outvariant|rettime|strict-event-emitter|until-async)@)',
+    'node_modules/(?!.pnpm|@open-draft/(?:deferred-promise|logger|until)|headers-polyfill|outvariant|rettime|strict-event-emitter|until-async)',
+  ],
 };
