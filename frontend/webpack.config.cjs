@@ -58,7 +58,12 @@ module.exports = (_env, argv) => {
         {
           test: /\.tsx?$/,
           exclude: /node_modules/,
-          use: 'ts-loader',
+          use: {
+            loader: 'ts-loader',
+            options: {
+              onlyCompileBundledFiles: true,
+            },
+          },
         },
         {
           test: /\.(png|jpe?g|gif|webp|svg)$/i,
