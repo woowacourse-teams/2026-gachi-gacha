@@ -1,6 +1,7 @@
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
+import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import { StoreDetailOverview } from './components/StoreDetailOverview';
@@ -30,7 +31,7 @@ function getStoreId(pathname: string): number | null {
 }
 
 function openGachaSearchResults(gachaId: number) {
-  window.location.assign(createGachaSearchResultsUrl(gachaId));
+  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
 }
 
 export interface StoreDetailRouteProps {

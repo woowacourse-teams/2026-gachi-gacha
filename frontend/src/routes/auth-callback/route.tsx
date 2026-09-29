@@ -9,6 +9,7 @@ import {
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
@@ -40,7 +41,7 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         await authenticate(authTokens);
 
         if (isCurrent) {
-          window.location.replace(consumeAuthReturnPath());
+          replaceBrowserLocation(consumeAuthReturnPath());
         }
       })
       .catch((error: unknown) => {

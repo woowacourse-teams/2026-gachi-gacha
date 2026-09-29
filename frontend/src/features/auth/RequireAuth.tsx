@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect } from 'react';
 
+import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import { createLoginUrl } from './authReturnPath';
@@ -19,7 +20,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
     const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-    window.location.replace(createLoginUrl(returnPath));
+    replaceBrowserLocation(createLoginUrl(returnPath));
   }, [status]);
 
   if (status !== 'authenticated') {
