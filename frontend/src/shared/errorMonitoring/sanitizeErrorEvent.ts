@@ -87,15 +87,15 @@ export function sanitizeErrorEvent(event: ErrorEvent): ErrorEvent {
   }
 
   if (event.exception) {
-    sanitizedEvent.exception = sanitizeValue(
-      event.exception,
-    ) as NonNullable<ErrorEvent['exception']>;
+    sanitizedEvent.exception = sanitizeValue(event.exception) as NonNullable<
+      ErrorEvent['exception']
+    >;
   }
 
   if (event.logentry) {
-    sanitizedEvent.logentry = sanitizeValue(
-      event.logentry,
-    ) as NonNullable<ErrorEvent['logentry']>;
+    sanitizedEvent.logentry = sanitizeValue(event.logentry) as NonNullable<
+      ErrorEvent['logentry']
+    >;
   }
 
   if (event.tags) {
