@@ -28,18 +28,18 @@
 
 ## 3. 테스트 계층과 도구
 
-| 계층          | 책임                                                        | 제안 도구                                             | 실행 시점                                   |
-| ------------- | ----------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------- |
-| 정적 검사     | 문법, 타입, 포맷, 번들 생성 가능 여부                       | ESLint, Prettier, TypeScript, Webpack                 | 로컬, 모든 PR                               |
-| 단위 테스트   | 파서, URL 생성, 토큰·라우팅 유틸처럼 입출력이 분명한 로직   | Vitest                                                | 로컬, 모든 PR                               |
-| 통합 테스트   | 컴포넌트·훅·Context·API 경계를 묶은 사용자 행동과 화면 상태 | Vitest, React Testing Library, user-event, MSW, jsdom | 로컬, 모든 PR                               |
-| 컴포넌트 상태 | 재사용 UI의 기본·로딩·오류·빈 상태와 접근성                 | Storybook, Story의 `play` 함수                        | 개발 중, 모든 PR                            |
-| E2E 스모크    | 실제 브라우저의 라우팅, 반응형 전환, 핵심 사용자 여정       | Playwright                                            | PR의 핵심 Chromium, 릴리스 전 다중 브라우저 |
-| 시각적 회귀   | 레이아웃, 간격, 색상, 뷰포트별 깨짐                         | Storybook 기반 시각 비교 도구                         | 기반 도입 후 UI 변경 PR                     |
+| 계층          | 책임                                                        | 제안 도구                                           | 실행 시점                                   |
+| ------------- | ----------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------- |
+| 정적 검사     | 문법, 타입, 포맷, 번들 생성 가능 여부                       | ESLint, Prettier, TypeScript, Webpack               | 로컬, 모든 PR                               |
+| 단위 테스트   | 파서, URL 생성, 토큰·라우팅 유틸처럼 입출력이 분명한 로직   | Jest                                                | 로컬, 모든 PR                               |
+| 통합 테스트   | 컴포넌트·훅·Context·API 경계를 묶은 사용자 행동과 화면 상태 | Jest, React Testing Library, user-event, MSW, jsdom | 로컬, 모든 PR                               |
+| 컴포넌트 상태 | 재사용 UI의 기본·로딩·오류·빈 상태와 접근성                 | Storybook, Story의 `play` 함수                      | 개발 중, 모든 PR                            |
+| E2E 스모크    | 실제 브라우저의 라우팅, 반응형 전환, 핵심 사용자 여정       | Playwright                                          | PR의 핵심 Chromium, 릴리스 전 다중 브라우저 |
+| 시각적 회귀   | 레이아웃, 간격, 색상, 뷰포트별 깨짐                         | Storybook 기반 시각 비교 도구                       | 기반 도입 후 UI 변경 PR                     |
 
 ### 도구 선택 이유
 
-- **Vitest**는 TypeScript 친화적인 빠른 러너이고 Webpack 애플리케이션에서도 별도 설정으로 사용할 수 있다. Jest와 유사한 API를 제공해 학습 비용도 낮다.
+- **Jest**는 팀이 익숙한 테스트 실행기이며 단위·통합 테스트의 실행, 격리, 모킹과 리포트를 한곳에서 관리한다. 현재 Webpack 빌드와는 별도로 Babel 변환을 두어 TypeScript와 JSX를 테스트 환경에서 실행한다.
 - **React Testing Library**는 구현 상세 대신 실제 사용 방식과 접근 가능한 DOM을 기준으로 검증하게 해 리팩터링 내성을 높인다.
 - **MSW**는 이미 브라우저와 Storybook용 핸들러가 있으므로 같은 네트워크 동작을 Node 통합 테스트에도 재사용할 수 있다.
 - **Playwright**는 격리된 브라우저 컨텍스트, 자동 대기, 실패 trace를 제공해 라우팅과 반응형 회귀의 재현 단서를 남기기 좋다.
@@ -48,7 +48,8 @@
 참고 문서:
 
 - [React Testing Library 소개](https://testing-library.com/docs/react-testing-library/intro/)
-- [Vitest 기능과 jsdom 설정](https://vitest.dev/guide/features)
+- [Jest 시작하기](https://jestjs.io/docs/getting-started)
+- [Jest 설정](https://jestjs.io/docs/configuration)
 - [MSW 문서](https://mswjs.io/docs/)
 - [Playwright 권장 사항](https://playwright.dev/docs/best-practices)
 - [Storybook UI 테스트](https://storybook.js.org/docs/writing-tests)
@@ -134,7 +135,8 @@ frontend/
 ├── e2e/
 │   ├── fixtures/
 │   └── *.spec.ts
-├── vitest.config.ts
+├── babel.config.cjs
+├── jest.config.cjs
 └── playwright.config.ts
 ```
 
@@ -155,10 +157,11 @@ frontend/
 2. `pnpm lint`
 3. `pnpm format:check`
 4. `pnpm typecheck`
-5. `pnpm test:unit --run --coverage`
+5. `pnpm test --runInBand --coverage`
 6. `pnpm build-storybook`
 7. `pnpm build`
-8. 핵심 Chromium E2E
+
+핵심 Chromium E2E는 P0 단위·통합 테스트가 안정된 뒤 별도 이슈에서 품질 게이트에 추가한다. 시각적 회귀도 같은 방식으로 후속 도입한다.
 
 `frontend/**` 또는 관련 workflow가 바뀐 PR에만 실행하고, 동일 SHA의 중복 설치와 빌드는 캐시·job 구성으로 줄인다. `frontend-dev`와 `main` 보호 규칙에는 이 품질 검사를 required status check로 등록한다.
 
@@ -184,19 +187,36 @@ frontend/
 각 단계는 별도 이슈와 작은 PR로 진행한다.
 
 1. **전략 합의**: 이 문서를 리뷰하고 P0 시나리오와 도구를 확정한다.
-2. **기반 구축**: Vitest, Testing Library, jsdom, MSW Node server, 공통 render와 `test` 스크립트를 추가한다.
-3. **P0 단위·통합 테스트**: 검색 파서/URL, 인증 callback·복귀, 보호 라우팅부터 작성한다.
+2. **기반 구축**: Jest, Testing Library, jsdom, MSW Node server, 공통 render와 `test` 스크립트를 추가한다.
+3. **P0 단위·통합 테스트**: 아래의 합의된 시나리오를 작성하고 이번 제출 범위를 완료한다.
 4. **PR 품질 워크플로**: 정적 검사, 단위·통합 테스트, Storybook/앱 빌드를 required check로 연결한다.
 5. **E2E 기반과 smoke 여정**: Playwright Chromium과 핵심 3~4개 여정을 추가한다.
 6. **P1 회귀 테스트**: 지도·목록 연결, 매장 상세, 마이페이지를 보강한다.
 7. **시각적·접근성 자동화**: Story 보강 후 팀이 선택한 시각 비교 도구를 연결한다.
 8. **배포 게이트 정비**: 검증 완료 후 dev 자동 배포, 태그/릴리스와 승인에 따른 prod 배포 순서를 확정한다.
 
+### 이번 제출 범위
+
+P0 단위 테스트는 DOM 없이 다음 순수 로직을 검증한다.
+
+1. 로그인 후 복귀 주소 검증
+2. OAuth callback 경로 검증
+3. JWT 회원 식별자 파싱
+
+P0 통합 테스트는 실제 컴포넌트와 Context를 렌더링하고 MSW로 네트워크 경계만 제어해 다음 흐름을 검증한다.
+
+1. 검색어 입력 → 결과 표시 → 결과 선택 → 검색 페이지 이동
+2. 비로그인 사용자가 마이페이지 접근 → 로그인 이동 → 복귀 주소 유지
+3. OAuth callback 성공 → 토큰 저장 → 회원 조회 → 원래 페이지 복귀
+4. 잘못된 callback 또는 API 오류 → 오류 화면과 다시 시도
+5. 잘못된 URL → 홈 이동
+
+E2E와 시각적 회귀는 이번 제출물에서 제외하고 후속 이슈에서 추가한다. 외부 OAuth 제공자와 실제 지도 SDK를 자동 테스트에서 직접 호출하지 않는 원칙은 후속 테스트에도 유지한다.
+
 ## 10. 완료 기준
 
 - 팀원이 새 기능에 어떤 테스트를 추가할지 이 문서만 보고 결정할 수 있다.
-- 검색·인증·라우팅 P0 흐름에 자동화 테스트가 있다.
-- 프론트엔드 PR에서 정적 검사, 테스트, Storybook 빌드와 앱 빌드가 자동으로 실행된다.
-- 핵심 사용자 여정이 실제 브라우저에서 검증되고 실패 trace를 확인할 수 있다.
-- 필수 검사를 통과하지 않은 변경은 `frontend-dev`와 `main`에 병합할 수 없다.
+- 검색·인증·라우팅 P0 단위·통합 흐름에 Jest 자동화 테스트가 있다.
+- 로컬에서 정적 검사, 테스트, Storybook 빌드와 앱 빌드를 실행할 수 있다.
+- 후속 CI 이슈에서 필수 검사를 `frontend-dev`와 `main`의 병합 조건으로 연결할 수 있다.
 - 배포 후 발견된 버그에는 가능한 경우 재발 방지 테스트가 함께 추가된다.
