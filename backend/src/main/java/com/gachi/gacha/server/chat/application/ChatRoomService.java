@@ -117,7 +117,7 @@ public class ChatRoomService {
         return new ChatRoomUpdateInfo(room, totalUnreadCount);
     }
 
-    private static long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
+    private long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
         return Math.max(
                 0L,
                 chatRoom.getLastMessageSequence() - chatRoomMember.getLastReadMessageSequence()
