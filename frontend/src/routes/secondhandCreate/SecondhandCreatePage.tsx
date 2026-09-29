@@ -1,13 +1,14 @@
 import styled from '@emotion/styled';
 
+import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+
 import StickyActionBar from './components/StickyActionBar';
 import TradeForm from './components/TradeForm';
-import Header from '../home/components/Header';
 
 export default function SecondhandCreatePage() {
   return (
     <Page>
-      <Header activeItem="중고거래" />
+      <AppGachaSearchHeader currentPath="/used-market" />
 
       <Main>
         <Heading>

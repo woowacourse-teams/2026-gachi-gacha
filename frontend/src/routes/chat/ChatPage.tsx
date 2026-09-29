@@ -1,9 +1,10 @@
 import styled from '@emotion/styled';
 
+import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+
 import ChatRoomPanel from './components/ChatRoomPanel';
 import ConversationList from './components/ConversationList';
 import type { ChatConversation, ChatRoom } from './model/chat';
-import Header from '../home/components/Header';
 
 interface ChatPageProps {
   conversations: ChatConversation[];
@@ -16,7 +17,7 @@ export default function ChatPage({
 }: ChatPageProps) {
   return (
     <Page>
-      <Header activeItem="중고거래" />
+      <AppGachaSearchHeader currentPath="/chat" />
       <Main>
         <ConversationList
           conversations={conversations}
