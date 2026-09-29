@@ -1,5 +1,11 @@
-import { clearAccessToken, readAccessToken } from '../authTokenStorage';
-import { AuthApiError } from './AuthApiError';
+import {
+  clearAuthTokens,
+  readAccessToken,
+  readRefreshToken,
+  storeAuthTokens,
+} from '../authTokenStorage';
+import { AuthApiError, isUnauthorizedAuthApiError } from './AuthApiError';
+import { refreshAuthTokensOnce } from './refreshAuthTokens';
 
 type AuthenticationExpiredListener = () => void;
 
@@ -9,6 +15,28 @@ function notifyAuthenticationExpired(): void {
   authenticationExpiredListeners.forEach((listener) => {
     listener();
   });
+}
+
+function expireAuthentication(): void {
+  clearAuthTokens();
+  notifyAuthenticationExpired();
+}
+
+function createAuthenticatedRequestInit(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  accessToken: string,
+): RequestInit {
+  const headers = new Headers(
+    input instanceof Request ? input.headers : undefined,
+  );
+
+  new Headers(init.headers).forEach((value, key) => {
+    headers.set(key, value);
+  });
+  headers.set('Authorization', `Bearer ${accessToken}`);
+
+  return { ...init, headers };
 }
 
 export function subscribeToAuthenticationExpired(
@@ -31,15 +59,57 @@ export async function authenticatedFetch(
     throw new AuthApiError('로그인이 필요한 기능입니다.', 401);
   }
 
-  const headers = new Headers(init.headers);
-  headers.set('Authorization', `Bearer ${accessToken}`);
+  const retryInput = input instanceof Request ? input.clone() : input;
+  const response = await fetch(
+    input,
+    createAuthenticatedRequestInit(input, init, accessToken),
+  );
 
-  const response = await fetch(input, { ...init, headers });
-
-  if (response.status === 401) {
-    clearAccessToken();
-    notifyAuthenticationExpired();
+  if (response.status !== 401) {
+    return response;
   }
 
-  return response;
+  let retryAccessToken = readAccessToken();
+
+  try {
+    if (!retryAccessToken || retryAccessToken === accessToken) {
+      const refreshToken = readRefreshToken();
+
+      if (!refreshToken) {
+        expireAuthentication();
+        return response;
+      }
+
+      const refreshedTokens = await refreshAuthTokensOnce(refreshToken);
+      const currentRefreshToken = readRefreshToken();
+
+      if (
+        currentRefreshToken !== refreshToken &&
+        currentRefreshToken !== refreshedTokens.refreshToken
+      ) {
+        return response;
+      }
+
+      storeAuthTokens(refreshedTokens);
+      retryAccessToken = refreshedTokens.accessToken;
+    }
+  } catch (error) {
+    if (isUnauthorizedAuthApiError(error)) {
+      expireAuthentication();
+      return response;
+    }
+
+    throw error;
+  }
+
+  const retryResponse = await fetch(
+    retryInput,
+    createAuthenticatedRequestInit(retryInput, init, retryAccessToken),
+  );
+
+  if (retryResponse.status === 401) {
+    expireAuthentication();
+  }
+
+  return retryResponse;
 }

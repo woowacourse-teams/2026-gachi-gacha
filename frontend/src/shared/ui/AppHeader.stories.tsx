@@ -1,11 +1,19 @@
+import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import {
+  clearAuthTokens,
+  storeAuthTokens,
+} from '@/features/auth/authTokenStorage';
+import {
+  AUTH_STORY_EXPIRED_TOKEN,
+  AUTH_STORY_REFRESH_TOKEN,
   AUTH_STORY_TOKEN,
   authenticatedMemberHandler,
   expiredMemberHandler,
   loadingMemberHandler,
+  refreshingSessionHandlers,
 } from '@/features/auth/mocks/authHandlers';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { MockWorkerBoundary } from '@/mocks/MockWorkerBoundary';
@@ -32,6 +40,37 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+function RefreshingSessionStory({ args }: { args: Story['args'] }) {
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    storeAuthTokens({
+      accessToken: AUTH_STORY_EXPIRED_TOKEN,
+      refreshToken: AUTH_STORY_REFRESH_TOKEN,
+    });
+    setIsReady(true);
+
+    return () => {
+      clearAuthTokens();
+    };
+  }, []);
+
+  if (!isReady) {
+    return null;
+  }
+
+  return (
+    <MockWorkerBoundary handlers={refreshingSessionHandlers}>
+      <AuthSessionProvider>
+        <AppHeader
+          currentPath={args?.currentPath ?? '/search'}
+          search={args?.search}
+        />
+      </AuthSessionProvider>
+    </MockWorkerBoundary>
+  );
+}
 
 export const MapActive: Story = {};
 
@@ -70,6 +109,10 @@ export const ExpiredSession: Story = {
       </AuthSessionProvider>
     </MockWorkerBoundary>
   ),
+};
+
+export const RefreshedSession: Story = {
+  render: (args) => <RefreshingSessionStory args={args} />,
 };
 
 export const MobileGuest: Story = {

@@ -7,3 +7,9 @@ export class AuthApiError extends Error {
     this.name = 'AuthApiError';
   }
 }
+
+export function isUnauthorizedAuthApiError(
+  error: unknown,
+): error is AuthApiError {
+  return error instanceof AuthApiError && error.status === 401;
+}

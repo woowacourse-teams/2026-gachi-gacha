@@ -1,7 +1,9 @@
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
+import type { AuthTokens } from '../authTokensType';
 import type { OAuthProvider } from '../oauthProviderType';
 import { AuthApiError } from './AuthApiError';
+import { parseAuthTokensResponse } from './parseAuthTokensResponse';
 
 const JSON_CONTENT_TYPE = 'application/json';
 const CALLBACK_PARAMETER_NAMES = [
@@ -10,39 +12,6 @@ const CALLBACK_PARAMETER_NAMES = [
   'error',
   'error_description',
 ] as const;
-
-interface OAuthLoginResponse {
-  accessToken: string;
-}
-
-function isOAuthLoginResponse(value: unknown): value is OAuthLoginResponse {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const response = value as Record<string, unknown>;
-
-  return (
-    typeof response.accessToken === 'string' &&
-    response.accessToken.trim().length > 0
-  );
-}
-
-function parseOAuthLoginResponse(value: unknown): string {
-  if (!isApiResponse(value)) {
-    throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
-  }
-
-  if (value.code !== 'C000') {
-    throw new Error(value.message);
-  }
-
-  if (!isOAuthLoginResponse(value.data)) {
-    throw new Error('소셜 로그인 응답 형식이 올바르지 않습니다.');
-  }
-
-  return value.data.accessToken;
-}
 
 function createLoginCallbackUrl(
   provider: OAuthProvider,
@@ -69,7 +38,7 @@ function createLoginCallbackUrl(
 async function exchangeOAuthCode(
   provider: OAuthProvider,
   callbackSearch: string,
-): Promise<string> {
+): Promise<AuthTokens> {
   const response = await fetch(
     createLoginCallbackUrl(provider, callbackSearch),
     {
@@ -95,15 +64,15 @@ async function exchangeOAuthCode(
     throw new AuthApiError(message, response.status);
   }
 
-  return parseOAuthLoginResponse(responseBody);
+  return parseAuthTokensResponse(responseBody);
 }
 
-let pendingExchange: { key: string; promise: Promise<string> } | undefined;
+let pendingExchange: { key: string; promise: Promise<AuthTokens> } | undefined;
 
 export function exchangeOAuthCodeOnce(
   provider: OAuthProvider,
   callbackSearch: string,
-): Promise<string> {
+): Promise<AuthTokens> {
   const key = `${provider}:${callbackSearch}`;
 
   if (pendingExchange?.key === key) {
