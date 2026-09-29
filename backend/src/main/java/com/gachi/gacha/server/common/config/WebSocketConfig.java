@@ -48,7 +48,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, Dispos
                 .setHeartbeatValue(new long[]{HEARTBEAT_INTERVAL_MILLIS, HEARTBEAT_INTERVAL_MILLIS})
                 .setTaskScheduler(createHeartbeatScheduler());
         registry.setUserDestinationPrefix("/user");
-        registry.setPreservePublishOrder(true);
     }
 
     @Override

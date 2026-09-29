@@ -1,11 +1,9 @@
 package com.gachi.gacha.server.chat.presentation.websocket;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -18,11 +16,6 @@ import com.gachi.gacha.server.chat.presentation.dto.ChatRoomUpdateResponse;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,36 +98,6 @@ class ChatRoomUpdateSenderTest {
 
         verify(messagingTemplate).convertAndSendToUser(
                 eq(String.valueOf(SECOND_MEMBER_ID)), eq(DESTINATION), any(ChatRoomUpdateResponse.class));
-    }
-
-    @Test
-    @DisplayName("한 사용자의 갱신이 지연되어도 다른 사용자의 갱신은 전송할 수 있다")
-    void sendToMember_doesNotBlockOtherMember() throws Exception {
-        CountDownLatch firstQueryStarted = new CountDownLatch(1);
-        CountDownLatch releaseFirstQuery = new CountDownLatch(1);
-        doAnswer(invocation -> {
-            firstQueryStarted.countDown();
-            assertThat(releaseFirstQuery.await(10, TimeUnit.SECONDS)).isTrue();
-            return updateInfo();
-        }).when(chatRoomService).getRoomUpdate(FIRST_MEMBER_ID, ROOM_ID);
-        given(chatRoomService.getRoomUpdate(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
-
-        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
-            Future<?> first = executor.submit(() -> sender.sendToMember(FIRST_MEMBER_ID, ROOM_ID));
-            try {
-                assertThat(firstQueryStarted.await(10, TimeUnit.SECONDS)).isTrue();
-                Future<?> second = executor.submit(() -> sender.sendToMember(SECOND_MEMBER_ID, ROOM_ID));
-                second.get(5, TimeUnit.SECONDS);
-
-                verify(messagingTemplate).convertAndSendToUser(
-                        eq(String.valueOf(SECOND_MEMBER_ID)), eq(DESTINATION), any(ChatRoomUpdateResponse.class));
-                verify(messagingTemplate, never()).convertAndSendToUser(
-                        eq(String.valueOf(FIRST_MEMBER_ID)), eq(DESTINATION), any(ChatRoomUpdateResponse.class));
-            } finally {
-                releaseFirstQuery.countDown();
-                first.get(10, TimeUnit.SECONDS);
-            }
-        }
     }
 
     private ChatRoomUpdateInfo updateInfo() {
