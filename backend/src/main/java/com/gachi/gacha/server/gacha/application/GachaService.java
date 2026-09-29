@@ -1,8 +1,11 @@
 package com.gachi.gacha.server.gacha.application;
 
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
+import com.gachi.gacha.server.gacha.application.dto.GachaWithStoreCountInfo;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
+import com.gachi.gacha.server.usecase.application.StoreGachaService;
+import com.gachi.gacha.server.usecase.domain.StoreGachaCount;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -21,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class GachaService {
 
     private final GachaJpaRepository gachaRepository;
-
+    private final StoreGachaService storeGachaService;
+    
     public Page<GachaInfo> findAllGacha(@Nullable final String keyword, final Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {
             return toOrderedPage(gachaRepository.findGachaIds(pageable))
@@ -52,8 +56,28 @@ public class GachaService {
         return new PageImpl<>(ordered, idPage.getPageable(), idPage.getTotalElements());
     }
 
-    public Page<GachaInfo> findAllGachaByIds(final List<Long> categoryIds, final Pageable pageable) {
+    public Page<GachaWithStoreCountInfo> findAllGachaByIds(final List<Long> categoryIds, final Pageable pageable) {
         Page<Gacha> gachas = gachaRepository.findByCategoryIds(categoryIds, pageable);
-        return gachas.map(GachaInfo::from);
+
+        if (gachas.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> gachaIds = gachas.getContent().stream()
+                .map(Gacha::getId)
+                .toList();
+
+        List<StoreGachaCount> storeCounts = storeGachaService.findSoreGachaCountByGachaIds(gachaIds);
+
+        Map<Long, Integer> storeCountMap = storeCounts.stream()
+                .collect(Collectors.toMap(
+                        StoreGachaCount::gachaId,
+                        dto -> dto.storeCount().intValue()
+                ));
+
+        return gachas.map(gacha -> {
+            int storeCount = storeCountMap.getOrDefault(gacha.getId(), 0);
+            return GachaWithStoreCountInfo.of(storeCount, gacha);
+        });
     }
 }
