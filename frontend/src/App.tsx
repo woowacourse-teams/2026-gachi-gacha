@@ -27,10 +27,10 @@ const StoreDetailRoute = lazy(async () => {
   return { default: routeModule.StoreDetailRoute };
 });
 
-const UsedMarketRoute = lazy(async () => {
-  const routeModule = await import('@/routes/used-market/route');
+const SecondhandRoute = lazy(async () => {
+  const routeModule = await import('@/routes/secondhand/route');
 
-  return { default: routeModule.UsedMarketRoute };
+  return { default: routeModule.SecondhandRoute };
 });
 
 const LoginRoute = lazy(async () => {
@@ -108,7 +108,7 @@ function CanonicalRoutes() {
       <Route path={HOME_PATH} element={<HomePage />} />
       <Route path="/search" element={<SearchRoute />} />
       <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
-      <Route path="/used-market" element={<UsedMarketRoute />} />
+      <Route path="/used-market" element={<SecondhandRoute />} />
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/privacy" element={<PrivacyRoute />} />
       <Route
