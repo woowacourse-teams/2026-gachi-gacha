@@ -137,4 +137,20 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(window.location.search).toBe('?from=shared-link');
     expect(window.location.hash).toBe('#results');
   });
+
+  it('중고거래 URL에서 SecondhandPage 화면을 보여준다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/used-market',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '신당동 중고거래 검색 결과',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('중고거래 페이지를 준비하고 있어요'),
+    ).not.toBeInTheDocument();
+  });
 });
