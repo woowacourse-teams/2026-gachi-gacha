@@ -8,7 +8,7 @@ import {
   useState,
 } from 'react';
 
-import { AuthApiError } from './api/AuthApiError';
+import { isUnauthorizedAuthApiError } from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
 import { deleteCurrentMember } from './api/deleteCurrentMember';
 import { getCurrentMember } from './api/getCurrentMember';
@@ -104,7 +104,7 @@ export function AuthSessionProvider({
               return;
             }
 
-            if (!(error instanceof AuthApiError && error.status === 401)) {
+            if (!isUnauthorizedAuthApiError(error)) {
               throw error;
             }
           }
@@ -120,14 +120,18 @@ export function AuthSessionProvider({
 
         try {
           refreshedTokens = await refreshAuthTokensOnce(refreshToken);
-        } catch {
+        } catch (error) {
           if (signal?.aborted) {
             return;
           }
 
-          clearAuthTokens();
-          setState(GUEST_STATE);
-          return;
+          if (isUnauthorizedAuthApiError(error)) {
+            clearAuthTokens();
+            setState(GUEST_STATE);
+            return;
+          }
+
+          throw error;
         }
 
         if (signal?.aborted) {
@@ -153,7 +157,7 @@ export function AuthSessionProvider({
           return;
         }
 
-        if (error instanceof AuthApiError && error.status === 401) {
+        if (isUnauthorizedAuthApiError(error)) {
           clearAuthTokens();
           setState(GUEST_STATE);
           return;

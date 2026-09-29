@@ -4,7 +4,7 @@ import {
   readRefreshToken,
   storeAuthTokens,
 } from '../authTokenStorage';
-import { AuthApiError } from './AuthApiError';
+import { AuthApiError, isUnauthorizedAuthApiError } from './AuthApiError';
 import { refreshAuthTokensOnce } from './refreshAuthTokens';
 
 type AuthenticationExpiredListener = () => void;
@@ -93,9 +93,13 @@ export async function authenticatedFetch(
       storeAuthTokens(refreshedTokens);
       retryAccessToken = refreshedTokens.accessToken;
     }
-  } catch {
-    expireAuthentication();
-    return response;
+  } catch (error) {
+    if (isUnauthorizedAuthApiError(error)) {
+      expireAuthentication();
+      return response;
+    }
+
+    throw error;
   }
 
   const retryResponse = await fetch(
