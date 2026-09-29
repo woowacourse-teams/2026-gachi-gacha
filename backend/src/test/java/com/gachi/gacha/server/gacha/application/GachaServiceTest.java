@@ -2,7 +2,7 @@ package com.gachi.gacha.server.gacha.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.gachi.gacha.server.gacha.domain.Category;
+import com.gachi.gacha.server.category.domain.Category;
 import com.gachi.gacha.server.gacha.domain.CollectionSource;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaCategory;
