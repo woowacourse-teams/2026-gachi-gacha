@@ -19,6 +19,9 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
         return findByIdWithCategories(gachaId).orElseThrow(() -> new GachaNotFoundException(ErrorCode.GACHA_NOT_FOUND));
     }
 
+    @Query("SELECT DISTINCT g FROM Gacha g JOIN g.gachaCategories gc WHERE gc.category.id IN :categoryIds")
+    Page<Gacha> findByCategoryIds(@Param("categoryIds") List<Long> categoryIds, Pageable pageable);
+
     @Query("SELECT g FROM Gacha g " +
             "LEFT JOIN FETCH g.gachaCategories gc " +
             "LEFT JOIN FETCH gc.category c " +
@@ -37,6 +40,4 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
             "LEFT JOIN FETCH gc.category c " +
             "WHERE g.id IN :ids")
     List<Gacha> findByIdsWithCategories(@Param("ids") final List<Long> ids);
-
-
 }
