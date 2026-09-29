@@ -2,6 +2,7 @@ package com.gachi.gacha.server.chat.presentation.websocket;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
@@ -10,7 +11,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gachi.gacha.server.chat.application.ChatMessageService;
 import com.gachi.gacha.server.chat.application.ChatRoomService;
+import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatMessageSendCommand;
+import com.gachi.gacha.server.chat.application.dto.ChatRoomUpdateInfo;
 import com.gachi.gacha.server.chat.domain.ChatMessage;
 import com.gachi.gacha.server.chat.domain.ChatMessageMongoRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
@@ -34,8 +37,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,8 +99,11 @@ class ChatRoomUpdateIntegrationTest {
     @Autowired
     private ChatMessageService chatMessageService;
 
-    @Autowired
+    @MockitoSpyBean
     private ChatRoomService chatRoomService;
+
+    @MockitoSpyBean
+    private ChatRoomUpdateSender chatRoomUpdateSender;
 
     @Autowired
     private ChatRoomJpaRepository chatRoomJpaRepository;
@@ -164,6 +176,8 @@ class ChatRoomUpdateIntegrationTest {
     @AfterEach
     void tearDown() {
         stompClient.stop();
+        reset(chatRoomService);
+        reset(chatRoomUpdateSender);
         reset(chatMessageMongoRepository);
         for (Long id : roomIds) {
             chatMessageMongoRepository.deleteAll(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(
@@ -208,6 +222,115 @@ class ChatRoomUpdateIntegrationTest {
         assertThat(chatRoomService.getRoomUpdate(requesterId, roomId).room().unreadCount()).isZero();
         assertThat(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(roomId, PageRequest.of(0, 10)))
                 .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("동시에 본인 메시지를 발송해도 sequence가 중복되지 않고 발신자의 메시지는 안 읽은 수에 포함되지 않는다")
+    void sendMessage_concurrentOwnMessagesRemainRead() throws Exception {
+        int messageCount = 4;
+        BlockingQueue<String> requesterUpdates = subscribe(connect(requesterId), requesterId, ROOMS_DESTINATION);
+        CountDownLatch start = new CountDownLatch(1);
+        List<Future<ChatMessageInfo>> sends = new ArrayList<>();
+        List<Long> sequences = new ArrayList<>();
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(messageCount)) {
+            for (int i = 0; i < messageCount; i++) {
+                sends.add(executor.submit(() -> {
+                    awaitLatch(start, "동시 발송 시작 신호");
+                    ChatMessageInfo message = chatMessageService.sendMessage(requesterId, roomId, textCommand());
+                    chatRoomUpdateSender.sendToRoomMembers(roomId);
+                    return message;
+                }));
+            }
+            start.countDown();
+            for (Future<ChatMessageInfo> send : sends) {
+                sequences.add(send.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).sequence());
+            }
+        }
+
+        assertThat(sequences).containsExactlyInAnyOrder(1L, 2L, 3L, 4L);
+        for (int i = 0; i < messageCount; i++) {
+            assertRoomUpdate(awaitPayload(requesterUpdates), ownerId, 0L, 0L);
+        }
+        assertThat(chatRoomService.getRoomUpdate(requesterId, roomId).room().unreadCount()).isZero();
+        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).room().unreadCount()).isEqualTo(messageCount);
+        assertThat(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(roomId, PageRequest.of(0, 10)))
+                .extracting(ChatMessage::getSequence)
+                .containsExactly(4L, 3L, 2L, 1L);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(ConcurrentReadRoom.class)
+    @DisplayName("읽음 처리 이후 지연된 발송 갱신이 도착해도 안 읽은 수가 과거 상태로 돌아가지 않는다")
+    void concurrentSendAndRead_doesNotRestoreUnreadCountAfterRead(final ConcurrentReadRoom scope) throws Exception {
+        Long readRoomId;
+        if (scope == ConcurrentReadRoom.OTHER_ROOM) {
+            readRoomId = chatRoomService.createRoom(outsiderId, tradeId).roomId();
+            roomIds.add(readRoomId);
+            chatMessageService.sendMessage(outsiderId, readRoomId, textCommand());
+        } else {
+            readRoomId = roomId;
+            chatMessageService.sendMessage(requesterId, roomId, textCommand());
+        }
+        BlockingQueue<String> ownerUpdates = subscribe(connect(ownerId), ownerId, ROOMS_DESTINATION);
+        CountDownLatch unreadSnapshotCaptured = new CountDownLatch(1);
+        CountDownLatch releaseUnreadSnapshot = new CountDownLatch(1);
+        CountDownLatch readUpdateAttempted = new CountDownLatch(1);
+        AtomicBoolean delayFirstSnapshot = new AtomicBoolean(true);
+
+        // 실제 DB에서 조회한 첫 갱신만 지연시켜, 읽음 갱신과의 순서 역전을 재현한다.
+        doAnswer(invocation -> {
+            ChatRoomUpdateInfo snapshot = (ChatRoomUpdateInfo) invocation.callRealMethod();
+            if (delayFirstSnapshot.compareAndSet(true, false)) {
+                unreadSnapshotCaptured.countDown();
+                awaitLatch(releaseUnreadSnapshot, "읽음 처리 이후 과거 갱신 전송 재개 신호");
+            }
+            return snapshot;
+        }).when(chatRoomService).getRoomUpdate(eq(ownerId), eq(roomId));
+
+        doAnswer(invocation -> {
+            if (!delayFirstSnapshot.get()) {
+                // REST 서비스가 반환된 뒤 호출되므로 이 시점에는 읽음 상태가 커밋되어 있다.
+                readUpdateAttempted.countDown();
+            }
+            return invocation.callRealMethod();
+        }).when(chatRoomUpdateSender).sendToMember(eq(ownerId), any(Long.class));
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            Future<?> delayedUpdate = executor.submit(() -> chatRoomUpdateSender.sendToRoomMembers(roomId));
+            Future<Response> readRequest = null;
+            try {
+                awaitLatch(unreadSnapshotCaptured, "전체 안 읽은 수 1의 갱신 조회 완료 신호");
+                readRequest = executor.submit(() -> readMessages(ownerId, readRoomId, 1L));
+                awaitLatch(readUpdateAttempted, "읽음 처리 커밋 이후 갱신 전송 시작 신호");
+                try {
+                    readRequest.get(NO_UPDATE_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS).then().statusCode(200);
+                } catch (TimeoutException ignored) {
+                    // 직렬화된 갱신은 첫 조회의 전송이 끝날 때까지 대기할 수 있다.
+                }
+
+                releaseUnreadSnapshot.countDown();
+                delayedUpdate.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                readRequest.get(TIMEOUT_SECONDS, TimeUnit.SECONDS).then().statusCode(200);
+                awaitPayload(ownerUpdates);
+                JsonNode lastReceivedUpdate = awaitPayload(ownerUpdates);
+                ChatRoomUpdateInfo latest = chatRoomService.getRoomUpdate(
+                        ownerId, lastReceivedUpdate.path("room").path("roomId").asLong());
+
+                assertThat(latest.room().unreadCount()).isZero();
+                assertThat(lastReceivedUpdate.path("room").path("unreadCount").asLong())
+                        .as("읽음 처리 이후 마지막으로 수신한 안 읽은 수는 DB의 최신 읽음 상태와 일치해야 한다")
+                        .isEqualTo(latest.room().unreadCount());
+                assertThat(lastReceivedUpdate.path("totalUnreadCount").asLong())
+                        .isEqualTo(latest.totalUnreadCount());
+            } finally {
+                releaseUnreadSnapshot.countDown();
+                delayedUpdate.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                if (readRequest != null) {
+                    readRequest.get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+                }
+            }
+        }
     }
 
     @Test
@@ -390,12 +513,16 @@ class ChatRoomUpdateIntegrationTest {
     }
 
     private Response readMessages(final Long memberId, final long lastReadSequence) {
+        return readMessages(memberId, roomId, lastReadSequence);
+    }
+
+    private Response readMessages(final Long memberId, final Long targetRoomId, final long lastReadSequence) {
         return RestAssured.given()
                 .port(port)
                 .header("Authorization", bearer(memberId))
                 .contentType(ContentType.JSON)
                 .body("{\"lastReadSequence\":" + lastReadSequence + "}")
-                .patch("/api/v1/chat/rooms/" + roomId + "/messages/read");
+                .patch("/api/v1/chat/rooms/" + targetRoomId + "/messages/read");
     }
 
     private Response createRoom(final Long targetTradeId) {
@@ -482,6 +609,10 @@ class ChatRoomUpdateIntegrationTest {
         return new ChatMessageSendCommand(MessageType.TEXT, MESSAGE_CONTENT, List.of());
     }
 
+    private void awaitLatch(final CountDownLatch latch, final String description) throws InterruptedException {
+        assertThat(latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS)).as(description).isTrue();
+    }
+
     private String bearer(final Long memberId) {
         return "Bearer " + jwtProvider.createToken(memberId);
     }
@@ -501,6 +632,10 @@ class ChatRoomUpdateIntegrationTest {
 
     private enum MessageFailure {
         SAVE, COMMIT
+    }
+
+    private enum ConcurrentReadRoom {
+        SAME_ROOM, OTHER_ROOM
     }
 
     private record StringFrameHandler(BlockingQueue<String> received) implements StompFrameHandler {
