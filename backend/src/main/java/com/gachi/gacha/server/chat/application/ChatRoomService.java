@@ -3,6 +3,7 @@ package com.gachi.gacha.server.chat.application;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomCreateInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomExistenceInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
+import com.gachi.gacha.server.chat.application.dto.ChatRoomUpdateInfo;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
@@ -107,6 +108,13 @@ public class ChatRoomService {
                 otherMember,
                 unreadCount
         );
+    }
+
+    public ChatRoomUpdateInfo getRoomUpdate(final Long memberId, final Long roomId) {
+        ChatRoomInfo room = getRoom(memberId, roomId);
+        long totalUnreadCount = getUnreadCount(memberId);
+
+        return new ChatRoomUpdateInfo(room, totalUnreadCount);
     }
 
     private static long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
@@ -232,5 +240,9 @@ public class ChatRoomService {
         } catch (DataIntegrityViolationException e) {
             throw new ChatRoomAlreadyExistException(ErrorCode.CHAT_ROOM_ALREADY_EXISTS);
         }
+    }
+
+    public List<Long> getMemberIds(final Long roomId) {
+        return chatRoomMemberJpaRepository.findMemberIdsByRoomId(roomId);
     }
 }
