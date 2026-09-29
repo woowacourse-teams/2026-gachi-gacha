@@ -11,14 +11,9 @@ import {
 import { OAUTH_CALLBACK_PATH_PREFIX } from '@/features/auth/oauthCallbackPath';
 import { isOAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { HomePage } from '@/routes/home';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
-
-const HomeRoute = lazy(async () => {
-  const routeModule = await import('@/routes/home');
-
-  return { default: routeModule.HomePage };
-});
 
 const SearchRoute = lazy(async () => {
   const routeModule = await import('@/routes/search/route');
@@ -110,7 +105,7 @@ function CanonicalRoutes() {
 
   return (
     <Routes>
-      <Route path={HOME_PATH} element={<HomeRoute />} />
+      <Route path={HOME_PATH} element={<HomePage />} />
       <Route path="/search" element={<SearchRoute />} />
       <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
       <Route path="/used-market" element={<UsedMarketRoute />} />
