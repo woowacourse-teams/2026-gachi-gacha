@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import type { GachaProductSummary } from '@/domains/product/gachaProductType';
-
 import {
   GachaSearchPopover,
   type GachaSearchPopoverProps,
 } from './GachaSearchPopover';
+import type { GachaSearchProduct } from './gachaSearchResultType';
 
 function createThumbnail(label: string, color: string): string {
   const svg = `
@@ -86,7 +85,8 @@ const products = productFixtures.map(({ name, categories, color }, index) => ({
   name,
   categories,
   thumbnailUrl: createThumbnail(`GACHA ${index + 1}`, color),
-})) satisfies readonly GachaProductSummary[];
+  storeCount: index === productFixtures.length - 1 ? 0 : 30 - index * 3,
+})) satisfies readonly GachaSearchProduct[];
 
 const scrollableProducts = Array.from({ length: 24 }, (_, index) => {
   const product = products[index % products.length];
@@ -100,7 +100,7 @@ const scrollableProducts = Array.from({ length: 24 }, (_, index) => {
     gachaId: index + 101,
     name: `${product.name} ${index + 1}`,
   };
-}) satisfies readonly GachaProductSummary[];
+}) satisfies readonly GachaSearchProduct[];
 
 const previewDecorator = (Story: () => React.JSX.Element) => (
   <div

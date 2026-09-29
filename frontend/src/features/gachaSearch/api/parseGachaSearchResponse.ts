@@ -1,7 +1,10 @@
-import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
-import type { GachaSearchResult } from '../gachaSearchResultType';
+import type {
+  GachaSearchProduct,
+  GachaSearchResult,
+} from '../gachaSearchResultType';
+import { sortGachaSearchProductsByStoreCount } from '../sortGachaSearchProductsByStoreCount';
 
 interface GachaSearchPageData {
   content: readonly unknown[];
@@ -16,7 +19,7 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-function isGachaProductSummary(value: unknown): value is GachaProductSummary {
+function isGachaSearchProduct(value: unknown): value is GachaSearchProduct {
   if (!isRecord(value)) {
     return false;
   }
@@ -26,7 +29,8 @@ function isGachaProductSummary(value: unknown): value is GachaProductSummary {
     typeof value.name === 'string' &&
     (typeof value.thumbnailUrl === 'string' || value.thumbnailUrl === null) &&
     Array.isArray(value.categories) &&
-    value.categories.every((category) => typeof category === 'string')
+    value.categories.every((category) => typeof category === 'string') &&
+    isNonNegativeSafeInteger(value.storeCount)
   );
 }
 
@@ -54,17 +58,20 @@ export function parseGachaSearchResponse(value: unknown): GachaSearchResult {
     throw new Error('가챠 검색 페이지 응답 형식이 올바르지 않습니다.');
   }
 
-  if (!value.data.content.every(isGachaProductSummary)) {
+  if (!value.data.content.every(isGachaSearchProduct)) {
     throw new Error('가챠 검색 결과 형식이 올바르지 않습니다.');
   }
 
-  const products = value.data.content.map(
-    ({ gachaId, name, thumbnailUrl, categories }) => ({
-      gachaId,
-      name,
-      thumbnailUrl,
-      categories,
-    }),
+  const products = sortGachaSearchProductsByStoreCount(
+    value.data.content.map(
+      ({ gachaId, name, thumbnailUrl, categories, storeCount }) => ({
+        gachaId,
+        name,
+        thumbnailUrl,
+        categories,
+        storeCount,
+      }),
+    ),
   );
 
   return {
