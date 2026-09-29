@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.gacha.domain;
 
+import com.gachi.gacha.server.category.domain.Category;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
