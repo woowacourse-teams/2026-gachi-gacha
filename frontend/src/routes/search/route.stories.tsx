@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router';
 
 import { worker } from '@/mocks/browser';
 
@@ -52,14 +53,16 @@ function MockedSearchRoute(props: SearchRouteProps) {
   }
 
   return (
-    <SearchRoute
-      {...props}
-      search={activeSearch}
-      onSelectGacha={(gachaId) => {
-        setActiveSearch(`?gachaId=${gachaId}`);
-        props.onSelectGacha?.(gachaId);
-      }}
-    />
+    <MemoryRouter initialEntries={[`/search${activeSearch}`]}>
+      <SearchRoute
+        {...props}
+        search={activeSearch}
+        onSelectGacha={(gachaId) => {
+          setActiveSearch(`?gachaId=${gachaId}`);
+          props.onSelectGacha?.(gachaId);
+        }}
+      />
+    </MemoryRouter>
   );
 }
 

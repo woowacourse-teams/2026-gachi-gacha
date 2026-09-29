@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 
@@ -11,25 +12,8 @@ export function useSearchRouteNavigation(
   controlledSearch: string | undefined,
   onSelectGacha: ((gachaId: number) => void) | undefined,
 ): UseSearchRouteNavigationResult {
-  const [browserSearch, setBrowserSearch] = useState(
-    () => window.location.search,
-  );
-
-  useEffect(() => {
-    if (controlledSearch !== undefined) {
-      return;
-    }
-
-    function syncBrowserSearch() {
-      setBrowserSearch(window.location.search);
-    }
-
-    window.addEventListener('popstate', syncBrowserSearch);
-
-    return () => {
-      window.removeEventListener('popstate', syncBrowserSearch);
-    };
-  }, [controlledSearch]);
+  const { search: browserSearch } = useLocation();
+  const navigate = useNavigate();
 
   const selectGacha = useCallback(
     (gachaId: number) => {
@@ -41,14 +25,13 @@ export function useSearchRouteNavigation(
       const nextUrl = createGachaSearchResultsUrl(gachaId);
       const nextSearch = new URL(nextUrl, window.location.origin).search;
 
-      if (nextSearch === window.location.search) {
+      if (nextSearch === browserSearch) {
         return;
       }
 
-      window.history.pushState(null, '', nextUrl);
-      setBrowserSearch(nextSearch);
+      navigate(nextUrl);
     },
-    [onSelectGacha],
+    [browserSearch, navigate, onSelectGacha],
   );
 
   return {
