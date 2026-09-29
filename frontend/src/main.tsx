@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
 
 import App from '@/App';
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
@@ -26,9 +27,11 @@ void enableMocking().then(() => {
 
   createRoot(container).render(
     <StrictMode>
-      <AuthSessionProvider>
-        <App />
-      </AuthSessionProvider>
+      <BrowserRouter>
+        <AuthSessionProvider>
+          <App />
+        </AuthSessionProvider>
+      </BrowserRouter>
     </StrictMode>,
   );
 });
