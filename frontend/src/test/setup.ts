@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/jest-globals';
 
 import { afterAll, afterEach, beforeAll } from '@jest/globals';
 import { cleanup } from '@testing-library/react';

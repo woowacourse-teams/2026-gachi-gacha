@@ -22,8 +22,8 @@ module.exports = {
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(gif|jpe?g|png|svg|webp)$': '<rootDir>/src/test/fileMock.ts',
+    '^@/(.*)$': '<rootDir>/src/$1',
   },
   setupFiles: ['<rootDir>/src/test/polyfills.cjs'],
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
@@ -36,7 +36,7 @@ module.exports = {
     '^.+\\.[cm]?[jt]sx?$': 'babel-jest',
   },
   transformIgnorePatterns: [
-    '<rootDir>/node_modules/.pnpm/(?!(?:@open-draft\\+(?:deferred-promise|logger|until)|headers-polyfill|outvariant|rettime|strict-event-emitter|until-async)@)',
-    'node_modules/(?!.pnpm|@open-draft/(?:deferred-promise|logger|until)|headers-polyfill|outvariant|rettime|strict-event-emitter|until-async)',
+    '<rootDir>/node_modules/.pnpm/(?!(?:@open-draft\\+(?:deferred-promise|logger|until)|@remix-run\\+route-pattern|cookie-es|headers-polyfill|outvariant|react-router|rettime|strict-event-emitter|until-async)@)',
+    'node_modules/(?!.pnpm|@open-draft/(?:deferred-promise|logger|until)|@remix-run/route-pattern|cookie-es|headers-polyfill|outvariant|react-router|rettime|strict-event-emitter|until-async)',
   ],
 };
