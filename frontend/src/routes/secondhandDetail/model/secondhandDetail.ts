@@ -1,18 +1,3 @@
-export interface SecondhandDetail {
-  id: number;
-  imageUrls: string[];
-  title: string;
-  category: string;
-  postedAt: string;
-  viewCount: number;
-  wishCount: number;
-  wantedTrade: string;
-  place: string;
-  availableTime: string;
-  description: string;
-  seller: {
-    nickname: string;
-    neighborhood: string;
-    completedTradeCount: number;
-  };
-}
+import type { TradeDetail } from '@/domains/trade/tradeDetailType';
+
+export type SecondhandDetail = TradeDetail;

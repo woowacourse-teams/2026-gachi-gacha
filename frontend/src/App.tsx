@@ -33,6 +33,12 @@ const SecondhandRoute = lazy(async () => {
   return { default: routeModule.SecondhandRoute };
 });
 
+const SecondhandDetailRoute = lazy(async () => {
+  const routeModule = await import('@/routes/secondhandDetail/route');
+
+  return { default: routeModule.SecondhandDetailRoute };
+});
+
 const LoginRoute = lazy(async () => {
   const routeModule = await import('@/routes/login/route');
 
@@ -71,6 +77,7 @@ const MyPageRoute = lazy(async () => {
 
 const HOME_PATH = '/';
 const STORE_ID_PATTERN = /^[1-9]\d*$/;
+const TRADE_ID_PATTERN = /^[1-9]\d*$/;
 
 function RedirectToHome() {
   const { search, hash } = useLocation();
@@ -109,6 +116,10 @@ function CanonicalRoutes() {
       <Route path="/search" element={<SearchRoute />} />
       <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
       <Route path="/used-market" element={<SecondhandRoute />} />
+      <Route
+        path="/used-market/:tradeId"
+        element={<SecondhandDetailRouteElement />}
+      />
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/privacy" element={<PrivacyRoute />} />
       <Route
@@ -141,6 +152,16 @@ function StoreDetailRouteElement() {
   }
 
   return <StoreDetailRoute pathname={`/stores/${storeId}`} />;
+}
+
+function SecondhandDetailRouteElement() {
+  const { tradeId } = useParams<'tradeId'>();
+
+  if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
+    return <RedirectToHome />;
+  }
+
+  return <SecondhandDetailRoute tradeId={Number(tradeId)} />;
 }
 
 function AuthCallbackRouteElement() {

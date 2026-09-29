@@ -1,54 +1,60 @@
-import { useState } from 'react';
 import styled from '@emotion/styled';
 
-import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+import { AppHeader } from '@/shared/ui/AppHeader';
 
-import ChatDrawer from './components/ChatDrawer';
 import TradeDetail from './components/TradeDetail';
-import type { ChatRoom } from './model/chatRoom';
 import type { SecondhandDetail } from './model/secondhandDetail';
 import ProductCard from '../secondhand/components/ProductCard';
 import type { SecondhandItem } from '../secondhand/model/secondhandItem';
 
 interface SecondhandDetailPageProps {
   detail: SecondhandDetail;
-  relatedItems: SecondhandItem[];
-  chatRoom: ChatRoom;
-  initialChatOpen?: boolean;
+  relatedItems?: SecondhandItem[];
+  hasMoreRelatedItems?: boolean;
+  isLoadingRelatedItems?: boolean;
+  onLoadMoreRelatedItems?: () => void;
 }
 
 export default function SecondhandDetailPage({
   detail,
-  relatedItems,
-  chatRoom,
-  initialChatOpen = false,
+  relatedItems = [],
+  hasMoreRelatedItems = false,
+  isLoadingRelatedItems = false,
+  onLoadMoreRelatedItems,
 }: SecondhandDetailPageProps) {
-  const [isChatOpen, setIsChatOpen] = useState(initialChatOpen);
-
   return (
     <Page>
-      <AppGachaSearchHeader currentPath="/used-market" />
+      <AppHeader currentPath="/used-market" />
 
       <Main>
-        <TradeDetail detail={detail} onChatClick={() => setIsChatOpen(true)} />
+        <TradeDetail detail={detail} />
 
-        <RelatedSection>
-          <RelatedHeader>
-            <RelatedTitle>다른 중고거래</RelatedTitle>
-            <MoreButton type="button">전체보기 →</MoreButton>
-          </RelatedHeader>
+        {relatedItems.length > 0 && (
+          <RelatedSection>
+            <RelatedContent>
+              <RelatedHeader>
+                <RelatedTitle>다른 중고 물품</RelatedTitle>
+              </RelatedHeader>
 
-          <ProductGrid>
-            {relatedItems.map((item) => (
-              <ProductCard key={item.tradeId} item={item} />
-            ))}
-          </ProductGrid>
-        </RelatedSection>
+              <ProductGrid>
+                {relatedItems.map((item) => (
+                  <ProductCard key={item.tradeId} item={item} />
+                ))}
+              </ProductGrid>
+
+              {hasMoreRelatedItems && (
+                <MoreButton
+                  type="button"
+                  disabled={isLoadingRelatedItems}
+                  onClick={onLoadMoreRelatedItems}
+                >
+                  {isLoadingRelatedItems ? '불러오는 중...' : '더보기'}
+                </MoreButton>
+              )}
+            </RelatedContent>
+          </RelatedSection>
+        )}
       </Main>
-
-      {isChatOpen && (
-        <ChatDrawer room={chatRoom} onClose={() => setIsChatOpen(false)} />
-      )}
     </Page>
   );
 }
@@ -71,13 +77,16 @@ const Main = styled.main`
 
 const RelatedSection = styled.section`
   padding-top: 48px;
+  border-top: 1px solid #e9e9ec;
+`;
+
+const RelatedContent = styled.div`
+  width: 100%;
 `;
 
 const RelatedHeader = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   margin-bottom: 24px;
 `;
 
@@ -88,27 +97,46 @@ const RelatedTitle = styled.h2`
   letter-spacing: -0.03em;
 `;
 
-const MoreButton = styled.button`
-  padding: 8px;
-  border: 0;
-  background: transparent;
-  color: #73757e;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-`;
-
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 40px 20px;
+  grid-template-columns: repeat(5, minmax(0, 205px));
+  justify-content: start;
+  gap: 40px 24px;
+
+  @media (max-width: 1184px) {
+    grid-template-columns: repeat(4, minmax(0, 205px));
+  }
 
   @media (max-width: 900px) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 205px));
   }
 
   @media (max-width: 620px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 30px 12px;
+    grid-template-columns: repeat(2, minmax(0, 205px));
+    gap: 30px 14px;
+  }
+`;
+
+const MoreButton = styled.button`
+  display: block;
+  min-width: 160px;
+  margin: 40px auto 0;
+  padding: 13px 28px;
+  border: 1px solid #d9d9df;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #45464d;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    border-color: #ed174c;
+    color: #ed174c;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
   }
 `;

@@ -1,20 +1,52 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import type { TradePlace } from '@/domains/trade/tradeDetailType';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
+import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
+
 import type { SecondhandDetail } from '../../model/secondhandDetail';
 
 interface TradeDetailProps {
   detail: SecondhandDetail;
-  onChatClick: () => void;
 }
 
-export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
+const STATUS_LABELS: Record<TradeStatus, string> = {
+  AVAILABLE: '교환 가능',
+  IN_PROGRESS: '교환 진행 중',
+  COMPLETED: '교환 완료',
+};
+
+const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+});
+
+function formatPlace(place: TradePlace | null, fallback: string): string {
+  return place?.name || place?.address || fallback;
+}
+
+function formatAvailableTime(availableTime: string | null): string {
+  if (!availableTime) {
+    return '시간 협의';
+  }
+
+  const date = new Date(availableTime);
+
+  return Number.isNaN(date.getTime())
+    ? '시간 협의'
+    : dateTimeFormatter.format(date);
+}
+
+export default function TradeDetail({ detail }: TradeDetailProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
+  const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
 
   return (
     <Wrapper>
-      <Breadcrumb>중고거래 · {detail.category}</Breadcrumb>
+      <Breadcrumb>중고거래 · {categoryLabel}</Breadcrumb>
 
       <Summary>
         <Gallery>
@@ -22,7 +54,7 @@ export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
             {selectedImageUrl ? (
               <MainPhoto src={selectedImageUrl} alt={`${detail.title} 사진`} />
             ) : (
-              <ImagePlaceholder>이미지 없음</ImagePlaceholder>
+              <LogoImagePlaceholder />
             )}
             {detail.imageUrls.length > 0 && (
               <ImageCount>
@@ -31,26 +63,28 @@ export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
             )}
           </MainImage>
 
-          <ThumbnailList aria-label="상품 사진 목록">
-            {detail.imageUrls.map((imageUrl, index) => (
-              <Thumbnail
-                key={imageUrl}
-                type="button"
-                data-selected={index === selectedImageIndex}
-                aria-label={`${index + 1}번 사진 보기`}
-                onClick={() => setSelectedImageIndex(index)}
-              >
-                <ThumbnailPhoto src={imageUrl} alt="" />
-              </Thumbnail>
-            ))}
-          </ThumbnailList>
+          {detail.imageUrls.length > 1 && (
+            <ThumbnailList aria-label="상품 사진 목록">
+              {detail.imageUrls.map((imageUrl, index) => (
+                <Thumbnail
+                  key={imageUrl}
+                  type="button"
+                  data-selected={index === selectedImageIndex}
+                  aria-label={`${index + 1}번 사진 보기`}
+                  onClick={() => setSelectedImageIndex(index)}
+                >
+                  <ThumbnailPhoto src={imageUrl} alt="" />
+                </Thumbnail>
+              ))}
+            </ThumbnailList>
+          )}
         </Gallery>
 
         <Info>
-          <Category>{detail.category}</Category>
           <Title>{detail.title}</Title>
           <Meta>
-            {detail.postedAt} · 조회 {detail.viewCount} · 찜 {detail.wishCount}
+            {formatRelativeTime(detail.createdAt)} ·{' '}
+            {STATUS_LABELS[detail.status]}
           </Meta>
 
           <Divider />
@@ -58,58 +92,52 @@ export default function TradeDetail({ detail, onChatClick }: TradeDetailProps) {
           <InfoList>
             <InfoRow>
               <InfoLabel>원하는 교환</InfoLabel>
-              <InfoValue>{detail.wantedTrade}</InfoValue>
+              <InfoValue>{detail.desiredProduction || '제안 받아요'}</InfoValue>
             </InfoRow>
             <InfoRow>
               <InfoLabel>교환 장소</InfoLabel>
-              <InfoValue>📍 {detail.place}</InfoValue>
+              <InfoValue>
+                {formatPlace(detail.tradePlace, '교환 장소 협의')}
+              </InfoValue>
+            </InfoRow>
+            <InfoRow>
+              <InfoLabel>구매 매장</InfoLabel>
+              <InfoValue>
+                {formatPlace(detail.purchaseStore, '구매 매장 미등록')}
+              </InfoValue>
             </InfoRow>
             <InfoRow>
               <InfoLabel>가능 시간</InfoLabel>
-              <InfoValue>🕒 {detail.availableTime}</InfoValue>
+              <InfoValue>{formatAvailableTime(detail.availableTime)}</InfoValue>
             </InfoRow>
           </InfoList>
 
+          <DescriptionSection>
+            <SectionTitle>상품 설명</SectionTitle>
+            <Description>
+              {detail.description || '등록된 설명이 없어요.'}
+            </Description>
+            {detail.categories.length > 0 && (
+              <CategoryList aria-label="카테고리">
+                {detail.categories.map((category) => (
+                  <Category key={category}>#{category}</Category>
+                ))}
+              </CategoryList>
+            )}
+          </DescriptionSection>
+
           <ActionGroup>
-            <WishButton type="button" aria-label="찜하기">
-              ♡
-            </WishButton>
-            <ChatButton type="button" onClick={onChatClick}>
-              채팅하기
-            </ChatButton>
+            <ChatLink href="/chat">채팅하기</ChatLink>
             <TradeButton type="button">교환 제안하기</TradeButton>
           </ActionGroup>
         </Info>
       </Summary>
-
-      <BodyGrid>
-        <DescriptionSection>
-          <SectionTitle>상품 설명</SectionTitle>
-          <Description>{detail.description}</Description>
-        </DescriptionSection>
-
-        <SellerCard>
-          <SellerHeading>교환자 정보</SellerHeading>
-          <SellerProfile>
-            <Avatar aria-hidden="true">가</Avatar>
-            <div>
-              <SellerName>{detail.seller.nickname}</SellerName>
-              <SellerMeta>
-                {detail.seller.neighborhood} · 거래{' '}
-                {detail.seller.completedTradeCount}회
-              </SellerMeta>
-            </div>
-          </SellerProfile>
-          <SellerButton type="button">교환 목록 보기</SellerButton>
-        </SellerCard>
-      </BodyGrid>
     </Wrapper>
   );
 }
 
 const Wrapper = styled.article`
   padding-bottom: 56px;
-  border-bottom: 1px solid #e9e9ec;
 `;
 
 const Breadcrumb = styled.p`
@@ -138,6 +166,7 @@ const MainImage = styled.div`
   display: grid;
   width: 100%;
   aspect-ratio: 1 / 1;
+  overflow: hidden;
   place-items: center;
   border: 1px solid #ececef;
   border-radius: 20px;
@@ -148,11 +177,6 @@ const MainPhoto = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
-`;
-
-const ImagePlaceholder = styled.span`
-  color: #9799a2;
-  font-size: 15px;
 `;
 
 const ImageCount = styled.span`
@@ -177,11 +201,11 @@ const Thumbnail = styled.button`
   width: 64px;
   height: 64px;
   padding: 0;
+  overflow: hidden;
   place-items: center;
   border: 1px solid #e1e1e5;
   border-radius: 10px;
   background: #f5f1ff;
-  font-size: 28px;
   cursor: pointer;
 
   &[data-selected='true'] {
@@ -192,7 +216,6 @@ const Thumbnail = styled.button`
 const ThumbnailPhoto = styled.img`
   width: 100%;
   height: 100%;
-  border-radius: 8px;
   object-fit: cover;
 `;
 
@@ -200,18 +223,21 @@ const Info = styled.div`
   padding-top: 8px;
 `;
 
+const CategoryList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 20px;
+`;
+
 const Category = styled.span`
-  display: inline-flex;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #fff0f4;
   color: #ed174c;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
 `;
 
 const Title = styled.h1`
-  margin: 16px 0 12px;
+  margin: 0 0 12px;
   color: #202126;
   font-size: clamp(26px, 3vw, 38px);
   line-height: 1.3;
@@ -264,58 +290,50 @@ const InfoValue = styled.dd`
 const ActionGroup = styled.div`
   display: grid;
   margin-top: 32px;
-  grid-template-columns: 54px 1fr 1.4fr;
+  grid-template-columns: 1fr 1.4fr;
   gap: 10px;
 
   @media (max-width: 520px) {
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 1fr;
   }
 `;
 
 const ActionButton = styled.button`
+  display: inline-flex;
   min-height: 54px;
+  align-items: center;
+  justify-content: center;
   border-radius: 12px;
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
 `;
 
-const WishButton = styled(ActionButton)`
-  border: 1px solid #dfe0e4;
-  background: #ffffff;
-  color: #5c5e66;
-  font-size: 28px;
-`;
-
-const ChatButton = styled(ActionButton)`
+const ChatLink = styled.a`
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #ed174c;
+  border-radius: 12px;
   background: #ffffff;
   color: #ed174c;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
 `;
 
 const TradeButton = styled(ActionButton)`
   border: 1px solid #ed174c;
   background: #ed174c;
   color: #ffffff;
-
-  @media (max-width: 520px) {
-    grid-column: 1 / -1;
-  }
 `;
 
-const BodyGrid = styled.div`
-  display: grid;
-  margin-top: 48px;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 64px;
-
-  @media (max-width: 800px) {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
+const DescriptionSection = styled.section`
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #e9e9ec;
 `;
-
-const DescriptionSection = styled.section``;
 
 const SectionTitle = styled.h2`
   margin: 0 0 20px;
@@ -329,61 +347,4 @@ const Description = styled.p`
   font-size: 15px;
   line-height: 1.9;
   white-space: pre-line;
-`;
-
-const SellerCard = styled.aside`
-  align-self: start;
-  padding: 22px;
-  border: 1px solid #e7e7ea;
-  border-radius: 16px;
-`;
-
-const SellerHeading = styled.h2`
-  margin: 0 0 18px;
-  color: #292a2f;
-  font-size: 17px;
-`;
-
-const SellerProfile = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-const Avatar = styled.div`
-  display: grid;
-  width: 46px;
-  height: 46px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 50%;
-  background: #fff0f4;
-  color: #ed174c;
-  font-weight: 800;
-`;
-
-const SellerName = styled.p`
-  margin: 0 0 4px;
-  color: #292a2f;
-  font-size: 15px;
-  font-weight: 800;
-`;
-
-const SellerMeta = styled.p`
-  margin: 0;
-  color: #858790;
-  font-size: 13px;
-`;
-
-const SellerButton = styled.button`
-  width: 100%;
-  min-height: 42px;
-  margin-top: 18px;
-  border: 1px solid #dedfe3;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #484a52;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
 `;

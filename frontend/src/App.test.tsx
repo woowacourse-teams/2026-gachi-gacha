@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import App from '@/App';
@@ -168,5 +169,116 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(
       screen.queryByText('중고거래 페이지를 준비하고 있어요'),
     ).not.toBeInTheDocument();
+  });
+
+  it('교환 게시글 카드를 선택하면 상세 페이지로 이동한다', async () => {
+    server.use(
+      http.get('/api/v1/trades', ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page') ?? 0);
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content:
+              page === 0
+                ? [
+                    {
+                      tradeId: 15,
+                      memberId: 3,
+                      title: '쿠로미 피규어 교환해요',
+                      status: 'AVAILABLE',
+                      categories: ['피규어', '산리오'],
+                      thumbnailUrl: null,
+                      tradePlace: null,
+                      createdAt: '2026-09-29T10:00:00',
+                    },
+                    {
+                      tradeId: 22,
+                      memberId: 5,
+                      title: '피카츄 키링 교환해요',
+                      status: 'AVAILABLE',
+                      categories: ['포켓몬'],
+                      thumbnailUrl: null,
+                      tradePlace: null,
+                      createdAt: '2026-09-29T09:00:00',
+                    },
+                  ]
+                : [
+                    {
+                      tradeId: 23,
+                      memberId: 6,
+                      title: '시나모롤 피규어 교환해요',
+                      status: 'AVAILABLE',
+                      categories: ['산리오'],
+                      thumbnailUrl: null,
+                      tradePlace: null,
+                      createdAt: '2026-09-28T09:00:00',
+                    },
+                  ],
+            totalElements: 3,
+            totalPages: 2,
+            number: page,
+            size: 20,
+          },
+        });
+      }),
+      http.get('/api/v1/trades/15', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            tradeId: 15,
+            memberId: 3,
+            title: '쿠로미 피규어 교환해요',
+            description: '개봉만 한 상품입니다.',
+            desiredProduction: '시나모롤 키링',
+            categories: ['피규어', '산리오'],
+            status: 'AVAILABLE',
+            purchaseStore: null,
+            tradePlace: null,
+            availableTime: null,
+            imageUrls: [],
+            createdAt: '2026-09-29T10:00:00',
+            updatedAt: '2026-09-29T10:00:00',
+          },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/used-market',
+    });
+
+    await user.click(
+      await screen.findByRole('link', {
+        name: /\ucfe0\ub85c\ubbf8 \ud53c\uaddc\uc5b4 \uad50\ud658\ud574\uc694/,
+      }),
+    );
+
+    expect(window.location.pathname).toBe('/used-market/15');
+    expect(
+      await screen.findByRole('heading', {
+        name: '쿠로미 피규어 교환해요',
+        level: 1,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('개봉만 한 상품입니다.')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: '다른 중고 물품' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /피카츄 키링 교환해요/ }),
+    ).toHaveAttribute('href', '/used-market/22');
+
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+
+    expect(
+      await screen.findByRole('link', {
+        name: /시나모롤 피규어 교환해요/,
+      }),
+    ).toHaveAttribute('href', '/used-market/23');
   });
 });

@@ -89,7 +89,7 @@ const Page = styled.div`
 const Main = styled.main`
   display: flex;
   box-sizing: border-box;
-  width: min(100%, 1200px);
+  width: min(100%, 1240px);
   margin: 0 auto;
   padding: 40px 48px 72px;
   flex-direction: column;
@@ -103,10 +103,14 @@ const Main = styled.main`
 
 const ResultsPanel = styled.section`
   width: 100%;
-  max-width: 892px;
+  max-width: 1121px;
   margin: 0 auto;
   padding: ${space.xxl} 0;
   background: ${color.surface};
+
+  @media (max-width: 1216px) {
+    max-width: 892px;
+  }
 
   @media (max-width: ${breakpoint.wide}) {
     max-width: 663px;
@@ -122,14 +126,18 @@ const ResultsTitle = styled.h2`
   margin: 0 0 ${space.xl};
   color: ${color.text};
   font-size: 28px;
-  font-weight: ${fontWeight.extraBold};
+  font-weight: ${fontWeight.bold};
 `;
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 205px));
+  grid-template-columns: repeat(5, minmax(0, 205px));
   justify-content: center;
   gap: 44px 24px;
+
+  @media (max-width: 1216px) {
+    grid-template-columns: repeat(4, minmax(0, 205px));
+  }
 
   @media (max-width: ${breakpoint.wide}) {
     grid-template-columns: repeat(3, minmax(0, 205px));

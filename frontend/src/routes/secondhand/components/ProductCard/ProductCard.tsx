@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
 
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
@@ -22,7 +23,7 @@ export default function ProductCard({ item }: ProductCardProps) {
   const categories = item.categories.join(' · ') || '카테고리 미설정';
 
   return (
-    <Card>
+    <Card to={`/used-market/${item.tradeId}`}>
       <Thumbnail>
         {item.thumbnailUrl ? (
           <Image src={item.thumbnailUrl} alt="" />
@@ -40,10 +41,18 @@ export default function ProductCard({ item }: ProductCardProps) {
   );
 }
 
-const Card = styled.article`
+const Card = styled(Link)`
+  display: block;
   width: 100%;
   max-width: 205px;
   min-width: 0;
+  color: inherit;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 3px solid rgb(217 59 84 / 24%);
+    outline-offset: 4px;
+  }
 `;
 
 const Thumbnail = styled.div`
