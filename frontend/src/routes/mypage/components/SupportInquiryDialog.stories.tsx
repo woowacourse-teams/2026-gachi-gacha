@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
 import {
-  clearAccessToken,
-  storeAccessToken,
+  clearAuthTokens,
+  storeAuthTokens,
 } from '@/features/auth/authTokenStorage';
-import { AUTH_STORY_TOKEN } from '@/features/auth/mocks/authHandlers';
+import {
+  AUTH_STORY_REFRESH_TOKEN,
+  AUTH_STORY_TOKEN,
+} from '@/features/auth/mocks/authHandlers';
 import { MockWorkerBoundary } from '@/mocks/MockWorkerBoundary';
 
 import { SupportInquiryDialog } from './SupportInquiryDialog';
@@ -15,10 +18,13 @@ function DialogStory() {
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
-    storeAccessToken(AUTH_STORY_TOKEN);
+    storeAuthTokens({
+      accessToken: AUTH_STORY_TOKEN,
+      refreshToken: AUTH_STORY_REFRESH_TOKEN,
+    });
 
     return () => {
-      clearAccessToken();
+      clearAuthTokens();
     };
   }, []);
 

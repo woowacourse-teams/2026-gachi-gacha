@@ -51,18 +51,6 @@ export function readRefreshToken(): string | null {
   return readStoredToken(REFRESH_TOKEN_STORAGE_KEY, memoryRefreshToken);
 }
 
-export function storeAccessToken(accessToken: string): void {
-  const normalizedToken = normalizeToken(
-    accessToken,
-    '저장할 로그인 토큰이 없습니다.',
-  );
-
-  memoryAccessToken = normalizedToken;
-  memoryRefreshToken = null;
-  storeToken(ACCESS_TOKEN_STORAGE_KEY, normalizedToken);
-  removeStoredToken(REFRESH_TOKEN_STORAGE_KEY);
-}
-
 export function storeAuthTokens(tokens: AuthTokens): void {
   const accessToken = normalizeToken(
     tokens.accessToken,
@@ -84,8 +72,4 @@ export function clearAuthTokens(): void {
   memoryRefreshToken = null;
   removeStoredToken(ACCESS_TOKEN_STORAGE_KEY);
   removeStoredToken(REFRESH_TOKEN_STORAGE_KEY);
-}
-
-export function clearAccessToken(): void {
-  clearAuthTokens();
 }
