@@ -1,45 +1,57 @@
 import styled from '@emotion/styled';
 
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
+import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
+
 import type { SecondhandItem } from '../../model/secondhandItem';
 
 export interface ProductCardProps {
   item: SecondhandItem;
 }
 
-const priceFormatter = new Intl.NumberFormat('ko-KR');
+const STATUS_LABELS: Record<TradeStatus, string> = {
+  AVAILABLE: '교환 가능',
+  IN_PROGRESS: '교환 진행 중',
+  COMPLETED: '교환 완료',
+};
 
 export default function ProductCard({ item }: ProductCardProps) {
-  const price =
-    item.price === null ? '나눔' : `${priceFormatter.format(item.price)}원`;
+  const place =
+    item.tradePlace?.name || item.tradePlace?.address || '교환 장소 협의';
+  const categories = item.categories.join(' · ') || '카테고리 미설정';
 
   return (
     <Card>
       <Thumbnail>
-        {item.imageUrl ? (
-          <Image src={item.imageUrl} alt="" />
+        {item.thumbnailUrl ? (
+          <Image src={item.thumbnailUrl} alt="" />
         ) : (
-          <ImagePlaceholder>이미지 없음</ImagePlaceholder>
+          <LogoImagePlaceholder />
         )}
       </Thumbnail>
 
       <Title>{item.title}</Title>
-      <Price>{price}</Price>
-      <Meta>
-        {item.neighborhood} · {item.postedAt}
-      </Meta>
-      {item.badge && <Badge>{item.badge}</Badge>}
+      <Categories>{categories}</Categories>
+      <Meta>{place}</Meta>
+      <Meta>{formatRelativeTime(item.createdAt)}</Meta>
+      <Badge $status={item.status}>{STATUS_LABELS[item.status]}</Badge>
     </Card>
   );
 }
 
 const Card = styled.article`
+  width: 100%;
+  max-width: 205px;
   min-width: 0;
 `;
 
 const Thumbnail = styled.div`
   display: grid;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  max-width: 205px;
+  height: auto;
+  aspect-ratio: 205 / 205;
   margin-bottom: 14px;
   overflow: hidden;
   place-items: center;
@@ -52,12 +64,6 @@ const Image = styled.img`
   width: 100%;
   height: 100%;
   object-fit: cover;
-`;
-
-const ImagePlaceholder = styled.span`
-  color: #aaa5a8;
-  font-size: 14px;
-  font-weight: 700;
 `;
 
 const Title = styled.h3`
@@ -73,26 +79,27 @@ const Title = styled.h3`
   -webkit-line-clamp: 2;
 `;
 
-const Price = styled.p`
+const Categories = styled.p`
   margin: 0 0 6px;
-  color: #1f2024;
-  font-size: 18px;
-  font-weight: 800;
+  color: #4e5058;
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 const Meta = styled.p`
-  margin: 0;
+  margin: 2px 0 0;
   color: #777b86;
   font-size: 14px;
 `;
 
-const Badge = styled.span`
+const Badge = styled.span<{ $status: TradeStatus }>`
   display: inline-flex;
   margin-top: 8px;
   padding: 4px 8px;
   border-radius: 6px;
-  background: #fff1ec;
-  color: #ec6f31;
+  background: ${({ $status }) =>
+    $status === 'AVAILABLE' ? '#fff1f3' : '#f1f1f3'};
+  color: ${({ $status }) => ($status === 'AVAILABLE' ? '#d93b54' : '#696466')};
   font-size: 12px;
   font-weight: 700;
 `;

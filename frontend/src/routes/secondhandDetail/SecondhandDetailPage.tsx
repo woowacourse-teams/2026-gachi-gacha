@@ -40,7 +40,7 @@ export default function SecondhandDetailPage({
 
           <ProductGrid>
             {relatedItems.map((item) => (
-              <ProductCard key={item.id} item={item} />
+              <ProductCard key={item.tradeId} item={item} />
             ))}
           </ProductGrid>
         </RelatedSection>

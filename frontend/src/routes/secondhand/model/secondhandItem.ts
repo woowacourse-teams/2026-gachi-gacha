@@ -1,9 +1,3 @@
-export interface SecondhandItem {
-  id: number;
-  title: string;
-  price: number | null;
-  neighborhood: string;
-  postedAt: string;
-  imageUrl?: string;
-  badge?: string;
-}
+import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
+
+export type SecondhandItem = TradeSummary;

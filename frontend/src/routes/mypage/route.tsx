@@ -108,7 +108,8 @@ function formatTradeDate(createdAt: string): string {
 
 function getTradeMeta(trade: TradeSummary): string {
   const categoryLabel = trade.categories.join(' · ') || '카테고리 미설정';
-  const placeLabel = trade.tradePlace || '교환 장소 협의';
+  const placeLabel =
+    trade.tradePlace?.name || trade.tradePlace?.address || '교환 장소 협의';
 
   return `${categoryLabel} · ${placeLabel} · ${formatTradeDate(trade.createdAt)}`;
 }

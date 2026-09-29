@@ -139,6 +139,22 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
   });
 
   it('중고거래 URL에서 SecondhandPage 화면을 보여준다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+
     renderWithProviders(<App />, {
       initialAccessToken: null,
       route: '/used-market',
@@ -146,7 +162,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '신당동 중고거래 검색 결과',
+        name: '어떤 가챠를 교환해볼까요?',
       }),
     ).toBeInTheDocument();
     expect(
