@@ -1,9 +1,9 @@
-package com.gachi.gacha.server.trade.presentation;
+package com.gachi.gacha.server.category.presentation;
 
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
-import com.gachi.gacha.server.trade.application.CategoryService;
-import com.gachi.gacha.server.trade.presentation.dto.CategoryListResponse;
-import com.gachi.gacha.server.trade.presentation.dto.CategoryResponse;
+import com.gachi.gacha.server.category.application.CategoryService;
+import com.gachi.gacha.server.category.presentation.dto.CategoryListResponse;
+import com.gachi.gacha.server.category.presentation.dto.CategoryResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;

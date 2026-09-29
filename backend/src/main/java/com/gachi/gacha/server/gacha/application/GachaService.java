@@ -51,4 +51,9 @@ public class GachaService {
 
         return new PageImpl<>(ordered, idPage.getPageable(), idPage.getTotalElements());
     }
+
+    public Page<GachaInfo> findAllGachaByIds(final List<Long> categoryIds, final Pageable pageable) {
+        Page<Gacha> gachas = gachaRepository.findByCategoryIds(categoryIds, pageable);
+        return gachas.map(GachaInfo::from);
+    }
 }

@@ -2,7 +2,7 @@ package com.gachi.gacha.server.member.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.gachi.gacha.server.gacha.domain.Category;
+import com.gachi.gacha.server.category.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
