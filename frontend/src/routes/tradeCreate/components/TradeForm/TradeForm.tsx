@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { useNavigate } from 'react-router';
 
@@ -88,6 +88,30 @@ export default function TradeForm(props: TradeFormProps) {
     );
   }
 
+  // 단일 행 input에서 Enter를 누르면 브라우저가 폼을 암묵적으로 제출하므로 막는다.
+  // textarea의 줄바꿈과 버튼의 Enter 동작은 그대로 둔다.
+  function preventImplicitSubmit(event: KeyboardEvent<HTMLFormElement>) {
+    if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+      event.preventDefault();
+    }
+  }
+
+  function handleCategoryKeywordKeyDown(
+    event: KeyboardEvent<HTMLInputElement>,
+  ) {
+    // 한글 조합을 확정하는 Enter는 선택으로 처리하지 않는다.
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+      return;
+    }
+
+    const [firstCategory] = availableCategories;
+
+    if (firstCategory) {
+      selectCategory(firstCategory);
+      setCategoryKeyword('');
+    }
+  }
+
   function changeImages(nextImages: File[]) {
     setImages(nextImages);
 
@@ -174,6 +198,7 @@ export default function TradeForm(props: TradeFormProps) {
       <Form
         id={formId}
         aria-busy={isSubmitting}
+        onKeyDown={preventImplicitSubmit}
         onSubmit={(event) => void handleSubmit(event)}
       >
         <PhotoUploader
@@ -222,6 +247,7 @@ export default function TradeForm(props: TradeFormProps) {
             autoComplete="off"
             placeholder="카테고리를 검색해주세요"
             onChange={(event) => setCategoryKeyword(event.target.value)}
+            onKeyDown={handleCategoryKeywordKeyDown}
           />
 
           {selectedCategories.length > 0 && (
