@@ -6,6 +6,11 @@ export const TRADE_STATUSES = [
 
 export type TradeStatus = (typeof TRADE_STATUSES)[number];
 
+export interface TradePlaceSummary {
+  name: string | null;
+  address: string;
+}
+
 export interface TradeSummary {
   tradeId: number;
   memberId: number;
@@ -13,7 +18,7 @@ export interface TradeSummary {
   status: TradeStatus;
   categories: string[];
   thumbnailUrl: string | null;
-  tradePlace: string | null;
+  tradePlace: TradePlaceSummary | null;
   createdAt: string;
 }
 
