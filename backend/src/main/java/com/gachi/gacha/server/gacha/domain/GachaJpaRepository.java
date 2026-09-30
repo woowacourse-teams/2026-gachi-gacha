@@ -62,5 +62,5 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
         )
         """,
             nativeQuery = true)
-    Page<StoreGachaCount> findGachaIdsOrderByStoreCount(@Param("categoryIds") List<Long> categoryIds, Pageable pageable);
+    Page<StoreGachaCount> findGachaIdsOrderByStoreCount(@Param("categoryIds") final List<Long> categoryIds, final Pageable pageable);
 }

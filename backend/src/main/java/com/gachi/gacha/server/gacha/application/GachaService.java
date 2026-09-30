@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class GachaService {
 
     private final GachaJpaRepository gachaRepository;
-    private final StoreGachaService storeGachaService;
     
     public Page<GachaInfo> findAllGacha(@Nullable final String keyword, final Pageable pageable) {
         if (keyword == null || keyword.isBlank()) {

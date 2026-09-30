@@ -19,7 +19,7 @@ public record GachaWithStoreCountResponse(
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static GachaWithStoreCountResponse from(GachaWithStoreCountInfo gachaWithStoreCountInfo) {
+    public static GachaWithStoreCountResponse from(final GachaWithStoreCountInfo gachaWithStoreCountInfo) {
         return GachaWithStoreCountResponse.builder()
                 .gachaId(gachaWithStoreCountInfo.gachaId())
                 .name(gachaWithStoreCountInfo.name())

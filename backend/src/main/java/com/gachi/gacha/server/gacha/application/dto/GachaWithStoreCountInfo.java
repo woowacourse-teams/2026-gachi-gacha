@@ -19,7 +19,7 @@ public record GachaWithStoreCountInfo(
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
-    public static GachaWithStoreCountInfo of(int storeCount, Gacha gacha) {
+    public static GachaWithStoreCountInfo of(final int storeCount, final Gacha gacha) {
         List<String> categories = gacha.getGachaCategories().stream()
                 .map(category -> category.getCategory().getName())
                 .toList();
