@@ -75,3 +75,16 @@ jwt:
 
 cors:
   allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS}
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+    operations-sorter: method
+    tags-sorter: alpha
+    display-request-duration: true
+
+  ai:
+    mcp:
+      enabled: false
