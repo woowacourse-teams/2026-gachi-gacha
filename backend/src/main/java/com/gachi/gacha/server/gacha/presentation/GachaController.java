@@ -3,7 +3,9 @@ package com.gachi.gacha.server.gacha.presentation;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.gacha.application.GachaService;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
+import com.gachi.gacha.server.gacha.application.dto.GachaWithStoreCountInfo;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
+import com.gachi.gacha.server.gacha.presentation.dto.GachaWithStoreCountResponse;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,12 +35,12 @@ public class GachaController {
     }
 
     @GetMapping(params = {"categoryIds"})
-    public BaseResponse<Page<GachaResponse>> readGacha(
+    public BaseResponse<Page<GachaWithStoreCountResponse>> readGachaWithStoreCount(
             @RequestParam final List<Long> categoryIds,
-            @PageableDefault(sort = "createdAt", direction = Direction.DESC) final Pageable pageable
+            final Pageable pageable
     ) {
-        Page<GachaInfo> gachas = gachaService.findAllGachaByIds(categoryIds, pageable);
-        return BaseResponse.ok(gachas.map(GachaResponse::from));
+        Page<GachaWithStoreCountInfo> gachas = gachaService.findAllGachaByIds(categoryIds, pageable);
+        return BaseResponse.ok(gachas.map(GachaWithStoreCountResponse::from));
     }
 
     @GetMapping("/{gachaId}")

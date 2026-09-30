@@ -2,6 +2,7 @@ package com.gachi.gacha.server.gacha.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.gacha.domain.exception.GachaNotFoundException;
+import com.gachi.gacha.server.usecase.domain.StoreGachaCount;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
@@ -40,4 +41,26 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
             "LEFT JOIN FETCH gc.category c " +
             "WHERE g.id IN :ids")
     List<Gacha> findByIdsWithCategories(@Param("ids") final List<Long> ids);
+
+    @Query(value = """
+        SELECT g.id AS gachaId, COUNT(sg.store_id) AS storeCount
+        FROM gacha g
+        LEFT JOIN store_gacha sg ON sg.gacha_id = g.id
+        WHERE EXISTS (
+            SELECT 1 FROM gacha_category gc
+            WHERE gc.gacha_id = g.id AND gc.category_id IN (:categoryIds)
+        )
+        GROUP BY g.id
+        ORDER BY storeCount DESC, g.id ASC
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+        FROM gacha g
+        WHERE EXISTS (
+            SELECT 1 FROM gacha_category gc
+            WHERE gc.gacha_id = g.id AND gc.category_id IN (:categoryIds)
+        )
+        """,
+            nativeQuery = true)
+    Page<StoreGachaCount> findGachaIdsOrderByStoreCount(@Param("categoryIds") final List<Long> categoryIds, final Pageable pageable);
 }
