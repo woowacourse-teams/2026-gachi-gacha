@@ -72,8 +72,7 @@ import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 /**
- * 테스트 자체에는 트랜잭션을 적용하지 않는다.
- * 실제 서비스 커밋 이후의 WebSocket 수신과 REST 재조회 결과를 함께 검증한다.
+ * 테스트 자체에는 트랜잭션을 적용하지 않는다. 실제 서비스 커밋 이후의 WebSocket 수신과 REST 재조회 결과를 함께 검증한다.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ChatRoomUpdateIntegrationTest {
@@ -212,8 +211,8 @@ class ChatRoomUpdateIntegrationTest {
                 .isEqualTo(MESSAGE_CONTENT);
         assertThat(ownerUpdate.path("room").path("lastMessage").path("sendAt").asText()).isNotEmpty();
         assertThat(ownerUpdate.path("room").path("createdAt").asText()).isNotEmpty();
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).totalUnreadCount()).isEqualTo(2L);
-        assertThat(chatRoomService.getRoomUpdate(requesterId, roomId).room().unreadCount()).isZero();
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).totalUnreadCount()).isEqualTo(2L);
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(requesterId, roomId).room().unreadCount()).isZero();
         assertThat(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(roomId, PageRequest.of(0, 10)))
                 .hasSize(1);
     }
@@ -246,8 +245,9 @@ class ChatRoomUpdateIntegrationTest {
         for (int i = 0; i < messageCount; i++) {
             assertRoomUpdate(awaitPayload(requesterUpdates), ownerId, 0L, 0L);
         }
-        assertThat(chatRoomService.getRoomUpdate(requesterId, roomId).room().unreadCount()).isZero();
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).room().unreadCount()).isEqualTo(messageCount);
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(requesterId, roomId).room().unreadCount()).isZero();
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).room().unreadCount()).isEqualTo(
+                messageCount);
         assertThat(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(roomId, PageRequest.of(0, 10)))
                 .extracting(ChatMessage::getSequence)
                 .containsExactly(4L, 3L, 2L, 1L);
@@ -295,7 +295,7 @@ class ChatRoomUpdateIntegrationTest {
         readMessages(ownerId, 0L).then().statusCode(200);
         assertRoomUpdate(awaitPayload(updates), requesterId, 2L, 2L);
 
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).room().unreadCount()).isEqualTo(2L);
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).room().unreadCount()).isEqualTo(2L);
     }
 
     @Test
@@ -307,7 +307,7 @@ class ChatRoomUpdateIntegrationTest {
         readMessages(ownerId, 2L).then().statusCode(400);
 
         assertNoUpdate(updates);
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).room().unreadCount()).isEqualTo(1L);
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).room().unreadCount()).isEqualTo(1L);
     }
 
     @Test
@@ -319,7 +319,7 @@ class ChatRoomUpdateIntegrationTest {
         readMessages(outsiderId, 1L).then().statusCode(403);
 
         assertNoUpdate(updates);
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).room().unreadCount()).isEqualTo(1L);
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).room().unreadCount()).isEqualTo(1L);
     }
 
     @Test
@@ -407,8 +407,8 @@ class ChatRoomUpdateIntegrationTest {
         assertNoUpdate(requesterUpdates);
         assertNoUpdate(ownerUpdates);
         assertThat(chatRoomJpaRepository.getById(roomId).getLastMessageSequence()).isZero();
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).room().lastMessage()).isNull();
-        assertThat(chatRoomService.getRoomUpdate(ownerId, roomId).totalUnreadCount()).isZero();
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).room().lastMessage()).isNull();
+        assertThat(chatRoomService.getRoomWithTotalUnreadCount(ownerId, roomId).totalUnreadCount()).isZero();
         assertThat(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(roomId, PageRequest.of(0, 10)))
                 .isEmpty();
         assertThat(requester.isConnected()).isTrue();

@@ -23,7 +23,7 @@ public class ChatRoomUpdateSender {
     public void sendToMember(final Long memberId, final Long roomId) {
         try {
             ChatRoomUpdateInfo info =
-                    chatRoomService.getRoomUpdate(memberId, roomId);
+                    chatRoomService.getRoomWithTotalUnreadCount(memberId, roomId);
 
             ChatRoomUpdateResponse response =
                     new ChatRoomUpdateResponse(

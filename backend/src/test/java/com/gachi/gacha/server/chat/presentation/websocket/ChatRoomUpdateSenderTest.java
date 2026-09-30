@@ -45,7 +45,7 @@ class ChatRoomUpdateSenderTest {
     @Test
     @DisplayName("갱신 정보 조회가 실패해도 이미 완료된 요청에 예외를 전파하지 않는다")
     void sendToMember_queryFailureDoesNotPropagate() {
-        given(chatRoomService.getRoomUpdate(FIRST_MEMBER_ID, ROOM_ID))
+        given(chatRoomService.getRoomWithTotalUnreadCount(FIRST_MEMBER_ID, ROOM_ID))
                 .willThrow(new IllegalStateException("조회 실패"));
 
         assertThatCode(() -> sender.sendToMember(FIRST_MEMBER_ID, ROOM_ID))
@@ -63,7 +63,7 @@ class ChatRoomUpdateSenderTest {
         assertThatCode(() -> sender.sendToRoomMembers(ROOM_ID))
                 .doesNotThrowAnyException();
 
-        verify(chatRoomService, never()).getRoomUpdate(any(), any());
+        verify(chatRoomService, never()).getRoomWithTotalUnreadCount(any(), any());
         verifyNoInteractions(messagingTemplate);
     }
 
@@ -72,9 +72,9 @@ class ChatRoomUpdateSenderTest {
     void sendToRoomMembers_continuesAfterMemberQueryFailure() {
         given(chatRoomService.getMemberIds(ROOM_ID))
                 .willReturn(List.of(FIRST_MEMBER_ID, SECOND_MEMBER_ID));
-        given(chatRoomService.getRoomUpdate(FIRST_MEMBER_ID, ROOM_ID))
+        given(chatRoomService.getRoomWithTotalUnreadCount(FIRST_MEMBER_ID, ROOM_ID))
                 .willThrow(new IllegalStateException("첫 참여자 조회 실패"));
-        given(chatRoomService.getRoomUpdate(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
+        given(chatRoomService.getRoomWithTotalUnreadCount(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
 
         assertThatCode(() -> sender.sendToRoomMembers(ROOM_ID)).doesNotThrowAnyException();
 
@@ -89,8 +89,8 @@ class ChatRoomUpdateSenderTest {
     void sendToRoomMembers_continuesAfterDeliveryFailure() {
         given(chatRoomService.getMemberIds(ROOM_ID))
                 .willReturn(List.of(FIRST_MEMBER_ID, SECOND_MEMBER_ID));
-        given(chatRoomService.getRoomUpdate(FIRST_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
-        given(chatRoomService.getRoomUpdate(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
+        given(chatRoomService.getRoomWithTotalUnreadCount(FIRST_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
+        given(chatRoomService.getRoomWithTotalUnreadCount(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
         doThrow(new MessageDeliveryException("전송 실패")).when(messagingTemplate).convertAndSendToUser(
                 eq(String.valueOf(FIRST_MEMBER_ID)), eq(DESTINATION), any(ChatRoomUpdateResponse.class));
 

@@ -110,7 +110,7 @@ public class ChatRoomService {
         );
     }
 
-    public ChatRoomUpdateInfo getRoomUpdate(final Long memberId, final Long roomId) {
+    public ChatRoomUpdateInfo getRoomWithTotalUnreadCount(final Long memberId, final Long roomId) {
         ChatRoomInfo room = getRoom(memberId, roomId);
         long totalUnreadCount = getUnreadCount(memberId);
 
