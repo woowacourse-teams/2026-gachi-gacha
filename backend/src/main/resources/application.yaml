@@ -1,6 +1,7 @@
 server:
   servlet:
     context-path: /api/v1
+  forward-headers-strategy: framework
 spring:
   application:
     name: backend
