@@ -133,13 +133,15 @@ describe('TradeForm', () => {
         return HttpResponse.json({
           code: 'C000',
           message: '정상',
-          data:
-            keyword === '포켓'
-              ? [{ categoryId: 5, name: '포켓몬' }]
-              : [
-                  { categoryId: 1, name: '산리오' },
-                  { categoryId: 5, name: '포켓몬' },
-                ],
+          data: {
+            items:
+              keyword === '포켓'
+                ? [{ categoryId: 5, name: '포켓몬' }]
+                : [
+                    { categoryId: 1, name: '산리오' },
+                    { categoryId: 5, name: '포켓몬' },
+                  ],
+          },
         });
       }),
     );

@@ -82,7 +82,7 @@ export const tradeHandlers = [
     return HttpResponse.json({
       code: 'C000',
       message: '정상',
-      data: categories,
+      data: { items: categories },
     });
   }),
   http.get(`${TRADES_API_PATH}/:tradeId`, ({ params }) => {

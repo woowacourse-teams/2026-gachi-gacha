@@ -36,11 +36,20 @@ export async function getTradeCategories(
     throw new Error(getErrorMessage(responseBody));
   }
 
-  if (responseBody.code !== 'C000' || !Array.isArray(responseBody.data)) {
+  if (responseBody.code !== 'C000') {
     throw new Error(responseBody.message);
   }
 
-  return responseBody.data.map(parseTradeCategory);
+  if (
+    typeof responseBody.data !== 'object' ||
+    responseBody.data === null ||
+    !('items' in responseBody.data) ||
+    !Array.isArray(responseBody.data.items)
+  ) {
+    throw new Error('카테고리 응답 형식이 올바르지 않습니다.');
+  }
+
+  return responseBody.data.items.map(parseTradeCategory);
 }
 
 function parseTradeCategory(value: unknown): TradeCategory {

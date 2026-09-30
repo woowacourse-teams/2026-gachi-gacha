@@ -40,11 +40,13 @@ function useEditHandlers() {
       HttpResponse.json({
         code: 'C000',
         message: '정상',
-        data: [
-          { categoryId: 1, name: '산리오' },
-          { categoryId: 2, name: '피규어' },
-          { categoryId: 3, name: '키링' },
-        ],
+        data: {
+          items: [
+            { categoryId: 1, name: '산리오' },
+            { categoryId: 2, name: '피규어' },
+            { categoryId: 3, name: '키링' },
+          ],
+        },
       }),
     ),
   );
