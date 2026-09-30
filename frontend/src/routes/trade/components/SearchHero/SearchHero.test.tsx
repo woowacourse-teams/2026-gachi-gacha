@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 
 import SearchHero from './SearchHero';
 
-describe('중고거래 검색 히어로', () => {
+describe('교환 검색 히어로', () => {
   it('공백을 정리한 게시글 검색어를 전달한다', async () => {
     const onSearch = jest.fn();
     const user = userEvent.setup();
@@ -14,7 +14,7 @@ describe('중고거래 검색 히어로', () => {
     );
 
     await user.type(
-      screen.getByRole('searchbox', { name: '중고거래 게시글 검색어' }),
+      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
       '  쿠로미 키링  ',
     );
     await user.click(screen.getByRole('button', { name: '검색' }));

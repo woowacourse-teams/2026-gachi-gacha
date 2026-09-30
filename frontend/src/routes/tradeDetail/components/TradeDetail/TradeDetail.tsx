@@ -53,7 +53,7 @@ export default function TradeDetail({
 
   return (
     <Wrapper>
-      <Breadcrumb>중고거래 · {categoryLabel}</Breadcrumb>
+      <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
 
       <Summary>
         <Gallery>

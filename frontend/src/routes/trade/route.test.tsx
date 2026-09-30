@@ -116,7 +116,7 @@ describe('교환 게시글 검색', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByRole('searchbox', { name: '중고거래 게시글 검색어' }),
+      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
     ).toHaveValue('쿠로미');
 
     await waitFor(() => expect(requestedUrls).toHaveLength(1));

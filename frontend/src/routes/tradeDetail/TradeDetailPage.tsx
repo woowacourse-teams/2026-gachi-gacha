@@ -37,7 +37,7 @@ export default function TradeDetailPage({
           <RelatedSection>
             <RelatedContent>
               <RelatedHeader>
-                <RelatedTitle>다른 중고 물품</RelatedTitle>
+                <RelatedTitle>다른 교환 물품</RelatedTitle>
               </RelatedHeader>
 
               <ProductGrid>

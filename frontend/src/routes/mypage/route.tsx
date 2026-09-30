@@ -305,7 +305,7 @@ export function MyPageRoute() {
                 <StatePanel>
                   <StateTitle>아직 올린 교환글이 없어요</StateTitle>
                   <StateDescription>
-                    중고거래 기능이 열리면 내 교환글을 여기서 관리할 수 있어요.
+                    교환 기능이 열리면 내 교환글을 여기서 관리할 수 있어요.
                   </StateDescription>
                 </StatePanel>
               ) : (
