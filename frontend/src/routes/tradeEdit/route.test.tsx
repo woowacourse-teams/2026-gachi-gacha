@@ -1,7 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
+import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
@@ -88,6 +90,93 @@ describe('TradeEditRoute', () => {
     expect(
       screen.getByRole('img', { name: '기존 교환 사진 1' }),
     ).toHaveAttribute('src', 'https://cdn.example.com/trade.jpg');
+    expect(screen.getByRole('button', { name: '수정하기' })).toBeEnabled();
+  });
+
+  it('새 사진 없이 저장하면 images 없이 PUT 요청하고 상세 페이지로 이동한다', async () => {
+    const user = userEvent.setup();
+    let receivedRequest: unknown = null;
+    let receivedImageCount = -1;
+
+    useEditHandlers();
+    server.use(
+      http.put(
+        `/api/v1/trades/${TRADE_DETAIL.tradeId}`,
+        async ({ request }) => {
+          const formData = await request.formData();
+          const requestPart = formData.get('request');
+
+          if (typeof requestPart === 'string' || requestPart === null) {
+            return new HttpResponse(null, { status: 400 });
+          }
+
+          receivedRequest = JSON.parse(await requestPart.text());
+          receivedImageCount = formData.getAll('images').length;
+
+          return HttpResponse.json({
+            code: 'C000',
+            message: '정상',
+            data: { ...TRADE_DETAIL, title: '수정한 제목' },
+          });
+        },
+      ),
+    );
+    storeAuthTokens({
+      accessToken: createAccessToken(TRADE_DETAIL.memberId),
+      refreshToken: 'refresh-token',
+    });
+
+    renderWithProviders(<TradeEditRoute tradeId={TRADE_DETAIL.tradeId} />, {
+      initialAccessToken: createAccessToken(TRADE_DETAIL.memberId),
+      route: `/trade/${TRADE_DETAIL.tradeId}/edit`,
+    });
+
+    const titleInput = await screen.findByRole('textbox', { name: /제목/ });
+
+    await user.clear(titleInput);
+    await user.type(titleInput, '수정한 제목');
+    await user.click(screen.getByRole('button', { name: '수정하기' }));
+
+    await waitFor(() => {
+      expect(window.location.pathname).toBe(`/trade/${TRADE_DETAIL.tradeId}`);
+    });
+    expect(receivedRequest).toMatchObject({
+      title: '수정한 제목',
+      categoryIds: [2, 1],
+    });
+    expect(receivedImageCount).toBe(0);
+  });
+
+  it('수정에 실패하면 에러 메시지를 보여주고 수정 페이지에 머문다', async () => {
+    const user = userEvent.setup();
+
+    useEditHandlers();
+    server.use(
+      http.put(`/api/v1/trades/${TRADE_DETAIL.tradeId}`, () =>
+        HttpResponse.json(
+          { code: 'T003', message: '교환 게시글을 수정하지 못했습니다.' },
+          { status: 500 },
+        ),
+      ),
+    );
+    storeAuthTokens({
+      accessToken: createAccessToken(TRADE_DETAIL.memberId),
+      refreshToken: 'refresh-token',
+    });
+
+    renderWithProviders(<TradeEditRoute tradeId={TRADE_DETAIL.tradeId} />, {
+      initialAccessToken: createAccessToken(TRADE_DETAIL.memberId),
+      route: `/trade/${TRADE_DETAIL.tradeId}/edit`,
+    });
+
+    await user.click(await screen.findByRole('button', { name: '수정하기' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '교환 게시글을 수정하지 못했습니다.',
+    );
+    expect(window.location.pathname).toBe(
+      `/trade/${TRADE_DETAIL.tradeId}/edit`,
+    );
     expect(screen.getByRole('button', { name: '수정하기' })).toBeEnabled();
   });
 
