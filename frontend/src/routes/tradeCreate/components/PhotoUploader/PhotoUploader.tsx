@@ -6,17 +6,22 @@ const MAX_PHOTO_COUNT = 5;
 
 interface PhotoUploaderProps {
   files: File[];
+  initialImageUrls?: string[];
   onFilesChange: (files: File[]) => void;
   errorMessage?: string | undefined;
 }
 
 export default function PhotoUploader({
   files,
+  initialImageUrls = [],
   onFilesChange,
   errorMessage,
 }: PhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  // 새 사진을 하나라도 고르면 기존 사진은 전부 교체되므로 화면에서도 숨긴다.
+  const visibleInitialImageUrls = files.length > 0 ? [] : initialImageUrls;
+  const photoCount = visibleInitialImageUrls.length + files.length;
 
   useEffect(() => {
     const nextPreviewUrls = files.map((file) => URL.createObjectURL(file));
@@ -48,9 +53,12 @@ export default function PhotoUploader({
       <Label id="trade-photo-label">
         사진 <RequiredMark aria-hidden="true">*</RequiredMark>{' '}
         <Count>
-          ({files.length}/{MAX_PHOTO_COUNT})
+          ({photoCount}/{MAX_PHOTO_COUNT})
         </Count>
       </Label>
+      {initialImageUrls.length > 0 && (
+        <Hint>새 사진을 추가하면 기존 사진은 모두 교체돼요.</Hint>
+      )}
 
       <PhotoList>
         {files.length < MAX_PHOTO_COUNT && (
@@ -59,6 +67,12 @@ export default function PhotoUploader({
             <span>사진 추가</span>
           </AddButton>
         )}
+
+        {visibleInitialImageUrls.map((url, index) => (
+          <PreviewItem key={url}>
+            <PreviewImage src={url} alt={`기존 교환 사진 ${index + 1}`} />
+          </PreviewItem>
+        ))}
 
         {previewUrls.map((url, index) => (
           <PreviewItem key={url}>
@@ -117,6 +131,12 @@ const Label = styled.p`
   color: #242429;
   font-size: 15px;
   font-weight: 800;
+`;
+
+const Hint = styled.p`
+  margin: -4px 0 0;
+  color: #858790;
+  font-size: 13px;
 `;
 
 const Count = styled.span`

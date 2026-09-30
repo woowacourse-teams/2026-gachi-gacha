@@ -94,7 +94,7 @@ export default function TradePage({
             <EmptyState>
               {query
                 ? '검색어와 일치하는 게시글이 없어요.'
-                : '아직 등록된 중고거래 게시글이 없어요.'}
+                : '아직 등록된 교환 게시글이 없어요.'}
             </EmptyState>
           )}
         </ResultsPanel>

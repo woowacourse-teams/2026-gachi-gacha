@@ -1,8 +1,9 @@
-import { type FormEvent, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { useNavigate } from 'react-router';
 
 import { createTrade } from '@/domains/trade/api/createTrade';
+import { updateTrade } from '@/domains/trade/api/updateTrade';
 import type { TradeCategory } from '@/domains/trade/tradeCategoryType';
 import type {
   CreateTradeRequest,
@@ -16,17 +17,38 @@ import TradePlaceSearchDialog from '../TradePlaceSearchDialog';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
 
-export default function TradeForm() {
+export interface TradeFormInitialValues {
+  title: string;
+  description: string;
+  desiredProduction: string;
+  categories: TradeCategory[];
+  purchaseStore: TradePlaceInput | null;
+  tradePlace: TradePlaceInput | null;
+  imageUrls: string[];
+  // 폼에서 편집하지 않지만, PUT은 전체 교체라 기존 값을 그대로 보내야 지워지지 않는다.
+  availableTime?: string | null;
+}
+
+type TradeFormProps =
+  | { mode?: 'create'; initialValues?: TradeFormInitialValues }
+  | { mode: 'edit'; tradeId: number; initialValues: TradeFormInitialValues };
+
+export default function TradeForm(props: TradeFormProps) {
+  const { mode = 'create', initialValues } = props;
   const navigate = useNavigate();
+  const isEditMode = mode === 'edit';
+  const formId = isEditMode ? 'trade-edit-form' : 'trade-create-form';
   const submittingRef = useRef(false);
   const [images, setImages] = useState<File[]>([]);
   const [photoErrorMessage, setPhotoErrorMessage] = useState<string | null>(
     null,
   );
   const [purchaseStore, setPurchaseStore] = useState<TradePlaceInput | null>(
-    null,
+    initialValues?.purchaseStore ?? null,
   );
-  const [tradePlace, setTradePlace] = useState<TradePlaceInput | null>(null);
+  const [tradePlace, setTradePlace] = useState<TradePlaceInput | null>(
+    initialValues?.tradePlace ?? null,
+  );
   const [isPurchaseStoreDialogOpen, setIsPurchaseStoreDialogOpen] =
     useState(false);
   const [isPlaceDialogOpen, setIsPlaceDialogOpen] = useState(false);
@@ -37,7 +59,7 @@ export default function TradeForm() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [categoryKeyword, setCategoryKeyword] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TradeCategory[]>(
-    [],
+    initialValues?.categories ?? [],
   );
   const categoryState = useTradeCategories(categoryKeyword);
   const availableCategories =
@@ -66,6 +88,30 @@ export default function TradeForm() {
     );
   }
 
+  // 단일 행 input에서 Enter를 누르면 브라우저가 폼을 암묵적으로 제출하므로 막는다.
+  // textarea의 줄바꿈과 버튼의 Enter 동작은 그대로 둔다.
+  function preventImplicitSubmit(event: KeyboardEvent<HTMLFormElement>) {
+    if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
+      event.preventDefault();
+    }
+  }
+
+  function handleCategoryKeywordKeyDown(
+    event: KeyboardEvent<HTMLInputElement>,
+  ) {
+    // 한글 조합을 확정하는 Enter는 선택으로 처리하지 않는다.
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
+      return;
+    }
+
+    const [firstCategory] = availableCategories;
+
+    if (firstCategory) {
+      selectCategory(firstCategory);
+      setCategoryKeyword('');
+    }
+  }
+
   function changeImages(nextImages: File[]) {
     setImages(nextImages);
 
@@ -81,7 +127,7 @@ export default function TradeForm() {
       return;
     }
 
-    if (images.length === 0) {
+    if (images.length === 0 && !initialValues?.imageUrls.length) {
       setPhotoErrorMessage('사진을 1장 이상 등록해주세요.');
       return;
     }
@@ -117,6 +163,9 @@ export default function TradeForm() {
       ...(desiredProduction ? { desiredProduction } : {}),
       ...(purchaseStore ? { purchaseStore } : {}),
       ...(tradePlace ? { tradePlace } : {}),
+      ...(initialValues?.availableTime
+        ? { availableTime: initialValues.availableTime }
+        : {}),
     };
 
     setPhotoErrorMessage(null);
@@ -126,14 +175,17 @@ export default function TradeForm() {
     setIsSubmitting(true);
 
     try {
-      const createdTrade = await createTrade({ request, images });
+      const savedTrade =
+        props.mode === 'edit'
+          ? await updateTrade({ tradeId: props.tradeId, request, images })
+          : await createTrade({ request, images });
 
-      navigate(`/trade/${createdTrade.tradeId}`);
+      navigate(`/trade/${savedTrade.tradeId}`);
     } catch (error: unknown) {
       setSubmissionError(
         error instanceof Error
           ? error.message
-          : '교환 게시글을 등록하지 못했습니다.',
+          : `교환 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
       );
     } finally {
       submittingRef.current = false;
@@ -144,12 +196,16 @@ export default function TradeForm() {
   return (
     <>
       <Form
-        id="trade-create-form"
+        id={formId}
         aria-busy={isSubmitting}
+        onKeyDown={preventImplicitSubmit}
         onSubmit={(event) => void handleSubmit(event)}
       >
         <PhotoUploader
           files={images}
+          {...(initialValues
+            ? { initialImageUrls: initialValues.imageUrls }
+            : {})}
           errorMessage={photoErrorMessage ?? undefined}
           onFilesChange={changeImages}
         />
@@ -161,6 +217,7 @@ export default function TradeForm() {
           <Input
             id="trade-title"
             name="title"
+            defaultValue={initialValues?.title}
             required
             maxLength={MAX_SHORT_TEXT_LENGTH}
             aria-invalid={Boolean(titleErrorMessage)}
@@ -190,6 +247,7 @@ export default function TradeForm() {
             autoComplete="off"
             placeholder="카테고리를 검색해주세요"
             onChange={(event) => setCategoryKeyword(event.target.value)}
+            onKeyDown={handleCategoryKeywordKeyDown}
           />
 
           {selectedCategories.length > 0 && (
@@ -255,6 +313,7 @@ export default function TradeForm() {
           <Input
             id="trade-desired-production"
             name="desiredProduction"
+            defaultValue={initialValues?.desiredProduction}
             maxLength={MAX_SHORT_TEXT_LENGTH}
             placeholder="예: 시나모롤 키링 또는 산리오 랜덤 교환"
           />
@@ -375,6 +434,7 @@ export default function TradeForm() {
           <Textarea
             id="trade-description"
             name="description"
+            defaultValue={initialValues?.description}
             required
             placeholder="가챠의 상태와 교환 방법을 자세히 적어주세요"
           />
@@ -385,7 +445,12 @@ export default function TradeForm() {
         )}
       </Form>
 
-      <StickyActionBar isSubmitting={isSubmitting} />
+      <StickyActionBar
+        isSubmitting={isSubmitting}
+        formId={formId}
+        submitLabel={isEditMode ? '수정하기' : '등록하기'}
+        submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
+      />
 
       <TradePlaceSearchDialog
         open={isPurchaseStoreDialogOpen}

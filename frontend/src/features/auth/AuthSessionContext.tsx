@@ -26,12 +26,14 @@ import {
   storeAuthTokens,
 } from './authTokenStorage';
 import type { AuthTokens } from './authTokensType';
+import { readMemberIdFromAccessToken } from './readMemberIdFromAccessToken';
 
 type AuthStatus = 'loading' | 'guest' | 'authenticated' | 'error';
 
 interface AuthSessionValue {
   status: AuthStatus;
   member: AuthMember | null;
+  memberId: string | null;
   errorMessage: string | null;
   authenticate: (tokens: AuthTokens) => Promise<void>;
   updateProfile: (input: UpdateCurrentMemberInput) => Promise<void>;
@@ -43,14 +45,28 @@ interface AuthSessionValue {
 interface AuthState {
   status: AuthStatus;
   member: AuthMember | null;
+  memberId: string | null;
   errorMessage: string | null;
 }
 
 const GUEST_STATE: AuthState = {
   status: 'guest',
   member: null,
+  memberId: null,
   errorMessage: null,
 };
+
+function createAuthenticatedState(
+  member: AuthMember,
+  accessToken: string,
+): AuthState {
+  return {
+    status: 'authenticated',
+    member,
+    memberId: readMemberIdFromAccessToken(accessToken),
+    errorMessage: null,
+  };
+}
 
 const AuthSessionContext = createContext<AuthSessionValue | null>(null);
 
@@ -75,7 +91,7 @@ export function AuthSessionProvider({
   const [state, setState] = useState<AuthState>(() =>
     readSessionAccessToken() ||
     (initialAccessToken === undefined && readRefreshToken())
-      ? { status: 'loading', member: null, errorMessage: null }
+      ? { status: 'loading', member: null, memberId: null, errorMessage: null }
       : GUEST_STATE,
   );
 
@@ -90,14 +106,19 @@ export function AuthSessionProvider({
         return;
       }
 
-      setState({ status: 'loading', member: null, errorMessage: null });
+      setState({
+        status: 'loading',
+        member: null,
+        memberId: null,
+        errorMessage: null,
+      });
 
       try {
         if (accessToken) {
           try {
             const member = await getCurrentMember(accessToken, signal);
 
-            setState({ status: 'authenticated', member, errorMessage: null });
+            setState(createAuthenticatedState(member, accessToken));
             return;
           } catch (error) {
             if (isAbortError(error)) {
@@ -151,7 +172,7 @@ export function AuthSessionProvider({
         accessToken = refreshedTokens.accessToken;
 
         const member = await getCurrentMember(accessToken, signal);
-        setState({ status: 'authenticated', member, errorMessage: null });
+        setState(createAuthenticatedState(member, accessToken));
       } catch (error) {
         if (isAbortError(error)) {
           return;
@@ -166,6 +187,7 @@ export function AuthSessionProvider({
         setState({
           status: 'error',
           member: null,
+          memberId: null,
           errorMessage:
             error instanceof Error
               ? error.message
@@ -202,18 +224,24 @@ export function AuthSessionProvider({
       throw new Error('로그인 토큰 정보가 올바르지 않습니다.');
     }
 
-    setState({ status: 'loading', member: null, errorMessage: null });
+    setState({
+      status: 'loading',
+      member: null,
+      memberId: null,
+      errorMessage: null,
+    });
 
     try {
       const member = await getCurrentMember(accessToken);
 
       storeAuthTokens({ accessToken, refreshToken });
-      setState({ status: 'authenticated', member, errorMessage: null });
+      setState(createAuthenticatedState(member, accessToken));
     } catch (error) {
       clearAuthTokens();
       setState({
         status: 'error',
         member: null,
+        memberId: null,
         errorMessage:
           error instanceof Error ? error.message : '로그인에 실패했습니다.',
       });
@@ -230,6 +258,7 @@ export function AuthSessionProvider({
         ...updatedMember,
         name: updatedMember.name ?? currentState.member?.name ?? null,
       },
+      memberId: currentState.memberId,
       errorMessage: null,
     }));
   }, []);

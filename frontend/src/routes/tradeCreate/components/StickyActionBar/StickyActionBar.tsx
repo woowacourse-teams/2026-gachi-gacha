@@ -2,21 +2,29 @@ import styled from '@emotion/styled';
 
 interface StickyActionBarProps {
   isSubmitting: boolean;
+  formId?: string;
+  submitLabel?: string;
+  submittingLabel?: string;
+  disabled?: boolean;
 }
 
 export default function StickyActionBar({
   isSubmitting,
+  formId = 'trade-create-form',
+  submitLabel = '등록하기',
+  submittingLabel = '등록 중...',
+  disabled = false,
 }: StickyActionBarProps) {
   return (
     <Wrapper>
       <Actions>
         <SubmitButton
           type="submit"
-          form="trade-create-form"
-          disabled={isSubmitting}
+          form={formId}
+          disabled={disabled || isSubmitting}
           aria-busy={isSubmitting}
         >
-          {isSubmitting ? '등록 중...' : '등록하기'}
+          {isSubmitting ? submittingLabel : submitLabel}
         </SubmitButton>
       </Actions>
     </Wrapper>

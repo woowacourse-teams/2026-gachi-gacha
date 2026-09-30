@@ -7,8 +7,11 @@ import TradeDetail from './components/TradeDetail';
 import ProductCard from '../trade/components/ProductCard';
 import type { TradeItem } from '../trade/model/tradeItem';
 
+export type TradeDetailAction = 'chat' | 'edit' | null;
+
 interface TradeDetailPageProps {
   detail: TradeDetailData;
+  action?: TradeDetailAction;
   relatedItems?: TradeItem[];
   hasMoreRelatedItems?: boolean;
   isLoadingRelatedItems?: boolean;
@@ -17,6 +20,7 @@ interface TradeDetailPageProps {
 
 export default function TradeDetailPage({
   detail,
+  action = 'chat',
   relatedItems = [],
   hasMoreRelatedItems = false,
   isLoadingRelatedItems = false,
@@ -27,13 +31,13 @@ export default function TradeDetailPage({
       <AppHeader currentPath="/trade" />
 
       <Main>
-        <TradeDetail detail={detail} />
+        <TradeDetail detail={detail} action={action} />
 
         {relatedItems.length > 0 && (
           <RelatedSection>
             <RelatedContent>
               <RelatedHeader>
-                <RelatedTitle>다른 중고 물품</RelatedTitle>
+                <RelatedTitle>다른 교환 물품</RelatedTitle>
               </RelatedHeader>
 
               <ProductGrid>

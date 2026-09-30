@@ -56,8 +56,8 @@ export default function SearchHero({
           <SearchInput
             type="search"
             value={query}
-            placeholder="찾고 싶은 중고거래 게시글을 검색"
-            aria-label="중고거래 게시글 검색어"
+            placeholder="찾고 싶은 교환 게시글을 검색"
+            aria-label="교환 게시글 검색어"
             onChange={(event) => setQuery(event.currentTarget.value)}
           />
           <SearchButton type="submit">검색</SearchButton>

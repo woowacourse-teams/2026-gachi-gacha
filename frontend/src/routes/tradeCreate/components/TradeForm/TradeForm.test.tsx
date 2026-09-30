@@ -133,13 +133,15 @@ describe('TradeForm', () => {
         return HttpResponse.json({
           code: 'C000',
           message: '정상',
-          data:
-            keyword === '포켓'
-              ? [{ categoryId: 5, name: '포켓몬' }]
-              : [
-                  { categoryId: 1, name: '산리오' },
-                  { categoryId: 5, name: '포켓몬' },
-                ],
+          data: {
+            items:
+              keyword === '포켓'
+                ? [{ categoryId: 5, name: '포켓몬' }]
+                : [
+                    { categoryId: 1, name: '산리오' },
+                    { categoryId: 5, name: '포켓몬' },
+                  ],
+          },
         });
       }),
     );
@@ -167,6 +169,56 @@ describe('TradeForm', () => {
         'input[name="categoryIds"][value="5"]',
       ),
     ).toBeInTheDocument();
+  });
+
+  it('카테고리 검색창에서 Enter를 누르면 첫 번째 검색 결과를 선택한다', async () => {
+    server.use(
+      http.get('/api/v1/categories', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            items: [
+              { categoryId: 5, name: '포켓몬' },
+              { categoryId: 7, name: '포켓몬 카드' },
+            ],
+          },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderTradeForm();
+    const categorySearch = screen.getByRole('searchbox', { name: '카테고리' });
+
+    await user.type(categorySearch, '포켓');
+    await screen.findByRole('button', { name: '포켓몬' });
+    await user.keyboard('{Enter}');
+
+    expect(
+      screen.getByRole('button', { name: '포켓몬 카테고리 선택 해제' }),
+    ).toBeInTheDocument();
+    expect(categorySearch).toHaveValue('');
+  });
+
+  it('단일 행 입력에서는 Enter로 폼을 제출하지 않고, 설명에서는 줄바꿈한다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const singleLineInputs = [
+      screen.getByRole('textbox', { name: /제목/ }),
+      screen.getByRole('textbox', { name: '교환 희망 상품' }),
+      screen.getByRole('searchbox', { name: '카테고리' }),
+    ];
+
+    singleLineInputs.forEach((input) => {
+      // fireEvent는 기본 동작이 막히면 false를 반환한다.
+      expect(fireEvent.keyDown(input, { key: 'Enter' })).toBe(false);
+    });
+
+    const description = screen.getByRole('textbox', { name: /설명/ });
+
+    expect(fireEvent.keyDown(description, { key: 'Enter' })).toBe(true);
+    await user.type(description, '첫 줄{Enter}둘째 줄');
+    expect(description).toHaveValue('첫 줄\n둘째 줄');
   });
 
   it('사진, 제목, 설명만 필수값으로 검증한다', () => {

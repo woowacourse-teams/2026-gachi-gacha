@@ -50,6 +50,19 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
   });
 
+  it('비로그인 사용자가 교환 수정 페이지에 접근하면 로그인 후 복귀하도록 안내한다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/trade/15/edit',
+    });
+
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
+        '/login?returnTo=%2Ftrade%2F15%2Fedit',
+      );
+    });
+  });
+
   it('로그인 사용자에게 교환 등록 페이지를 보여준다', async () => {
     server.use(
       http.get('/api/v1/members/me', () =>
@@ -179,7 +192,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(window.location.hash).toBe('#results');
   });
 
-  it('중고거래 URL에서 TradePage 화면을 보여준다', async () => {
+  it('교환 URL에서 TradePage 화면을 보여준다', async () => {
     server.use(
       http.get('/api/v1/trades', () =>
         HttpResponse.json({
@@ -307,7 +320,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('개봉만 한 상품입니다.')).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: '다른 중고 물품' }),
+      await screen.findByRole('heading', { name: '다른 교환 물품' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /피카츄 키링 교환해요/ }),

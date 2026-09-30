@@ -15,36 +15,95 @@ const TRADE_CATEGORIES = [
   { categoryId: 5, name: '포켓몬' },
   { categoryId: 6, name: '치이카와' },
 ];
+const MOCK_TRADE_IMAGE_URL = 'https://placehold.co/800x800/png?text=Gacha';
 let createdTrade: TradeDetail | null = null;
+const updatedTrades = new Map<number, TradeDetail>();
 
 function toTradePlace(place: CreateTradeRequest['tradePlace']) {
   return place ? { ...place, name: place.name ?? null } : null;
 }
 
+function toCategoryNames(categoryIds: number[] = []) {
+  return categoryIds.flatMap((categoryId) => {
+    const category = TRADE_CATEGORIES.find(
+      (candidate) => candidate.categoryId === categoryId,
+    );
+
+    return category ? [category.name] : [];
+  });
+}
+
+async function readTradeRequest(
+  request: Request,
+): Promise<{ tradeRequest: CreateTradeRequest; images: File[] } | null> {
+  const formData = await request.formData();
+  const requestPart = formData.get('request');
+
+  if (!(requestPart instanceof File)) {
+    return null;
+  }
+
+  return {
+    tradeRequest: JSON.parse(await requestPart.text()) as CreateTradeRequest,
+    images: formData
+      .getAll('images')
+      .filter((image): image is File => image instanceof File),
+  };
+}
+
+function findTradeDetail(tradeId: number): TradeDetail | null {
+  const updatedTrade = updatedTrades.get(tradeId);
+
+  if (updatedTrade) {
+    return updatedTrade;
+  }
+
+  if (createdTrade?.tradeId === tradeId) {
+    return createdTrade;
+  }
+
+  const trade = TRADE_ITEMS.find((item) => item.tradeId === tradeId);
+
+  if (!trade) {
+    return null;
+  }
+
+  return {
+    tradeId: trade.tradeId,
+    memberId: trade.memberId,
+    title: trade.title,
+    description: '소중하게 보관한 가챠입니다. 상태를 확인한 뒤 교환해요.',
+    desiredProduction: '같은 카테고리의 다른 가챠',
+    categories: trade.categories,
+    status: trade.status,
+    purchaseStore: null,
+    tradePlace: trade.tradePlace
+      ? {
+          ...trade.tradePlace,
+          latitude: 37.557,
+          longitude: 126.9245,
+        }
+      : null,
+    availableTime: null,
+    imageUrls: [trade.thumbnailUrl ?? MOCK_TRADE_IMAGE_URL],
+    createdAt: trade.createdAt,
+    updatedAt: trade.createdAt,
+  };
+}
+
 export const tradeHandlers = [
   http.post(TRADES_API_PATH, async ({ request }) => {
-    const formData = await request.formData();
-    const requestPart = formData.get('request');
+    const parsedRequest = await readTradeRequest(request);
 
-    if (!(requestPart instanceof File)) {
+    if (!parsedRequest) {
       return HttpResponse.json(
         { code: 'CE001', message: '게시글 본문이 필요합니다.' },
         { status: 400 },
       );
     }
 
-    const tradeRequest = JSON.parse(
-      await requestPart.text(),
-    ) as CreateTradeRequest;
-    const categoryNames = (tradeRequest.categoryIds ?? []).flatMap(
-      (categoryId) => {
-        const category = TRADE_CATEGORIES.find(
-          (candidate) => candidate.categoryId === categoryId,
-        );
-
-        return category ? [category.name] : [];
-      },
-    );
+    const { tradeRequest } = parsedRequest;
+    const categoryNames = toCategoryNames(tradeRequest.categoryIds);
     const createdAt = new Date().toISOString();
 
     createdTrade = {
@@ -58,7 +117,7 @@ export const tradeHandlers = [
       purchaseStore: toTradePlace(tradeRequest.purchaseStore),
       tradePlace: toTradePlace(tradeRequest.tradePlace),
       availableTime: null,
-      imageUrls: ['https://placehold.co/800x800/png?text=Gacha'],
+      imageUrls: [MOCK_TRADE_IMAGE_URL],
       createdAt,
       updatedAt: createdAt,
     };
@@ -82,21 +141,11 @@ export const tradeHandlers = [
     return HttpResponse.json({
       code: 'C000',
       message: '정상',
-      data: categories,
+      data: { items: categories },
     });
   }),
   http.get(`${TRADES_API_PATH}/:tradeId`, ({ params }) => {
-    const tradeId = Number(params.tradeId);
-
-    if (createdTrade?.tradeId === tradeId) {
-      return HttpResponse.json({
-        code: 'C000',
-        message: '정상',
-        data: createdTrade,
-      });
-    }
-
-    const trade = TRADE_ITEMS.find((item) => item.tradeId === tradeId);
+    const trade = findTradeDetail(Number(params.tradeId));
 
     if (!trade) {
       return HttpResponse.json(
@@ -105,30 +154,54 @@ export const tradeHandlers = [
       );
     }
 
+    return HttpResponse.json({ code: 'C000', message: '정상', data: trade });
+  }),
+  http.put(`${TRADES_API_PATH}/:tradeId`, async ({ params, request }) => {
+    const trade = findTradeDetail(Number(params.tradeId));
+
+    if (!trade) {
+      return HttpResponse.json(
+        { code: 'TE001', message: '교환 게시글을 찾을 수 없습니다.' },
+        { status: 404 },
+      );
+    }
+
+    const parsedRequest = await readTradeRequest(request);
+
+    if (!parsedRequest) {
+      return HttpResponse.json(
+        { code: 'CE001', message: '게시글 본문이 필요합니다.' },
+        { status: 400 },
+      );
+    }
+
+    const { tradeRequest, images } = parsedRequest;
+    const updatedTrade: TradeDetail = {
+      ...trade,
+      title: tradeRequest.title,
+      description: tradeRequest.description ?? null,
+      desiredProduction: tradeRequest.desiredProduction ?? null,
+      categories: toCategoryNames(tradeRequest.categoryIds),
+      purchaseStore: toTradePlace(tradeRequest.purchaseStore),
+      tradePlace: toTradePlace(tradeRequest.tradePlace),
+      availableTime: tradeRequest.availableTime ?? null,
+      // 새 이미지가 없으면 기존 이미지를 유지하고, 있으면 전부 교체한다.
+      imageUrls:
+        images.length > 0
+          ? images.map(
+              (_, index) =>
+                `https://placehold.co/800x800/png?text=New+${index + 1}`,
+            )
+          : trade.imageUrls,
+      updatedAt: new Date().toISOString(),
+    };
+
+    updatedTrades.set(updatedTrade.tradeId, updatedTrade);
+
     return HttpResponse.json({
       code: 'C000',
       message: '정상',
-      data: {
-        tradeId: trade.tradeId,
-        memberId: trade.memberId,
-        title: trade.title,
-        description: '소중하게 보관한 가챠입니다. 상태를 확인한 뒤 교환해요.',
-        desiredProduction: '같은 카테고리의 다른 가챠',
-        categories: trade.categories,
-        status: trade.status,
-        purchaseStore: null,
-        tradePlace: trade.tradePlace
-          ? {
-              ...trade.tradePlace,
-              latitude: 37.557,
-              longitude: 126.9245,
-            }
-          : null,
-        availableTime: null,
-        imageUrls: trade.thumbnailUrl ? [trade.thumbnailUrl] : [],
-        createdAt: trade.createdAt,
-        updatedAt: trade.createdAt,
-      },
+      data: updatedTrade,
     });
   }),
   http.get(TRADES_API_PATH, ({ request }) => {

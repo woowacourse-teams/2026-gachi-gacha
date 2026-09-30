@@ -9,8 +9,11 @@ import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
+import type { TradeDetailAction } from '../../TradeDetailPage';
+
 interface TradeDetailProps {
   detail: TradeDetailData;
+  action?: TradeDetailAction;
 }
 
 const STATUS_LABELS: Record<TradeStatus, string> = {
@@ -40,14 +43,17 @@ function formatAvailableTime(availableTime: string | null): string {
     : dateTimeFormatter.format(date);
 }
 
-export default function TradeDetail({ detail }: TradeDetailProps) {
+export default function TradeDetail({
+  detail,
+  action = 'chat',
+}: TradeDetailProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
 
   return (
     <Wrapper>
-      <Breadcrumb>중고거래 · {categoryLabel}</Breadcrumb>
+      <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
 
       <Summary>
         <Gallery>
@@ -127,10 +133,17 @@ export default function TradeDetail({ detail }: TradeDetailProps) {
             )}
           </DescriptionSection>
 
-          <ActionGroup>
-            <ChatLink href="/chat">채팅하기</ChatLink>
-            <TradeButton type="button">교환 제안하기</TradeButton>
-          </ActionGroup>
+          {action && (
+            <ActionGroup>
+              {action === 'edit' ? (
+                <EditLink href={`/trade/${detail.tradeId}/edit`}>
+                  수정하기
+                </EditLink>
+              ) : (
+                <ChatLink href="/chat">채팅하기</ChatLink>
+              )}
+            </ActionGroup>
+          )}
         </Info>
       </Summary>
     </Wrapper>
@@ -291,23 +304,6 @@ const InfoValue = styled.dd`
 const ActionGroup = styled.div`
   display: grid;
   margin-top: 32px;
-  grid-template-columns: 1fr 1.4fr;
-  gap: 10px;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ActionButton = styled.button`
-  display: inline-flex;
-  min-height: 54px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 800;
-  cursor: pointer;
 `;
 
 const ChatLink = styled.a`
@@ -324,8 +320,7 @@ const ChatLink = styled.a`
   text-decoration: none;
 `;
 
-const TradeButton = styled(ActionButton)`
-  border: 1px solid #ed174c;
+const EditLink = styled(ChatLink)`
   background: #ed174c;
   color: #ffffff;
 `;

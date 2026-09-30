@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 
+import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import {
   color,
   fontSize,
@@ -19,6 +20,7 @@ export interface TradeDetailRouteProps {
 }
 
 export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
+  const { status: authStatus, memberId } = useAuthSession();
   const { state, retry } = useTradeDetail(tradeId);
   const {
     items: relatedItems,
@@ -49,9 +51,19 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     );
   }
 
+  const action =
+    authStatus === 'loading'
+      ? null
+      : authStatus === 'authenticated' &&
+          memberId !== null &&
+          memberId === String(state.data.memberId)
+        ? 'edit'
+        : 'chat';
+
   return (
     <TradeDetailPage
       detail={state.data}
+      action={action}
       relatedItems={relatedItems}
       hasMoreRelatedItems={hasMoreRelatedItems}
       isLoadingRelatedItems={isLoadingRelatedItems}
