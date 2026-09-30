@@ -31,7 +31,6 @@ public class FileController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadListResponse> uploadFiles(
             @Auth final Long memberId,
-            // @Parameter 를 붙이면 파트 이름("files")이 사라진다. 그대로 둘 것.
             @RequestParam("files") final List<MultipartFile> files
     ) {
         List<FileUploadResponse> responses = fileService.uploadFiles(files).stream()

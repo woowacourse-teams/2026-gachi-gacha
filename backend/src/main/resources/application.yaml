@@ -85,7 +85,6 @@ springdoc:
     tags-sorter: alpha
     display-request-duration: true
 
-  # MCP 노출 기능. 보안 권고가 나온 기능이라 명시적으로 끈다.
   ai:
     mcp:
       enabled: false
