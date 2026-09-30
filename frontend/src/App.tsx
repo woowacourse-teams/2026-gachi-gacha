@@ -41,6 +41,12 @@ const TradeDetailRoute = lazy(async () => {
 
 const TradeCreatePage = lazy(async () => await import('@/routes/tradeCreate'));
 
+const TradeEditRoute = lazy(async () => {
+  const routeModule = await import('@/routes/tradeEdit/route');
+
+  return { default: routeModule.TradeEditRoute };
+});
+
 const LoginRoute = lazy(async () => {
   const routeModule = await import('@/routes/login/route');
 
@@ -127,6 +133,10 @@ function CanonicalRoutes() {
       />
       <Route element={<ProtectedRoutes />}>
         <Route path="/trade/new" element={<TradeCreatePage />} />
+        <Route
+          path="/trade/:tradeId/edit"
+          element={<TradeEditRouteElement />}
+        />
         <Route path="/chat" element={<ChatRoute />} />
         <Route path="/notifications" element={<NotificationsRoute />} />
         <Route path="/mypage" element={<MyPageRoute />} />
@@ -162,6 +172,16 @@ function TradeDetailRouteElement() {
   }
 
   return <TradeDetailRoute tradeId={Number(tradeId)} />;
+}
+
+function TradeEditRouteElement() {
+  const { tradeId } = useParams<'tradeId'>();
+
+  if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
+    return <RedirectToHome />;
+  }
+
+  return <TradeEditRoute tradeId={Number(tradeId)} />;
 }
 
 function AuthCallbackRouteElement() {

@@ -16,17 +16,39 @@ import TradePlaceSearchDialog from '../TradePlaceSearchDialog';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
 
-export default function TradeForm() {
+export interface TradeFormInitialValues {
+  title: string;
+  description: string;
+  desiredProduction: string;
+  categories: TradeCategory[];
+  purchaseStore: TradePlaceInput | null;
+  tradePlace: TradePlaceInput | null;
+  imageUrls: string[];
+}
+
+interface TradeFormProps {
+  mode?: 'create' | 'edit';
+  initialValues?: TradeFormInitialValues;
+}
+
+export default function TradeForm({
+  mode = 'create',
+  initialValues,
+}: TradeFormProps) {
   const navigate = useNavigate();
+  const isEditMode = mode === 'edit';
+  const formId = isEditMode ? 'trade-edit-form' : 'trade-create-form';
   const submittingRef = useRef(false);
   const [images, setImages] = useState<File[]>([]);
   const [photoErrorMessage, setPhotoErrorMessage] = useState<string | null>(
     null,
   );
   const [purchaseStore, setPurchaseStore] = useState<TradePlaceInput | null>(
-    null,
+    initialValues?.purchaseStore ?? null,
   );
-  const [tradePlace, setTradePlace] = useState<TradePlaceInput | null>(null);
+  const [tradePlace, setTradePlace] = useState<TradePlaceInput | null>(
+    initialValues?.tradePlace ?? null,
+  );
   const [isPurchaseStoreDialogOpen, setIsPurchaseStoreDialogOpen] =
     useState(false);
   const [isPlaceDialogOpen, setIsPlaceDialogOpen] = useState(false);
@@ -37,7 +59,7 @@ export default function TradeForm() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [categoryKeyword, setCategoryKeyword] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TradeCategory[]>(
-    [],
+    initialValues?.categories ?? [],
   );
   const categoryState = useTradeCategories(categoryKeyword);
   const availableCategories =
@@ -77,11 +99,15 @@ export default function TradeForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (isEditMode) {
+      return;
+    }
+
     if (submittingRef.current) {
       return;
     }
 
-    if (images.length === 0) {
+    if (images.length === 0 && !initialValues?.imageUrls.length) {
       setPhotoErrorMessage('사진을 1장 이상 등록해주세요.');
       return;
     }
@@ -144,12 +170,15 @@ export default function TradeForm() {
   return (
     <>
       <Form
-        id="trade-create-form"
+        id={formId}
         aria-busy={isSubmitting}
         onSubmit={(event) => void handleSubmit(event)}
       >
         <PhotoUploader
           files={images}
+          {...(initialValues
+            ? { initialImageUrls: initialValues.imageUrls }
+            : {})}
           errorMessage={photoErrorMessage ?? undefined}
           onFilesChange={changeImages}
         />
@@ -161,6 +190,7 @@ export default function TradeForm() {
           <Input
             id="trade-title"
             name="title"
+            defaultValue={initialValues?.title}
             required
             maxLength={MAX_SHORT_TEXT_LENGTH}
             aria-invalid={Boolean(titleErrorMessage)}
@@ -255,6 +285,7 @@ export default function TradeForm() {
           <Input
             id="trade-desired-production"
             name="desiredProduction"
+            defaultValue={initialValues?.desiredProduction}
             maxLength={MAX_SHORT_TEXT_LENGTH}
             placeholder="예: 시나모롤 키링 또는 산리오 랜덤 교환"
           />
@@ -375,6 +406,7 @@ export default function TradeForm() {
           <Textarea
             id="trade-description"
             name="description"
+            defaultValue={initialValues?.description}
             required
             placeholder="가챠의 상태와 교환 방법을 자세히 적어주세요"
           />
@@ -385,7 +417,13 @@ export default function TradeForm() {
         )}
       </Form>
 
-      <StickyActionBar isSubmitting={isSubmitting} />
+      <StickyActionBar
+        isSubmitting={isSubmitting}
+        formId={formId}
+        submitLabel={isEditMode ? '수정하기' : '등록하기'}
+        submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
+        disabled={isEditMode}
+      />
 
       <TradePlaceSearchDialog
         open={isPurchaseStoreDialogOpen}

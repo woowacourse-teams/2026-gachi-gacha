@@ -6,12 +6,14 @@ const MAX_PHOTO_COUNT = 5;
 
 interface PhotoUploaderProps {
   files: File[];
+  initialImageUrls?: string[];
   onFilesChange: (files: File[]) => void;
   errorMessage?: string | undefined;
 }
 
 export default function PhotoUploader({
   files,
+  initialImageUrls = [],
   onFilesChange,
   errorMessage,
 }: PhotoUploaderProps) {
@@ -32,7 +34,8 @@ export default function PhotoUploader({
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
-    const availableCount = MAX_PHOTO_COUNT - files.length;
+    const availableCount =
+      MAX_PHOTO_COUNT - initialImageUrls.length - files.length;
     const nextFiles = selectedFiles.slice(0, availableCount);
 
     onFilesChange([...files, ...nextFiles]);
@@ -48,24 +51,33 @@ export default function PhotoUploader({
       <Label id="trade-photo-label">
         사진 <RequiredMark aria-hidden="true">*</RequiredMark>{' '}
         <Count>
-          ({files.length}/{MAX_PHOTO_COUNT})
+          ({initialImageUrls.length + files.length}/{MAX_PHOTO_COUNT})
         </Count>
       </Label>
 
       <PhotoList>
-        {files.length < MAX_PHOTO_COUNT && (
+        {initialImageUrls.length + files.length < MAX_PHOTO_COUNT && (
           <AddButton type="button" onClick={() => inputRef.current?.click()}>
             <CameraIcon aria-hidden="true" />
             <span>사진 추가</span>
           </AddButton>
         )}
 
+        {initialImageUrls.map((url, index) => (
+          <PreviewItem key={url}>
+            <PreviewImage src={url} alt={`기존 교환 사진 ${index + 1}`} />
+          </PreviewItem>
+        ))}
+
         {previewUrls.map((url, index) => (
           <PreviewItem key={url}>
-            <PreviewImage src={url} alt={`교환 사진 ${index + 1}`} />
+            <PreviewImage
+              src={url}
+              alt={`교환 사진 ${initialImageUrls.length + index + 1}`}
+            />
             <RemoveButton
               type="button"
-              aria-label={`교환 사진 ${index + 1} 삭제`}
+              aria-label={`교환 사진 ${initialImageUrls.length + index + 1} 삭제`}
               onClick={() => handleRemove(index)}
             >
               ×
