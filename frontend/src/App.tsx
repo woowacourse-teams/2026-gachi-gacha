@@ -27,21 +27,19 @@ const StoreDetailRoute = lazy(async () => {
   return { default: routeModule.StoreDetailRoute };
 });
 
-const SecondhandRoute = lazy(async () => {
-  const routeModule = await import('@/routes/secondhand/route');
+const TradeRoute = lazy(async () => {
+  const routeModule = await import('@/routes/trade/route');
 
-  return { default: routeModule.SecondhandRoute };
+  return { default: routeModule.TradeRoute };
 });
 
-const SecondhandDetailRoute = lazy(async () => {
-  const routeModule = await import('@/routes/secondhandDetail/route');
+const TradeDetailRoute = lazy(async () => {
+  const routeModule = await import('@/routes/tradeDetail/route');
 
-  return { default: routeModule.SecondhandDetailRoute };
+  return { default: routeModule.TradeDetailRoute };
 });
 
-const SecondhandCreatePage = lazy(
-  async () => await import('@/routes/secondhandCreate'),
-);
+const TradeCreatePage = lazy(async () => await import('@/routes/tradeCreate'));
 
 const LoginRoute = lazy(async () => {
   const routeModule = await import('@/routes/login/route');
@@ -119,11 +117,8 @@ function CanonicalRoutes() {
       <Route path={HOME_PATH} element={<HomePage />} />
       <Route path="/search" element={<SearchRoute />} />
       <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
-      <Route path="/used-market" element={<SecondhandRoute />} />
-      <Route
-        path="/used-market/:tradeId"
-        element={<SecondhandDetailRouteElement />}
-      />
+      <Route path="/trade" element={<TradeRoute />} />
+      <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/privacy" element={<PrivacyRoute />} />
       <Route
@@ -131,7 +126,7 @@ function CanonicalRoutes() {
         element={<AuthCallbackRouteElement />}
       />
       <Route element={<ProtectedRoutes />}>
-        <Route path="/used-market/new" element={<SecondhandCreatePage />} />
+        <Route path="/trade/new" element={<TradeCreatePage />} />
         <Route path="/chat" element={<ChatRoute />} />
         <Route path="/notifications" element={<NotificationsRoute />} />
         <Route path="/mypage" element={<MyPageRoute />} />
@@ -159,14 +154,14 @@ function StoreDetailRouteElement() {
   return <StoreDetailRoute pathname={`/stores/${storeId}`} />;
 }
 
-function SecondhandDetailRouteElement() {
+function TradeDetailRouteElement() {
   const { tradeId } = useParams<'tradeId'>();
 
   if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
     return <RedirectToHome />;
   }
 
-  return <SecondhandDetailRoute tradeId={Number(tradeId)} />;
+  return <TradeDetailRoute tradeId={Number(tradeId)} />;
 }
 
 function AuthCallbackRouteElement() {

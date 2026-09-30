@@ -286,7 +286,7 @@ export function MyPageRoute() {
             <Card>
               <CardHeader>
                 <CardTitle>내 교환글</CardTitle>
-                <CardLink href="/used-market">전체 보기</CardLink>
+                <CardLink href="/trade">전체 보기</CardLink>
               </CardHeader>
 
               {tradeStatus === 'loading' ? (

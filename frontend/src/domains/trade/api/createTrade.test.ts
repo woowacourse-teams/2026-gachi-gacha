@@ -18,7 +18,6 @@ const tradeRequest: CreateTradeRequest = {
     latitude: 37.557,
     longitude: 126.9245,
   },
-  availableTime: '2026-09-30T19:00:00',
 };
 
 describe('createTrade', () => {
@@ -64,7 +63,7 @@ describe('createTrade', () => {
               status: 'AVAILABLE',
               purchaseStore: null,
               tradePlace: tradeRequest.tradePlace,
-              availableTime: tradeRequest.availableTime,
+              availableTime: null,
               imageUrls: ['https://cdn.example.com/kuromi.png'],
               createdAt: '2026-09-30T19:00:00',
               updatedAt: '2026-09-30T19:00:00',

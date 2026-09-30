@@ -40,12 +40,12 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
   it('비로그인 사용자가 교환 등록 페이지에 접근하면 로그인 후 복귀하도록 안내한다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
-      route: '/used-market/new',
+      route: '/trade/new',
     });
 
     await waitFor(() => {
       expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
-        '/login?returnTo=%2Fused-market%2Fnew',
+        '/login?returnTo=%2Ftrade%2Fnew',
       );
     });
   });
@@ -68,7 +68,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     renderWithProviders(<App />, {
       initialAccessToken: accessToken,
-      route: '/used-market/new',
+      route: '/trade/new',
     });
 
     expect(
@@ -179,7 +179,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(window.location.hash).toBe('#results');
   });
 
-  it('중고거래 URL에서 SecondhandPage 화면을 보여준다', async () => {
+  it('중고거래 URL에서 TradePage 화면을 보여준다', async () => {
     server.use(
       http.get('/api/v1/trades', () =>
         HttpResponse.json({
@@ -198,7 +198,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     renderWithProviders(<App />, {
       initialAccessToken: null,
-      route: '/used-market',
+      route: '/trade',
     });
 
     expect(
@@ -289,7 +289,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     renderWithProviders(<App />, {
       initialAccessToken: null,
-      route: '/used-market',
+      route: '/trade',
     });
 
     await user.click(
@@ -298,7 +298,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
       }),
     );
 
-    expect(window.location.pathname).toBe('/used-market/15');
+    expect(window.location.pathname).toBe('/trade/15');
     expect(
       await screen.findByRole('heading', {
         name: '쿠로미 피규어 교환해요',
@@ -311,7 +311,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /피카츄 키링 교환해요/ }),
-    ).toHaveAttribute('href', '/used-market/22');
+    ).toHaveAttribute('href', '/trade/22');
 
     await user.click(screen.getByRole('button', { name: '더보기' }));
 
@@ -319,6 +319,6 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
       await screen.findByRole('link', {
         name: /시나모롤 피규어 교환해요/,
       }),
-    ).toHaveAttribute('href', '/used-market/23');
+    ).toHaveAttribute('href', '/trade/23');
   });
 });
