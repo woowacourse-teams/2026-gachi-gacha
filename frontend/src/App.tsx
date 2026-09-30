@@ -39,6 +39,10 @@ const SecondhandDetailRoute = lazy(async () => {
   return { default: routeModule.SecondhandDetailRoute };
 });
 
+const SecondhandCreatePage = lazy(
+  async () => await import('@/routes/secondhandCreate'),
+);
+
 const LoginRoute = lazy(async () => {
   const routeModule = await import('@/routes/login/route');
 
@@ -127,6 +131,7 @@ function CanonicalRoutes() {
         element={<AuthCallbackRouteElement />}
       />
       <Route element={<ProtectedRoutes />}>
+        <Route path="/used-market/new" element={<SecondhandCreatePage />} />
         <Route path="/chat" element={<ChatRoute />} />
         <Route path="/notifications" element={<NotificationsRoute />} />
         <Route path="/mypage" element={<MyPageRoute />} />

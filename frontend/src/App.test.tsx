@@ -37,6 +37,46 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
   });
 
+  it('비로그인 사용자가 교환 등록 페이지에 접근하면 로그인 후 복귀하도록 안내한다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/used-market/new',
+    });
+
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
+        '/login?returnTo=%2Fused-market%2Fnew',
+      );
+    });
+  });
+
+  it('로그인 사용자에게 교환 등록 페이지를 보여준다', async () => {
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: accessToken,
+      route: '/used-market/new',
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: '교환 글쓰기' }),
+    ).toBeInTheDocument();
+    expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
+  });
+
   it('OAuth callback 성공 시 토큰과 회원 정보를 반영하고 기존 화면으로 복귀한다', async () => {
     let requestedAuthorization: string | null = null;
 
