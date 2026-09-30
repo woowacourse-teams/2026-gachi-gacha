@@ -76,10 +76,7 @@ export default function PhotoUploader({
 
         {previewUrls.map((url, index) => (
           <PreviewItem key={url}>
-            <PreviewImage
-              src={url}
-              alt={`교환 사진 ${index + 1}`}
-            />
+            <PreviewImage src={url} alt={`교환 사진 ${index + 1}`} />
             <RemoveButton
               type="button"
               aria-label={`교환 사진 ${index + 1} 삭제`}
