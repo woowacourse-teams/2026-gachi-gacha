@@ -30,8 +30,7 @@ dependencies {
     implementation 'org.hibernate.orm:hibernate-spatial'
     implementation 'org.locationtech.jts:jts-core:1.19.0'
 
-    // springdoc 3.1.x 가 Spring Boot 4.x 대응 라인이다(3.1.0 에서 Boot 4.1.0 으로 올라갔다).
-    // 3.1.1 미만은 swagger-ui 번들 DOMPurify 의 XSS(CVE-2026-75838) 가 남아 있어 올리지 말 것.
+    // 3.1.1 미만은 swagger-ui 의 XSS(CVE-2026-75838)가 남아 있어 내리지 말 것.
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.1'
 
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
