@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.trade.presentation;
 
 import com.gachi.gacha.server.common.auth.resolver.Auth;
+import com.gachi.gacha.server.common.config.OpenApiConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.trade.application.TradeService;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
@@ -12,15 +13,24 @@ import com.gachi.gacha.server.trade.presentation.dto.TradeResponse;
 import com.gachi.gacha.server.trade.presentation.dto.TradeStatusUpdateRequest;
 import com.gachi.gacha.server.trade.presentation.dto.TradeSummaryResponse;
 import com.gachi.gacha.server.trade.presentation.dto.TradeUpdateRequest;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+@Tag(name = "교환 게시글", description = "가챠 교환 게시글 등록·조회·수정·삭제")
 @RestController
 @RequestMapping("/trades")
 @RequiredArgsConstructor
@@ -45,10 +56,34 @@ public class TradeController {
 
     private final TradeService tradeService;
 
+    @Operation(
+            summary = "교환 게시글 등록",
+            description = """
+                    `multipart/form-data` 로 받는다. 파트가 두 개다.
+
+                    | 파트 | Content-Type | 필수 |
+                    |------|--------------|------|
+                    | `request` | `application/json` | 필수 |
+                    | `images` | 이미지 파일 | 선택 |
+
+                    `request` 파트는 반드시 `application/json` 으로 보내야 한다. Postman 등에서
+                    Content-Type 을 비워두면 415 또는 500 이 난다."""
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                    mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                    encoding = @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
+            )
+    )
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BaseResponse<TradeResponse>> createTrade(
             @Auth final Long memberId,
             @RequestPart("request") @Valid final TradeCreateRequest request,
+            @Parameter(
+                    description = "게시글 이미지. 목록의 썸네일은 첫 번째 사진을 사용한다.",
+                    array = @ArraySchema(schema = @Schema(type = "string", format = "binary"))
+            )
             @RequestPart(value = "images", required = false) final List<MultipartFile> images
     ) {
         TradeInfo tradeInfo = tradeService.createTrade(memberId, request.toCommand(), images);
@@ -61,11 +96,23 @@ public class TradeController {
         return BaseResponse.created(location, TradeResponse.from(tradeInfo));
     }
 
+    @Operation(
+            summary = "교환 게시글 목록 조회",
+            description = """
+                    조건에 맞는 게시글을 최신순으로 조회한다. 인증이 필요하지 않다.
+
+                    세 조건은 모두 선택이며 함께 주면 AND 로 묶인다.
+                    `thumbnailUrl` 은 게시글 이미지 중 첫 번째 사진이다."""
+    )
     @GetMapping
     public BaseResponse<Page<TradeSummaryResponse>> readTrades(
+            @Parameter(description = "제목·설명 검색어", example = "산리오")
             @RequestParam(required = false) @Nullable final String keyword,
+            @Parameter(description = "카테고리 ID 목록. 하나라도 포함하면 결과에 들어간다.", example = "1,3")
             @RequestParam(required = false) @Nullable final List<Long> categoryIds,
+            @Parameter(description = "거래 상태", example = "AVAILABLE")
             @RequestParam(required = false) @Nullable final TradeStatus status,
+            @ParameterObject
             @PageableDefault(sort = "createdAt", direction = Direction.DESC) final Pageable pageable
     ) {
         TradeSearchCondition condition = TradeSearchCondition.builder()
@@ -78,18 +125,28 @@ public class TradeController {
         return BaseResponse.ok(trades.map(TradeSummaryResponse::from));
     }
 
+    @Operation(summary = "내 교환 게시글 목록 조회", description = "내가 작성한 게시글을 최근 등록순으로 조회한다.")
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @GetMapping("/me")
     public BaseResponse<Page<TradeSummaryResponse>> readMemberTrades(
             @Auth final Long memberId,
+            @Parameter(description = "거래 상태로 필터링. 생략하면 전체를 조회한다.", example = "AVAILABLE")
             @RequestParam(required = false) final TradeStatus status,
+            @ParameterObject
             @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) final Pageable pageable
     ) {
         Page<TradeSummaryInfo> tradeInfos = tradeService.findAllByMemberId(memberId, status, pageable);
         return BaseResponse.ok(tradeInfos.map(TradeSummaryResponse::from));
     }
 
+    @Operation(
+            summary = "교환 게시글 상세 조회",
+            description = "인증이 필요하지 않다. 목록과 달리 이미지 URL 전체를 반환한다."
+    )
     @GetMapping("/{tradeId}")
-    public BaseResponse<TradeResponse> readTrade(@PathVariable final Long tradeId) {
+    public BaseResponse<TradeResponse> readTrade(
+            @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId
+    ) {
         TradeInfo tradeInfo = tradeService.findTrade(tradeId);
 
         return BaseResponse.ok(TradeResponse.from(tradeInfo));
@@ -99,11 +156,32 @@ public class TradeController {
      * 수정 화면이 기존 값이 채워진 폼을 통째로 제출하는 흐름이라 부분 수정이 아닌 전체 교체(PUT)로 받는다.
      * 단 이미지는 예외로, images 를 보내면 전체 교체하고 보내지 않으면 기존 이미지를 유지한다.
      */
+    @Operation(
+            summary = "교환 게시글 수정",
+            description = """
+                    본문은 **전체 교체(PUT)** 다. 수정 화면이 기존 값이 채워진 폼을 통째로 제출하는 흐름이라
+                    보내지 않은 필드는 비워지는 것으로 처리한다.
+
+                    이미지만 예외다. `images` 를 보내면 전체 교체하고, 보내지 않으면 기존 이미지를 유지한다.
+
+                    `request` 파트는 반드시 `application/json` 으로 보낸다. 작성자가 아니면 `TE003` 으로 거부한다."""
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            content = @Content(
+                    mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                    encoding = @Encoding(name = "request", contentType = MediaType.APPLICATION_JSON_VALUE)
+            )
+    )
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @PutMapping(value = "/{tradeId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<TradeResponse> updateTrade(
             @Auth final Long memberId,
-            @PathVariable final Long tradeId,
+            @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId,
             @RequestPart("request") @Valid final TradeUpdateRequest request,
+            @Parameter(
+                    description = "교체할 이미지. 생략하면 기존 이미지를 유지한다.",
+                    array = @ArraySchema(schema = @Schema(type = "string", format = "binary"))
+            )
             @RequestPart(value = "images", required = false) final List<MultipartFile> images
     ) {
         TradeInfo tradeInfo = tradeService.updateTrade(memberId, tradeId, request.toCommand(), images);
@@ -111,10 +189,15 @@ public class TradeController {
         return BaseResponse.updated(TradeResponse.from(tradeInfo));
     }
 
+    @Operation(
+            summary = "교환 게시글 상태 변경",
+            description = "거래 상태만 바꾼다. 작성자가 아니면 `TE003` 으로 거부한다."
+    )
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @PatchMapping("/{tradeId}/status")
     public BaseResponse<TradeResponse> updateTradeStatus(
             @Auth final Long memberId,
-            @PathVariable final Long tradeId,
+            @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId,
             @RequestBody @Valid final TradeStatusUpdateRequest request
     ) {
         TradeInfo tradeInfo = tradeService.changeStatus(memberId, tradeId, request.status());
@@ -122,8 +205,16 @@ public class TradeController {
         return BaseResponse.updated(TradeResponse.from(tradeInfo));
     }
 
+    @Operation(
+            summary = "교환 게시글 삭제",
+            description = "게시글과 이미지를 함께 정리한다. 작성자가 아니면 `TE003` 으로 거부한다."
+    )
+    @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
     @DeleteMapping("/{tradeId}")
-    public BaseResponse<Void> deleteTrade(@Auth final Long memberId, @PathVariable final Long tradeId) {
+    public BaseResponse<Void> deleteTrade(
+            @Auth final Long memberId,
+            @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId
+    ) {
         tradeService.removeTrade(memberId, tradeId);
 
         return BaseResponse.deleted(null);
