@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,27 +58,23 @@ public class GachaService {
     }
 
     public Page<GachaWithStoreCountInfo> findAllGachaByIds(final List<Long> categoryIds, final Pageable pageable) {
-        Page<Gacha> gachas = gachaRepository.findByCategoryIds(categoryIds, pageable);
+        Pageable unsorted = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<StoreGachaCount> counts = gachaRepository.findGachaIdsOrderByStoreCount(categoryIds, unsorted);
 
-        if (gachas.isEmpty()) {
+        if (counts.isEmpty()) {
             return Page.empty(pageable);
         }
 
-        List<Long> gachaIds = gachas.getContent().stream()
-                .map(Gacha::getId)
+        List<Long> gachaIds = counts.getContent().stream()
+                .map(StoreGachaCount::gachaId)
                 .toList();
 
-        List<StoreGachaCount> storeCounts = storeGachaService.findSoreGachaCountByGachaIds(gachaIds);
+        Map<Long, Gacha> gachaMap = gachaRepository.findByIdsWithCategories(gachaIds)
+                .stream()
+                .collect(Collectors.toMap(Gacha::getId, Function.identity()));
 
-        Map<Long, Integer> storeCountMap = storeCounts.stream()
-                .collect(Collectors.toMap(
-                        StoreGachaCount::gachaId,
-                        dto -> dto.storeCount().intValue()
-                ));
-
-        return gachas.map(gacha -> {
-            int storeCount = storeCountMap.getOrDefault(gacha.getId(), 0);
-            return GachaWithStoreCountInfo.of(storeCount, gacha);
-        });
+        return counts.map(count ->
+                GachaWithStoreCountInfo.of(count.storeCount().intValue(), gachaMap.get(count.gachaId()))
+        );
     }
 }

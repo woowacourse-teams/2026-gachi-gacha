@@ -37,7 +37,7 @@ public class GachaController {
     @GetMapping(params = {"categoryIds"})
     public BaseResponse<Page<GachaWithStoreCountResponse>> readGachaWithStoreCount(
             @RequestParam final List<Long> categoryIds,
-            @PageableDefault(sort = "createdAt", direction = Direction.DESC) final Pageable pageable
+            final Pageable pageable
     ) {
         Page<GachaWithStoreCountInfo> gachas = gachaService.findAllGachaByIds(categoryIds, pageable);
         return BaseResponse.ok(gachas.map(GachaWithStoreCountResponse::from));
