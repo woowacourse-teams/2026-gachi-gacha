@@ -22,7 +22,7 @@ public class StoreImageController {
 
     private final StoreImageService storeImageService;
 
-    @Operation(summary = "매장 사진 목록 조회", description = "해당 매장에 등록된 사진 URL 을 모두 반환한다.")
+    @Operation(summary = "매장 사진 목록 조회")
     @GetMapping
     public BaseResponse<StoreImageListResponse> findImages(
             @Parameter(description = "매장 ID", example = "1") @PathVariable final Long storeId

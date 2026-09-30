@@ -14,13 +14,6 @@ import org.springdoc.core.utils.SpringDocUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * API 문서 설정.
- *
- * <p>문서 노출 여부는 이 클래스가 아니라 {@code application.yaml} 의
- * {@code springdoc.api-docs.enabled} / {@code springdoc.swagger-ui.enabled} 가 결정한다
- * (기본값 false, 환경변수 {@code SWAGGER_ENABLED} 로 켠다).
- */
 @Configuration(proxyBeanMethods = false)
 @OpenAPIDefinition(
         info = @Info(
@@ -60,30 +53,21 @@ import org.springframework.context.annotation.Configuration;
         )
 )
 @SecurityScheme(
-        name = OpenApiConfig.BEARER_AUTH,
+        name = SwaggerConfig.BEARER_AUTH,
         type = SecuritySchemeType.HTTP,
         in = SecuritySchemeIn.HEADER,
         scheme = "bearer",
         bearerFormat = "JWT",
         description = "로그인 응답으로 받은 accessToken 을 그대로 입력한다. 'Bearer ' 접두어는 붙이지 않는다."
 )
-public class OpenApiConfig {
+public class SwaggerConfig {
 
     public static final String BEARER_AUTH = "bearerAuth";
 
     static {
-        // @Auth 는 AuthArgumentResolver 가 토큰에서 채워 넣는 파라미터다.
-        // springdoc 은 커스텀 ArgumentResolver 를 모르기 때문에, 알려주지 않으면
-        // memberId 를 쿼리 파라미터로 오해해 문서에 넣는다(해당 엔드포인트 16개).
         SpringDocUtils.getConfig().addAnnotationsToIgnore(Auth.class);
     }
 
-    /**
-     * 오류 응답 구조를 Schemas 목록에 등록한다.
-     *
-     * <p>엔드포인트별로 어떤 오류가 나는지는 매핑하지 않는다. 그 매핑이 코드에 문서화되어 있지 않아
-     * 지금 단계에서 적으면 추측이 섞이기 때문이다. 구조만 공통으로 보여준다.
-     */
     @Bean
     public OpenApiCustomizer errorResponseSchemaCustomizer() {
         return openApi -> {

@@ -22,14 +22,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @Operation(
-            summary = "카테고리 목록 조회",
-            description = """
-                    등록된 카테고리를 조회한다. keyword 를 주면 이름에 해당 문자열이 포함된 것만 걸러낸다.
-
-                    교환 게시글 작성 화면에서 카테고리를 고를 때 쓴다.
-                    특정 카테고리에 속한 가챠 목록을 보려면 `GET /gachas?categoryIds=` 를 사용한다."""
-    )
+    @Operation(summary = "카테고리 목록 조회")
     @GetMapping
     public BaseResponse<CategoryListResponse> searchCategories(
             @Parameter(description = "카테고리 이름 검색어. 생략하면 전체를 조회한다.", example = "산리오")

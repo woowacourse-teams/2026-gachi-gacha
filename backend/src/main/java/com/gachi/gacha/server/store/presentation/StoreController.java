@@ -35,10 +35,7 @@ public class StoreController {
     private final StoreService storeService;
     private final StoreGachaService storeGachaService;
 
-    @Operation(
-            summary = "주변 매장 조회",
-            description = "기준 좌표에서 radius 미터 안에 있는 매장을 가까운 순으로 반환한다."
-    )
+    @Operation(summary = "주변 매장 조회")
     @GetMapping("/nearby")
     public BaseResponse<StoreNearbyResponse> readNearbyStores(
             @Parameter(description = "기준 위도", example = "37.5563") @RequestParam(required = false) final Double latitude,
@@ -51,10 +48,7 @@ public class StoreController {
         return BaseResponse.ok(StoreNearbyResponse.from(result));
     }
 
-    @Operation(
-            summary = "특정 가챠를 보유한 주변 매장 조회",
-            description = "기준 좌표 주변 매장 중 해당 가챠를 보유한 곳만 가까운 순으로 반환한다."
-    )
+    @Operation(summary = "특정 가챠를 보유한 주변 매장 조회")
     @GetMapping("/nearby/{gachaId}")
     public BaseResponse<StoreNearbyResponse> readNearbyStores(
             @Parameter(description = "기준 위도", example = "37.5563") @RequestParam(required = false) final Double latitude,
@@ -67,7 +61,7 @@ public class StoreController {
         return BaseResponse.ok(StoreNearbyResponse.from(result));
     }
 
-    @Operation(summary = "매장 목록 조회", description = "전체 매장을 최근 등록순으로 조회한다.")
+    @Operation(summary = "매장 목록 조회")
     @GetMapping
     public BaseResponse<Page<StoreListResponse>> readStores(
             @ParameterObject
@@ -86,7 +80,7 @@ public class StoreController {
         return BaseResponse.ok(StoreDetailResponse.from(result));
     }
 
-    @Operation(summary = "매장 보유 가챠 목록 조회", description = "해당 매장이 보유한 가챠를 반환한다.")
+    @Operation(summary = "매장 보유 가챠 목록 조회")
     @GetMapping("/{storeId}/gachas")
     public BaseResponse<Page<GachaSummaryResponse>> readStoreGachas(
             @Parameter(description = "매장 ID", example = "1") @PathVariable final Long storeId,

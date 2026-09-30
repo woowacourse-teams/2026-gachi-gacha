@@ -36,12 +36,7 @@ public class OauthController {
     private final TokenService tokenService;
     private final OauthNonceSessionManager oauthNonceSessionManager;
 
-    @Operation(
-            summary = "소셜 로그인 인가 페이지로 리다이렉트",
-            description = """
-                    302 응답의 Location 헤더로 해당 제공자의 로그인 페이지 주소를 내려준다.
-                    이 API 는 브라우저에서 직접 열어야 하며, Swagger UI 의 실행 버튼으로는 흐름을 끝까지 확인할 수 없다."""
-    )
+    @Operation(summary = "소셜 로그인 인가 페이지로 리다이렉트")
     @GetMapping("/{provider}")
     public ResponseEntity<Void> redirectAuthCodeRequestUrl(
             @Parameter(description = "소셜 로그인 제공자", example = "KAKAO")
@@ -54,14 +49,7 @@ public class OauthController {
         return BaseResponse.redirect(URI.create(redirectUrl));
     }
 
-    @Operation(
-            summary = "소셜 로그인 콜백",
-            description = """
-                    제공자가 리다이렉트로 호출하는 주소다. 인가 코드를 토큰으로 교환하고 서비스 토큰을 발급한다.
-
-                    프론트가 직접 부르는 API 가 아니다. 네이버는 state 값이 세션의 nonce 와 일치해야 하며,
-                    다르면 `AUE03` 으로 거부한다."""
-    )
+    @Operation(summary = "소셜 로그인 콜백")
     @GetMapping("/login/{provider}")
     public BaseResponse<LoginResponse> login(
             @Parameter(description = "소셜 로그인 제공자", example = "KAKAO")

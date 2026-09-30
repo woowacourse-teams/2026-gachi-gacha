@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.member.presentation;
 
 import com.gachi.gacha.server.common.auth.resolver.Auth;
-import com.gachi.gacha.server.common.config.OpenApiConfig;
+import com.gachi.gacha.server.common.config.SwaggerConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.member.application.MemberService;
 import com.gachi.gacha.server.member.application.dto.MemberDeleteResult;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "회원", description = "내 정보 조회·수정·탈퇴")
-@SecurityRequirement(name = OpenApiConfig.BEARER_AUTH)
+@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 @RestController
 @RequestMapping("/members")
 @RequiredArgsConstructor
@@ -30,17 +30,14 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @Operation(summary = "내 정보 조회", description = "토큰의 주체에 해당하는 회원 정보를 반환한다.")
+    @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
     public BaseResponse<MemberResponse> readMember(@Auth final Long memberId) {
         MemberInfo memberInfo = memberService.getMemberInfo(memberId);
         return BaseResponse.ok(MemberResponse.from(memberInfo));
     }
 
-    @Operation(
-            summary = "내 정보 수정",
-            description = "닉네임·프로필 사진·희망 교환 장소를 수정한다. 닉네임은 비울 수 없다."
-    )
+    @Operation(summary = "내 정보 수정")
     @PatchMapping("/me")
     public BaseResponse<MemberResponse> updateMember(
             @Auth final Long memberId,
@@ -50,10 +47,7 @@ public class MemberController {
         return BaseResponse.updated(MemberResponse.from(memberInfo));
     }
 
-    @Operation(
-            summary = "회원 탈퇴",
-            description = "회원을 탈퇴 처리한다. 응답으로 정리된 연관 데이터 건수를 돌려준다."
-    )
+    @Operation(summary = "회원 탈퇴")
     @DeleteMapping("/me")
     public BaseResponse<MemberDeleteResponse> deleteMember(@Auth final Long memberId) {
         MemberDeleteResult result = memberService.removeMember(memberId);
