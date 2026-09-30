@@ -33,8 +33,8 @@ import org.springframework.context.annotation.Configuration;
                         |------|------|
                         | C000 | 조회 성공 (200) |
                         | C001 | 생성 성공 (201) |
-                        | C002 | 수정 성공 (204) |
-                        | C003 | 삭제 성공 (204) |
+                        | C002 | 수정 성공 (200) |
+                        | C003 | 삭제 성공 (200) |
 
                         ## 오류 형식
                         오류는 `ErrorResponse` 스키마로 내려갑니다. 아래 Schemas 항목에서 구조를 확인할 수 있습니다.
