@@ -59,6 +59,14 @@ function isTradeDetail(value: unknown): value is TradeDetail {
   );
 }
 
+export function parseTradeDetailData(value: unknown): TradeDetail {
+  if (!isTradeDetail(value)) {
+    throw new Error('교환 게시글 응답 형식이 올바르지 않습니다.');
+  }
+
+  return value;
+}
+
 export function parseTradeDetailResponse(value: unknown): TradeDetail {
   if (!isApiResponse(value)) {
     throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
@@ -68,9 +76,5 @@ export function parseTradeDetailResponse(value: unknown): TradeDetail {
     throw new Error(value.message);
   }
 
-  if (!isTradeDetail(value.data)) {
-    throw new Error('교환 게시글 상세 응답 형식이 올바르지 않습니다.');
-  }
-
-  return value.data;
+  return parseTradeDetailData(value.data);
 }
