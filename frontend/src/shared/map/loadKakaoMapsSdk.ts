@@ -7,6 +7,7 @@ function createKakaoMapsSdkUrl(): string {
   const searchParams = new URLSearchParams({
     appkey: __KAKAO_MAP_KEY__,
     autoload: 'false',
+    libraries: 'services',
   });
 
   return `https://dapi.kakao.com/v2/maps/sdk.js?${searchParams}`;
@@ -47,11 +48,11 @@ async function initializeKakaoMapsSdk(): Promise<void> {
     throw new Error('카카오 지도 JavaScript 키가 설정되지 않았습니다.');
   }
 
-  if (!window.kakao?.maps) {
+  if (!window.kakao?.maps?.services) {
     await appendKakaoMapsScript();
   }
 
-  if (!window.kakao?.maps) {
+  if (!window.kakao?.maps?.services) {
     throw new Error('카카오 지도 SDK를 초기화하지 못했습니다.');
   }
 

@@ -1,12 +1,22 @@
 import styled from '@emotion/styled';
 
-export default function StickyActionBar() {
+interface StickyActionBarProps {
+  isSubmitting: boolean;
+}
+
+export default function StickyActionBar({
+  isSubmitting,
+}: StickyActionBarProps) {
   return (
     <Wrapper>
       <Actions>
-        <DraftButton type="button">임시저장</DraftButton>
-        <SubmitButton type="submit" form="secondhand-create-form">
-          등록하기
+        <SubmitButton
+          type="submit"
+          form="secondhand-create-form"
+          disabled={isSubmitting}
+          aria-busy={isSubmitting}
+        >
+          {isSubmitting ? '등록 중...' : '등록하기'}
         </SubmitButton>
       </Actions>
     </Wrapper>
@@ -31,8 +41,7 @@ const Actions = styled.div`
   display: grid;
   width: min(100%, 960px);
   margin: 0 auto;
-  grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr);
-  gap: 12px;
+  grid-template-columns: 1fr;
 `;
 
 const ActionButton = styled.button`
@@ -43,14 +52,13 @@ const ActionButton = styled.button`
   cursor: pointer;
 `;
 
-const DraftButton = styled(ActionButton)`
-  border: 1px solid #dcdce1;
-  background: #ffffff;
-  color: #484a52;
-`;
-
 const SubmitButton = styled(ActionButton)`
   border: 1px solid #ed174c;
   background: #ed174c;
   color: #ffffff;
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: wait;
+  }
 `;

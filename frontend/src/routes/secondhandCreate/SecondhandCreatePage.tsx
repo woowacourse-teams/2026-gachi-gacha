@@ -2,7 +2,6 @@ import styled from '@emotion/styled';
 
 import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
 
-import StickyActionBar from './components/StickyActionBar';
 import TradeForm from './components/TradeForm';
 
 export default function SecondhandCreatePage() {
@@ -14,14 +13,12 @@ export default function SecondhandCreatePage() {
         <Heading>
           <Title>교환 글쓰기</Title>
           <Description>
-            교환할 가챠 사진과 만날 장소를 입력하면 동네 피드에 올라가요.
+            교환할 가챠 사진과 만날 장소를 입력하면 피드에 올라가요.
           </Description>
         </Heading>
 
         <TradeForm />
       </Main>
-
-      <StickyActionBar />
     </Page>
   );
 }

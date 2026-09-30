@@ -7,6 +7,17 @@ import { clearAuthTokens } from '@/features/auth/authTokenStorage';
 
 import { server } from './server';
 
+Object.defineProperties(URL, {
+  createObjectURL: {
+    configurable: true,
+    value: () => 'blob:test-preview',
+  },
+  revokeObjectURL: {
+    configurable: true,
+    value: () => undefined,
+  },
+});
+
 beforeAll(() => {
   server.listen({ onUnhandledRequest: 'error' });
 });

@@ -4,48 +4,56 @@ import styled from '@emotion/styled';
 
 const MAX_PHOTO_COUNT = 5;
 
-export default function PhotoUploader() {
+interface PhotoUploaderProps {
+  files: File[];
+  onFilesChange: (files: File[]) => void;
+  errorMessage?: string | undefined;
+}
+
+export default function PhotoUploader({
+  files,
+  onFilesChange,
+  errorMessage,
+}: PhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const previewUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
-    previewUrlsRef.current = previewUrls;
-  }, [previewUrls]);
+    const nextPreviewUrls = files.map((file) => URL.createObjectURL(file));
 
-  useEffect(() => {
+    setPreviewUrls(nextPreviewUrls);
+
     return () => {
-      previewUrlsRef.current.forEach(URL.revokeObjectURL);
+      nextPreviewUrls.forEach((previewUrl) => {
+        URL.revokeObjectURL(previewUrl);
+      });
     };
-  }, []);
+  }, [files]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    const availableCount = MAX_PHOTO_COUNT - previewUrls.length;
-    const nextUrls = files.slice(0, availableCount).map(URL.createObjectURL);
+    const selectedFiles = Array.from(event.target.files ?? []);
+    const availableCount = MAX_PHOTO_COUNT - files.length;
+    const nextFiles = selectedFiles.slice(0, availableCount);
 
-    setPreviewUrls((currentUrls) => [...currentUrls, ...nextUrls]);
+    onFilesChange([...files, ...nextFiles]);
     event.target.value = '';
   };
 
-  const handleRemove = (targetUrl: string) => {
-    URL.revokeObjectURL(targetUrl);
-    setPreviewUrls((currentUrls) =>
-      currentUrls.filter((url) => url !== targetUrl),
-    );
+  const handleRemove = (targetIndex: number) => {
+    onFilesChange(files.filter((_, index) => index !== targetIndex));
   };
 
   return (
-    <Wrapper>
-      <Label>
-        사진{' '}
+    <Wrapper role="group" aria-labelledby="trade-photo-label" aria-required>
+      <Label id="trade-photo-label">
+        사진 <RequiredMark aria-hidden="true">*</RequiredMark>{' '}
         <Count>
-          ({previewUrls.length}/{MAX_PHOTO_COUNT})
+          ({files.length}/{MAX_PHOTO_COUNT})
         </Count>
       </Label>
 
       <PhotoList>
-        {previewUrls.length < MAX_PHOTO_COUNT && (
+        {files.length < MAX_PHOTO_COUNT && (
           <AddButton type="button" onClick={() => inputRef.current?.click()}>
             <CameraIcon aria-hidden="true" />
             <span>사진 추가</span>
@@ -58,7 +66,7 @@ export default function PhotoUploader() {
             <RemoveButton
               type="button"
               aria-label={`교환 사진 ${index + 1} 삭제`}
-              onClick={() => handleRemove(url)}
+              onClick={() => handleRemove(index)}
             >
               ×
             </RemoveButton>
@@ -73,6 +81,7 @@ export default function PhotoUploader() {
         multiple
         onChange={handleChange}
       />
+      {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
     </Wrapper>
   );
 }
@@ -113,6 +122,16 @@ const Label = styled.p`
 const Count = styled.span`
   color: #92949c;
   font-weight: 500;
+`;
+
+const RequiredMark = styled.span`
+  color: #ed174c;
+`;
+
+const ErrorMessage = styled.p`
+  margin: 0;
+  color: #d80f42;
+  font-size: 13px;
 `;
 
 const PhotoList = styled.div`
