@@ -88,7 +88,7 @@ describe('TradeEditRoute', () => {
     expect(
       screen.getByRole('img', { name: '기존 교환 사진 1' }),
     ).toHaveAttribute('src', 'https://cdn.example.com/trade.jpg');
-    expect(screen.getByRole('button', { name: '수정하기' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '수정하기' })).toBeEnabled();
   });
 
   it('작성자가 아니면 수정 폼 접근을 차단한다', async () => {

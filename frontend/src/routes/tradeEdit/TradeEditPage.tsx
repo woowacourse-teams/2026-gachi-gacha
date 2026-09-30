@@ -54,7 +54,11 @@ export default function TradeEditPage({
           </Description>
         </Heading>
 
-        <TradeForm mode="edit" initialValues={initialValues} />
+        <TradeForm
+          mode="edit"
+          tradeId={detail.tradeId}
+          initialValues={initialValues}
+        />
       </Main>
     </Page>
   );

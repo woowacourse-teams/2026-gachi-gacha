@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 import { useNavigate } from 'react-router';
 
 import { createTrade } from '@/domains/trade/api/createTrade';
+import { updateTrade } from '@/domains/trade/api/updateTrade';
 import type { TradeCategory } from '@/domains/trade/tradeCategoryType';
 import type {
   CreateTradeRequest,
@@ -26,15 +27,12 @@ export interface TradeFormInitialValues {
   imageUrls: string[];
 }
 
-interface TradeFormProps {
-  mode?: 'create' | 'edit';
-  initialValues?: TradeFormInitialValues;
-}
+type TradeFormProps =
+  | { mode?: 'create'; initialValues?: TradeFormInitialValues }
+  | { mode: 'edit'; tradeId: number; initialValues: TradeFormInitialValues };
 
-export default function TradeForm({
-  mode = 'create',
-  initialValues,
-}: TradeFormProps) {
+export default function TradeForm(props: TradeFormProps) {
+  const { mode = 'create', initialValues } = props;
   const navigate = useNavigate();
   const isEditMode = mode === 'edit';
   const formId = isEditMode ? 'trade-edit-form' : 'trade-create-form';
@@ -99,10 +97,6 @@ export default function TradeForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isEditMode) {
-      return;
-    }
-
     if (submittingRef.current) {
       return;
     }
@@ -152,14 +146,17 @@ export default function TradeForm({
     setIsSubmitting(true);
 
     try {
-      const createdTrade = await createTrade({ request, images });
+      const savedTrade =
+        props.mode === 'edit'
+          ? await updateTrade({ tradeId: props.tradeId, request, images })
+          : await createTrade({ request, images });
 
-      navigate(`/trade/${createdTrade.tradeId}`);
+      navigate(`/trade/${savedTrade.tradeId}`);
     } catch (error: unknown) {
       setSubmissionError(
         error instanceof Error
           ? error.message
-          : '교환 게시글을 등록하지 못했습니다.',
+          : `교환 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
       );
     } finally {
       submittingRef.current = false;
@@ -422,7 +419,6 @@ export default function TradeForm({
         formId={formId}
         submitLabel={isEditMode ? '수정하기' : '등록하기'}
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
-        disabled={isEditMode}
       />
 
       <TradePlaceSearchDialog
