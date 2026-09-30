@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { describe, expect, it, jest } from '@jest/globals';
 import {
   fireEvent,
   render,
@@ -14,6 +14,42 @@ import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { server } from '@/test/server';
 
 import TradeForm from './TradeForm';
+
+jest.mock('../TradePlaceSearchDialog', () => ({
+  __esModule: true,
+  default: ({
+    open,
+    title = '교환 장소 선택',
+    onClose,
+    onSelect,
+  }: {
+    open: boolean;
+    title?: string;
+    onClose: () => void;
+    onSelect: (place: {
+      name: string;
+      address: string;
+      latitude: number;
+      longitude: number;
+    }) => void;
+  }) =>
+    open ? (
+      <button
+        type="button"
+        onClick={() => {
+          onSelect({
+            name: '홍대 가챠샵',
+            address: '서울특별시 마포구 양화로 100',
+            latitude: 37.5563,
+            longitude: 126.9236,
+          });
+          onClose();
+        }}
+      >
+        {title} 테스트 장소 선택
+      </button>
+    ) : null,
+}));
 
 function renderTradeForm() {
   return render(
@@ -150,6 +186,72 @@ describe('TradeForm', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       '사진을 1장 이상 등록해주세요.',
     );
+  });
+
+  it('제목과 교환 희망 상품을 255자로 제한하고 공백 제목을 안내한다', async () => {
+    const user = userEvent.setup();
+    const { container } = renderTradeForm();
+    const titleInput = screen.getByRole('textbox', { name: /제목/ });
+    const desiredProductionInput = screen.getByRole('textbox', {
+      name: '교환 희망 상품',
+    });
+
+    expect(titleInput).toHaveAttribute('maxlength', '255');
+    expect(desiredProductionInput).toHaveAttribute('maxlength', '255');
+
+    await completeRequiredFields(user, container);
+    await user.clear(titleInput);
+    await user.type(titleInput, '   ');
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+
+    expect(titleInput).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('제목을 입력해주세요.')).toHaveAttribute(
+      'id',
+      'trade-title-error',
+    );
+  });
+
+  it('선택한 구매 매장과 교환 장소를 다시 해제한다', async () => {
+    const user = userEvent.setup();
+    const { container } = renderTradeForm();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: '구매 매장 (선택)',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', { name: '구매 매장 선택 테스트 장소 선택' }),
+    );
+
+    expect(
+      container.querySelector('input[name="purchaseStore.address"]'),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: '구매 매장 선택 해제' }),
+    );
+
+    expect(
+      container.querySelector('input[name="purchaseStore.address"]'),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '교환 장소' }));
+    await user.click(
+      screen.getByRole('button', { name: '교환 장소 선택 테스트 장소 선택' }),
+    );
+
+    expect(
+      container.querySelector('input[name="tradePlace.address"]'),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: '교환 장소 선택 해제' }),
+    );
+
+    expect(
+      container.querySelector('input[name="tradePlace.address"]'),
+    ).not.toBeInTheDocument();
   });
 
   it('등록 중 중복 제출을 막고 성공하면 생성된 상세 페이지로 이동한다', async () => {

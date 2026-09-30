@@ -14,6 +14,8 @@ import PhotoUploader from '../PhotoUploader';
 import StickyActionBar from '../StickyActionBar';
 import TradePlaceSearchDialog from '../TradePlaceSearchDialog';
 
+const MAX_SHORT_TEXT_LENGTH = 255;
+
 export default function TradeForm() {
   const navigate = useNavigate();
   const submittingRef = useRef(false);
@@ -29,6 +31,9 @@ export default function TradeForm() {
     useState(false);
   const [isPlaceDialogOpen, setIsPlaceDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [titleErrorMessage, setTitleErrorMessage] = useState<string | null>(
+    null,
+  );
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [categoryKeyword, setCategoryKeyword] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TradeCategory[]>(
@@ -89,7 +94,8 @@ export default function TradeForm() {
     );
 
     if (!title) {
-      setSubmissionError('제목을 입력해주세요.');
+      setTitleErrorMessage('제목을 입력해주세요.');
+      setSubmissionError(null);
       return;
     }
 
@@ -114,6 +120,7 @@ export default function TradeForm() {
     };
 
     setPhotoErrorMessage(null);
+    setTitleErrorMessage(null);
     setSubmissionError(null);
     submittingRef.current = true;
     setIsSubmitting(true);
@@ -155,8 +162,23 @@ export default function TradeForm() {
             id="trade-title"
             name="title"
             required
+            maxLength={MAX_SHORT_TEXT_LENGTH}
+            aria-invalid={Boolean(titleErrorMessage)}
+            aria-describedby={
+              titleErrorMessage ? 'trade-title-error' : undefined
+            }
             placeholder="교환할 가챠를 알아보기 쉽게 적어주세요"
+            onChange={() => {
+              if (titleErrorMessage) {
+                setTitleErrorMessage(null);
+              }
+            }}
           />
+          {titleErrorMessage && (
+            <FieldError id="trade-title-error" role="alert">
+              {titleErrorMessage}
+            </FieldError>
+          )}
         </Field>
 
         <Field>
@@ -233,6 +255,7 @@ export default function TradeForm() {
           <Input
             id="trade-desired-production"
             name="desiredProduction"
+            maxLength={MAX_SHORT_TEXT_LENGTH}
             placeholder="예: 시나모롤 키링 또는 산리오 랜덤 교환"
           />
         </Field>
@@ -260,6 +283,13 @@ export default function TradeForm() {
           </PlaceSelectButton>
           {purchaseStore && (
             <>
+              <ClearPlaceButton
+                type="button"
+                aria-label="구매 매장 선택 해제"
+                onClick={() => setPurchaseStore(null)}
+              >
+                선택 해제
+              </ClearPlaceButton>
               {purchaseStore.name && (
                 <input
                   type="hidden"
@@ -307,6 +337,13 @@ export default function TradeForm() {
           </PlaceSelectButton>
           {tradePlace && (
             <>
+              <ClearPlaceButton
+                type="button"
+                aria-label="교환 장소 선택 해제"
+                onClick={() => setTradePlace(null)}
+              >
+                선택 해제
+              </ClearPlaceButton>
               {tradePlace.name && (
                 <input
                   type="hidden"
@@ -440,6 +477,11 @@ const Input = styled.input`
     background: #ffffff;
     box-shadow: 0 0 0 3px rgb(237 23 76 / 10%);
   }
+
+  &[aria-invalid='true'] {
+    border-color: #d80f42;
+    background: #ffffff;
+  }
 `;
 
 const PlaceSelectButton = styled.button`
@@ -489,6 +531,17 @@ const PlaceSecondary = styled.span`
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
+`;
+
+const ClearPlaceButton = styled.button`
+  padding: 2px 0;
+  align-self: flex-end;
+  border: 0;
+  background: transparent;
+  color: #777981;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
 `;
 
 const CategoryList = styled.div`
@@ -563,4 +616,10 @@ const SubmissionError = styled.p`
   color: #d80f42;
   font-size: 14px;
   line-height: 1.5;
+`;
+
+const FieldError = styled.p`
+  margin: 0;
+  color: #d80f42;
+  font-size: 13px;
 `;
