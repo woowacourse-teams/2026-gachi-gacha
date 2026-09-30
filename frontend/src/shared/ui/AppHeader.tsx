@@ -27,7 +27,7 @@ export interface AppHeaderProps {
 const NAVIGATION_ITEMS = [
   { href: '/', label: '홈' },
   { href: '/search', label: '지도' },
-  { href: '/trade', label: '중고거래' },
+  { href: '/trade', label: '교환' },
 ] as const;
 
 function ChatIcon() {
