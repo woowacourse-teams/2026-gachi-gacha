@@ -4,6 +4,7 @@ import com.gachi.gacha.server.chat.application.ChatMessageService;
 import com.gachi.gacha.server.chat.application.dto.ChatMessagePageInfo;
 import com.gachi.gacha.server.chat.presentation.dto.ChatMessagePageResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatMessageReadRequest;
+import com.gachi.gacha.server.chat.presentation.websocket.ChatRoomUpdateSender;
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ChatMessageController {
 
     private final ChatMessageService chatMessageService;
+    private final ChatRoomUpdateSender chatRoomUpdateSender;
 
     @GetMapping
     public BaseResponse<ChatMessagePageResponse> getMessages(
@@ -51,6 +53,7 @@ public class ChatMessageController {
                 request.lastReadSequence()
         );
 
+        chatRoomUpdateSender.sendToMember(memberId, roomId);
         return BaseResponse.updated(null);
     }
 }

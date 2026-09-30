@@ -10,6 +10,7 @@ import com.gachi.gacha.server.chat.presentation.dto.ChatRoomExistenceResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomListResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatRoomResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatUnreadCountResponse;
+import com.gachi.gacha.server.chat.presentation.websocket.ChatRoomUpdateSender;
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import jakarta.validation.Valid;
@@ -31,6 +32,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatRoomUpdateSender chatRoomUpdateSender;
 
     @GetMapping("/me")
     public BaseResponse<ChatRoomListResponse> getRooms(@Auth final Long memberId) {
@@ -63,6 +65,8 @@ public class ChatRoomController {
     ) {
         ChatRoomCreateInfo chatRoomCreateInfo = chatRoomService.createRoom(memberId, request.tradeId());
         ChatRoomCreateResponse response = ChatRoomCreateResponse.of(chatRoomCreateInfo);
+        
+        chatRoomUpdateSender.sendToRoomMembers(response.roomId());
         return BaseResponse.created(
                 ServletUriComponentsBuilder
                         .fromCurrentRequest()
