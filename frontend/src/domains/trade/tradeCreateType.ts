@@ -12,4 +12,5 @@ export interface CreateTradeRequest {
   desiredProduction?: string;
   purchaseStore?: TradePlaceInput;
   tradePlace?: TradePlaceInput;
+  availableTime?: string;
 }

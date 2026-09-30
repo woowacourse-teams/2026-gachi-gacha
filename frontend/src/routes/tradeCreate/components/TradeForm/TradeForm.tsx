@@ -25,6 +25,8 @@ export interface TradeFormInitialValues {
   purchaseStore: TradePlaceInput | null;
   tradePlace: TradePlaceInput | null;
   imageUrls: string[];
+  // 폼에서 편집하지 않지만, PUT은 전체 교체라 기존 값을 그대로 보내야 지워지지 않는다.
+  availableTime?: string | null;
 }
 
 type TradeFormProps =
@@ -137,6 +139,9 @@ export default function TradeForm(props: TradeFormProps) {
       ...(desiredProduction ? { desiredProduction } : {}),
       ...(purchaseStore ? { purchaseStore } : {}),
       ...(tradePlace ? { tradePlace } : {}),
+      ...(initialValues?.availableTime
+        ? { availableTime: initialValues.availableTime }
+        : {}),
     };
 
     setPhotoErrorMessage(null);

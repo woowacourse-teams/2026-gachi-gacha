@@ -143,6 +143,7 @@ describe('TradeEditRoute', () => {
     expect(receivedRequest).toMatchObject({
       title: '수정한 제목',
       categoryIds: [2, 1],
+      availableTime: TRADE_DETAIL.availableTime,
     });
     expect(receivedImageCount).toBe(0);
   });

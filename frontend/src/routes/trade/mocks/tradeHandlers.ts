@@ -184,6 +184,7 @@ export const tradeHandlers = [
       categories: toCategoryNames(tradeRequest.categoryIds),
       purchaseStore: toTradePlace(tradeRequest.purchaseStore),
       tradePlace: toTradePlace(tradeRequest.tradePlace),
+      availableTime: tradeRequest.availableTime ?? null,
       // 새 이미지가 없으면 기존 이미지를 유지하고, 있으면 전부 교체한다.
       imageUrls:
         images.length > 0

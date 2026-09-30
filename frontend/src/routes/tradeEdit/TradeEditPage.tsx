@@ -40,6 +40,7 @@ export default function TradeEditPage({
     purchaseStore: toPlaceInput(detail.purchaseStore),
     tradePlace: toPlaceInput(detail.tradePlace),
     imageUrls: detail.imageUrls,
+    availableTime: detail.availableTime,
   };
 
   return (
