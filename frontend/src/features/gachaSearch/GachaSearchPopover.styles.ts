@@ -185,10 +185,15 @@ export const ProductButton = styled.button`
   text-align: left;
   cursor: pointer;
 
-  &:hover ${GachaImageFrame} {
+  &:not(:disabled):hover ${GachaImageFrame} {
     border-color: var(--color-primary, #d93b54);
     transform: translateY(-2px);
     box-shadow: 0 9px 20px rgb(35 31 32 / 12%);
+  }
+
+  &:disabled {
+    opacity: 0.58;
+    cursor: not-allowed;
   }
 
   &:focus-visible {
@@ -196,6 +201,18 @@ export const ProductButton = styled.button`
     outline-offset: 4px;
     border-radius: 14px;
   }
+`;
+
+export const StoreCountText = styled.span`
+  display: block;
+  overflow: hidden;
+  color: var(--color-primary, #d93b54);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const EmptyState = styled.div`

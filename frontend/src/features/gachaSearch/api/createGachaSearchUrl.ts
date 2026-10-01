@@ -1,14 +1,14 @@
-import type { GachaSearchParams } from './gachaSearchParamsType';
+import type { GachaSearchPageParams } from './gachaSearchParamsType';
 
-const GACHAS_API_PATH = '/api/v1/gachas';
+const GACHAS_API_PATH = '/gachas';
 
 export function createGachaSearchUrl({
-  keyword,
+  categoryIds,
   page,
   size,
-}: GachaSearchParams): string {
+}: GachaSearchPageParams): string {
   const searchParams = new URLSearchParams({
-    keyword: keyword.trim(),
+    categoryIds: categoryIds.join(','),
     page: String(page),
     size: String(size),
   });

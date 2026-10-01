@@ -16,12 +16,31 @@ jest.mock('@/shared/browser/browserNavigation', () => ({
 const mockedAssignBrowserLocation = jest.mocked(assignBrowserLocation);
 
 describe('가챠 검색 내비게이션', () => {
-  it('검색 결과를 선택하면 해당 가챠의 검색 페이지로 이동한다', async () => {
-    let requestedKeyword: string | null = null;
+  it('카테고리로 찾은 서버 정렬 가챠를 보여주고 선택 결과로 이동한다', async () => {
+    let requestedCategoryKeyword: string | null = null;
+    let requestedCategoryIds: string | null = null;
 
     server.use(
+      http.get('/api/v1/categories', ({ request }) => {
+        requestedCategoryKeyword = new URL(request.url).searchParams.get(
+          'keyword',
+        );
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '요청에 성공했습니다.',
+          data: {
+            items: [
+              { categoryId: 17, name: '쿠로미' },
+              { categoryId: 23, name: '쿠로미 피규어' },
+            ],
+          },
+        });
+      }),
       http.get('/api/v1/gachas', ({ request }) => {
-        requestedKeyword = new URL(request.url).searchParams.get('keyword');
+        requestedCategoryIds = new URL(request.url).searchParams.get(
+          'categoryIds',
+        );
 
         return HttpResponse.json({
           code: 'C000',
@@ -33,9 +52,17 @@ describe('가챠 검색 내비게이션', () => {
                 name: '쿠로미 미니 피규어 vol.2',
                 thumbnailUrl: null,
                 categories: ['산리오', '쿠로미'],
+                storeCount: 4,
+              },
+              {
+                gachaId: 102,
+                name: '쿠로미 랜덤 참',
+                thumbnailUrl: null,
+                categories: ['산리오', '쿠로미'],
+                storeCount: 0,
               },
             ],
-            totalElements: 1,
+            totalElements: 2,
           },
         });
       }),
@@ -50,10 +77,20 @@ describe('가챠 검색 내비게이션', () => {
     await user.click(screen.getByRole('button', { name: '검색' }));
 
     const result = await screen.findByRole('button', {
-      name: '쿠로미 미니 피규어 vol.2 선택',
+      name: '쿠로미 미니 피규어 vol.2 선택, 4개 매장 보유중',
+    });
+    const unavailableResult = screen.getByRole('button', {
+      name: '쿠로미 랜덤 참, 보유 매장 없음',
     });
 
-    expect(requestedKeyword).toBe('쿠로미');
+    expect(requestedCategoryKeyword).toBe('쿠로미');
+    expect(requestedCategoryIds).toBe('17,23');
+    expect(unavailableResult).toBeDisabled();
+    expect(
+      screen
+        .getAllByText(/^(?:\d+개 매장 보유중|보유 매장 없음)$/)
+        .map((element) => element.textContent),
+    ).toEqual(['4개 매장 보유중', '보유 매장 없음']);
 
     await user.click(result);
 

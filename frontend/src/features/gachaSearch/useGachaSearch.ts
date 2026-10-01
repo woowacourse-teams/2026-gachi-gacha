@@ -8,6 +8,7 @@ import {
 } from './analytics/gachaSearchAnalytics';
 import type { GachaSearchParams } from './api/gachaSearchParamsType';
 import { getGachaSearchResults } from './api/getGachaSearchResults';
+import { getMatchingCategoryIds } from './api/getMatchingCategoryIds';
 import type { GachaSearchResult } from './gachaSearchResultType';
 
 type SettledGachaSearchState = Extract<
@@ -21,6 +22,7 @@ interface GachaSearchRequest extends GachaSearchParams {
 
 interface GachaSearchSnapshot {
   request: GachaSearchRequest;
+  categoryIds: readonly number[];
   state: SettledGachaSearchState;
   lastLoadedPage: number;
   isLoadingMore: boolean;
@@ -40,6 +42,15 @@ const LOADING_STATE: AsyncState<GachaSearchResult> = {
   data: null,
   errorMessage: null,
 };
+const EMPTY_SEARCH_RESULT: GachaSearchResult = {
+  products: [],
+  totalCount: 0,
+};
+
+interface LoadedGachaSearch {
+  categoryIds: readonly number[];
+  state: SettledGachaSearchState;
+}
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : DEFAULT_ERROR_MESSAGE;
@@ -65,16 +76,36 @@ function mergeSearchResults(
 async function loadGachaSearch(
   params: GachaSearchParams,
   signal: AbortSignal,
-): Promise<SettledGachaSearchState> {
+  existingCategoryIds?: readonly number[],
+): Promise<LoadedGachaSearch> {
   try {
-    const data = await getGachaSearchResults(params, signal);
+    const categoryIds =
+      existingCategoryIds ??
+      (await getMatchingCategoryIds(params.keyword, signal));
+    const data =
+      categoryIds.length === 0
+        ? EMPTY_SEARCH_RESULT
+        : await getGachaSearchResults(
+            {
+              categoryIds,
+              page: params.page,
+              size: params.size,
+            },
+            signal,
+          );
 
-    return { status: 'success', data, errorMessage: null };
+    return {
+      categoryIds,
+      state: { status: 'success', data, errorMessage: null },
+    };
   } catch (error: unknown) {
     return {
-      status: 'error',
-      data: null,
-      errorMessage: getErrorMessage(error),
+      categoryIds: existingCategoryIds ?? [],
+      state: {
+        status: 'error',
+        data: null,
+        errorMessage: getErrorMessage(error),
+      },
     };
   }
 }
@@ -109,7 +140,7 @@ export function useGachaSearch(keyword: string) {
     const controller = new AbortController();
 
     async function applyGachaSearchResult() {
-      const nextState = await loadGachaSearch(
+      const nextLoad = await loadGachaSearch(
         {
           keyword: activeRequest.keyword,
           page: activeRequest.page,
@@ -117,6 +148,7 @@ export function useGachaSearch(keyword: string) {
         },
         controller.signal,
       );
+      const nextState = nextLoad.state;
 
       if (controller.signal.aborted) {
         return;
@@ -133,6 +165,7 @@ export function useGachaSearch(keyword: string) {
 
       setSnapshot({
         request: activeRequest,
+        categoryIds: nextLoad.categoryIds,
         state: nextState,
         lastLoadedPage: FIRST_PAGE,
         isLoadingMore: false,
@@ -174,6 +207,7 @@ export function useGachaSearch(keyword: string) {
     }
 
     const activeRequest = request;
+    const activeCategoryIds = currentSnapshot.categoryIds;
     const nextPage = currentSnapshot.lastLoadedPage + 1;
     const controller = new AbortController();
     loadMoreControllerRef.current = controller;
@@ -184,14 +218,16 @@ export function useGachaSearch(keyword: string) {
     });
 
     async function appendNextPage() {
-      const nextState = await loadGachaSearch(
+      const nextLoad = await loadGachaSearch(
         {
           keyword: activeRequest.keyword,
           page: nextPage,
           size: activeRequest.size,
         },
         controller.signal,
+        activeCategoryIds,
       );
+      const nextState = nextLoad.state;
 
       if (controller.signal.aborted) {
         return;
@@ -215,6 +251,7 @@ export function useGachaSearch(keyword: string) {
 
         return {
           request: activeRequest,
+          categoryIds: latestSnapshot.categoryIds,
           state: {
             status: 'success',
             data: mergeSearchResults(latestSnapshot.state.data, nextState.data),

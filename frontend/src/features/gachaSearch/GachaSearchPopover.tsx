@@ -1,7 +1,6 @@
 import type { UIEvent } from 'react';
 
 import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
-import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { captureGachaSelected } from './analytics/gachaSearchAnalytics';
@@ -23,9 +22,13 @@ import {
   ResultCount,
   ResultSummary,
   RetryButton,
+  StoreCountText,
   Title,
 } from './GachaSearchPopover.styles';
-import type { GachaSearchResult } from './gachaSearchResultType';
+import type {
+  GachaSearchProduct,
+  GachaSearchResult,
+} from './gachaSearchResultType';
 import { getVisibleCategories } from './getVisibleCategories';
 
 export interface GachaSearchPopoverProps {
@@ -44,7 +47,7 @@ export interface GachaSearchPopoverProps {
 const LOAD_MORE_THRESHOLD = 120;
 
 interface ProductCardProps {
-  product: GachaProductSummary;
+  product: GachaSearchProduct;
   query: string;
   resultPosition: number;
   onSelect: (gachaId: number) => void;
@@ -65,18 +68,32 @@ function ProductCard({
   const categoryLabel = hiddenCategoryCount
     ? `${categoryPreview} 외 ${hiddenCategoryCount}개`
     : categoryPreview;
+  const hasStore = product.storeCount > 0;
+  const storeCountLabel = hasStore
+    ? `${product.storeCount.toLocaleString('ko-KR')}개 매장 보유중`
+    : '보유 매장 없음';
 
   return (
     <ProductItem>
       <ProductButton
         type="button"
+        disabled={!hasStore}
         onClick={() => {
           captureGachaSelected(product.gachaId, resultPosition);
           onSelect(product.gachaId);
         }}
-        aria-label={`${product.name} 선택`}
+        aria-label={
+          hasStore
+            ? `${product.name} 선택, ${storeCountLabel}`
+            : `${product.name}, 보유 매장 없음`
+        }
+        title={hasStore ? undefined : '현재 보유 중인 매장이 없습니다.'}
       >
-        <GachaSummaryCard product={product} categoryLabel={categoryLabel} />
+        <GachaSummaryCard
+          product={product}
+          categoryLabel={categoryLabel}
+          supportingContent={<StoreCountText>{storeCountLabel}</StoreCountText>}
+        />
       </ProductButton>
     </ProductItem>
   );
@@ -141,7 +158,7 @@ export function GachaSearchPopover({
 
       <Content aria-live="polite" onScroll={handleContentScroll}>
         {searchState.status === 'idle' && (
-          <EmptyState>찾고 싶은 가챠 이름을 입력해 주세요.</EmptyState>
+          <EmptyState>찾고 싶은 캐릭터나 카테고리를 입력해 주세요.</EmptyState>
         )}
 
         {searchState.status === 'loading' && <LoadingContent />}
@@ -159,7 +176,7 @@ export function GachaSearchPopover({
 
         {searchState.status === 'success' &&
           searchState.data.products.length === 0 && (
-            <EmptyState>검색어와 일치하는 가챠가 없습니다.</EmptyState>
+            <EmptyState>검색어와 관련된 가챠가 없습니다.</EmptyState>
           )}
 
         {searchState.status === 'success' &&
