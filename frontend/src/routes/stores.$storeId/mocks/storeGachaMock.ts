@@ -1,4 +1,3 @@
-import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import { gachaProductsMock } from '@/domains/product/mocks/gachaProductsMock';
 import pokemonDiorama from '@/mocks/assets/pokemon-diorama.jpg';
 import pokemonLight from '@/mocks/assets/pokemon-light.jpg';
@@ -14,8 +13,10 @@ import sanrioPenlight from '@/mocks/assets/sanrio-penlight.jpg';
 import sanrioPlush from '@/mocks/assets/sanrio-plush.jpg';
 import type { ApiResponse } from '@/shared/api/apiResponseType';
 
+import type { StoreGachaSummary } from '../api/storeGachaType';
+
 interface StoreGachaPageMockData {
-  content: readonly GachaProductSummary[];
+  content: readonly StoreGachaSummary[];
   totalElements: number;
   number: number;
   totalPages: number;
@@ -39,11 +40,12 @@ const storeOneGachaThumbnails = [
 const storeOneGachas = gachaProductsMock
   .slice(0, storeOneGachaThumbnails.length)
   .map((gacha, index) => ({
-    ...gacha,
+    gachaId: gacha.gachaId,
+    gachaName: gacha.name,
     thumbnailUrl: storeOneGachaThumbnails[index] ?? null,
   }));
 
-const storeGachasByStoreId = new Map<number, readonly GachaProductSummary[]>([
+const storeGachasByStoreId = new Map<number, readonly StoreGachaSummary[]>([
   [1, storeOneGachas],
   [2, []],
 ]);

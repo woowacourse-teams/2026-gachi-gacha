@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
-import type { GachaProductSummary } from '../gachaProductType';
 import {
   CategoryText,
   Card,
@@ -13,8 +12,14 @@ import {
   GachaName,
 } from './GachaSummaryCard.styles';
 
+export interface GachaSummaryCardProduct {
+  name: string;
+  thumbnailUrl: string | null;
+  categories?: readonly string[];
+}
+
 export interface GachaSummaryCardProps {
-  product: GachaProductSummary;
+  product: GachaSummaryCardProduct;
   categoryLabel?: string;
   imageAlt?: string;
   supportingContent?: ReactNode;
@@ -43,7 +48,10 @@ export function GachaSummaryCard({
   supportingContent,
 }: GachaSummaryCardProps) {
   const visibleCategoryLabel =
-    categoryLabel?.trim() || createDefaultCategoryLabel(product.categories);
+    categoryLabel?.trim() ||
+    (product.categories
+      ? createDefaultCategoryLabel(product.categories)
+      : undefined);
 
   return (
     <Card>
@@ -61,9 +69,13 @@ export function GachaSummaryCard({
       </GachaImageFrame>
       <GachaDetails>
         <GachaName title={product.name}>{product.name}</GachaName>
-        <CategoryText title={product.categories.join(', ')}>
-          {visibleCategoryLabel}
-        </CategoryText>
+        {visibleCategoryLabel && (
+          <CategoryText
+            title={product.categories?.join(', ') ?? visibleCategoryLabel}
+          >
+            {visibleCategoryLabel}
+          </CategoryText>
+        )}
         {supportingContent}
       </GachaDetails>
     </Card>

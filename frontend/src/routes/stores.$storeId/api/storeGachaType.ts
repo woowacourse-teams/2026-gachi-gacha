@@ -1,7 +1,11 @@
-import type { GachaProductSummary } from '@/domains/product/gachaProductType';
+export interface StoreGachaSummary {
+  gachaId: number;
+  gachaName: string;
+  thumbnailUrl: string | null;
+}
 
 export interface StoreGachaPage {
-  gachas: readonly GachaProductSummary[];
+  gachas: readonly StoreGachaSummary[];
   totalCount: number;
   page: number;
   totalPages: number;
