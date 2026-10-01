@@ -1,19 +1,13 @@
-import { apiClient } from '@/shared/api/apiClient';
+import {
+  getGachasByCategoryIds,
+  type GetGachasByCategoryIdsParams,
+} from '@/domains/product/api/getGachasByCategoryIds';
 
 import type { GachaSearchResult } from '../gachaSearchResultType';
-import { createGachaSearchUrl } from './createGachaSearchUrl';
-import type { GachaSearchPageParams } from './gachaSearchParamsType';
-import { parseGachaSearchResponse } from './parseGachaSearchResponse';
 
 export async function getGachaSearchResults(
-  params: GachaSearchPageParams,
+  params: GetGachasByCategoryIdsParams,
   signal?: AbortSignal,
 ): Promise<GachaSearchResult> {
-  const options: RequestInit = signal ? { signal } : {};
-
-  return apiClient(
-    createGachaSearchUrl(params),
-    parseGachaSearchResponse,
-    options,
-  );
+  return getGachasByCategoryIds(params, signal);
 }

@@ -1,17 +1,10 @@
-import { apiClient } from '@/shared/api/apiClient';
+import { getCategories } from '@/domains/category/api/getCategories';
 
-import { createCategorySearchUrl } from './createCategorySearchUrl';
-import { parseCategorySearchResponse } from './parseCategorySearchResponse';
-
-export function getMatchingCategoryIds(
+export async function getMatchingCategoryIds(
   keyword: string,
   signal?: AbortSignal,
 ): Promise<readonly number[]> {
-  const options: RequestInit = signal ? { signal } : {};
+  const categories = await getCategories(keyword, signal);
 
-  return apiClient(
-    createCategorySearchUrl(keyword),
-    parseCategorySearchResponse,
-    options,
-  );
+  return categories.map(({ categoryId }) => categoryId);
 }

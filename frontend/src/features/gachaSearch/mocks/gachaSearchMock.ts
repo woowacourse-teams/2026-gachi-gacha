@@ -1,11 +1,10 @@
+import type { GetGachasByCategoryIdsParams } from '@/domains/product/api/getGachasByCategoryIds';
+import type { GachaWithStoreCount } from '@/domains/product/gachaWithStoreCountType';
 import { gachaProductsMock } from '@/domains/product/mocks/gachaProductsMock';
 import type { ApiResponse } from '@/shared/api/apiResponseType';
 
-import type { GachaSearchPageParams } from '../api/gachaSearchParamsType';
-import type { GachaSearchProduct } from '../gachaSearchResultType';
-
 interface GachaSearchPageMockData {
-  content: readonly GachaSearchProduct[];
+  content: readonly GachaWithStoreCount[];
   totalElements: number;
 }
 
@@ -57,7 +56,7 @@ export function createGachaSearchMockResponse({
   categoryIds,
   page,
   size,
-}: GachaSearchPageParams): ApiResponse<GachaSearchPageMockData> {
+}: GetGachasByCategoryIdsParams): ApiResponse<GachaSearchPageMockData> {
   const selectedCategoryIds = new Set(categoryIds);
   const filteredProducts = gachaProductsMock
     .filter((product) =>

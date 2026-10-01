@@ -1,9 +1,6 @@
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
-interface CategoryItem {
-  categoryId: number;
-  name: string;
-}
+import type { Category } from '../categoryType';
 
 interface CategoryListData {
   items: readonly unknown[];
@@ -13,7 +10,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function isCategoryItem(value: unknown): value is CategoryItem {
+function isCategory(value: unknown): value is Category {
   if (!isRecord(value)) {
     return false;
   }
@@ -30,7 +27,7 @@ function isCategoryListData(value: unknown): value is CategoryListData {
   return isRecord(value) && Array.isArray(value.items);
 }
 
-export function parseCategorySearchResponse(value: unknown): readonly number[] {
+export function parseCategoriesResponse(value: unknown): readonly Category[] {
   if (!isApiResponse(value)) {
     throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
   }
@@ -43,9 +40,13 @@ export function parseCategorySearchResponse(value: unknown): readonly number[] {
     throw new Error('카테고리 검색 응답 형식이 올바르지 않습니다.');
   }
 
-  if (!value.data.items.every(isCategoryItem)) {
+  if (!value.data.items.every(isCategory)) {
     throw new Error('카테고리 검색 결과 형식이 올바르지 않습니다.');
   }
 
-  return [...new Set(value.data.items.map(({ categoryId }) => categoryId))];
+  return [
+    ...new Map(
+      value.data.items.map((category) => [category.categoryId, category]),
+    ).values(),
+  ];
 }
