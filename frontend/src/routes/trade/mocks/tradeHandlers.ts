@@ -156,6 +156,9 @@ export const tradeHandlers = [
 
     return HttpResponse.json({ code: 'C000', message: '정상', data: trade });
   }),
+  http.delete(`${TRADES_API_PATH}/:tradeId`, () =>
+    HttpResponse.json({ code: 'C003', message: '정상 삭제', data: null }),
+  ),
   http.put(`${TRADES_API_PATH}/:tradeId`, async ({ params, request }) => {
     const trade = findTradeDetail(Number(params.tradeId));
 
