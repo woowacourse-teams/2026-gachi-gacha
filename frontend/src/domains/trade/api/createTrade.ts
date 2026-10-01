@@ -3,10 +3,12 @@ import { isApiResponse } from '@/shared/api/isApiResponse';
 
 import type { CreateTradeRequest } from '../tradeCreateType';
 import type { TradeDetail } from '../tradeDetailType';
+import { getTradeRequestErrorMessage } from './getTradeRequestErrorMessage';
 import { parseTradeDetailData } from './parseTradeDetailResponse';
 
 const TRADES_API_PATH = '/api/v1/trades';
 const JSON_CONTENT_TYPE = 'application/json';
+const DEFAULT_ERROR_MESSAGE = '교환 게시글을 등록하지 못했습니다.';
 
 export interface CreateTradeOptions {
   request: CreateTradeRequest;
@@ -44,13 +46,21 @@ export async function createTrade({
   const contentType = response.headers.get('content-type');
 
   if (!contentType?.includes(JSON_CONTENT_TYPE)) {
-    throw new Error('교환 게시글을 등록하지 못했습니다.');
+    throw new Error(
+      getTradeRequestErrorMessage(response.status, null, DEFAULT_ERROR_MESSAGE),
+    );
   }
 
   const responseBody: unknown = await response.json();
 
   if (!response.ok || !isApiResponse(responseBody)) {
-    throw new Error(getErrorMessage(responseBody));
+    throw new Error(
+      getTradeRequestErrorMessage(
+        response.status,
+        responseBody,
+        DEFAULT_ERROR_MESSAGE,
+      ),
+    );
   }
 
   if (responseBody.code !== 'C001') {
@@ -58,17 +68,4 @@ export async function createTrade({
   }
 
   return parseTradeDetailData(responseBody.data);
-}
-
-function getErrorMessage(value: unknown): string {
-  if (
-    typeof value === 'object' &&
-    value !== null &&
-    'message' in value &&
-    typeof value.message === 'string'
-  ) {
-    return value.message;
-  }
-
-  return '교환 게시글을 등록하지 못했습니다.';
 }
