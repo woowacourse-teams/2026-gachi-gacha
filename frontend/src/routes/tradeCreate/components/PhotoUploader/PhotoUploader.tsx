@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 
+import {
+  IMAGE_TOO_LARGE_MESSAGE,
+  TRADE_IMAGE_ACCEPT,
+  UNSUPPORTED_IMAGE_TYPE_MESSAGE,
+  validateTradeImage,
+} from '@/domains/trade/tradeImagePolicy';
+
 const MAX_PHOTO_COUNT = 5;
 
 interface PhotoUploaderProps {
@@ -19,6 +26,10 @@ export default function PhotoUploader({
 }: PhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [selectionErrorMessage, setSelectionErrorMessage] = useState<
+    string | null
+  >(null);
+  const visibleErrorMessage = selectionErrorMessage ?? errorMessage;
   // 새 사진을 하나라도 고르면 기존 사진은 전부 교체되므로 화면에서도 숨긴다.
   const visibleInitialImageUrls = files.length > 0 ? [] : initialImageUrls;
   const photoCount = visibleInitialImageUrls.length + files.length;
@@ -37,10 +48,26 @@ export default function PhotoUploader({
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
+    const rejections = selectedFiles.map(validateTradeImage);
+    const acceptedFiles = selectedFiles.filter(
+      (_, index) => rejections[index] === null,
+    );
     const availableCount = MAX_PHOTO_COUNT - files.length;
-    const nextFiles = selectedFiles.slice(0, availableCount);
+    const nextFiles = acceptedFiles.slice(0, availableCount);
 
-    onFilesChange([...files, ...nextFiles]);
+    // 형식 오류를 용량 오류보다 먼저 안내한다.
+    setSelectionErrorMessage(
+      rejections.includes('unsupported-type')
+        ? UNSUPPORTED_IMAGE_TYPE_MESSAGE
+        : rejections.includes('too-large')
+          ? IMAGE_TOO_LARGE_MESSAGE
+          : null,
+    );
+
+    if (nextFiles.length > 0) {
+      onFilesChange([...files, ...nextFiles]);
+    }
+
     event.target.value = '';
   };
 
@@ -91,11 +118,13 @@ export default function PhotoUploader({
       <HiddenInput
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={TRADE_IMAGE_ACCEPT}
         multiple
         onChange={handleChange}
       />
-      {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
+      {visibleErrorMessage && (
+        <ErrorMessage role="alert">{visibleErrorMessage}</ErrorMessage>
+      )}
     </Wrapper>
   );
 }
