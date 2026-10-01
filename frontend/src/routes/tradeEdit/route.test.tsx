@@ -114,8 +114,8 @@ describe('TradeEditRoute', () => {
           receivedImageCount = formData.getAll('images').length;
 
           return HttpResponse.json({
-            code: 'C000',
-            message: '정상',
+            code: 'C002',
+            message: '정상 수정',
             data: { ...TRADE_DETAIL, title: '수정한 제목' },
           });
         },

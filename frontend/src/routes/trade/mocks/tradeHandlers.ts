@@ -202,8 +202,8 @@ export const tradeHandlers = [
     updatedTrades.set(updatedTrade.tradeId, updatedTrade);
 
     return HttpResponse.json({
-      code: 'C000',
-      message: '정상',
+      code: 'C002',
+      message: '정상 수정',
       data: updatedTrade,
     });
   }),
