@@ -88,9 +88,9 @@ describe('가챠 검색 내비게이션', () => {
     expect(unavailableResult).toBeDisabled();
     expect(
       screen
-        .getAllByText(/개 매장 보유중/)
+        .getAllByText(/^(?:\d+개 매장 보유중|보유 매장 없음)$/)
         .map((element) => element.textContent),
-    ).toEqual(['4개 매장 보유중', '0개 매장 보유중']);
+    ).toEqual(['4개 매장 보유중', '보유 매장 없음']);
 
     await user.click(result);
 

@@ -69,7 +69,9 @@ function ProductCard({
     ? `${categoryPreview} 외 ${hiddenCategoryCount}개`
     : categoryPreview;
   const hasStore = product.storeCount > 0;
-  const storeCountLabel = `${product.storeCount.toLocaleString('ko-KR')}개 매장 보유중`;
+  const storeCountLabel = hasStore
+    ? `${product.storeCount.toLocaleString('ko-KR')}개 매장 보유중`
+    : '보유 매장 없음';
 
   return (
     <ProductItem>
