@@ -7,7 +7,8 @@ import TradeDetail from './components/TradeDetail';
 import ProductCard from '../trade/components/ProductCard';
 import type { TradeItem } from '../trade/model/tradeItem';
 
-export type TradeDetailAction = 'chat' | 'edit' | null;
+// login: 비로그인 사용자의 채팅하기. 로그인 후 채팅이 아닌 상세 페이지로 돌아온다.
+export type TradeDetailAction = 'chat' | 'login' | 'edit' | null;
 
 interface TradeDetailPageProps {
   detail: TradeDetailData;
