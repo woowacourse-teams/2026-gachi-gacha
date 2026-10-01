@@ -28,6 +28,7 @@ import type {
   ChatRoom,
   ChatTradeStatus,
 } from './model/chat';
+import { toChatDateKey } from './model/chatDate';
 import { useChatReadMarker } from './useChatReadMarker';
 
 interface ChatRouteProps {
@@ -482,6 +483,7 @@ function toMessage(
     sender: String(message.senderId) === memberId ? 'me' : 'other',
     text: message.content,
     sentAt: formatMessageTime(message.createdAt),
+    sentDate: toChatDateKey(message.createdAt),
   };
 }
 

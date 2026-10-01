@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
@@ -6,6 +6,7 @@ import { Link } from 'react-router';
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 
 import type { ChatRoom } from '../../model/chat';
+import { formatChatDateLabel } from '../../model/chatDate';
 
 interface ChatRoomPanelProps {
   room: ChatRoom | undefined;
@@ -152,15 +153,27 @@ export default function ChatRoomPanel({
             {previousMessagesError}
           </PreviousMessagesError>
         )}
-        <DateDivider>오늘</DateDivider>
-        {room.messages.map((message) => (
-          <MessageRow key={message.id} data-sender={message.sender}>
-            <MessageBubble data-sender={message.sender}>
-              {message.text}
-            </MessageBubble>
-            <SentAt>{message.sentAt}</SentAt>
-          </MessageRow>
-        ))}
+        {room.messages.map((message, index) => {
+          const previousDate = room.messages[index - 1]?.sentDate;
+          const showsDateDivider =
+            message.sentDate !== '' && message.sentDate !== previousDate;
+
+          return (
+            <Fragment key={message.id}>
+              {showsDateDivider && (
+                <DateDivider role="separator">
+                  {formatChatDateLabel(message.sentDate)}
+                </DateDivider>
+              )}
+              <MessageRow data-sender={message.sender}>
+                <MessageBubble data-sender={message.sender}>
+                  {message.text}
+                </MessageBubble>
+                <SentAt>{message.sentAt}</SentAt>
+              </MessageRow>
+            </Fragment>
+          );
+        })}
       </Messages>
 
       <ComposerArea>

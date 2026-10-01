@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -6,6 +6,39 @@ import ChatRoomPanel from './ChatRoomPanel';
 import { SELECTED_CHAT_ROOM } from '../../storybook/chatMocks';
 
 describe('ChatRoomPanel', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('메시지 날짜가 바뀌는 지점마다 날짜 구분선을 표시한다', () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 1, 12, 0) });
+
+    const messages = [
+      ['2025-12-31', '작년 메시지'],
+      ['2026-09-29', '그저께 메시지'],
+      ['2026-09-29', '그저께 두 번째 메시지'],
+      ['2026-09-30', '어제 메시지'],
+      ['2026-10-01', '오늘 메시지'],
+    ].map(([sentDate, text], index) => ({
+      id: `message-${index}`,
+      sender: 'other' as const,
+      text: text ?? '',
+      sentAt: '오후 2:00',
+      sentDate: sentDate ?? '',
+    }));
+
+    render(
+      <ChatRoomPanel
+        room={{ ...SELECTED_CHAT_ROOM, messages }}
+        socketStatus="connected"
+      />,
+    );
+
+    expect(
+      screen.getAllByRole('separator').map((divider) => divider.textContent),
+    ).toEqual(['2025년 12월 31일', '9월 29일', '어제', '오늘']);
+  });
+
   it('연결된 채팅방에서 입력한 메시지를 전송한다', async () => {
     const user = userEvent.setup();
     const handleSendMessage = jest.fn<(content: string) => Promise<void>>();

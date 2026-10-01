@@ -1,4 +1,11 @@
 import type { ChatConversation, ChatRoom } from '../model/chat';
+import { toChatDateKey } from '../model/chatDate';
+
+// 스토리에서 날짜 구분선이 보이도록 오늘과 어제 날짜를 섞어 둡니다.
+const TODAY = toChatDateKey(new Date().toISOString());
+const YESTERDAY = toChatDateKey(
+  new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+);
 
 export const CHAT_CONVERSATIONS: ChatConversation[] = [
   {
@@ -47,18 +54,21 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       sender: 'other',
       text: '안녕하세요! 올리신 쿠로미 피규어 아직 교환 가능할까요?',
       sentAt: '오전 9:12',
+      sentDate: YESTERDAY,
     },
     {
       id: '2',
       sender: 'me',
       text: '네, 아직 가능해요. 어떤 가챠와 교환 원하시나요?',
       sentAt: '오전 9:15',
+      sentDate: TODAY,
     },
     {
       id: '3',
       sender: 'other',
       text: '시나모롤 키링이 있어요. 사진 확인 부탁드려요.',
       sentAt: '오전 9:20',
+      sentDate: TODAY,
     },
   ],
 };
