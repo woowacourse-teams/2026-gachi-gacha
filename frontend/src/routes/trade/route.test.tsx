@@ -161,3 +161,27 @@ describe('교환 게시글 검색', () => {
     expect(requestedPages).toEqual([0, 1]);
   });
 });
+
+describe('교환 글 등록 버튼', () => {
+  it('교환 탭 우측 하단의 + 버튼을 누르면 교환 글 등록 화면으로 이동한다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json(createTradePage(null)),
+      ),
+    );
+
+    renderWithProviders(<TradeRoute />, { route: '/trade' });
+
+    const createLink = await screen.findByRole('link', {
+      name: '교환 글 등록',
+    });
+
+    expect(createLink).toHaveAttribute('href', '/trade/new');
+
+    await user.click(createLink);
+
+    expect(window.location.pathname).toBe('/trade/new');
+  });
+});
