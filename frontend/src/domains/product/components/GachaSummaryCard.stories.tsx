@@ -19,7 +19,6 @@ const meta = {
   },
   args: {
     product: {
-      gachaId: 10,
       name: '산리오 캐릭터즈 스탠드 피규어',
       thumbnailUrl: sanrioStand,
       categories: ['산리오', '피규어', '캐릭터'],

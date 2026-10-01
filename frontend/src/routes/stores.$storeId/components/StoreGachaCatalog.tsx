@@ -18,6 +18,7 @@ import {
   SectionTitle,
   StatusText,
 } from './StoreGachaCatalog.styles';
+import type { StoreGachaSummary } from '../api/storeGachaType';
 import { useStoreGachas } from '../useStoreGachas';
 
 export interface StoreGachaCatalogProps {
@@ -25,6 +26,22 @@ export interface StoreGachaCatalogProps {
 }
 
 const LOADING_CARD_COUNT = 4;
+
+interface StoreGachaCardProps {
+  gacha: StoreGachaSummary;
+}
+
+function StoreGachaCard({ gacha }: StoreGachaCardProps) {
+  return (
+    <GachaSummaryCard
+      product={{
+        name: gacha.gachaName,
+        thumbnailUrl: gacha.thumbnailUrl,
+      }}
+      imageAlt={`${gacha.gachaName} 섬네일`}
+    />
+  );
+}
 
 export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
   const titleId = useId();
@@ -78,10 +95,7 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
             <GachaList>
               {storeGachaState.data.gachas.map((gacha) => (
                 <GachaItem key={gacha.gachaId}>
-                  <GachaSummaryCard
-                    product={gacha}
-                    imageAlt={`${gacha.name} 섬네일`}
-                  />
+                  <StoreGachaCard gacha={gacha} />
                 </GachaItem>
               ))}
             </GachaList>
