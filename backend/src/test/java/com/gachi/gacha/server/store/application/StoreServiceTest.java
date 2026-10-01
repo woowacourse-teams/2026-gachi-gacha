@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,6 +90,46 @@ class StoreServiceTest {
             assertThat(result.center().latitude()).isEqualTo(SEOUL_CITY_HALL_LAT);
             assertThat(result.center().longitude()).isEqualTo(SEOUL_CITY_HALL_LNG);
             assertThat(result.radius()).isEqualTo(3000);
+        }
+
+        @Test
+        @DisplayName("매장 썸네일이 없으면 첫 번째 매장 사진을 대표 이미지로 반환한다")
+        void returnsFirstStoreImageWhenThumbnailIsMissing() {
+            Store storeWithoutThumbnail = storeJpaRepository.save(createStore(
+                    "대표 이미지 없는 매장",
+                    SEOUL_CITY_HALL_LAT + 0.001,
+                    SEOUL_CITY_HALL_LNG,
+                    null
+            ));
+            storeDetailJpaRepository.save(createStoreDetail(storeWithoutThumbnail, 10));
+            storeImageJpaRepository.save(createStoreImage(storeWithoutThumbnail, "https://example.com/first.png"));
+            storeImageJpaRepository.save(createStoreImage(storeWithoutThumbnail, "https://example.com/second.png"));
+            em.flush();
+            em.clear();
+
+            StoreNearbyResult result = storeService.findNearbyStores(
+                    SEOUL_CITY_HALL_LAT, SEOUL_CITY_HALL_LNG, 3000, null);
+
+            assertThat(result.stores())
+                    .filteredOn(store -> store.storeId().equals(storeWithoutThumbnail.getId()))
+                    .extracting(StoreNearbyResult.StoreInfo::thumbnailUrl)
+                    .containsExactly("https://example.com/first.png");
+        }
+
+        @Test
+        @DisplayName("매장 썸네일이 있으면 매장 사진보다 우선해서 반환한다")
+        void keepsStoreThumbnailWhenItExists() {
+            storeImageJpaRepository.save(createStoreImage(nearStore, "https://example.com/store-image.png"));
+            em.flush();
+            em.clear();
+
+            StoreNearbyResult result = storeService.findNearbyStores(
+                    SEOUL_CITY_HALL_LAT, SEOUL_CITY_HALL_LNG, 3000, null);
+
+            assertThat(result.stores())
+                    .filteredOn(store -> store.storeId().equals(nearStore.getId()))
+                    .extracting(StoreNearbyResult.StoreInfo::thumbnailUrl)
+                    .containsExactly("https://example.com/thumb.png");
         }
 
         @Test
@@ -215,6 +256,29 @@ class StoreServiceTest {
         }
 
         @Test
+        @DisplayName("매장 목록에서 썸네일이 없으면 첫 번째 매장 사진을 대표 이미지로 반환한다")
+        void returnsFirstStoreImageWhenThumbnailIsMissing() {
+            Store storeWithoutThumbnail = storeJpaRepository.save(createStore(
+                    "대표 이미지 없는 매장",
+                    SEOUL_CITY_HALL_LAT + 0.001,
+                    SEOUL_CITY_HALL_LNG,
+                    null
+            ));
+            storeDetailJpaRepository.save(createStoreDetail(storeWithoutThumbnail, 10));
+            storeImageJpaRepository.save(createStoreImage(storeWithoutThumbnail, "https://example.com/first.png"));
+            storeImageJpaRepository.save(createStoreImage(storeWithoutThumbnail, "https://example.com/second.png"));
+            em.flush();
+            em.clear();
+
+            Page<StoreListResult> page = storeService.findStores(PageRequest.of(0, 10));
+
+            assertThat(page.getContent())
+                    .filteredOn(store -> store.storeId().equals(storeWithoutThumbnail.getId()))
+                    .extracting(StoreListResult::thumbnailUrl)
+                    .containsExactly("https://example.com/first.png");
+        }
+
+        @Test
         @DisplayName("페이지 번호가 음수면 예외가 발생한다")
         void rejectsNegativePage() {
             // PageRequest.of(...)는 음수 page를 아예 생성하지 못하게 막고 있어서,
@@ -278,9 +342,13 @@ class StoreServiceTest {
     }
 
     private Store createStore(String name, double latitude, double longitude) {
+        return createStore(name, latitude, longitude, "https://example.com/thumb.png");
+    }
+
+    private Store createStore(String name, double latitude, double longitude, String thumbnailUrl) {
         return Store.builder()
                 .name(name)
-                .thumbnailUrl("https://example.com/thumb.png")
+                .thumbnailUrl(thumbnailUrl)
                 .latitude(latitude)
                 .longitude(longitude)
                 .address("서울특별시 중구 세종대로 110")

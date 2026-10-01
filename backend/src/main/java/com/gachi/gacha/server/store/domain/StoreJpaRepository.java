@@ -42,7 +42,16 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
                         SELECT
                             s.id AS storeId,
                             s.name AS name,
-                            s.thumbnail_url AS thumbnailUrl,
+                            COALESCE(
+                                NULLIF(BTRIM(s.thumbnail_url), ''),
+                                (
+                                    SELECT si.image_url
+                                    FROM store_image si
+                                    WHERE si.store_id = s.id
+                                    ORDER BY si.id ASC
+                                    LIMIT 1
+                                )
+                            ) AS thumbnailUrl,
                             s.address AS address,
                             s.floor AS floor,
                             s.unit AS unit,
@@ -72,7 +81,16 @@ public interface StoreJpaRepository extends JpaRepository<Store, Long> {
                         SELECT
                             s.id AS storeId,
                             s.name AS name,
-                            s.thumbnail_url AS thumbnailUrl,
+                            COALESCE(
+                                NULLIF(BTRIM(s.thumbnail_url), ''),
+                                (
+                                    SELECT si.image_url
+                                    FROM store_image si
+                                    WHERE si.store_id = s.id
+                                    ORDER BY si.id ASC
+                                    LIMIT 1
+                                )
+                            ) AS thumbnailUrl,
                             s.address AS address,
                             s.floor AS floor,
                             s.unit AS unit,
