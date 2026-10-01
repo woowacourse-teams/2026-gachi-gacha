@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
 
 import {
   color,
@@ -440,13 +441,14 @@ export const StatusBadge = styled.span`
   white-space: nowrap;
 `;
 
-export const TradeDeleteButton = styled.button`
+const tradeActionStyle = `
+  display: inline-flex;
   min-height: 32px;
   padding: 0 ${space.sm};
+  align-items: center;
   border: 1px solid ${color.border};
   border-radius: ${radius.pill};
   background: ${color.surface};
-  color: #d80f42;
   cursor: pointer;
   font-size: ${fontSize.caption};
   font-weight: ${fontWeight.bold};
@@ -456,6 +458,17 @@ export const TradeDeleteButton = styled.button`
     outline: none;
     box-shadow: ${focusRing};
   }
+`;
+
+export const TradeEditLink = styled(Link)`
+  ${tradeActionStyle}
+  color: ${color.text};
+  text-decoration: none;
+`;
+
+export const TradeDeleteButton = styled.button`
+  ${tradeActionStyle}
+  color: #d80f42;
 `;
 
 export const StatePanel = styled.div`

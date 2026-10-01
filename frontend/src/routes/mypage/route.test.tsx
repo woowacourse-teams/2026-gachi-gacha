@@ -15,6 +15,34 @@ import { server } from '@/test/server';
 import { myTradesHandler } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
 
+describe('MyPageRoute 내 교환글 수정', () => {
+  beforeEach(() => {
+    storeAuthTokens({
+      accessToken: AUTH_STORY_TOKEN,
+      refreshToken: AUTH_STORY_REFRESH_TOKEN,
+    });
+  });
+
+  it('내 교환글마다 삭제 버튼 옆에 수정 화면으로 가는 링크를 보여준다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    const editLink = await screen.findByRole('link', {
+      name: '쿠로미 미니 피규어 vol.2 교환해요 수정',
+    });
+    const deleteButton = screen.getByRole('button', {
+      name: '쿠로미 미니 피규어 vol.2 교환해요 삭제',
+    });
+
+    expect(editLink).toHaveAttribute('href', '/trade/17/edit');
+    expect(editLink.parentElement).toBe(deleteButton.parentElement);
+  });
+});
+
 describe('MyPageRoute 내 교환글 삭제', () => {
   beforeEach(() => {
     storeAuthTokens({
