@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
+import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
 import type {
   TradeStatus,
   TradeSummary,
@@ -75,9 +76,11 @@ import {
   SummaryTop,
   SummaryValue,
   TradeCopy,
+  TradeDeleteButton,
   TradeItem,
   TradeList,
   TradeMeta,
+  TradeSide,
   TradeThumbnail,
   TradeTitle,
 } from './route.styles';
@@ -128,6 +131,7 @@ export function MyPageRoute() {
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TradeSummary | null>(null);
 
   if (!member) {
     return <PageLoadingFallback label="회원 정보를 확인하고 있어요." />;
@@ -320,9 +324,18 @@ export function MyPageRoute() {
                         <TradeTitle>{trade.title}</TradeTitle>
                         <TradeMeta>{getTradeMeta(trade)}</TradeMeta>
                       </TradeCopy>
-                      <StatusBadge>
-                        {TRADE_STATUS_LABELS[trade.status]}
-                      </StatusBadge>
+                      <TradeSide>
+                        <StatusBadge>
+                          {TRADE_STATUS_LABELS[trade.status]}
+                        </StatusBadge>
+                        <TradeDeleteButton
+                          type="button"
+                          aria-label={`${trade.title} 삭제`}
+                          onClick={() => setDeleteTarget(trade)}
+                        >
+                          삭제
+                        </TradeDeleteButton>
+                      </TradeSide>
                     </TradeItem>
                   ))}
                 </TradeList>
@@ -445,6 +458,18 @@ export function MyPageRoute() {
         onClose={() => setIsDeletionDialogOpen(false)}
         onDelete={handleDeleteAccount}
       />
+      {deleteTarget && (
+        <TradeDeleteDialog
+          open
+          tradeId={deleteTarget.tradeId}
+          tradeTitle={deleteTarget.title}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={() => {
+            setDeleteTarget(null);
+            retry();
+          }}
+        />
+      )}
     </Page>
   );
 }

@@ -22,6 +22,7 @@ import {
   memberUpdateFailureHandler,
   memberUpdateSuccessHandler,
   myTradesHandler,
+  tradeDeleteSuccessHandler,
 } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
 
@@ -64,6 +65,7 @@ const meta = {
         myTradesHandler,
         memberUpdateSuccessHandler,
         memberDeleteSuccessHandler,
+        tradeDeleteSuccessHandler,
       ]}
     >
       <AuthenticatedStory>

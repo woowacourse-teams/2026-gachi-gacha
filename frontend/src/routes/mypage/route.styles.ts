@@ -419,6 +419,17 @@ export const TradeMeta = styled.p`
   white-space: nowrap;
 `;
 
+export const TradeSide = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${space.xs};
+
+  @media (max-width: 520px) {
+    margin-top: ${space.xs};
+    grid-column: 2;
+  }
+`;
+
 export const StatusBadge = styled.span`
   padding: 7px 10px;
   border-radius: ${radius.pill};
@@ -427,11 +438,23 @@ export const StatusBadge = styled.span`
   font-size: ${fontSize.caption};
   font-weight: ${fontWeight.bold};
   white-space: nowrap;
+`;
 
-  @media (max-width: 520px) {
-    width: fit-content;
-    margin-top: ${space.xs};
-    grid-column: 2;
+export const TradeDeleteButton = styled.button`
+  min-height: 32px;
+  padding: 0 ${space.sm};
+  border: 1px solid ${color.border};
+  border-radius: ${radius.pill};
+  background: ${color.surface};
+  color: #d80f42;
+  cursor: pointer;
+  font-size: ${fontSize.caption};
+  font-weight: ${fontWeight.bold};
+  white-space: nowrap;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${focusRing};
   }
 `;
 

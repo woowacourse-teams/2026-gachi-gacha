@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
-import { Link, useLocation } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
+import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
 import type {
   TradeDetail as TradeDetailData,
   TradePlace,
@@ -50,6 +51,8 @@ export default function TradeDetail({
   action = 'chat',
 }: TradeDetailProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
@@ -139,9 +142,17 @@ export default function TradeDetail({
           {action && (
             <ActionGroup>
               {action === 'edit' ? (
-                <EditLink to={`/trade/${detail.tradeId}/edit`}>
-                  수정하기
-                </EditLink>
+                <OwnerActions>
+                  <EditLink to={`/trade/${detail.tradeId}/edit`}>
+                    수정하기
+                  </EditLink>
+                  <DeleteButton
+                    type="button"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    삭제
+                  </DeleteButton>
+                </OwnerActions>
               ) : action === 'login' ? (
                 <ChatLink to={createLoginUrl(`/trade/${detail.tradeId}`)}>
                   채팅하기
@@ -158,6 +169,16 @@ export default function TradeDetail({
           )}
         </Info>
       </Summary>
+
+      {action === 'edit' && (
+        <TradeDeleteDialog
+          open={isDeleteDialogOpen}
+          tradeId={detail.tradeId}
+          tradeTitle={detail.title}
+          onClose={() => setIsDeleteDialogOpen(false)}
+          onDeleted={() => navigate('/trade', { replace: true })}
+        />
+      )}
     </Wrapper>
   );
 }
@@ -335,6 +356,23 @@ const ChatLink = styled(Link)`
 const EditLink = styled(ChatLink)`
   background: #ed174c;
   color: #ffffff;
+`;
+
+const OwnerActions = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 8px;
+`;
+
+const DeleteButton = styled.button`
+  min-height: 54px;
+  border: 1px solid #e2dfe0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #d80f42;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
 `;
 
 const DescriptionSection = styled.section`
