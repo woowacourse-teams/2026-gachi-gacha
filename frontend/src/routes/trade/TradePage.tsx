@@ -10,6 +10,7 @@ import {
 } from '@/shared/styles/tokens';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
+import CreateTradeButton from './components/CreateTradeButton';
 import ProductCard from './components/ProductCard';
 import SearchHero from './components/SearchHero';
 import type { TradeItem } from './model/tradeItem';
@@ -99,6 +100,8 @@ export default function TradePage({
           )}
         </ResultsPanel>
       </Main>
+
+      <CreateTradeButton />
     </Page>
   );
 }
@@ -113,12 +116,13 @@ const Main = styled.main`
   box-sizing: border-box;
   width: min(100%, 1240px);
   margin: 0 auto;
-  padding: 40px 48px 72px;
+  /* 하단 여백은 우측 하단 등록 버튼이 마지막 콘텐츠를 가리지 않도록 버튼 높이만큼 더 둔다. */
+  padding: 40px 48px 120px;
   flex-direction: column;
   gap: ${space.xxl};
 
   @media (max-width: ${breakpoint.mobile}) {
-    padding: 28px 16px 48px;
+    padding: 28px 16px 96px;
     gap: ${space.xl};
   }
 `;
