@@ -1,24 +1,37 @@
-import { apiClient } from '@/shared/api/apiClient';
+import { getGachasByCategoryIds } from '@/domains/product/api/getGachasByCategoryIds';
 
-import { parseCategoryGachaPage } from './parseCategoryGachaPage';
 import type { GachaCardPage } from '../model/gachaCardPage';
 
 interface GetCategoryGachaPageParams {
-  categoryName: string;
+  categoryId: number;
   page: number;
   signal: AbortSignal;
 }
 
-export function getCategoryGachaPage({
-  categoryName,
+const CATEGORY_GACHA_PAGE_SIZE = 12;
+
+export async function getCategoryGachaPage({
+  categoryId,
   page,
   signal,
 }: GetCategoryGachaPageParams): Promise<GachaCardPage> {
-  const category = encodeURIComponent(categoryName);
-
-  return apiClient(
-    `/gachas/category/${category}?page=${page}`,
-    parseCategoryGachaPage,
-    { signal },
+  const { products, totalCount } = await getGachasByCategoryIds(
+    {
+      categoryIds: [categoryId],
+      page,
+      size: CATEGORY_GACHA_PAGE_SIZE,
+    },
+    signal,
   );
+  const loadedItemCount = page * CATEGORY_GACHA_PAGE_SIZE + products.length;
+
+  return {
+    items: products.map(({ gachaId, name, thumbnailUrl, categories }) => ({
+      gachaId,
+      name,
+      thumbnailUrl,
+      categories,
+    })),
+    nextPage: loadedItemCount < totalCount ? page + 1 : null,
+  };
 }

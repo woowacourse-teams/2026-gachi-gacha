@@ -170,11 +170,18 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
   it('잘못된 URL은 쿼리와 해시를 유지한 홈 화면으로 이동한다', async () => {
     server.use(
-      http.get('/api/v1/gachas/category/:category', () =>
+      http.get('/api/v1/categories', () =>
         HttpResponse.json({
           code: 'C000',
           message: '요청에 성공했습니다.',
-          data: { content: [], number: 0, last: true },
+          data: { items: [{ categoryId: 110, name: '산리오' }] },
+        }),
+      ),
+      http.get('/api/v1/gachas', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '요청에 성공했습니다.',
+          data: { content: [], totalElements: 0 },
         }),
       ),
     );
