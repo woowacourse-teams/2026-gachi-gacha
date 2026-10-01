@@ -67,6 +67,21 @@ describe('TradeDetailRoute', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('비로그인 사용자의 채팅하기는 로그인 후 상세 페이지로 돌아오는 로그인 링크다', async () => {
+    useTradeDetailHandlers();
+
+    renderWithProviders(<TradeDetailRoute tradeId={TRADE_DETAIL.tradeId} />, {
+      initialAccessToken: null,
+    });
+
+    expect(
+      await screen.findByRole('link', { name: '채팅하기' }),
+    ).toHaveAttribute(
+      'href',
+      `/login?returnTo=${encodeURIComponent(`/trade/${TRADE_DETAIL.tradeId}`)}`,
+    );
+  });
+
   it('로그인한 회원이 작성자가 아니면 채팅하기 링크를 보여준다', async () => {
     useTradeDetailHandlers();
 

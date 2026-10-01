@@ -7,6 +7,7 @@ import type {
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -141,6 +142,10 @@ export default function TradeDetail({
                 <EditLink to={`/trade/${detail.tradeId}/edit`}>
                   수정하기
                 </EditLink>
+              ) : action === 'login' ? (
+                <ChatLink to={createLoginUrl(`/trade/${detail.tradeId}`)}>
+                  채팅하기
+                </ChatLink>
               ) : (
                 <ChatLink
                   to={`/chat/start/${detail.tradeId}`}
