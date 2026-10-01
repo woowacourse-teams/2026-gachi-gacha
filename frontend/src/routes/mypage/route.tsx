@@ -77,6 +77,7 @@ import {
   SummaryValue,
   TradeCopy,
   TradeDeleteButton,
+  TradeEditLink,
   TradeItem,
   TradeList,
   TradeMeta,
@@ -328,6 +329,12 @@ export function MyPageRoute() {
                         <StatusBadge>
                           {TRADE_STATUS_LABELS[trade.status]}
                         </StatusBadge>
+                        <TradeEditLink
+                          to={`/trade/${trade.tradeId}/edit`}
+                          aria-label={`${trade.title} 수정`}
+                        >
+                          수정
+                        </TradeEditLink>
                         <TradeDeleteButton
                           type="button"
                           aria-label={`${trade.title} 삭제`}

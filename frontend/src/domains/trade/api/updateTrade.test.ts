@@ -61,8 +61,8 @@ function useUpdateTradeHandler(): { received: ReceivedTradeRequest | null } {
       };
 
       return HttpResponse.json({
-        code: 'C000',
-        message: '정상',
+        code: 'C002',
+        message: '정상 수정',
         data: updatedTrade,
       });
     }),
