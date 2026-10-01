@@ -86,6 +86,11 @@ export const myTradesHandler = http.get(MY_TRADES_API_PATH, ({ request }) => {
   return HttpResponse.json(createTradePage(tradeSummaries, 6));
 });
 
+export const tradeDeleteSuccessHandler = http.delete(
+  '/api/v1/trades/:tradeId',
+  () => HttpResponse.json({ code: 'C003', message: '정상 삭제', data: null }),
+);
+
 export const emptyMyTradesHandler = http.get(MY_TRADES_API_PATH, () =>
   HttpResponse.json(createTradePage([], 0)),
 );
