@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
+import type { ChatMessage } from '@/domains/chat/chatType';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -10,13 +11,35 @@ import { server } from '@/test/server';
 import { chatHandlers } from './mocks/chatHandlers';
 import { ChatRoute } from './route';
 
+let mockOnMessage: ((message: ChatMessage) => void) | null = null;
+
 jest.mock('@/domains/chat/useChatSocket', () => ({
-  useChatSocket: () => ({
-    status: 'connected',
-    errorMessage: null,
-    sendTextMessage: async () => undefined,
-  }),
+  useChatSocket: ({
+    onMessage,
+  }: {
+    onMessage: (message: ChatMessage) => void;
+  }) => {
+    mockOnMessage = onMessage;
+
+    return {
+      status: 'connected',
+      errorMessage: null,
+      sendTextMessage: async () => undefined,
+    };
+  },
 }));
+
+function createSocketMessage(sequence: number, senderId: number): ChatMessage {
+  return {
+    messageId: `socket-message-${sequence}`,
+    sequence,
+    roomId: 1,
+    senderId,
+    type: 'TEXT',
+    content: `실시간 메시지 ${sequence}`,
+    createdAt: '2026-10-01T10:00:00',
+  };
+}
 
 const ACCESS_TOKEN = 'header.eyJtZW1iZXJJZCI6M30.signature';
 
@@ -41,6 +64,44 @@ describe('ChatRoute', () => {
       ),
       ...chatHandlers,
     );
+  });
+
+  it('열린 채팅방에서 상대 메시지를 받으면 마지막 sequence까지 서버에 읽음 처리한다', async () => {
+    const readSequences: number[] = [];
+
+    server.use(
+      http.patch(
+        '/api/v1/chat/rooms/:roomId/messages/read',
+        async ({ request }) => {
+          const body = (await request.json()) as { lastReadSequence: number };
+
+          readSequences.push(body.lastReadSequence);
+
+          return HttpResponse.json({ code: 'C000', message: '정상' });
+        },
+      ),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    await waitFor(() => {
+      expect(readSequences).toEqual([22]);
+    });
+
+    act(() => {
+      mockOnMessage?.(createSocketMessage(23, 8));
+      mockOnMessage?.(createSocketMessage(24, 8));
+      // 내가 보낸 메시지는 읽음 처리 대상이 아니다.
+      mockOnMessage?.(createSocketMessage(25, 3));
+    });
+
+    expect(await screen.findByText('실시간 메시지 24')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(readSequences).toEqual([22, 24]);
+    });
   });
 
   it('목록의 채팅을 선택해도 /chat 주소를 유지하고 내부 패널만 보여준다', async () => {

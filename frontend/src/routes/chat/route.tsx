@@ -28,6 +28,7 @@ import type {
   ChatRoom,
   ChatTradeStatus,
 } from './model/chat';
+import { useChatReadMarker } from './useChatReadMarker';
 
 interface ChatRouteProps {
   roomId?: number;
@@ -71,36 +72,49 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     previousMessagesError: '',
   });
 
-  const receiveMessage = useCallback((message: ChatMessageData) => {
-    setState((current) => {
+  const markRead = useChatReadMarker(activeRoomId);
+
+  const receiveMessage = useCallback(
+    (message: ChatMessageData) => {
+      // 열린 방에서 상대 메시지를 받으면 화면에서 읽은 것이므로 서버에도 읽음 처리합니다.
       if (
-        current.messages.some(
-          ({ messageId }) => messageId === message.messageId,
-        )
+        message.roomId === activeRoomId &&
+        String(message.senderId) !== memberId
       ) {
-        return current;
+        markRead(message.sequence);
       }
 
-      return {
-        ...current,
-        messages: [...current.messages, message].sort(
-          (first, second) => first.sequence - second.sequence,
-        ),
-        rooms: current.rooms.map((room) =>
-          room.roomId === message.roomId
-            ? {
-                ...room,
-                lastMessage: {
-                  preview: message.content,
-                  sentAt: message.createdAt,
-                },
-                unreadCount: 0,
-              }
-            : room,
-        ),
-      };
-    });
-  }, []);
+      setState((current) => {
+        if (
+          current.messages.some(
+            ({ messageId }) => messageId === message.messageId,
+          )
+        ) {
+          return current;
+        }
+
+        return {
+          ...current,
+          messages: [...current.messages, message].sort(
+            (first, second) => first.sequence - second.sequence,
+          ),
+          rooms: current.rooms.map((room) =>
+            room.roomId === message.roomId
+              ? {
+                  ...room,
+                  lastMessage: {
+                    preview: message.content,
+                    sentAt: message.createdAt,
+                  },
+                  unreadCount: 0,
+                }
+              : room,
+          ),
+        };
+      });
+    },
+    [activeRoomId, markRead, memberId],
+  );
   const {
     status: socketStatus,
     errorMessage: socketErrorMessage,
