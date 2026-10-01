@@ -1,11 +1,11 @@
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
 import type {
-  GachaSearchProduct,
-  GachaSearchResult,
-} from '../gachaSearchResultType';
+  GachasByCategoryIdsPage,
+  GachaWithStoreCount,
+} from '../gachaWithStoreCountType';
 
-interface GachaSearchPageData {
+interface GachaPageData {
   content: readonly unknown[];
   totalElements: number;
 }
@@ -18,13 +18,15 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-function isGachaSearchProduct(value: unknown): value is GachaSearchProduct {
+function isGachaWithStoreCount(value: unknown): value is GachaWithStoreCount {
   if (!isRecord(value)) {
     return false;
   }
 
   return (
+    typeof value.gachaId === 'number' &&
     Number.isSafeInteger(value.gachaId) &&
+    value.gachaId > 0 &&
     typeof value.name === 'string' &&
     (typeof value.thumbnailUrl === 'string' || value.thumbnailUrl === null) &&
     Array.isArray(value.categories) &&
@@ -33,7 +35,7 @@ function isGachaSearchProduct(value: unknown): value is GachaSearchProduct {
   );
 }
 
-function isGachaSearchPageData(value: unknown): value is GachaSearchPageData {
+function isGachaPageData(value: unknown): value is GachaPageData {
   if (!isRecord(value)) {
     return false;
   }
@@ -44,7 +46,9 @@ function isGachaSearchPageData(value: unknown): value is GachaSearchPageData {
   );
 }
 
-export function parseGachaSearchResponse(value: unknown): GachaSearchResult {
+export function parseGachasByCategoryIdsResponse(
+  value: unknown,
+): GachasByCategoryIdsPage {
   if (!isApiResponse(value)) {
     throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
   }
@@ -53,26 +57,24 @@ export function parseGachaSearchResponse(value: unknown): GachaSearchResult {
     throw new Error(value.message);
   }
 
-  if (!isGachaSearchPageData(value.data)) {
-    throw new Error('가챠 검색 페이지 응답 형식이 올바르지 않습니다.');
+  if (!isGachaPageData(value.data)) {
+    throw new Error('카테고리 가챠 페이지 응답 형식이 올바르지 않습니다.');
   }
 
-  if (!value.data.content.every(isGachaSearchProduct)) {
-    throw new Error('가챠 검색 결과 형식이 올바르지 않습니다.');
+  if (!value.data.content.every(isGachaWithStoreCount)) {
+    throw new Error('카테고리 가챠 결과 형식이 올바르지 않습니다.');
   }
-
-  const products = value.data.content.map(
-    ({ gachaId, name, thumbnailUrl, categories, storeCount }) => ({
-      gachaId,
-      name,
-      thumbnailUrl,
-      categories,
-      storeCount,
-    }),
-  );
 
   return {
-    products,
+    products: value.data.content.map(
+      ({ gachaId, name, thumbnailUrl, categories, storeCount }) => ({
+        gachaId,
+        name,
+        thumbnailUrl,
+        categories,
+        storeCount,
+      }),
+    ),
     totalCount: value.data.totalElements,
   };
 }

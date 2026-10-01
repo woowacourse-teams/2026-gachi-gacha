@@ -1,10 +1,6 @@
-import type { GachaProductSummary } from '@/domains/product/gachaProductType';
-
-export interface GachaSearchProduct extends GachaProductSummary {
-  storeCount: number;
-}
+import type { GachaWithStoreCount } from '@/domains/product/gachaWithStoreCountType';
 
 export interface GachaSearchResult {
-  products: readonly GachaSearchProduct[];
+  products: readonly GachaWithStoreCount[];
   totalCount: number;
 }

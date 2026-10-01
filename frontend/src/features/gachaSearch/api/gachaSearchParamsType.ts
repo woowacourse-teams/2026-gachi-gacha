@@ -3,9 +3,3 @@ export interface GachaSearchParams {
   page: number;
   size: number;
 }
-
-export interface GachaSearchPageParams {
-  categoryIds: readonly number[];
-  page: number;
-  size: number;
-}
