@@ -13,7 +13,7 @@ function createProduct(gachaId: number, storeCount?: number) {
 }
 
 describe('카테고리 기반 가챠 검색 응답 파싱', () => {
-  it('보유 매장 수 내림차순으로 정렬하고 동률의 서버 순서는 유지한다', () => {
+  it('서버가 내려준 가챠 순서를 그대로 유지한다', () => {
     const result = parseGachaSearchResponse({
       code: 'C000',
       message: '정상',
@@ -28,7 +28,7 @@ describe('카테고리 기반 가챠 검색 응답 파싱', () => {
       },
     });
 
-    expect(result.products.map(({ gachaId }) => gachaId)).toEqual([2, 3, 4, 1]);
+    expect(result.products.map(({ gachaId }) => gachaId)).toEqual([1, 2, 3, 4]);
   });
 
   it('보유 매장 수가 없는 이전 응답은 계약 오류로 처리한다', () => {

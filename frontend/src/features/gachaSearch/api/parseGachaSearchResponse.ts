@@ -4,7 +4,6 @@ import type {
   GachaSearchProduct,
   GachaSearchResult,
 } from '../gachaSearchResultType';
-import { sortGachaSearchProductsByStoreCount } from '../sortGachaSearchProductsByStoreCount';
 
 interface GachaSearchPageData {
   content: readonly unknown[];
@@ -62,16 +61,14 @@ export function parseGachaSearchResponse(value: unknown): GachaSearchResult {
     throw new Error('가챠 검색 결과 형식이 올바르지 않습니다.');
   }
 
-  const products = sortGachaSearchProductsByStoreCount(
-    value.data.content.map(
-      ({ gachaId, name, thumbnailUrl, categories, storeCount }) => ({
-        gachaId,
-        name,
-        thumbnailUrl,
-        categories,
-        storeCount,
-      }),
-    ),
+  const products = value.data.content.map(
+    ({ gachaId, name, thumbnailUrl, categories, storeCount }) => ({
+      gachaId,
+      name,
+      thumbnailUrl,
+      categories,
+      storeCount,
+    }),
   );
 
   return {

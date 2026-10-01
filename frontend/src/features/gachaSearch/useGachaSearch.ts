@@ -10,7 +10,6 @@ import type { GachaSearchParams } from './api/gachaSearchParamsType';
 import { getGachaSearchResults } from './api/getGachaSearchResults';
 import { getMatchingCategoryIds } from './api/getMatchingCategoryIds';
 import type { GachaSearchResult } from './gachaSearchResultType';
-import { sortGachaSearchProductsByStoreCount } from './sortGachaSearchProductsByStoreCount';
 
 type SettledGachaSearchState = Extract<
   AsyncState<GachaSearchResult>,
@@ -69,10 +68,7 @@ function mergeSearchResults(
   );
 
   return {
-    products: sortGachaSearchProductsByStoreCount([
-      ...currentResult.products,
-      ...newProducts,
-    ]),
+    products: [...currentResult.products, ...newProducts],
     totalCount: nextResult.totalCount,
   };
 }

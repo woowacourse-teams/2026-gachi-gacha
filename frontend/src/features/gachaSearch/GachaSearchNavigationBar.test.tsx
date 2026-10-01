@@ -16,7 +16,7 @@ jest.mock('@/shared/browser/browserNavigation', () => ({
 const mockedAssignBrowserLocation = jest.mocked(assignBrowserLocation);
 
 describe('가챠 검색 내비게이션', () => {
-  it('카테고리로 찾은 가챠를 매장 수 순서로 보여주고 선택 결과로 이동한다', async () => {
+  it('카테고리로 찾은 서버 정렬 가챠를 보여주고 선택 결과로 이동한다', async () => {
     let requestedCategoryKeyword: string | null = null;
     let requestedCategoryIds: string | null = null;
 
@@ -48,18 +48,18 @@ describe('가챠 검색 내비게이션', () => {
           data: {
             content: [
               {
-                gachaId: 102,
-                name: '쿠로미 랜덤 참',
-                thumbnailUrl: null,
-                categories: ['산리오', '쿠로미'],
-                storeCount: 0,
-              },
-              {
                 gachaId: 101,
                 name: '쿠로미 미니 피규어 vol.2',
                 thumbnailUrl: null,
                 categories: ['산리오', '쿠로미'],
                 storeCount: 4,
+              },
+              {
+                gachaId: 102,
+                name: '쿠로미 랜덤 참',
+                thumbnailUrl: null,
+                categories: ['산리오', '쿠로미'],
+                storeCount: 0,
               },
             ],
             totalElements: 2,

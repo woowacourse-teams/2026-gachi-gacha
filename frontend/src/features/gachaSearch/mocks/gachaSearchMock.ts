@@ -70,7 +70,12 @@ export function createGachaSearchMockResponse({
     .map((product) => ({
       ...product,
       storeCount: getMockStoreCount(product.gachaId),
-    }));
+    }))
+    .sort(
+      (firstProduct, secondProduct) =>
+        secondProduct.storeCount - firstProduct.storeCount ||
+        firstProduct.gachaId - secondProduct.gachaId,
+    );
   const pageStart = page * size;
 
   return {
