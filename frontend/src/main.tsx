@@ -17,9 +17,15 @@ async function enableMocking(): Promise<void> {
     return;
   }
 
-  const { worker } = await import('@/mocks/browser');
+  const [{ worker }, { storeAuthTokens }, { MOCK_AUTH_TOKENS }] =
+    await Promise.all([
+      import('@/mocks/browser'),
+      import('@/features/auth/authTokenStorage'),
+      import('@/mocks/mockAuth'),
+    ]);
 
   await worker.start({ onUnhandledRequest: 'warn' });
+  storeAuthTokens(MOCK_AUTH_TOKENS);
 }
 
 void enableMocking().then(() => {
