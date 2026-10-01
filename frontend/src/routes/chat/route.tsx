@@ -360,6 +360,13 @@ export function ChatStartRoute({
   const navigate = useNavigate();
   const location = useLocation();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 값이 바뀌면 채팅방 조회부터 입장 흐름을 다시 실행합니다.
+  const [attempt, setAttempt] = useState(0);
+
+  function retryEnterChatRoom() {
+    setErrorMessage(null);
+    setAttempt((current) => current + 1);
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -395,7 +402,7 @@ export function ChatStartRoute({
     return () => {
       controller.abort();
     };
-  }, [location.state, navigate, tradeId]);
+  }, [attempt, location.state, navigate, tradeId]);
 
   if (errorMessage) {
     if (modal) {
@@ -404,6 +411,7 @@ export function ChatStartRoute({
           role="alert"
           title="채팅방에 입장하지 못했어요"
           message={errorMessage}
+          onRetry={retryEnterChatRoom}
           onClose={() => navigate(-1)}
         />
       );
@@ -415,7 +423,12 @@ export function ChatStartRoute({
         <ErrorPanel role="alert">
           <h1>채팅방에 입장하지 못했어요</h1>
           <p>{errorMessage}</p>
-          <Link to={`/trade/${tradeId}`}>게시글로 돌아가기</Link>
+          <StatusActions>
+            <RetryButton type="button" onClick={retryEnterChatRoom}>
+              다시 시도
+            </RetryButton>
+            <Link to={`/trade/${tradeId}`}>게시글로 돌아가기</Link>
+          </StatusActions>
         </ErrorPanel>
       </ErrorPage>
     );
@@ -488,6 +501,7 @@ function formatMessageTime(value: string): string {
 interface ChatModalStatusProps {
   message: string;
   onClose?: () => void | Promise<void>;
+  onRetry?: () => void;
   role?: 'alert' | 'status';
   title?: string;
 }
@@ -495,6 +509,7 @@ interface ChatModalStatusProps {
 function ChatModalStatus({
   message,
   onClose,
+  onRetry,
   role = 'status',
   title,
 }: ChatModalStatusProps) {
@@ -504,10 +519,24 @@ function ChatModalStatus({
       <ModalStatusPanel role={role}>
         {title && <h1>{title}</h1>}
         <p>{message}</p>
-        {onClose && (
-          <RetryButton type="button" onClick={onClose}>
-            게시글로 돌아가기
-          </RetryButton>
+        {(onRetry || onClose) && (
+          <StatusActions>
+            {onRetry && (
+              <RetryButton type="button" onClick={onRetry}>
+                다시 시도
+              </RetryButton>
+            )}
+            {onClose &&
+              (onRetry ? (
+                <SecondaryButton type="button" onClick={onClose}>
+                  게시글로 돌아가기
+                </SecondaryButton>
+              ) : (
+                <RetryButton type="button" onClick={onClose}>
+                  게시글로 돌아가기
+                </RetryButton>
+              ))}
+          </StatusActions>
         )}
       </ModalStatusPanel>
     </ModalStatusLayer>
@@ -545,6 +574,24 @@ const RetryButton = styled.button`
   border-radius: 10px;
   background: #ed174c;
   color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+`;
+
+const StatusActions = styled.div`
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+`;
+
+const SecondaryButton = styled.button`
+  padding: 12px 20px;
+  border: 1px solid #e2dfe0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #2b2528;
   font-weight: 700;
   cursor: pointer;
 `;
