@@ -1,12 +1,93 @@
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { css } from '@emotion/react';
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
+
+import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 
 import type { ChatRoom } from '../../model/chat';
 
 interface ChatRoomPanelProps {
   room: ChatRoom | undefined;
+  closeHref?: string | undefined;
+  onClose?: (() => void) | undefined;
+  socketStatus?: ChatSocketStatus;
+  socketErrorMessage?: string | null;
+  onSendMessage?: ((content: string) => Promise<void>) | undefined;
+  hasPreviousMessages?: boolean;
+  isLoadingPreviousMessages?: boolean;
+  previousMessagesError?: string;
+  onLoadPreviousMessages?: (() => Promise<void>) | undefined;
 }
 
-export default function ChatRoomPanel({ room }: ChatRoomPanelProps) {
+export default function ChatRoomPanel({
+  room,
+  closeHref,
+  onClose,
+  socketStatus = 'disconnected',
+  socketErrorMessage = null,
+  onSendMessage,
+  hasPreviousMessages = false,
+  isLoadingPreviousMessages = false,
+  previousMessagesError = '',
+  onLoadPreviousMessages,
+}: ChatRoomPanelProps) {
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const [message, setMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendErrorMessage, setSendErrorMessage] = useState<string | null>(null);
+  const lastMessageId = room?.messages.at(-1)?.id;
+
+  useEffect(() => {
+    const messagesElement = messagesRef.current;
+
+    if (messagesElement) {
+      messagesElement.scrollTop = messagesElement.scrollHeight;
+    }
+  }, [lastMessageId, room?.conversationId]);
+
+  async function handleLoadPreviousMessages() {
+    if (!onLoadPreviousMessages || isLoadingPreviousMessages) {
+      return;
+    }
+
+    const messagesElement = messagesRef.current;
+    const previousScrollHeight = messagesElement?.scrollHeight ?? 0;
+
+    await onLoadPreviousMessages();
+
+    requestAnimationFrame(() => {
+      if (messagesElement) {
+        messagesElement.scrollTop +=
+          messagesElement.scrollHeight - previousScrollHeight;
+      }
+    });
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!onSendMessage || !message.trim() || socketStatus !== 'connected') {
+      return;
+    }
+
+    setIsSending(true);
+    setSendErrorMessage(null);
+
+    try {
+      await onSendMessage(message);
+      setMessage('');
+    } catch (error) {
+      setSendErrorMessage(
+        error instanceof Error
+          ? error.message
+          : '메시지를 전송하지 못했습니다.',
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   if (!room) {
     return (
       <EmptyPanel>
@@ -22,22 +103,55 @@ export default function ChatRoomPanel({ room }: ChatRoomPanelProps) {
   return (
     <Panel>
       <RoomHeader>
-        <div>
-          <PartnerName>{room.partnerName}</PartnerName>
-          <PartnerMeta>{room.partnerNeighborhood}</PartnerMeta>
-        </div>
+        <RoomTitleGroup>
+          {closeHref && (
+            <CloseLink to={closeHref} aria-label="채팅 닫기">
+              ←
+            </CloseLink>
+          )}
+          {onClose && (
+            <CloseButton type="button" aria-label="채팅 닫기" onClick={onClose}>
+              ←
+            </CloseButton>
+          )}
+          <div>
+            <PartnerName>{room.partnerName}</PartnerName>
+          </div>
+        </RoomTitleGroup>
         <TradeStatus>{room.tradeStatus}</TradeStatus>
       </RoomHeader>
 
       <ProductSummary>
-        <ProductImage>이미지 없음</ProductImage>
+        <ProductImage>
+          {room.itemImageUrl ? (
+            <ProductPhoto src={room.itemImageUrl} alt="" />
+          ) : (
+            '이미지 없음'
+          )}
+        </ProductImage>
         <ProductInfo>
           <ProductLabel>교환 상품</ProductLabel>
           <ProductTitle>{room.itemTitle}</ProductTitle>
         </ProductInfo>
       </ProductSummary>
 
-      <Messages>
+      <Messages ref={messagesRef}>
+        {hasPreviousMessages && (
+          <PreviousMessagesButton
+            type="button"
+            disabled={isLoadingPreviousMessages}
+            onClick={() => void handleLoadPreviousMessages()}
+          >
+            {isLoadingPreviousMessages
+              ? '불러오는 중...'
+              : '이전 메시지 불러오기'}
+          </PreviousMessagesButton>
+        )}
+        {previousMessagesError && (
+          <PreviousMessagesError role="alert">
+            {previousMessagesError}
+          </PreviousMessagesError>
+        )}
         <DateDivider>오늘</DateDivider>
         {room.messages.map((message) => (
           <MessageRow key={message.id} data-sender={message.sender}>
@@ -49,12 +163,44 @@ export default function ChatRoomPanel({ room }: ChatRoomPanelProps) {
         ))}
       </Messages>
 
-      <Composer aria-label="메시지 입력 영역">
-        <ComposerPlaceholder>메시지를 입력하세요</ComposerPlaceholder>
-        <SendLabel>보내기</SendLabel>
-      </Composer>
+      <ComposerArea>
+        {(sendErrorMessage || socketErrorMessage) && (
+          <SendError role="alert">
+            {sendErrorMessage || socketErrorMessage}
+          </SendError>
+        )}
+        <Composer aria-label="메시지 입력 영역" onSubmit={handleSubmit}>
+          <MessageInput
+            value={message}
+            aria-label="메시지"
+            placeholder={getMessagePlaceholder(socketStatus)}
+            disabled={socketStatus !== 'connected' || isSending}
+            onChange={(event) => setMessage(event.target.value)}
+          />
+          <SendButton
+            type="submit"
+            disabled={
+              socketStatus !== 'connected' || isSending || !message.trim()
+            }
+          >
+            {isSending ? '전송 중' : '보내기'}
+          </SendButton>
+        </Composer>
+      </ComposerArea>
     </Panel>
   );
+}
+
+function getMessagePlaceholder(status: ChatSocketStatus): string {
+  if (status === 'connected') {
+    return '메시지를 입력하세요';
+  }
+
+  if (status === 'error') {
+    return '채팅 서버 연결에 실패했어요';
+  }
+
+  return '채팅 서버에 연결하고 있어요';
 }
 
 const EmptyPanel = styled.section`
@@ -100,10 +246,45 @@ const EmptyTitle = styled.h2`
 
 const Panel = styled.section`
   display: grid;
+  height: 100%;
   min-width: 0;
   min-height: 680px;
   grid-template-rows: auto auto 1fr auto;
   background: #ffffff;
+`;
+
+const RoomTitleGroup = styled.div`
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+`;
+
+const closeControlStyles = css`
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #2b2528;
+  font-size: 22px;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    background: #f3f0f1;
+  }
+`;
+
+const CloseLink = styled(Link)`
+  ${closeControlStyles}
+`;
+
+const CloseButton = styled.button`
+  ${closeControlStyles}
 `;
 
 const RoomHeader = styled.header`
@@ -121,12 +302,6 @@ const PartnerName = styled.h2`
   color: #2b2528;
   font-size: 18px;
   font-weight: 700;
-`;
-
-const PartnerMeta = styled.p`
-  margin: 5px 0 0;
-  color: #9a9095;
-  font-size: 12px;
 `;
 
 const TradeStatus = styled.span`
@@ -159,6 +334,13 @@ const ProductImage = styled.div`
   font-weight: 700;
 `;
 
+const ProductPhoto = styled.img`
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+`;
+
 const ProductInfo = styled.div`
   min-width: 0;
 `;
@@ -181,6 +363,8 @@ const ProductTitle = styled.p`
 
 const Messages = styled.div`
   display: flex;
+  min-height: 0;
+  overflow-y: auto;
   padding: 28px 24px;
   flex-direction: column;
   gap: 12px;
@@ -191,6 +375,29 @@ const DateDivider = styled.span`
   margin: 0 auto 8px;
   color: #aaa2a6;
   font-size: 11px;
+`;
+
+const PreviousMessagesButton = styled.button`
+  margin: 0 auto 4px;
+  padding: 8px 14px;
+  border: 1px solid #e7e1e4;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #665d61;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+`;
+
+const PreviousMessagesError = styled.p`
+  margin: 0 auto 4px;
+  color: #d9304f;
+  font-size: 12px;
 `;
 
 const MessageRow = styled.div`
@@ -228,9 +435,18 @@ const SentAt = styled.span`
   font-size: 10px;
 `;
 
-const Composer = styled.div`
+const ComposerArea = styled.div`
+  padding: 12px 20px 16px;
+`;
+
+const SendError = styled.p`
+  margin: 0 0 8px;
+  color: #d9304f;
+  font-size: 12px;
+`;
+
+const Composer = styled.form`
   display: flex;
-  margin: 16px 20px;
   min-height: 48px;
   padding: 0 8px 0 18px;
   align-items: center;
@@ -241,16 +457,32 @@ const Composer = styled.div`
   background: #faf8f9;
 `;
 
-const ComposerPlaceholder = styled.span`
+const MessageInput = styled.input`
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
   color: #aaa2a6;
   font-size: 13px;
+
+  &:disabled {
+    cursor: wait;
+  }
 `;
 
-const SendLabel = styled.span`
+const SendButton = styled.button`
   padding: 8px 12px;
+  border: 0;
   border-radius: 999px;
   background: #ed174c;
   color: #ffffff;
   font-size: 12px;
   font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.45;
+  }
 `;

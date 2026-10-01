@@ -14,6 +14,9 @@ importers:
       '@emotion/styled':
         specifier: ^11.14.1
         version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8)
+      '@stomp/stompjs':
+        specifier: 7.3.0
+        version: 7.3.0
       posthog-js:
         specifier: 1.434.2
         version: 1.434.2(@types/react@19.2.18)(react@19.2.8)
@@ -1724,6 +1727,9 @@ packages:
 
   '@sinonjs/fake-timers@13.0.5':
     resolution: {integrity: sha512-36/hTbH2uaWuGVERyC6da9YwGWnzUZXuPro/F2LfsdOsLnCojz/iSH8MxUt/FD2S5XBSVPhmArFUXcpCQ2Hkiw==}
+
+  '@stomp/stompjs@7.3.0':
+    resolution: {integrity: sha512-nKMLoFfJhrQAqkvvKd1vLq/cVBGCMwPRCD0LqW7UT1fecRx9C3GoKEIR2CYwVuErGeZu8w0kFkl2rlhPlqHVgQ==}
 
   '@storybook/builder-webpack5@10.5.6':
     resolution: {integrity: sha512-uWo/MzNC6HXMEpy8QQfbeYh1j6aOC6Ly0sAR6RE0LPvpyGEWC0VaVOBERIJJBjeuPuonDBVKfEjh1iUvZhJopg==}
@@ -6747,6 +6753,8 @@ snapshots:
   '@sinonjs/fake-timers@13.0.5':
     dependencies:
       '@sinonjs/commons': 3.0.1
+
+  '@stomp/stompjs@7.3.0': {}
 
   '@storybook/builder-webpack5@10.5.6(storybook@10.5.6(@types/react@19.2.18)(prettier@3.9.6)(react@19.2.8))(typescript@6.0.3)(webpack-cli@7.2.2)':
     dependencies:

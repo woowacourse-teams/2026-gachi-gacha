@@ -17,6 +17,7 @@ const POSTHOG_API_HOST =
   process.env.POSTHOG_API_HOST ?? 'https://us.i.posthog.com';
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
+const DEV_SERVER_PORT = Number(process.env.DEV_SERVER_PORT ?? 3000);
 const { version: APP_VERSION } = require('./package.json');
 
 if (!KAKAO_MAP_KEY) {
@@ -102,7 +103,7 @@ module.exports = (_env, argv) => {
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
 
     devServer: {
-      port: 3000,
+      port: DEV_SERVER_PORT,
       hot: true,
       historyApiFallback: true,
       proxy: [
@@ -110,6 +111,7 @@ module.exports = (_env, argv) => {
           context: ['/api'],
           target: API_PROXY_TARGET,
           changeOrigin: true,
+          ws: true,
         },
       ],
     },

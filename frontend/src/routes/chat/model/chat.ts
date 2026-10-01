@@ -1,8 +1,9 @@
-export type ChatTradeStatus = '답장 대기' | '진행 중' | '교환 완료';
+export type ChatTradeStatus = '교환 가능' | '교환 진행 중' | '교환 완료';
 
 export interface ChatConversation {
   id: number;
   partnerName: string;
+  partnerProfileImageUrl: string | null;
   itemTitle: string;
   lastMessage: string;
   lastMessageAt: string;
@@ -11,7 +12,7 @@ export interface ChatConversation {
 }
 
 export interface ChatMessage {
-  id: number;
+  id: string;
   sender: 'me' | 'other';
   text: string;
   sentAt: string;
@@ -19,9 +20,11 @@ export interface ChatMessage {
 
 export interface ChatRoom {
   conversationId: number;
+  tradeId: number;
   partnerName: string;
-  partnerNeighborhood: string;
+  partnerProfileImageUrl: string | null;
   itemTitle: string;
+  itemImageUrl: string | null;
   tradeStatus: ChatTradeStatus;
   messages: ChatMessage[];
 }
