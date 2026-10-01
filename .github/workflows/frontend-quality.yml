@@ -74,4 +74,5 @@ jobs:
           APP_ENV: ci
           KAKAO_MAP_KEY: ci-placeholder
           POSTHOG_ENABLED: "false"
+          SENTRY_ENABLED: "false"
         run: pnpm build

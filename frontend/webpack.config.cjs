@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { sentryWebpackPlugin } = require('@sentry/webpack-plugin');
 const webpack = require('webpack');
 
 const envPath = path.resolve(__dirname, '.env');
@@ -15,9 +16,18 @@ const POSTHOG_ENABLED = process.env.POSTHOG_ENABLED === 'true';
 const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY ?? '';
 const POSTHOG_API_HOST =
   process.env.POSTHOG_API_HOST ?? 'https://us.i.posthog.com';
+const SENTRY_ENABLED = process.env.SENTRY_ENABLED === 'true';
+const SENTRY_DSN = process.env.SENTRY_DSN ?? '';
+const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
+const SENTRY_ORG = process.env.SENTRY_ORG;
+const SENTRY_PROJECT = process.env.SENTRY_PROJECT;
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
 const { version: APP_VERSION } = require('./package.json');
+const SENTRY_RELEASE = process.env.SENTRY_RELEASE ?? APP_VERSION;
+const sentrySourceMapValues = [SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT];
+const hasAnySentrySourceMapValue = sentrySourceMapValues.some(Boolean);
+const hasAllSentrySourceMapValues = sentrySourceMapValues.every(Boolean);
 
 if (!KAKAO_MAP_KEY) {
   throw new Error(
@@ -29,11 +39,23 @@ if (POSTHOG_ENABLED && !POSTHOG_API_KEY) {
   throw new Error('POSTHOG_ENABLED가 true이지만 POSTHOG_API_KEY가 없습니다.');
 }
 
+if (SENTRY_ENABLED && !SENTRY_DSN) {
+  throw new Error('SENTRY_ENABLED가 true이지만 SENTRY_DSN이 없습니다.');
+}
+
+if (hasAnySentrySourceMapValue && !hasAllSentrySourceMapValues) {
+  throw new Error(
+    'Sentry source map 업로드에는 SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT가 모두 필요합니다.',
+  );
+}
+
 /** @type {import('webpack').ConfigurationFactory} */
 module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
   const appEnvironment =
     process.env.APP_ENV ?? (isProduction ? 'production' : 'development');
+  const shouldUploadSentrySourceMaps =
+    isProduction && SENTRY_ENABLED && hasAllSentrySourceMapValues;
 
   return {
     entry: path.resolve(__dirname, 'src/main.tsx'),
@@ -94,12 +116,37 @@ module.exports = (_env, argv) => {
         __POSTHOG_ENABLED__: JSON.stringify(POSTHOG_ENABLED),
         __POSTHOG_API_KEY__: JSON.stringify(POSTHOG_API_KEY),
         __POSTHOG_API_HOST__: JSON.stringify(POSTHOG_API_HOST),
+        __SENTRY_ENABLED__: JSON.stringify(SENTRY_ENABLED),
+        __SENTRY_DSN__: JSON.stringify(SENTRY_DSN),
+        __SENTRY_RELEASE__: JSON.stringify(SENTRY_RELEASE),
         __APP_ENV__: JSON.stringify(appEnvironment),
         __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),
+      ...(shouldUploadSentrySourceMaps
+        ? [
+            sentryWebpackPlugin({
+              authToken: SENTRY_AUTH_TOKEN,
+              org: SENTRY_ORG,
+              project: SENTRY_PROJECT,
+              telemetry: false,
+              release: {
+                name: SENTRY_RELEASE,
+                setCommits: false,
+              },
+              sourcemaps: {
+                assets: './dist/assets/js/**/*',
+                filesToDeleteAfterUpload: './dist/**/*.map',
+              },
+            }),
+          ]
+        : []),
     ],
 
-    devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',
+    devtool: isProduction
+      ? shouldUploadSentrySourceMaps
+        ? 'hidden-source-map'
+        : false
+      : 'eval-cheap-module-source-map',
 
     devServer: {
       port: 3000,

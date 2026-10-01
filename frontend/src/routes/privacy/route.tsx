@@ -43,12 +43,13 @@ export function PrivacyRoute() {
             개인정보처리방침을 공개합니다.
           </Introduction>
           <EffectiveDate>최초 제정일 및 시행일: 2026년 9월 25일</EffectiveDate>
+          <EffectiveDate>최종 변경일: 2026년 9월 30일</EffectiveDate>
 
           {__APP_ENV__ !== 'production' && (
             <DraftNotice>
               현재 개발 환경에서 검토 중인 방침입니다. 정식 운영 전 전용 문의
-              이메일, 회원 탈퇴 절차, 로그·분석 데이터 보유기간과 수탁업체
-              설정을 운영팀이 최종 확인해야 합니다.
+              이메일, 회원 탈퇴 절차, 로그·분석 데이터 보유기간, Sentry 미국
+              데이터 리전과 수탁업체 설정을 운영팀이 최종 확인해야 합니다.
             </DraftNotice>
           )}
 
@@ -97,7 +98,7 @@ export function PrivacyRoute() {
                     <td>
                       접속 기록, IP 주소, 브라우저·기기 정보, 페이지 방문·클릭,
                       오류 및 기능 이용 기록, PostHog 익명 식별값과 세션
-                      리플레이
+                      리플레이, Sentry 내부 회원 식별값·현재 경로·오류 스택 정보
                     </td>
                     <td>서비스 이용 과정에서 자동 생성</td>
                   </tr>
@@ -169,6 +170,10 @@ export function PrivacyRoute() {
                     <td>수집일로부터 최대 12개월</td>
                   </tr>
                   <tr>
+                    <th>Sentry 오류 정보</th>
+                    <td>수집일로부터 최대 3개월</td>
+                  </tr>
+                  <tr>
                     <th>고객센터 문의</th>
                     <td>
                       문의 처리 완료 후 30일까지. 분쟁 대응이 필요한 경우 해당
@@ -213,6 +218,10 @@ export function PrivacyRoute() {
                     <th>PostHog, Inc.</th>
                     <td>서비스 이용 분석, 오류 확인 및 세션 리플레이</td>
                   </tr>
+                  <tr>
+                    <th>Functional Software, Inc. (Sentry)</th>
+                    <td>오류 수집·분석 및 배포 릴리스·소스 맵 관리</td>
+                  </tr>
                 </tbody>
               </Table>
             </TableScroll>
@@ -225,9 +234,10 @@ export function PrivacyRoute() {
           <Section>
             <SectionTitle>6. 개인정보의 국외 이전</SectionTitle>
             <p>
-              PostHog를 통한 서비스 분석 과정에서 정보가 국외로 이전될 수
-              있습니다.
+              PostHog를 통한 서비스 분석과 Sentry를 통한 오류 분석 과정에서
+              정보가 국외로 이전될 수 있습니다.
             </p>
+            <SubsectionTitle>PostHog</SubsectionTitle>
             <TableScroll>
               <Table>
                 <tbody>
@@ -257,8 +267,38 @@ export function PrivacyRoute() {
                 </tbody>
               </Table>
             </TableScroll>
+            <SubsectionTitle>Sentry</SubsectionTitle>
+            <TableScroll>
+              <Table>
+                <tbody>
+                  <tr>
+                    <th>이전받는 자</th>
+                    <td>Functional Software, Inc. (Sentry)</td>
+                  </tr>
+                  <tr>
+                    <th>이전 항목</th>
+                    <td>
+                      내부 회원 식별값, 현재 경로, 오류 메시지·스택,
+                      브라우저·기기 정보, 오류 직전의 마스킹된 화면 이동 기록
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>목적</th>
+                    <td>오류 실시간 수집, 원인 분석 및 서비스 품질 개선</td>
+                  </tr>
+                  <tr>
+                    <th>국가·시기·방법</th>
+                    <td>미국, 오류 발생 시 암호화된 통신을 통한 전송</td>
+                  </tr>
+                  <tr>
+                    <th>보유기간</th>
+                    <td>수집일로부터 최대 3개월</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </TableScroll>
             <p>
-              이용자는 아래 문의 창구를 통해 분석 정보 처리정지를 요청할 수
+              이용자는 아래 문의 창구를 통해 분석·오류 정보 처리정지를 요청할 수
               있습니다. 처리를 거부하더라도 지도 검색 등 핵심 기능은 이용할 수
               있습니다.
             </p>
@@ -335,6 +375,9 @@ export function PrivacyRoute() {
               <li>HTTPS를 통한 암호화 통신</li>
               <li>접근 권한 최소화와 인증 정보 보호</li>
               <li>입력값 마스킹 등 세션 리플레이 개인정보 보호 설정</li>
+              <li>
+                오류 수집 전 토큰·쿠키·요청 본문·URL 쿼리 등 민감 정보 제거
+              </li>
               <li>오류·접속 기록 점검과 보안 취약점 개선</li>
               <li>업로드 파일 접근과 저장소 권한 관리</li>
             </ul>
@@ -403,6 +446,7 @@ export function PrivacyRoute() {
             </p>
             <SubsectionTitle>변경 이력</SubsectionTitle>
             <ul>
+              <li>2026년 9월 30일: Sentry 오류 수집·국외 이전 정책 추가</li>
               <li>2026년 9월 25일: 최초 제정</li>
             </ul>
           </Section>
