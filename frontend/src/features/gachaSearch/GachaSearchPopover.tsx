@@ -1,6 +1,7 @@
 import type { UIEvent } from 'react';
 
 import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
+import type { GachaWithStoreCount } from '@/domains/product/gachaWithStoreCountType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { captureGachaSelected } from './analytics/gachaSearchAnalytics';
@@ -25,10 +26,7 @@ import {
   StoreCountText,
   Title,
 } from './GachaSearchPopover.styles';
-import type {
-  GachaSearchProduct,
-  GachaSearchResult,
-} from './gachaSearchResultType';
+import type { GachaSearchResult } from './gachaSearchResultType';
 import { getVisibleCategories } from './getVisibleCategories';
 
 export interface GachaSearchPopoverProps {
@@ -47,7 +45,7 @@ export interface GachaSearchPopoverProps {
 const LOAD_MORE_THRESHOLD = 120;
 
 interface ProductCardProps {
-  product: GachaSearchProduct;
+  product: GachaWithStoreCount;
   query: string;
   resultPosition: number;
   onSelect: (gachaId: number) => void;
