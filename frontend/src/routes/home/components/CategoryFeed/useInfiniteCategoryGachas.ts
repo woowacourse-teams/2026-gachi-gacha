@@ -5,12 +5,14 @@ import {
   INITIAL_CATEGORY_GACHA_FEED_STATE,
 } from './categoryGachaFeedReducer';
 import { getCategoryGachaPage } from '../../api/getCategoryGachaPage';
+import { getCategoryIdByExactName } from '../../api/getCategoryIdByExactName';
 
 export function useInfiniteCategoryGachas(categoryName: string) {
   const [state, dispatch] = useReducer(
     categoryGachaFeedReducer,
     INITIAL_CATEGORY_GACHA_FEED_STATE,
   );
+  const categoryIdRef = useRef<number | null>(null);
   const loadMoreControllerRef = useRef<AbortController | null>(null);
   const isLoadingMoreRef = useRef(false);
 
@@ -18,14 +20,31 @@ export function useInfiniteCategoryGachas(categoryName: string) {
     const controller = new AbortController();
 
     loadMoreControllerRef.current?.abort();
+    categoryIdRef.current = null;
     isLoadingMoreRef.current = false;
 
     const fetchCategoryGachas = async () => {
       dispatch({ type: 'initialLoadStarted' });
 
       try {
-        const firstPage = await getCategoryGachaPage({
+        const categoryId = await getCategoryIdByExactName(
           categoryName,
+          controller.signal,
+        );
+
+        if (controller.signal.aborted) return;
+
+        if (categoryId === null) {
+          dispatch({
+            type: 'initialLoadSucceeded',
+            page: { items: [], nextPage: null },
+          });
+          return;
+        }
+
+        categoryIdRef.current = categoryId;
+        const firstPage = await getCategoryGachaPage({
+          categoryId,
           page: 0,
           signal: controller.signal,
         });
@@ -49,6 +68,7 @@ export function useInfiniteCategoryGachas(categoryName: string) {
     return () => {
       controller.abort();
       loadMoreControllerRef.current?.abort();
+      categoryIdRef.current = null;
     };
   }, [categoryName]);
 
@@ -56,11 +76,13 @@ export function useInfiniteCategoryGachas(categoryName: string) {
     if (
       state.itemsState.status !== 'success' ||
       isLoadingMoreRef.current ||
-      state.nextPage === null
+      state.nextPage === null ||
+      categoryIdRef.current === null
     ) {
       return;
     }
 
+    const categoryId = categoryIdRef.current;
     const nextPage = state.nextPage;
     const controller = new AbortController();
 
@@ -72,7 +94,7 @@ export function useInfiniteCategoryGachas(categoryName: string) {
     const fetchNextPage = async () => {
       try {
         const nextPageData = await getCategoryGachaPage({
-          categoryName,
+          categoryId,
           page: nextPage,
           signal: controller.signal,
         });
@@ -90,7 +112,7 @@ export function useInfiniteCategoryGachas(categoryName: string) {
     };
 
     void fetchNextPage();
-  }, [categoryName, state.itemsState.status, state.nextPage]);
+  }, [state.itemsState.status, state.nextPage]);
 
   return {
     itemsState: state.itemsState,
