@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
+import { Link, useLocation } from 'react-router';
 
 import type {
   TradeDetail as TradeDetailData,
@@ -47,6 +48,7 @@ export default function TradeDetail({
   detail,
   action = 'chat',
 }: TradeDetailProps) {
+  const location = useLocation();
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
@@ -136,11 +138,16 @@ export default function TradeDetail({
           {action && (
             <ActionGroup>
               {action === 'edit' ? (
-                <EditLink href={`/trade/${detail.tradeId}/edit`}>
+                <EditLink to={`/trade/${detail.tradeId}/edit`}>
                   수정하기
                 </EditLink>
               ) : (
-                <ChatLink href="/chat">채팅하기</ChatLink>
+                <ChatLink
+                  to={`/chat/start/${detail.tradeId}`}
+                  state={{ backgroundLocation: location }}
+                >
+                  채팅하기
+                </ChatLink>
               )}
             </ActionGroup>
           )}
@@ -306,7 +313,7 @@ const ActionGroup = styled.div`
   margin-top: 32px;
 `;
 
-const ChatLink = styled.a`
+const ChatLink = styled(Link)`
   display: inline-flex;
   min-height: 54px;
   align-items: center;

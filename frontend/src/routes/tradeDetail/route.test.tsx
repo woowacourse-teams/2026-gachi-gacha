@@ -76,7 +76,7 @@ describe('TradeDetailRoute', () => {
 
     expect(
       await screen.findByRole('link', { name: '채팅하기' }),
-    ).toHaveAttribute('href', '/chat');
+    ).toHaveAttribute('href', `/chat/start/${TRADE_DETAIL.tradeId}`);
     expect(
       screen.queryByRole('link', { name: '수정하기' }),
     ).not.toBeInTheDocument();
