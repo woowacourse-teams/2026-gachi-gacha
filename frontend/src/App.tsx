@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import {
+  type Location,
   Navigate,
   Outlet,
   Route,
@@ -71,6 +72,12 @@ const ChatRoute = lazy(async () => {
   return { default: routeModule.ChatRoute };
 });
 
+const ChatStartRoute = lazy(async () => {
+  const routeModule = await import('@/routes/chat/route');
+
+  return { default: routeModule.ChatStartRoute };
+});
+
 const NotificationsRoute = lazy(async () => {
   const routeModule = await import('@/routes/notifications/route');
 
@@ -104,6 +111,7 @@ function RedirectToHome() {
 
 function CanonicalRoutes() {
   const location = useLocation();
+  const backgroundLocation = getBackgroundLocation(location);
 
   if (location.pathname.length > 1 && location.pathname.endsWith('/')) {
     return (
@@ -119,31 +127,70 @@ function CanonicalRoutes() {
   }
 
   return (
-    <Routes>
-      <Route path={HOME_PATH} element={<HomePage />} />
-      <Route path="/search" element={<SearchRoute />} />
-      <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
-      <Route path="/trade" element={<TradeRoute />} />
-      <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
-      <Route path="/login" element={<LoginRoute />} />
-      <Route path="/privacy" element={<PrivacyRoute />} />
-      <Route
-        path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}
-        element={<AuthCallbackRouteElement />}
-      />
-      <Route element={<ProtectedRoutes />}>
-        <Route path="/trade/new" element={<TradeCreatePage />} />
+    <>
+      <Routes location={backgroundLocation ?? location}>
+        <Route path={HOME_PATH} element={<HomePage />} />
+        <Route path="/search" element={<SearchRoute />} />
+        <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
+        <Route path="/trade" element={<TradeRoute />} />
+        <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
+        <Route path="/login" element={<LoginRoute />} />
+        <Route path="/privacy" element={<PrivacyRoute />} />
         <Route
-          path="/trade/:tradeId/edit"
-          element={<TradeEditRouteElement />}
+          path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}
+          element={<AuthCallbackRouteElement />}
         />
-        <Route path="/chat" element={<ChatRoute />} />
-        <Route path="/notifications" element={<NotificationsRoute />} />
-        <Route path="/mypage" element={<MyPageRoute />} />
-      </Route>
-      <Route path="*" element={<RedirectToHome />} />
-    </Routes>
+        <Route element={<ProtectedRoutes />}>
+          <Route path="/trade/new" element={<TradeCreatePage />} />
+          <Route
+            path="/trade/:tradeId/edit"
+            element={<TradeEditRouteElement />}
+          />
+          <Route path="/chat" element={<ChatRoute />} />
+          <Route path="/chat/:roomId" element={<ChatRouteElement />} />
+          <Route
+            path="/chat/start/:tradeId"
+            element={<ChatStartRouteElement />}
+          />
+          <Route path="/notifications" element={<NotificationsRoute />} />
+          <Route path="/mypage" element={<MyPageRoute />} />
+        </Route>
+        <Route path="*" element={<RedirectToHome />} />
+      </Routes>
+      {backgroundLocation && (
+        <Routes>
+          <Route element={<ProtectedRoutes />}>
+            <Route
+              path="/chat/:roomId"
+              element={<ChatRouteElement presentation="modal" />}
+            />
+            <Route
+              path="/chat/start/:tradeId"
+              element={<ChatStartRouteElement modal />}
+            />
+          </Route>
+        </Routes>
+      )}
+    </>
   );
+}
+
+function getBackgroundLocation(location: Location): Location | null {
+  const state: unknown = location.state;
+
+  if (
+    typeof state !== 'object' ||
+    state === null ||
+    !('backgroundLocation' in state)
+  ) {
+    return null;
+  }
+
+  const backgroundLocation = state.backgroundLocation;
+
+  return typeof backgroundLocation === 'object' && backgroundLocation !== null
+    ? (backgroundLocation as Location)
+    : null;
 }
 
 function ProtectedRoutes() {
@@ -182,6 +229,39 @@ function TradeEditRouteElement() {
   }
 
   return <TradeEditRoute tradeId={Number(tradeId)} />;
+}
+
+interface ChatRouteElementProps {
+  presentation?: 'drawer' | 'modal';
+}
+
+function ChatRouteElement({ presentation }: ChatRouteElementProps) {
+  const { roomId } = useParams<'roomId'>();
+
+  if (!roomId || !TRADE_ID_PATTERN.test(roomId)) {
+    return <Navigate replace to="/chat" />;
+  }
+
+  return (
+    <ChatRoute
+      roomId={Number(roomId)}
+      {...(presentation ? { presentation } : {})}
+    />
+  );
+}
+
+interface ChatStartRouteElementProps {
+  modal?: boolean;
+}
+
+function ChatStartRouteElement({ modal = false }: ChatStartRouteElementProps) {
+  const { tradeId } = useParams<'tradeId'>();
+
+  if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
+    return <Navigate replace to="/trade" />;
+  }
+
+  return <ChatStartRoute tradeId={Number(tradeId)} modal={modal} />;
 }
 
 function AuthCallbackRouteElement() {

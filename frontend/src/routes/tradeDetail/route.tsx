@@ -54,11 +54,11 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
   const action =
     authStatus === 'loading'
       ? null
-      : authStatus === 'authenticated' &&
-          memberId !== null &&
-          memberId === String(state.data.memberId)
-        ? 'edit'
-        : 'chat';
+      : authStatus !== 'authenticated'
+        ? 'login'
+        : memberId !== null && memberId === String(state.data.memberId)
+          ? 'edit'
+          : 'chat';
 
   return (
     <TradeDetailPage

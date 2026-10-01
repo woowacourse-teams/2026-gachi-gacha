@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "webpack serve --mode development",
+    "dev:mock": "MOCK_API=true webpack serve --mode development",
     "build": "webpack --mode production",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --max-warnings 0",
@@ -24,6 +25,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@stomp/stompjs": "7.3.0",
     "posthog-js": "1.434.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",

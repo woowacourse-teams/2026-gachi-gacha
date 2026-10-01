@@ -5,13 +5,13 @@ import type { ChatConversation } from '../../model/chat';
 interface ConversationListProps {
   conversations: ChatConversation[];
   selectedConversationId: number | undefined;
+  onSelectConversation?: (conversationId: number) => void;
 }
-
-const FILTERS = ['전체', '답장 대기', '진행 중', '교환 완료'] as const;
 
 export default function ConversationList({
   conversations,
   selectedConversationId,
+  onSelectConversation,
 }: ConversationListProps) {
   return (
     <Panel>
@@ -19,14 +19,6 @@ export default function ConversationList({
         <Title>전체 대화</Title>
         <Count>{conversations.length}</Count>
       </Header>
-
-      <FilterList aria-label="대화 상태">
-        {FILTERS.map((filter, index) => (
-          <Filter key={filter} data-active={index === 0}>
-            {filter}
-          </Filter>
-        ))}
-      </FilterList>
 
       <Notice>
         <NoticeTitle>채팅 알림이 꺼져있어요</NoticeTitle>
@@ -36,12 +28,23 @@ export default function ConversationList({
       </Notice>
 
       <List>
+        {conversations.length === 0 && (
+          <EmptyMessage>아직 시작한 대화가 없어요.</EmptyMessage>
+        )}
         {conversations.map((conversation) => (
           <Conversation
             key={conversation.id}
+            type="button"
             data-selected={conversation.id === selectedConversationId}
+            onClick={() => onSelectConversation?.(conversation.id)}
           >
-            <Avatar aria-hidden="true">{conversation.partnerName[0]}</Avatar>
+            <Avatar aria-hidden="true">
+              {conversation.partnerProfileImageUrl ? (
+                <AvatarImage src={conversation.partnerProfileImageUrl} alt="" />
+              ) : (
+                conversation.partnerName[0]
+              )}
+            </Avatar>
             <ConversationContent>
               <ConversationHeader>
                 <PartnerName>{conversation.partnerName}</PartnerName>
@@ -89,29 +92,6 @@ const Count = styled.span`
   font-weight: 700;
 `;
 
-const FilterList = styled.div`
-  display: flex;
-  padding: 0 28px 24px;
-  flex-wrap: wrap;
-  gap: 8px;
-  border-bottom: 1px solid #eeeaec;
-`;
-
-const Filter = styled.span`
-  padding: 9px 14px;
-  border: 1px solid #eeeaec;
-  border-radius: 999px;
-  color: #6f6469;
-  font-size: 13px;
-  font-weight: 700;
-
-  &[data-active='true'] {
-    border-color: #2b2528;
-    background: #2b2528;
-    color: #ffffff;
-  }
-`;
-
 const Notice = styled.div`
   margin: 20px;
   padding: 18px;
@@ -137,18 +117,32 @@ const List = styled.div`
   display: grid;
 `;
 
-const Conversation = styled.article`
+const Conversation = styled.button`
   display: flex;
   min-width: 0;
   padding: 20px;
   align-items: center;
   gap: 14px;
+  border-top: 0;
+  border-right: 0;
   border-bottom: 1px solid #f3f0f1;
+  border-left: 0;
   background: #ffffff;
+  color: inherit;
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
 
   &[data-selected='true'] {
     background: #fff7f9;
   }
+`;
+
+const EmptyMessage = styled.p`
+  margin: 0;
+  padding: 48px 20px;
+  color: #8d8589;
+  text-align: center;
 `;
 
 const Avatar = styled.div`
@@ -162,6 +156,13 @@ const Avatar = styled.div`
   color: #963c5d;
   font-size: 18px;
   font-weight: 700;
+`;
+
+const AvatarImage = styled.img`
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
 `;
 
 const ConversationContent = styled.div`
