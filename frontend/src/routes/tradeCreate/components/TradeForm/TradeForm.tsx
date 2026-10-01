@@ -674,6 +674,8 @@ const SubmissionError = styled.p`
   color: #d80f42;
   font-size: 14px;
   line-height: 1.5;
+  /* 서버 검증 실패 사유를 항목별로 줄바꿈해 보여준다. */
+  white-space: pre-line;
 `;
 
 const FieldError = styled.p`

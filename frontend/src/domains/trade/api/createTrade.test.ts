@@ -86,4 +86,49 @@ describe('createTrade', () => {
     expect(receivedImageNames).toEqual(['kuromi.png', 'cinnamoroll.jpeg']);
     expect(result.tradeId).toBe(15);
   });
+  it('프록시가 413으로 막으면 사진 용량 안내 문구로 실패한다', async () => {
+    storeAuthTokens({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    server.use(
+      http.post(
+        '/api/v1/trades',
+        () =>
+          new HttpResponse('<html>413 Request Entity Too Large</html>', {
+            status: 413,
+            headers: { 'Content-Type': 'text/html' },
+          }),
+      ),
+    );
+
+    await expect(createTrade({ request: tradeRequest })).rejects.toThrow(
+      '사진 용량이 너무 커서 업로드하지 못했어요. 사진 수나 크기를 줄여 다시 시도해주세요.',
+    );
+  });
+
+  it('검증에 실패하면 항목별 사유를 안내 문구로 반환한다', async () => {
+    storeAuthTokens({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    server.use(
+      http.post('/api/v1/trades', () =>
+        HttpResponse.json(
+          {
+            code: 'CE001',
+            message: '유효하지 않은 입력값입니다.',
+            errors: [
+              { field: 'title', value: '', reason: '공백일 수 없습니다' },
+            ],
+          },
+          { status: 400 },
+        ),
+      ),
+    );
+
+    await expect(createTrade({ request: tradeRequest })).rejects.toThrow(
+      '제목: 공백일 수 없습니다',
+    );
+  });
 });
