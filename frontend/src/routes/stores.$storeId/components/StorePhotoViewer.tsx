@@ -25,6 +25,7 @@ export interface StorePhotoViewerProps {
   initialIndex: number;
   storeName: string;
   onClose: () => void;
+  onImageError: (imageUrl: string) => void;
 }
 
 export function StorePhotoViewer({
@@ -32,6 +33,7 @@ export function StorePhotoViewer({
   initialIndex,
   storeName,
   onClose,
+  onImageError,
 }: StorePhotoViewerProps) {
   const dialogRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -195,6 +197,7 @@ export function StorePhotoViewer({
                   alt={`${storeName} 매장 사진 ${index + 1}`}
                   decoding="async"
                   draggable={false}
+                  onError={() => onImageError(imageUrl)}
                 />
               </Slide>
             ))}
