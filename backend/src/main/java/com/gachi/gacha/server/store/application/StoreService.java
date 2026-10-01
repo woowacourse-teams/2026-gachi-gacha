@@ -74,8 +74,13 @@ public class StoreService {
 
         Page<Store> stores = storeJpaRepository.findAll(pageable);
         Map<Long, StoreDetail> storeDetails = findStoreDetails(stores);
+        Map<Long, String> representativeImageUrls = findRepresentativeImageUrls(stores);
 
-        return stores.map(store -> StoreListResult.of(store, getStoreDetail(storeDetails, store.getId())));
+        return stores.map(store -> StoreListResult.of(
+                store,
+                getStoreDetail(storeDetails, store.getId()),
+                getThumbnailUrl(store, representativeImageUrls)
+        ));
     }
 
     public StoreDetailResult getStore(final Long storeId) {
@@ -93,6 +98,30 @@ public class StoreService {
 
         return storeDetailJpaRepository.findAllById(storeIds).stream()
                 .collect(Collectors.toMap(StoreDetail::getId, storeDetail -> storeDetail));
+    }
+
+    private Map<Long, String> findRepresentativeImageUrls(final Page<Store> stores) {
+        List<Long> storeIds = stores.stream()
+                .map(Store::getId)
+                .toList();
+
+        if (storeIds.isEmpty()) {
+            return Map.of();
+        }
+
+        return storeImageJpaRepository.findAllByStoreIdInOrderByIdAsc(storeIds).stream()
+                .collect(Collectors.toMap(
+                        storeImage -> storeImage.getStore().getId(),
+                        StoreImage::getImageUrl,
+                        (firstImageUrl, ignored) -> firstImageUrl
+                ));
+    }
+
+    private String getThumbnailUrl(final Store store, final Map<Long, String> representativeImageUrls) {
+        if (store.getThumbnailUrl() != null && !store.getThumbnailUrl().isBlank()) {
+            return store.getThumbnailUrl();
+        }
+        return representativeImageUrls.get(store.getId());
     }
 
     private StoreDetail getStoreDetail(final Map<Long, StoreDetail> storeDetails, final Long storeId) {

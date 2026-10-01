@@ -13,11 +13,15 @@ public record StoreListResult(
         Integer gachaMachineAmount
 ) {
 
-    public static StoreListResult of(final Store store, final StoreDetail storeDetail) {
+    public static StoreListResult of(
+            final Store store,
+            final StoreDetail storeDetail,
+            final String thumbnailUrl
+    ) {
         return new StoreListResult(
                 store.getId(),
                 store.getName(),
-                store.getThumbnailUrl(),
+                thumbnailUrl,
                 store.getAddress(),
                 store.getLatitude(),
                 store.getLongitude(),
