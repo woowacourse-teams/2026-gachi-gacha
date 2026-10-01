@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
@@ -63,10 +63,25 @@ function ImageFrame({
 }
 
 export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
-  const imageUrls = createImageUrls(store);
+  const [failedImageUrls, setFailedImageUrls] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const imageUrls = createImageUrls(store).filter(
+    (imageUrl) => !failedImageUrls.has(imageUrl),
+  );
   const previewImageUrls = imageUrls.slice(0, MAX_GALLERY_PREVIEW_COUNT);
   const hasGalleryImage = imageUrls.length > 0;
   const [viewerStartIndex, setViewerStartIndex] = useState<number | null>(null);
+
+  const handleImageError = useCallback((imageUrl: string) => {
+    setFailedImageUrls((currentFailedImageUrls) => {
+      if (currentFailedImageUrls.has(imageUrl)) {
+        return currentFailedImageUrls;
+      }
+
+      return new Set(currentFailedImageUrls).add(imageUrl);
+    });
+  }, []);
 
   return (
     <>
@@ -98,6 +113,7 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
                 alt={`${store.name} 매장 사진 ${index + 1}`}
                 loading={index === 0 ? 'eager' : 'lazy'}
                 decoding="async"
+                onError={() => handleImageError(imageUrl)}
               />
             </ImageFrame>
           ))
@@ -115,12 +131,13 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
       <StoreVisitInfo store={store} />
       <StoreGachaCatalog storeId={store.storeId} />
 
-      {viewerStartIndex !== null && (
+      {viewerStartIndex !== null && imageUrls.length > 0 && (
         <StorePhotoViewer
           imageUrls={imageUrls}
           initialIndex={viewerStartIndex}
           storeName={store.name}
           onClose={() => setViewerStartIndex(null)}
+          onImageError={handleImageError}
         />
       )}
     </>
