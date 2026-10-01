@@ -27,10 +27,24 @@ const StoreDetailRoute = lazy(async () => {
   return { default: routeModule.StoreDetailRoute };
 });
 
-const SecondhandRoute = lazy(async () => {
-  const routeModule = await import('@/routes/secondhand/route');
+const TradeRoute = lazy(async () => {
+  const routeModule = await import('@/routes/trade/route');
 
-  return { default: routeModule.SecondhandRoute };
+  return { default: routeModule.TradeRoute };
+});
+
+const TradeDetailRoute = lazy(async () => {
+  const routeModule = await import('@/routes/tradeDetail/route');
+
+  return { default: routeModule.TradeDetailRoute };
+});
+
+const TradeCreatePage = lazy(async () => await import('@/routes/tradeCreate'));
+
+const TradeEditRoute = lazy(async () => {
+  const routeModule = await import('@/routes/tradeEdit/route');
+
+  return { default: routeModule.TradeEditRoute };
 });
 
 const LoginRoute = lazy(async () => {
@@ -71,6 +85,7 @@ const MyPageRoute = lazy(async () => {
 
 const HOME_PATH = '/';
 const STORE_ID_PATTERN = /^[1-9]\d*$/;
+const TRADE_ID_PATTERN = /^[1-9]\d*$/;
 
 function RedirectToHome() {
   const { search, hash } = useLocation();
@@ -108,7 +123,8 @@ function CanonicalRoutes() {
       <Route path={HOME_PATH} element={<HomePage />} />
       <Route path="/search" element={<SearchRoute />} />
       <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
-      <Route path="/used-market" element={<SecondhandRoute />} />
+      <Route path="/trade" element={<TradeRoute />} />
+      <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
       <Route path="/login" element={<LoginRoute />} />
       <Route path="/privacy" element={<PrivacyRoute />} />
       <Route
@@ -116,6 +132,11 @@ function CanonicalRoutes() {
         element={<AuthCallbackRouteElement />}
       />
       <Route element={<ProtectedRoutes />}>
+        <Route path="/trade/new" element={<TradeCreatePage />} />
+        <Route
+          path="/trade/:tradeId/edit"
+          element={<TradeEditRouteElement />}
+        />
         <Route path="/chat" element={<ChatRoute />} />
         <Route path="/notifications" element={<NotificationsRoute />} />
         <Route path="/mypage" element={<MyPageRoute />} />
@@ -141,6 +162,26 @@ function StoreDetailRouteElement() {
   }
 
   return <StoreDetailRoute pathname={`/stores/${storeId}`} />;
+}
+
+function TradeDetailRouteElement() {
+  const { tradeId } = useParams<'tradeId'>();
+
+  if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
+    return <RedirectToHome />;
+  }
+
+  return <TradeDetailRoute tradeId={Number(tradeId)} />;
+}
+
+function TradeEditRouteElement() {
+  const { tradeId } = useParams<'tradeId'>();
+
+  if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
+    return <RedirectToHome />;
+  }
+
+  return <TradeEditRoute tradeId={Number(tradeId)} />;
 }
 
 function AuthCallbackRouteElement() {

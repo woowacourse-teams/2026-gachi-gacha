@@ -4,7 +4,7 @@
 
 ## 1. 현재 상태와 목표
 
-작성 시점의 프론트엔드는 ESLint, Prettier, TypeScript 타입 검사, 프로덕션 빌드와 Storybook을 사용한다. MSW 핸들러와 화면별 Story도 이미 있지만 자동화된 단위·통합·E2E 테스트와 PR 전용 품질 검사 워크플로는 아직 없다. 배포 워크플로도 의존성 설치 후 빌드와 배포를 바로 수행한다.
+현재 프론트엔드는 ESLint, Prettier, TypeScript 타입 검사, Jest 단위·통합 테스트, 프로덕션 빌드와 Storybook을 사용한다. MSW는 통합 테스트와 Storybook에서 외부 API 경계를 제어한다. 프론트엔드 변경 PR에는 `Frontend Quality` 워크플로가 정적 검사, 테스트와 두 종류의 빌드를 실행하며, E2E와 시각적 회귀 자동화는 후속 단계로 남겨 둔다. 배포 워크플로는 PR 검증과 분리해 self-hosted runner에서 배포 역할만 담당한다.
 
 테스트 도입의 목표는 다음과 같다.
 
@@ -151,6 +151,8 @@ frontend/
 
 검증과 배포를 한 job에 묶지 않는다. PR용 `Frontend Quality` 워크플로를 GitHub-hosted runner에서 먼저 실행하고, 통과한 코드만 배포 브랜치로 병합한다. self-hosted dev/prod runner는 배포 역할에 집중시킨다.
 
+`Frontend Quality`의 안정적인 job 이름은 `Frontend Quality`로 유지한다. 워크플로가 병합된 뒤 저장소 관리자는 `frontend-dev`와 `main`의 브랜치 보호 규칙에서 이 검사를 required status check로 지정한다. 이 저장소 설정 전까지는 워크플로가 실패를 알려주지만 병합 자체를 강제로 막지는 않는다.
+
 ### 모든 프론트엔드 PR
 
 1. `pnpm install --frozen-lockfile`
@@ -186,10 +188,10 @@ frontend/
 
 각 단계는 별도 이슈와 작은 PR로 진행한다.
 
-1. **전략 합의**: 이 문서를 리뷰하고 P0 시나리오와 도구를 확정한다.
-2. **기반 구축**: Jest, Testing Library, jsdom, MSW Node server, 공통 render와 `test` 스크립트를 추가한다.
-3. **P0 단위·통합 테스트**: 아래의 합의된 시나리오를 작성하고 이번 제출 범위를 완료한다.
-4. **PR 품질 워크플로**: 정적 검사, 단위·통합 테스트, Storybook/앱 빌드를 required check로 연결한다.
+1. **전략 합의 (완료)**: 이 문서를 리뷰하고 P0 시나리오와 도구를 확정한다.
+2. **기반 구축 (완료)**: Jest, Testing Library, jsdom, MSW Node server, 공통 render와 `test` 스크립트를 추가한다.
+3. **P0 단위·통합 테스트 (완료)**: 아래의 합의된 시나리오를 작성하고 이번 제출 범위를 완료한다.
+4. **PR 품질 워크플로 (워크플로 완료, 저장소 설정 필요)**: 정적 검사, 단위·통합 테스트, Storybook/앱 빌드를 실행하고 브랜치 보호 규칙의 required check로 연결한다.
 5. **E2E 기반과 smoke 여정**: Playwright Chromium과 핵심 3~4개 여정을 추가한다.
 6. **P1 회귀 테스트**: 지도·목록 연결, 매장 상세, 마이페이지를 보강한다.
 7. **시각적·접근성 자동화**: Story 보강 후 팀이 선택한 시각 비교 도구를 연결한다.

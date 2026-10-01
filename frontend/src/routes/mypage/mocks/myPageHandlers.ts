@@ -15,7 +15,10 @@ const tradeSummaries: TradeSummary[] = [
     status: 'IN_PROGRESS',
     categories: ['산리오', '피규어'],
     thumbnailUrl: null,
-    tradePlace: '홍대입구역 8번 출구',
+    tradePlace: {
+      name: '홍대입구역 8번 출구',
+      address: '서울특별시 마포구 양화로 160',
+    },
     createdAt: '2026-09-25T19:30:00',
   },
   {
@@ -25,7 +28,10 @@ const tradeSummaries: TradeSummary[] = [
     status: 'AVAILABLE',
     categories: ['산리오'],
     thumbnailUrl: null,
-    tradePlace: '합정역',
+    tradePlace: {
+      name: '합정역',
+      address: '서울특별시 마포구 양화로 45',
+    },
     createdAt: '2026-09-22T14:10:00',
   },
   {
@@ -35,7 +41,10 @@ const tradeSummaries: TradeSummary[] = [
     status: 'COMPLETED',
     categories: ['짱구', '미니어처'],
     thumbnailUrl: null,
-    tradePlace: '연남동',
+    tradePlace: {
+      name: '연남동',
+      address: '서울특별시 마포구 연남로 1',
+    },
     createdAt: '2026-09-18T11:20:00',
   },
 ];

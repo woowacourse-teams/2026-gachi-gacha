@@ -19,6 +19,14 @@ function isNullableString(value: unknown): value is string | null {
   return value === null || typeof value === 'string';
 }
 
+function isTradePlaceSummary(value: unknown): boolean {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return isNullableString(value.name) && typeof value.address === 'string';
+}
+
 function isTradeStatus(value: unknown): value is TradeStatus {
   return (
     typeof value === 'string' &&
@@ -39,18 +47,18 @@ function isTradeSummary(value: unknown): value is TradeSummary {
     Array.isArray(value.categories) &&
     value.categories.every((category) => typeof category === 'string') &&
     isNullableString(value.thumbnailUrl) &&
-    isNullableString(value.tradePlace) &&
+    (value.tradePlace === null || isTradePlaceSummary(value.tradePlace)) &&
     typeof value.createdAt === 'string'
   );
 }
 
 function parseTradeSummaryPage(value: unknown): TradeSummaryPage {
   if (!isRecord(value) || !Array.isArray(value.content)) {
-    throw new Error('내 교환글 응답 형식이 올바르지 않습니다.');
+    throw new Error('교환 게시글 응답 형식이 올바르지 않습니다.');
   }
 
   if (!value.content.every(isTradeSummary)) {
-    throw new Error('내 교환글 항목 형식이 올바르지 않습니다.');
+    throw new Error('교환 게시글 항목 형식이 올바르지 않습니다.');
   }
 
   const pageNumber = value.number;
@@ -64,7 +72,7 @@ function parseTradeSummaryPage(value: unknown): TradeSummaryPage {
     !isInteger(totalElements) ||
     !isInteger(totalPages)
   ) {
-    throw new Error('내 교환글 페이지 정보가 올바르지 않습니다.');
+    throw new Error('교환 게시글 페이지 정보가 올바르지 않습니다.');
   }
 
   return {

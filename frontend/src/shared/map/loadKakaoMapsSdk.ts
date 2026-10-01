@@ -7,6 +7,7 @@ function createKakaoMapsSdkUrl(): string {
   const searchParams = new URLSearchParams({
     appkey: __KAKAO_MAP_KEY__,
     autoload: 'false',
+    libraries: 'services',
   });
 
   return `https://dapi.kakao.com/v2/maps/sdk.js?${searchParams}`;
@@ -55,7 +56,12 @@ async function initializeKakaoMapsSdk(): Promise<void> {
     throw new Error('카카오 지도 SDK를 초기화하지 못했습니다.');
   }
 
+  // autoload=false라 services 라이브러리는 maps.load()가 끝난 뒤에야 준비된다.
   await new Promise<void>((resolve) => window.kakao?.maps.load(resolve));
+
+  if (!window.kakao?.maps.services) {
+    throw new Error('카카오 지도 장소 검색 라이브러리를 불러오지 못했습니다.');
+  }
 }
 
 export function loadKakaoMapsSdk(): Promise<void> {
