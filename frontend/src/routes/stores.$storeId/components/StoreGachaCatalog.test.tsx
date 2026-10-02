@@ -41,4 +41,37 @@ describe('StoreGachaCatalog', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('카테고리 미등록')).not.toBeInTheDocument();
   });
+
+  it('이름이 누락된 보유 가챠도 대체 이름과 섬네일로 표시한다', async () => {
+    server.use(
+      http.get('/api/v1/stores/17/gachas', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [
+              {
+                gachaId: 188,
+                gachaName: null,
+                thumbnailUrl: 'https://example.com/188.jpg',
+              },
+            ],
+            totalElements: 1,
+            number: 0,
+            totalPages: 1,
+          },
+        }),
+      ),
+    );
+
+    render(<StoreGachaCatalog storeId={17} />);
+
+    expect(await screen.findByText('이름 미등록 가챠')).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', { name: '이름 미등록 가챠 섬네일' }),
+    ).toHaveAttribute('src', 'https://example.com/188.jpg');
+    expect(
+      screen.queryByText('매장 보유 가챠 응답 형식이 올바르지 않습니다.'),
+    ).not.toBeInTheDocument();
+  });
 });

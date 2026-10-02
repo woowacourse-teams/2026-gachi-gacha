@@ -55,4 +55,41 @@ describe('매장 보유 가챠 응답 파싱', () => {
       }),
     ).toThrow('매장 보유 가챠 응답 형식이 올바르지 않습니다.');
   });
+
+  it('gachaName이 null이거나 공백이면 대체 이름으로 정규화한다', () => {
+    const result = parseStoreGachaResponse({
+      code: 'C000',
+      message: '정상',
+      data: {
+        content: [
+          {
+            gachaId: 188,
+            gachaName: null,
+            thumbnailUrl: 'https://example.com/188.jpg',
+          },
+          {
+            gachaId: 189,
+            gachaName: '   ',
+            thumbnailUrl: 'https://example.com/189.jpg',
+          },
+        ],
+        totalElements: 2,
+        number: 0,
+        totalPages: 1,
+      },
+    });
+
+    expect(result.gachas).toEqual([
+      {
+        gachaId: 188,
+        gachaName: '이름 미등록 가챠',
+        thumbnailUrl: 'https://example.com/188.jpg',
+      },
+      {
+        gachaId: 189,
+        gachaName: '이름 미등록 가챠',
+        thumbnailUrl: 'https://example.com/189.jpg',
+      },
+    ]);
+  });
 });

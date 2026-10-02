@@ -1,6 +1,6 @@
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
-import type { StoreGachaPage, StoreGachaSummary } from './storeGachaType';
+import type { StoreGachaPage } from './storeGachaType';
 
 interface StoreGachaPageData {
   content: readonly unknown[];
@@ -8,6 +8,14 @@ interface StoreGachaPageData {
   number: number;
   totalPages: number;
 }
+
+interface StoreGachaSummaryData {
+  gachaId: number;
+  gachaName: string | null;
+  thumbnailUrl: string | null;
+}
+
+const UNKNOWN_GACHA_NAME = '이름 미등록 가챠';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -17,7 +25,9 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-function isStoreGachaSummary(value: unknown): value is StoreGachaSummary {
+function isStoreGachaSummaryData(
+  value: unknown,
+): value is StoreGachaSummaryData {
   if (!isRecord(value)) {
     return false;
   }
@@ -26,9 +36,15 @@ function isStoreGachaSummary(value: unknown): value is StoreGachaSummary {
     typeof value.gachaId === 'number' &&
     Number.isSafeInteger(value.gachaId) &&
     value.gachaId > 0 &&
-    typeof value.gachaName === 'string' &&
+    (typeof value.gachaName === 'string' || value.gachaName === null) &&
     (typeof value.thumbnailUrl === 'string' || value.thumbnailUrl === null)
   );
+}
+
+function normalizeGachaName(gachaName: string | null): string {
+  const trimmedName = gachaName?.trim();
+
+  return trimmedName || UNKNOWN_GACHA_NAME;
 }
 
 function isStoreGachaPageData(value: unknown): value is StoreGachaPageData {
@@ -57,14 +73,14 @@ export function parseStoreGachaResponse(value: unknown): StoreGachaPage {
     throw new Error('매장 보유 가챠 페이지 응답 형식이 올바르지 않습니다.');
   }
 
-  if (!value.data.content.every(isStoreGachaSummary)) {
+  if (!value.data.content.every(isStoreGachaSummaryData)) {
     throw new Error('매장 보유 가챠 응답 형식이 올바르지 않습니다.');
   }
 
   return {
     gachas: value.data.content.map(({ gachaId, gachaName, thumbnailUrl }) => ({
       gachaId,
-      gachaName,
+      gachaName: normalizeGachaName(gachaName),
       thumbnailUrl,
     })),
     totalCount: value.data.totalElements,
