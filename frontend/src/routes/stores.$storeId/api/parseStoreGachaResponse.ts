@@ -15,7 +15,7 @@ interface StoreGachaSummaryData {
   thumbnailUrl: string | null;
 }
 
-const UNKNOWN_GACHA_NAME = '이름 미등록 가챠';
+const UNKNOWN_GACHA_NAME = '이름 미등록';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

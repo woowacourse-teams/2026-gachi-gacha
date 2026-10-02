@@ -82,12 +82,12 @@ describe('매장 보유 가챠 응답 파싱', () => {
     expect(result.gachas).toEqual([
       {
         gachaId: 188,
-        gachaName: '이름 미등록 가챠',
+        gachaName: '이름 미등록',
         thumbnailUrl: 'https://example.com/188.jpg',
       },
       {
         gachaId: 189,
-        gachaName: '이름 미등록 가챠',
+        gachaName: '이름 미등록',
         thumbnailUrl: 'https://example.com/189.jpg',
       },
     ]);
