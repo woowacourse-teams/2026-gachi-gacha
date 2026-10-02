@@ -6,12 +6,14 @@ import lombok.Builder;
 @Builder
 public record GachaSummaryResponse(
         Long gachaId,
-        String thumbnailUrl
+        String thumbnailUrl,
+        String gachaName
 ) {
     public static GachaSummaryResponse from(final GachaSummaryInfo gachaSummaryInfo) {
         return GachaSummaryResponse.builder()
                 .gachaId(gachaSummaryInfo.gachaId())
                 .thumbnailUrl(gachaSummaryInfo.thumbnailUrl())
+                .gachaName(gachaSummaryInfo.gachaName())
                 .build();
     }
 }

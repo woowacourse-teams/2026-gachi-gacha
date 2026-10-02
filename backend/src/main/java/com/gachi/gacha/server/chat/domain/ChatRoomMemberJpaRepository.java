@@ -71,4 +71,11 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
             WHERE chatRoomMember.member.id = :memberId
             """)
     long countUnreadMessage(Long memberId);
+
+    @Query("""
+            SELECT chatRoomMember.member.id
+            FROM ChatRoomMember chatRoomMember
+            WHERE chatRoomMember.chatRoom.id = :roomId
+            """)
+    List<Long> findMemberIdsByRoomId(Long roomId);
 }

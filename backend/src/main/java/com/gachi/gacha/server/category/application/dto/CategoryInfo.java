@@ -1,6 +1,6 @@
-package com.gachi.gacha.server.trade.application.dto;
+package com.gachi.gacha.server.category.application.dto;
 
-import com.gachi.gacha.server.gacha.domain.Category;
+import com.gachi.gacha.server.category.domain.Category;
 import lombok.Builder;
 
 @Builder

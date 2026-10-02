@@ -4,6 +4,7 @@ import com.gachi.gacha.server.chat.application.ChatMessageService;
 import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
 import com.gachi.gacha.server.chat.presentation.dto.ChatMessageResponse;
 import com.gachi.gacha.server.chat.presentation.dto.ChatMessageSendRequest;
+import com.gachi.gacha.server.chat.presentation.websocket.ChatRoomUpdateSender;
 import com.gachi.gacha.server.common.auth.websocket.StompPrincipal;
 import com.gachi.gacha.server.common.exception.BusinessException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
@@ -33,6 +34,7 @@ public class ChatMessageSocketController {
 
     private final ChatMessageService chatMessageService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final ChatRoomUpdateSender chatRoomUpdateSender;
 
     @MessageMapping("/chat/rooms/{roomId}/messages")
     public void sendMessage(
@@ -48,6 +50,8 @@ public class ChatMessageSocketController {
                 ROOM_MESSAGE_DESTINATION.formatted(roomId),
                 ChatMessageResponse.from(chatMessageInfo)
         );
+
+        chatRoomUpdateSender.sendToRoomMembers(roomId);
     }
 
     @MessageExceptionHandler(BusinessException.class)

@@ -1,7 +1,7 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.category.application;
 
-import com.gachi.gacha.server.trade.application.dto.CategoryInfo;
-import com.gachi.gacha.server.trade.domain.CategoryJpaRepository;
+import com.gachi.gacha.server.category.application.dto.CategoryInfo;
+import com.gachi.gacha.server.category.domain.CategoryJpaRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;

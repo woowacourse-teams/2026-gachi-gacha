@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.trade.presentation.dto;
+package com.gachi.gacha.server.category.presentation.dto;
 
 import java.util.List;
 import lombok.Builder;

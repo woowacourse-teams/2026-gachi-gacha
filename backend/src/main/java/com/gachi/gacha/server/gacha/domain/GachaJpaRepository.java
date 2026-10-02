@@ -2,6 +2,7 @@ package com.gachi.gacha.server.gacha.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.gacha.domain.exception.GachaNotFoundException;
+import com.gachi.gacha.server.usecase.domain.StoreGachaCount;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
@@ -18,6 +19,9 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
     default Gacha getById(@NonNull final Long gachaId) {
         return findByIdWithCategories(gachaId).orElseThrow(() -> new GachaNotFoundException(ErrorCode.GACHA_NOT_FOUND));
     }
+
+    @Query("SELECT DISTINCT g FROM Gacha g JOIN g.gachaCategories gc WHERE gc.category.id IN :categoryIds")
+    Page<Gacha> findByCategoryIds(@Param("categoryIds") List<Long> categoryIds, Pageable pageable);
 
     @Query("SELECT g FROM Gacha g " +
             "LEFT JOIN FETCH g.gachaCategories gc " +
@@ -38,5 +42,25 @@ public interface GachaJpaRepository extends JpaRepository<Gacha, Long> {
             "WHERE g.id IN :ids")
     List<Gacha> findByIdsWithCategories(@Param("ids") final List<Long> ids);
 
-
+    @Query(value = """
+        SELECT g.id AS gachaId, COUNT(sg.store_id) AS storeCount
+        FROM gacha g
+        LEFT JOIN store_gacha sg ON sg.gacha_id = g.id
+        WHERE EXISTS (
+            SELECT 1 FROM gacha_category gc
+            WHERE gc.gacha_id = g.id AND gc.category_id IN (:categoryIds)
+        )
+        GROUP BY g.id
+        ORDER BY storeCount DESC, g.id ASC
+        """,
+            countQuery = """
+        SELECT COUNT(*)
+        FROM gacha g
+        WHERE EXISTS (
+            SELECT 1 FROM gacha_category gc
+            WHERE gc.gacha_id = g.id AND gc.category_id IN (:categoryIds)
+        )
+        """,
+            nativeQuery = true)
+    Page<StoreGachaCount> findGachaIdsOrderByStoreCount(@Param("categoryIds") final List<Long> categoryIds, final Pageable pageable);
 }

@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.gacha.domain;
+package com.gachi.gacha.server.category.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

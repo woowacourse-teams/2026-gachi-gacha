@@ -2,7 +2,7 @@ package com.gachi.gacha.server.trade.domain;
 
 import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.gacha.domain.Category;
+import com.gachi.gacha.server.category.domain.Category;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.trade.domain.exception.InvalidTradeException;
 import jakarta.persistence.AttributeOverride;

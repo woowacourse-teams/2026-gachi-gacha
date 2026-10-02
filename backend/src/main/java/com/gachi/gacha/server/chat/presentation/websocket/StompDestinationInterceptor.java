@@ -23,7 +23,9 @@ public class StompDestinationInterceptor implements ChannelInterceptor {
 
     private static final String APPLICATION_PREFIX = "/app/";
     private static final String CHAT_ROOM_TOPIC = "/topic/chat/rooms/{roomId:\\d{1,18}}/messages";
-    private static final Set<String> PERSONAL_DESTINATIONS = Set.of("/user/queue/chat/errors");
+    private static final Set<String> PERSONAL_DESTINATIONS = Set.of(
+            "/user/queue/chat/errors",
+            "/user/queue/chat/rooms");
 
     private final PathMatcher pathMatcher = new AntPathMatcher();
     private final ChatRoomService chatRoomService;

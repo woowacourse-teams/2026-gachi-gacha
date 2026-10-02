@@ -1,10 +1,14 @@
 package com.gachi.gacha.server.file.presentation;
 
 import com.gachi.gacha.server.common.auth.resolver.Auth;
+import com.gachi.gacha.server.common.config.SwaggerConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.file.application.FileService;
 import com.gachi.gacha.server.file.presentation.dto.FileUploadListResponse;
 import com.gachi.gacha.server.file.presentation.dto.FileUploadResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -14,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "파일", description = "이미지 업로드")
+@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 @RestController
 @RequestMapping("/files")
 @RequiredArgsConstructor
@@ -21,6 +27,7 @@ public class FileController {
 
     private final FileService fileService;
 
+    @Operation(summary = "이미지 업로드")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<FileUploadListResponse> uploadFiles(
             @Auth final Long memberId,
