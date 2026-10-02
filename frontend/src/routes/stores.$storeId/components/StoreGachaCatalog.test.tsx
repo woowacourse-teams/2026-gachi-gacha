@@ -66,9 +66,9 @@ describe('StoreGachaCatalog', () => {
 
     render(<StoreGachaCatalog storeId={17} />);
 
-    expect(await screen.findByText('이름 미등록 가챠')).toBeInTheDocument();
+    expect(await screen.findByText('이름 미등록')).toBeInTheDocument();
     expect(
-      screen.getByRole('img', { name: '이름 미등록 가챠 섬네일' }),
+      screen.getByRole('img', { name: '이름 미등록 섬네일' }),
     ).toHaveAttribute('src', 'https://example.com/188.jpg');
     expect(
       screen.queryByText('매장 보유 가챠 응답 형식이 올바르지 않습니다.'),
