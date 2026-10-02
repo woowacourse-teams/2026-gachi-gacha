@@ -5,7 +5,6 @@ import { AUTH_STORY_TOKEN } from '@/features/auth/mocks/authHandlers';
 
 const MY_TRADES_API_PATH = '/api/v1/trades/me';
 const CURRENT_MEMBER_API_PATH = '/api/v1/members/me';
-const SUPPORT_INQUIRY_API_PATH = '/api/v1/support-inquiries';
 
 const tradeSummaries: TradeSummary[] = [
   {
@@ -109,19 +108,6 @@ export const failedMyTradesHandler = http.get(MY_TRADES_API_PATH, () =>
 export const loadingMyTradesHandler = http.get(MY_TRADES_API_PATH, async () => {
   await delay('infinite');
 });
-
-export const supportInquirySuccessHandler = http.post(
-  SUPPORT_INQUIRY_API_PATH,
-  () =>
-    HttpResponse.json(
-      {
-        code: 'C001',
-        message: '문의가 접수되었습니다.',
-        data: { inquiryId: 1 },
-      },
-      { status: 201 },
-    ),
-);
 
 export const memberUpdateSuccessHandler = http.patch(
   CURRENT_MEMBER_API_PATH,

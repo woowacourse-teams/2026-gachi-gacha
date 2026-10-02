@@ -1,4 +1,5 @@
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
 import {
   Brand,
@@ -46,9 +47,9 @@ export function PrivacyRoute() {
 
           {__APP_ENV__ !== 'production' && (
             <DraftNotice>
-              현재 개발 환경에서 검토 중인 방침입니다. 정식 운영 전 전용 문의
-              이메일, 회원 탈퇴 절차, 로그·분석 데이터 보유기간과 수탁업체
-              설정을 운영팀이 최종 확인해야 합니다.
+              현재 개발 환경에서 검토 중인 방침입니다. 정식 운영 전 회원 탈퇴
+              절차, 로그·분석 데이터 보유기간과 수탁업체 설정을 운영팀이 최종
+              확인해야 합니다.
             </DraftNotice>
           )}
 
@@ -89,8 +90,8 @@ export function PrivacyRoute() {
                   </tr>
                   <tr>
                     <th>고객센터 문의</th>
-                    <td>문의 유형과 내용, 내부 회원 식별값</td>
-                    <td>문의 접수 기능 이용 시 회원이 직접 입력</td>
+                    <td>Instagram 계정 정보, 문의 내용과 첨부자료</td>
+                    <td>이용자가 가치가챠 공식 Instagram DM으로 발송</td>
                   </tr>
                   <tr>
                     <th>자동 생성 정보</th>
@@ -302,18 +303,17 @@ export function PrivacyRoute() {
             <SectionTitle>9. 이용자의 권리와 행사 방법</SectionTitle>
             <p>
               이용자는 개인정보의 열람·정정·삭제·처리정지 및 동의 철회를 요청할
-              수 있습니다. 현재 개발 단계의 요청은 가치가챠 GitHub 문의 창구를
-              통해 접수하며, 운영팀은 본인 여부를 확인한 뒤 관계 법령에 따라
-              처리합니다.
+              수 있습니다. 요청은 가치가챠 공식 Instagram DM을 통해 접수하며,
+              운영팀은 본인 여부를 확인한 뒤 관계 법령에 따라 처리합니다.
             </p>
             <p>
               문의 및 요청:{' '}
               <ExternalLink
-                href="https://github.com/woowacourse-teams/2026-gachi-gacha/issues"
+                href={SUPPORT_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
               >
-                가치가챠 GitHub Issues
+                가치가챠 공식 Instagram DM
               </ExternalLink>
             </p>
           </Section>
@@ -346,16 +346,17 @@ export function PrivacyRoute() {
             <p>
               문의:{' '}
               <ExternalLink
-                href="https://github.com/woowacourse-teams/2026-gachi-gacha/issues"
+                href={SUPPORT_INSTAGRAM_URL}
                 target="_blank"
                 rel="noreferrer"
               >
-                가치가챠 GitHub Issues
+                가치가챠 공식 Instagram DM
               </ExternalLink>
             </p>
             <p>
-              정식 서비스 공개 전 별도의 개인정보 문의 이메일을 확정하여 이
-              방침에 추가합니다.
+              Instagram 이용 과정에는 Meta의 개인정보처리방침이 적용될 수
+              있으므로, 문의 시 비밀번호나 주민등록번호 등 불필요한 민감정보를
+              보내지 마세요.
             </p>
           </Section>
 

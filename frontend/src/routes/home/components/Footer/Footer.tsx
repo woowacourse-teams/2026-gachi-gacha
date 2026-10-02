@@ -1,13 +1,21 @@
 import styled from '@emotion/styled';
 
+import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
+
 import Logo from '../Logo';
 
-const FOOTER_LINKS = [
+interface FooterLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+const FOOTER_LINKS: readonly FooterLink[] = [
   { label: '이용약관', href: '/terms' },
   { label: '개인정보 처리방침', href: '/privacy' },
-  { label: '매장 입점 문의', href: '/store-inquiry' },
-  { label: '고객센터', href: '/support' },
-] as const;
+  { label: '매장 입점 문의', href: SUPPORT_INSTAGRAM_URL, external: true },
+  { label: '고객센터', href: SUPPORT_INSTAGRAM_URL, external: true },
+];
 
 export default function Footer() {
   return (
@@ -19,7 +27,12 @@ export default function Footer() {
 
       <Navigation aria-label="푸터 메뉴">
         {FOOTER_LINKS.map((link) => (
-          <NavigationLink key={link.href} href={link.href}>
+          <NavigationLink
+            key={link.label}
+            href={link.href}
+            target={link.external ? '_blank' : undefined}
+            rel={link.external ? 'noreferrer' : undefined}
+          >
             {link.label}
           </NavigationLink>
         ))}

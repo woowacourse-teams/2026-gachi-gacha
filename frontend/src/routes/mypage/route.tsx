@@ -13,16 +13,15 @@ import {
   assignBrowserLocation,
   replaceBrowserLocation,
 } from '@/shared/browser/browserNavigation';
+import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import { AccountDeletionDialog } from './components/AccountDeletionDialog';
 import { MyPageIcon } from './components/MyPageIcon';
 import { ProfileEditDialog } from './components/ProfileEditDialog';
-import { SupportInquiryDialog } from './components/SupportInquiryDialog';
 import {
   AccountMenu,
-  AccountMenuButton,
   AccountMenuCopy,
   AccountMenuDescription,
   AccountMenuIcon,
@@ -128,7 +127,6 @@ export function MyPageRoute() {
     errorMessage,
     retry,
   } = useMyPageTrades();
-  const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
@@ -401,9 +399,10 @@ export function MyPageRoute() {
                   </AccountMenuCopy>
                   <MyPageIcon name="chevron" size={18} />
                 </AccountMenuLink>
-                <AccountMenuButton
-                  type="button"
-                  onClick={() => setIsSupportDialogOpen(true)}
+                <AccountMenuLink
+                  href={SUPPORT_INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   <AccountMenuIcon>
                     <MyPageIcon name="support" />
@@ -411,11 +410,11 @@ export function MyPageRoute() {
                   <AccountMenuCopy>
                     <AccountMenuLabel>고객센터</AccountMenuLabel>
                     <AccountMenuDescription>
-                      서비스 문의나 피드백을 남겨주세요
+                      인스타그램 DM으로 문의해 주세요
                     </AccountMenuDescription>
                   </AccountMenuCopy>
                   <MyPageIcon name="chevron" size={18} />
-                </AccountMenuButton>
+                </AccountMenuLink>
                 <LogoutMenuButton type="button" onClick={handleLogout}>
                   <AccountMenuIcon>
                     <MyPageIcon name="logout" />
@@ -449,10 +448,6 @@ export function MyPageRoute() {
         </Dashboard>
       </Main>
 
-      <SupportInquiryDialog
-        open={isSupportDialogOpen}
-        onClose={() => setIsSupportDialogOpen(false)}
-      />
       <ProfileEditDialog
         open={isProfileDialogOpen}
         member={member}

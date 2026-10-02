@@ -9,6 +9,7 @@ import {
   AUTH_STORY_TOKEN,
   authenticatedMemberHandler,
 } from '@/features/auth/mocks/authHandlers';
+import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
@@ -40,6 +41,19 @@ describe('MyPageRoute 내 교환글 수정', () => {
 
     expect(editLink).toHaveAttribute('href', '/trade/17/edit');
     expect(editLink.parentElement).toBe(deleteButton.parentElement);
+  });
+
+  it('고객센터를 공식 인스타그램 문의로 연결한다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', { name: /고객센터/ }),
+    ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
   });
 });
 
