@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
+import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -10,7 +11,7 @@ export interface CardProps {
 
 export default function Card({ product }: CardProps) {
   return (
-    <Wrapper>
+    <Wrapper href={createGachaSearchResultsUrl(product.gachaId)}>
       <Thumbnail>
         <ImagePlaceholder aria-hidden="true">
           <LogoImagePlaceholder />
@@ -22,12 +23,20 @@ export default function Card({ product }: CardProps) {
   );
 }
 
-const Wrapper = styled.div`
+const Wrapper = styled.a`
   width: 100%;
   max-width: 240px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  border-radius: 12px;
+  color: inherit;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 3px solid #d93652;
+    outline-offset: 4px;
+  }
 `;
 
 const Thumbnail = styled.div`
