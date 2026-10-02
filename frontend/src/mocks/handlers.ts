@@ -1,21 +1,16 @@
-import { http, HttpResponse } from 'msw';
+import { gachaSearchHandlers } from '@/features/gachaSearch/mocks/gachaSearchHandlers';
+import { chatHandlers } from '@/routes/chat/mocks/chatHandlers';
+import { searchHandlers } from '@/routes/search/mocks/searchHandlers';
+import { storeDetailHandlers } from '@/routes/stores.$storeId/mocks/storeDetailHandlers';
+import { tradeHandlers } from '@/routes/trade/mocks/tradeHandlers';
 
-export type MockStore = {
-  id: number;
-  latitude: number;
-  longitude: number;
-  name: string;
-};
-
-export const mockStores: MockStore[] = [
-  {
-    id: 1,
-    name: '가치가챠 테스트 매장',
-    latitude: 37.5665,
-    longitude: 126.978,
-  },
-];
+import { mockAuthHandlers } from './mockAuth';
 
 export const handlers = [
-  http.get('/api/stores', () => HttpResponse.json(mockStores)),
+  ...mockAuthHandlers,
+  ...gachaSearchHandlers,
+  ...chatHandlers,
+  ...searchHandlers,
+  ...storeDetailHandlers,
+  ...tradeHandlers,
 ];

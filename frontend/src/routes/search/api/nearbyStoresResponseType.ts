@@ -1,0 +1,21 @@
+export interface NearbyStoreResponseDto {
+  storeId: number;
+  name: string;
+  thumbnailUrl: string | null;
+  address: string;
+  floor: number | null;
+  unit: readonly string[];
+  latitude: number;
+  longitude: number;
+  distance: number;
+  gachaCount?: number;
+}
+
+export interface NearbyStoresResponseDto {
+  center: {
+    latitude: number;
+    longitude: number;
+  };
+  radius: number;
+  stores: readonly NearbyStoreResponseDto[];
+}
