@@ -26,7 +26,8 @@
 
 ## 서비스 소개
 ### 원하는 가챠, 지도 위에서 바로 찾아보세요 📍
-<p align="center"> <img src="여기에_지도탐색_스크린샷_URL" width="25%"> </p>
+<p align="center"> <img width="1404" height="755" alt="image" src="https://github.com/user-attachments/assets/c42240f6-ad5d-4b34-a8cd-fa258ddce0f7" /> </p>
+
 
 ***헤매지 않고, 바로 찾기!***
 
@@ -35,7 +36,7 @@
 여러 매장을 돌아다닐 필요 없이, 한 화면에서 다 확인해보세요.
 
 ### 캐릭터, 작품명으로 원하는 가챠를 검색해보세요 🔎
-<p align="center"> <img src="여기에_검색_스크린샷_URL" width="25%"> </p>
+<p align="center"> <img width="1404" height="755" alt="image" src="https://github.com/user-attachments/assets/838c511d-c3ab-45d6-808b-d0c90ae5de5c" /> </p>
 
 ***찾고 싶은 가챠, 바로 검색!***
 
@@ -44,7 +45,7 @@
 카테고리별로 정리된 가챠도 한눈에 둘러볼 수 있습니다.
 
 ### 매장에 어떤 가챠가 있는지 상세하게 확인해보세요 🎁
-<p align="center"> <img src="여기에_매장상세_스크린샷_URL" width="25%"> </p>
+<p align="center"> <img width="1404" height="755" alt="image" src="https://github.com/user-attachments/assets/63223ac7-0a7a-4357-8db3-f95a59f13013" /> </p>
 
 ***가기 전에 미리, 확실하게!***
 
