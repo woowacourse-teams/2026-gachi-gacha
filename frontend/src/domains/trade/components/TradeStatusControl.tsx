@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 
 import { updateTradeStatus } from '../api/updateTradeStatus';
@@ -10,18 +10,27 @@ const STATUS_OPTIONS: { value: TradeStatus; label: string }[] = [
   { value: 'COMPLETED', label: '교환 완료' },
 ];
 
+const STATUS_LABELS = Object.fromEntries(
+  STATUS_OPTIONS.map(({ value, label }) => [value, label]),
+) as Record<TradeStatus, string>;
+
 export interface TradeStatusControlProps {
   tradeId: number;
   status: TradeStatus;
+  contextLabel?: string;
   onStatusChanged: (status: TradeStatus) => void;
 }
 
 export function TradeStatusControl({
   tradeId,
   status,
+  contextLabel,
   onStatusChanged,
 }: TradeStatusControlProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [selectedStatus, setSelectedStatus] = useState(status);
+  const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -29,10 +38,36 @@ export function TradeStatusControl({
     setSelectedStatus(status);
   }, [status]);
 
-  async function handleChange(nextStatus: TradeStatus) {
-    if (isUpdating || nextStatus === status) {
-      return;
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function closeOnOutsidePointer(event: PointerEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
     }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsidePointer);
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePointer);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen]);
+
+  async function handleChange(nextStatus: TradeStatus) {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+
+    if (isUpdating || nextStatus === status) return;
 
     setSelectedStatus(nextStatus);
     setIsUpdating(true);
@@ -58,60 +93,99 @@ export function TradeStatusControl({
   }
 
   return (
-    <ControlGroup>
-      <Label htmlFor={`trade-status-${tradeId}`}>교환 상태</Label>
-      <Select
-        id={`trade-status-${tradeId}`}
-        value={selectedStatus}
+    <Container ref={containerRef}>
+      <StatusButton
+        ref={triggerRef}
+        type="button"
+        $status={selectedStatus}
         disabled={isUpdating}
+        aria-label={`${contextLabel ? `${contextLabel} ` : ''}교환 상태: ${STATUS_LABELS[selectedStatus]}`}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-controls={`trade-status-menu-${tradeId}`}
         aria-busy={isUpdating}
-        onChange={(event) =>
-          void handleChange(event.target.value as TradeStatus)
-        }
+        onClick={() => {
+          setErrorMessage(null);
+          setIsOpen((current) => !current);
+        }}
       >
-        {STATUS_OPTIONS.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </Select>
-      {isUpdating && <StatusMessage role="status">변경 중...</StatusMessage>}
+        <StatusDot $status={selectedStatus} />
+        {isUpdating ? '변경 중' : STATUS_LABELS[selectedStatus]}
+        {isUpdating ? (
+          <Spinner aria-hidden="true" />
+        ) : (
+          <Chevron aria-hidden="true" />
+        )}
+      </StatusButton>
+
+      {isOpen && (
+        <StatusMenu id={`trade-status-menu-${tradeId}`} role="menu">
+          <MenuHeading>교환 상태 변경</MenuHeading>
+          {STATUS_OPTIONS.map((option) => {
+            const isSelected = option.value === selectedStatus;
+
+            return (
+              <StatusOption
+                key={option.value}
+                type="button"
+                role="menuitemradio"
+                aria-checked={isSelected}
+                $selected={isSelected}
+                onClick={() => void handleChange(option.value)}
+              >
+                <StatusDot $status={option.value} />
+                <OptionLabel>{option.label}</OptionLabel>
+                {isSelected && <Check aria-hidden="true">✓</Check>}
+              </StatusOption>
+            );
+          })}
+        </StatusMenu>
+      )}
+
       {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
-    </ControlGroup>
+    </Container>
   );
 }
 
-const ControlGroup = styled.div`
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  align-items: center;
-  gap: 8px 16px;
-  margin-bottom: 12px;
-
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
+function statusColor(status: TradeStatus) {
+  if (status === 'AVAILABLE') {
+    return { background: '#fff0f4', border: '#ffc8d6', text: '#c51645' };
   }
+
+  if (status === 'IN_PROGRESS') {
+    return { background: '#fff7df', border: '#f2dc91', text: '#8a6400' };
+  }
+
+  return { background: '#f2f2f4', border: '#dedee3', text: '#62636b' };
+}
+
+const Container = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 `;
 
-const Label = styled.label`
-  color: #888a93;
-  font-size: 14px;
-`;
-
-const Select = styled.select`
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid #d9d9df;
-  border-radius: 10px;
-  background: #ffffff;
-  color: #292a2f;
-  font-size: 15px;
-  font-weight: 700;
+const StatusButton = styled.button<{ $status: TradeStatus }>`
+  display: inline-flex;
+  min-height: 32px;
+  padding: 6px 10px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid ${({ $status }) => statusColor($status).border};
+  border-radius: 999px;
+  background: ${({ $status }) => statusColor($status).background};
+  color: ${({ $status }) => statusColor($status).text};
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
   cursor: pointer;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.98);
+  }
 
   &:disabled {
     cursor: wait;
-    opacity: 0.65;
   }
 
   &:focus-visible {
@@ -120,17 +194,104 @@ const Select = styled.select`
   }
 `;
 
-const StatusMessage = styled.p`
-  grid-column: 2;
-  margin: 0;
-  color: #696b73;
-  font-size: 13px;
+const StatusDot = styled.span<{ $status: TradeStatus }>`
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: ${({ $status }) => statusColor($status).text};
+`;
 
-  @media (max-width: 520px) {
-    grid-column: 1;
+const Chevron = styled.span`
+  width: 6px;
+  height: 6px;
+  margin: -3px 1px 1px 2px;
+  transform: rotate(45deg);
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+`;
+
+const Spinner = styled.span`
+  width: 10px;
+  height: 10px;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 `;
 
-const ErrorMessage = styled(StatusMessage)`
+const StatusMenu = styled.div`
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  left: 0;
+  display: grid;
+  box-sizing: border-box;
+  width: 196px;
+  padding: 7px;
+  border: 1px solid #e6e4e5;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgb(35 29 31 / 14%);
+`;
+
+const MenuHeading = styled.p`
+  margin: 3px 8px 7px;
+  color: #92939a;
+  font-size: 11px;
+  font-weight: 700;
+`;
+
+const StatusOption = styled.button<{ $selected: boolean }>`
+  display: grid;
+  min-height: 42px;
+  padding: 0 10px;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  border-radius: 9px;
+  background: ${({ $selected }) => ($selected ? '#fff5f7' : '#ffffff')};
+  color: #34353a;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: #f7f6f7;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #ed174c;
+    outline-offset: -2px;
+  }
+`;
+
+const OptionLabel = styled.span`
+  font-weight: 700;
+`;
+
+const Check = styled.span`
+  color: #ed174c;
+  font-size: 15px;
+  font-weight: 900;
+`;
+
+const ErrorMessage = styled.p`
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: max-content;
+  max-width: min(320px, 80vw);
+  margin: 0;
   color: #d80f42;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
 `;

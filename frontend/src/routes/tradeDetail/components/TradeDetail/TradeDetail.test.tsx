@@ -48,9 +48,9 @@ describe('TradeDetail', () => {
     expect(
       screen.queryByRole('link', { name: '채팅하기' }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: '교환 상태' })).toHaveValue(
-      TRADE_DETAIL.status,
-    );
+    expect(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    ).toBeInTheDocument();
   });
 
   it('작성자가 상태를 변경하면 상세 화면에 즉시 반영한다', async () => {
@@ -78,14 +78,16 @@ describe('TradeDetail', () => {
       </MemoryRouter>,
     );
 
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: '교환 상태' }),
-      'COMPLETED',
+    await user.click(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
     );
+    await user.click(screen.getByRole('menuitemradio', { name: '교환 완료' }));
 
     expect(requestBody).toEqual({ status: 'COMPLETED' });
     await waitFor(() => {
-      expect(screen.getByText(/· 교환 완료/)).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: '교환 상태: 교환 완료' }),
+      ).toBeInTheDocument();
     });
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -108,14 +110,17 @@ describe('TradeDetail', () => {
       </MemoryRouter>,
     );
 
-    const statusSelect = screen.getByRole('combobox', { name: '교환 상태' });
-
-    await user.selectOptions(statusSelect, 'COMPLETED');
+    await user.click(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    );
+    await user.click(screen.getByRole('menuitemradio', { name: '교환 완료' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '작성자만 상태를 변경할 수 있습니다.',
     );
-    expect(statusSelect).toHaveValue('AVAILABLE');
+    expect(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    ).toBeInTheDocument();
   });
 
   it('작성자가 아니면 상태 선택 UI를 보여주지 않는다', () => {
@@ -126,7 +131,7 @@ describe('TradeDetail', () => {
     );
 
     expect(
-      screen.queryByRole('combobox', { name: '교환 상태' }),
+      screen.queryByRole('button', { name: /교환 상태:/ }),
     ).not.toBeInTheDocument();
   });
 

@@ -2,6 +2,10 @@ import { http, HttpResponse } from 'msw';
 
 import type { CreateTradeRequest } from '@/domains/trade/tradeCreateType';
 import type { TradeDetail } from '@/domains/trade/tradeDetailType';
+import {
+  TRADE_STATUSES,
+  type TradeStatus,
+} from '@/domains/trade/tradeSummaryType';
 
 import { TRADE_ITEMS } from '../storybook/tradeMocks';
 
@@ -91,6 +95,10 @@ function findTradeDetail(tradeId: number): TradeDetail | null {
   };
 }
 
+function isTradeStatus(value: unknown): value is TradeStatus {
+  return TRADE_STATUSES.some((status) => status === value);
+}
+
 export const tradeHandlers = [
   http.post(TRADES_API_PATH, async ({ request }) => {
     const parsedRequest = await readTradeRequest(request);
@@ -144,6 +152,31 @@ export const tradeHandlers = [
       data: { items: categories },
     });
   }),
+  http.get(`${TRADES_API_PATH}/me`, ({ request }) => {
+    const searchParams = new URL(request.url).searchParams;
+    const status = searchParams.get('status');
+    const page = Number(searchParams.get('page') ?? 0);
+    const size = Number(searchParams.get('size') ?? 20);
+    const myTrades = TRADE_ITEMS.filter((trade) => trade.memberId === 3)
+      .map((trade) => ({
+        ...trade,
+        status: updatedTrades.get(trade.tradeId)?.status ?? trade.status,
+      }))
+      .filter((trade) => !status || trade.status === status);
+    const content = myTrades.slice(page * size, (page + 1) * size);
+
+    return HttpResponse.json({
+      code: 'C000',
+      message: '정상',
+      data: {
+        content,
+        totalElements: myTrades.length,
+        totalPages: myTrades.length > 0 ? Math.ceil(myTrades.length / size) : 0,
+        number: page,
+        size,
+      },
+    });
+  }),
   http.get(`${TRADES_API_PATH}/:tradeId`, ({ params }) => {
     const trade = findTradeDetail(Number(params.tradeId));
 
@@ -158,6 +191,48 @@ export const tradeHandlers = [
   }),
   http.delete(`${TRADES_API_PATH}/:tradeId`, () =>
     HttpResponse.json({ code: 'C003', message: '정상 삭제', data: null }),
+  ),
+  http.patch(
+    `${TRADES_API_PATH}/:tradeId/status`,
+    async ({ params, request }) => {
+      const trade = findTradeDetail(Number(params.tradeId));
+
+      if (!trade) {
+        return HttpResponse.json(
+          { code: 'TE001', message: '교환 게시글을 찾을 수 없습니다.' },
+          { status: 404 },
+        );
+      }
+
+      const requestBody: unknown = await request.json();
+      const status =
+        typeof requestBody === 'object' &&
+        requestBody !== null &&
+        'status' in requestBody
+          ? requestBody.status
+          : null;
+
+      if (!isTradeStatus(status)) {
+        return HttpResponse.json(
+          { code: 'CE001', message: '올바른 교환 상태가 필요합니다.' },
+          { status: 400 },
+        );
+      }
+
+      const updatedTrade = {
+        ...trade,
+        status,
+        updatedAt: new Date().toISOString(),
+      };
+
+      updatedTrades.set(updatedTrade.tradeId, updatedTrade);
+
+      return HttpResponse.json({
+        code: 'C002',
+        message: '정상 수정',
+        data: updatedTrade,
+      });
+    },
   ),
   http.put(`${TRADES_API_PATH}/:tradeId`, async ({ params, request }) => {
     const trade = findTradeDetail(Number(params.tradeId));

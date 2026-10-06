@@ -102,8 +102,16 @@ export default function TradeDetail({
         <Info>
           <Title>{detail.title}</Title>
           <Meta>
-            {formatRelativeTime(detail.createdAt)} ·{' '}
-            {STATUS_LABELS[currentStatus]}
+            <span>{formatRelativeTime(detail.createdAt)}</span>
+            {action === 'edit' ? (
+              <TradeStatusControl
+                tradeId={detail.tradeId}
+                status={currentStatus}
+                onStatusChanged={setCurrentStatus}
+              />
+            ) : (
+              <span>· {STATUS_LABELS[currentStatus]}</span>
+            )}
           </Meta>
 
           <Divider />
@@ -148,24 +156,17 @@ export default function TradeDetail({
           {action && (
             <ActionGroup>
               {action === 'edit' ? (
-                <>
-                  <TradeStatusControl
-                    tradeId={detail.tradeId}
-                    status={currentStatus}
-                    onStatusChanged={setCurrentStatus}
-                  />
-                  <OwnerActions>
-                    <EditLink to={`/trade/${detail.tradeId}/edit`}>
-                      수정하기
-                    </EditLink>
-                    <DeleteButton
-                      type="button"
-                      onClick={() => setIsDeleteDialogOpen(true)}
-                    >
-                      삭제
-                    </DeleteButton>
-                  </OwnerActions>
-                </>
+                <OwnerActions>
+                  <EditLink to={`/trade/${detail.tradeId}/edit`}>
+                    수정하기
+                  </EditLink>
+                  <DeleteButton
+                    type="button"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    삭제
+                  </DeleteButton>
+                </OwnerActions>
               ) : action === 'login' ? (
                 <ChatLink to={createLoginUrl(`/trade/${detail.tradeId}`)}>
                   채팅하기
@@ -304,8 +305,12 @@ const Title = styled.h1`
   letter-spacing: -0.04em;
 `;
 
-const Meta = styled.p`
+const Meta = styled.div`
+  display: flex;
+  min-height: 32px;
   margin: 0;
+  align-items: center;
+  gap: 9px;
   color: #898b94;
   font-size: 14px;
 `;
