@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
+import { TradeStatusControl } from '@/domains/trade/components/TradeStatusControl';
 import type {
   TradeDetail as TradeDetailData,
   TradePlace,
@@ -54,8 +55,13 @@ export default function TradeDetail({
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentStatus, setCurrentStatus] = useState(detail.status);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
+
+  useEffect(() => {
+    setCurrentStatus(detail.status);
+  }, [detail.status]);
 
   return (
     <Wrapper>
@@ -97,7 +103,7 @@ export default function TradeDetail({
           <Title>{detail.title}</Title>
           <Meta>
             {formatRelativeTime(detail.createdAt)} ·{' '}
-            {STATUS_LABELS[detail.status]}
+            {STATUS_LABELS[currentStatus]}
           </Meta>
 
           <Divider />
@@ -142,17 +148,24 @@ export default function TradeDetail({
           {action && (
             <ActionGroup>
               {action === 'edit' ? (
-                <OwnerActions>
-                  <EditLink to={`/trade/${detail.tradeId}/edit`}>
-                    수정하기
-                  </EditLink>
-                  <DeleteButton
-                    type="button"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                  >
-                    삭제
-                  </DeleteButton>
-                </OwnerActions>
+                <>
+                  <TradeStatusControl
+                    tradeId={detail.tradeId}
+                    status={currentStatus}
+                    onStatusChanged={setCurrentStatus}
+                  />
+                  <OwnerActions>
+                    <EditLink to={`/trade/${detail.tradeId}/edit`}>
+                      수정하기
+                    </EditLink>
+                    <DeleteButton
+                      type="button"
+                      onClick={() => setIsDeleteDialogOpen(true)}
+                    >
+                      삭제
+                    </DeleteButton>
+                  </OwnerActions>
+                </>
               ) : action === 'login' ? (
                 <ChatLink to={createLoginUrl(`/trade/${detail.tradeId}`)}>
                   채팅하기
