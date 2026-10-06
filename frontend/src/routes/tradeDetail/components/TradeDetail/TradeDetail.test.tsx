@@ -1,12 +1,23 @@
-import { describe, expect, it } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from '@jest/globals';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
+
+import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import { server } from '@/test/server';
 
 import TradeDetail from './TradeDetail';
 import { TRADE_DETAIL } from '../../storybook/tradeDetailMocks';
 
 describe('TradeDetail', () => {
+  beforeEach(() => {
+    storeAuthTokens({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+  });
+
   it('게시글의 채팅하기 링크만 보여준다', () => {
     render(
       <MemoryRouter>
@@ -36,6 +47,91 @@ describe('TradeDetail', () => {
     );
     expect(
       screen.queryByRole('link', { name: '채팅하기' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    ).toBeInTheDocument();
+  });
+
+  it('작성자가 상태를 변경하면 상세 화면에 즉시 반영한다', async () => {
+    const user = userEvent.setup();
+    let requestBody: unknown = null;
+
+    server.use(
+      http.patch(
+        `/api/v1/trades/${TRADE_DETAIL.tradeId}/status`,
+        async ({ request }) => {
+          requestBody = await request.json();
+
+          return HttpResponse.json({
+            code: 'C002',
+            message: '정상 수정',
+            data: { ...TRADE_DETAIL, status: 'COMPLETED' },
+          });
+        },
+      ),
+    );
+
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={TRADE_DETAIL} action="edit" />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    );
+    await user.click(screen.getByRole('menuitemradio', { name: '교환 완료' }));
+
+    expect(requestBody).toEqual({ status: 'COMPLETED' });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: '교환 상태: 교환 완료' }),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('상태 변경에 실패하면 이전 상태로 되돌리고 오류를 보여준다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.patch(`/api/v1/trades/${TRADE_DETAIL.tradeId}/status`, () =>
+        HttpResponse.json(
+          { code: 'T003', message: '작성자만 상태를 변경할 수 있습니다.' },
+          { status: 403 },
+        ),
+      ),
+    );
+
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={TRADE_DETAIL} action="edit" />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    );
+    await user.click(screen.getByRole('menuitemradio', { name: '교환 완료' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '작성자만 상태를 변경할 수 있습니다.',
+    );
+    expect(
+      screen.getByRole('button', { name: '교환 상태: 교환 가능' }),
+    ).toBeInTheDocument();
+  });
+
+  it('작성자가 아니면 상태 선택 UI를 보여주지 않는다', () => {
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={TRADE_DETAIL} action="chat" />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /교환 상태:/ }),
     ).not.toBeInTheDocument();
   });
 

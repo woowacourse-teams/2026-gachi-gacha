@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getMyTrades } from '@/domains/trade/api/getMyTrades';
-import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
+import type {
+  TradeStatus,
+  TradeSummary,
+} from '@/domains/trade/tradeSummaryType';
 
 interface MyPageTradesState {
   recentTrades: TradeSummary[];
@@ -30,6 +33,41 @@ export function useMyPageTrades() {
   const retry = useCallback(() => {
     setRequestVersion((currentVersion) => currentVersion + 1);
   }, []);
+
+  const applyStatusChange = useCallback(
+    (tradeId: number, nextStatus: TradeStatus) => {
+      setState((currentState) => {
+        const currentTrade = currentState.recentTrades.find(
+          (trade) => trade.tradeId === tradeId,
+        );
+
+        if (!currentTrade || currentTrade.status === nextStatus) {
+          return currentState;
+        }
+
+        const inProgressDelta =
+          currentTrade.status === 'IN_PROGRESS'
+            ? -1
+            : nextStatus === 'IN_PROGRESS'
+              ? 1
+              : 0;
+
+        return {
+          ...currentState,
+          recentTrades: currentState.recentTrades.map((trade) =>
+            trade.tradeId === tradeId
+              ? { ...trade, status: nextStatus }
+              : trade,
+          ),
+          inProgressCount: Math.max(
+            0,
+            currentState.inProgressCount + inProgressDelta,
+          ),
+        };
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,5 +111,5 @@ export function useMyPageTrades() {
     };
   }, [requestVersion]);
 
-  return { ...state, retry };
+  return { ...state, retry, applyStatusChange };
 }

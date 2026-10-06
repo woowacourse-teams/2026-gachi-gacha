@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
+import { TradeStatusControl } from '@/domains/trade/components/TradeStatusControl';
 import type {
   TradeDetail as TradeDetailData,
   TradePlace,
@@ -54,8 +55,13 @@ export default function TradeDetail({
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [currentStatus, setCurrentStatus] = useState(detail.status);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
+
+  useEffect(() => {
+    setCurrentStatus(detail.status);
+  }, [detail.status]);
 
   return (
     <Wrapper>
@@ -96,8 +102,16 @@ export default function TradeDetail({
         <Info>
           <Title>{detail.title}</Title>
           <Meta>
-            {formatRelativeTime(detail.createdAt)} ·{' '}
-            {STATUS_LABELS[detail.status]}
+            <span>{formatRelativeTime(detail.createdAt)}</span>
+            {action === 'edit' ? (
+              <TradeStatusControl
+                tradeId={detail.tradeId}
+                status={currentStatus}
+                onStatusChanged={setCurrentStatus}
+              />
+            ) : (
+              <span>· {STATUS_LABELS[currentStatus]}</span>
+            )}
           </Meta>
 
           <Divider />
@@ -291,8 +305,12 @@ const Title = styled.h1`
   letter-spacing: -0.04em;
 `;
 
-const Meta = styled.p`
+const Meta = styled.div`
+  display: flex;
+  min-height: 32px;
   margin: 0;
+  align-items: center;
+  gap: 9px;
   color: #898b94;
   font-size: 14px;
 `;

@@ -3,10 +3,8 @@ import { useState } from 'react';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
-import type {
-  TradeStatus,
-  TradeSummary,
-} from '@/domains/trade/tradeSummaryType';
+import { TradeStatusControl } from '@/domains/trade/components/TradeStatusControl';
+import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import {
@@ -65,7 +63,6 @@ import {
   StateDescription,
   StatePanel,
   StateTitle,
-  StatusBadge,
   Subheading,
   SummaryCard,
   SummaryDescription,
@@ -85,12 +82,6 @@ import {
   TradeTitle,
 } from './route.styles';
 import { useMyPageTrades } from './useMyPageTrades';
-
-const TRADE_STATUS_LABELS: Record<TradeStatus, string> = {
-  AVAILABLE: '교환 가능',
-  IN_PROGRESS: '교환 진행 중',
-  COMPLETED: '교환 완료',
-};
 
 const tradeDateFormatter = new Intl.DateTimeFormat('ko-KR', {
   month: 'short',
@@ -126,6 +117,7 @@ export function MyPageRoute() {
     status: tradeStatus,
     errorMessage,
     retry,
+    applyStatusChange,
   } = useMyPageTrades();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
@@ -324,9 +316,14 @@ export function MyPageRoute() {
                         <TradeMeta>{getTradeMeta(trade)}</TradeMeta>
                       </TradeCopy>
                       <TradeSide>
-                        <StatusBadge>
-                          {TRADE_STATUS_LABELS[trade.status]}
-                        </StatusBadge>
+                        <TradeStatusControl
+                          tradeId={trade.tradeId}
+                          status={trade.status}
+                          contextLabel={trade.title}
+                          onStatusChanged={(status) =>
+                            applyStatusChange(trade.tradeId, status)
+                          }
+                        />
                         <TradeEditLink
                           to={`/trade/${trade.tradeId}/edit`}
                           aria-label={`${trade.title} 수정`}
