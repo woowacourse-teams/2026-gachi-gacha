@@ -4,6 +4,8 @@ import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.config.SwaggerConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.trade.application.TradeService;
+import com.gachi.gacha.server.usecase.application.TradeCommentService;
+import com.gachi.gacha.server.usecase.application.dto.TradeDetailInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
@@ -55,6 +57,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class TradeController {
 
     private final TradeService tradeService;
+    private final TradeCommentService tradeCommentService;
 
     @Operation(summary = "교환 게시글 등록")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -81,7 +84,7 @@ public class TradeController {
                 .buildAndExpand(tradeInfo.tradeId())
                 .toUri();
 
-        return BaseResponse.created(location, TradeResponse.from(tradeInfo));
+        return BaseResponse.created(location, TradeResponse.of(tradeInfo, 0));
     }
 
     @Operation(summary = "교환 게시글 목록 조회")
@@ -125,9 +128,9 @@ public class TradeController {
     public BaseResponse<TradeResponse> readTrade(
             @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId
     ) {
-        TradeInfo tradeInfo = tradeService.findTrade(tradeId);
+        TradeDetailInfo detail = tradeCommentService.findTradeDetail(tradeId);
 
-        return BaseResponse.ok(TradeResponse.from(tradeInfo));
+        return BaseResponse.ok(TradeResponse.of(detail.trade(), detail.commentCount()));
     }
 
     /**
@@ -155,7 +158,7 @@ public class TradeController {
     ) {
         TradeInfo tradeInfo = tradeService.updateTrade(memberId, tradeId, request.toCommand(), images);
 
-        return BaseResponse.updated(TradeResponse.from(tradeInfo));
+        return BaseResponse.updated(TradeResponse.of(tradeInfo, tradeCommentService.countComments(tradeId)));
     }
 
     @Operation(summary = "교환 게시글 상태 변경")
@@ -168,7 +171,7 @@ public class TradeController {
     ) {
         TradeInfo tradeInfo = tradeService.changeStatus(memberId, tradeId, request.status());
 
-        return BaseResponse.updated(TradeResponse.from(tradeInfo));
+        return BaseResponse.updated(TradeResponse.of(tradeInfo, tradeCommentService.countComments(tradeId)));
     }
 
     @Operation(summary = "교환 게시글 삭제")
