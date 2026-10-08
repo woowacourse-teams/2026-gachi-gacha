@@ -41,7 +41,7 @@ export default function CardListSection(props: Props) {
     return (
       <Wrapper>
         <Title>{props.title}</Title>
-        <EmptyMessage>이 카테고리에는 아직 상품이 없어요.</EmptyMessage>
+        <EmptyMessage>상품 조사 중이에요.</EmptyMessage>
       </Wrapper>
     );
   }
