@@ -9,11 +9,11 @@ import type {
   CreateTradeRequest,
   TradePlaceInput,
 } from '@/domains/trade/tradeCreateType';
+import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
 import StickyActionBar from '../StickyActionBar';
-import TradePlaceSearchDialog from '../TradePlaceSearchDialog';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
 
@@ -452,14 +452,14 @@ export default function TradeForm(props: TradeFormProps) {
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
       />
 
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open={isPurchaseStoreDialogOpen}
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
         onClose={() => setIsPurchaseStoreDialogOpen(false)}
         onSelect={setPurchaseStore}
       />
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open={isPlaceDialogOpen}
         onClose={() => setIsPlaceDialogOpen(false)}
         onSelect={setTradePlace}

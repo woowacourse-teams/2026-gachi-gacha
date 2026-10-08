@@ -3,7 +3,7 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import TradePlaceSearchDialog from './TradePlaceSearchDialog';
+import { KakaoPlaceSearchDialog } from './KakaoPlaceSearchDialog';
 
 const loadSdk = async () => undefined;
 
@@ -15,7 +15,7 @@ function DialogHarness() {
       <button type="button" onClick={() => setOpen(true)}>
         장소 선택 열기
       </button>
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open={open}
         loadSdk={loadSdk}
         onSelect={jest.fn()}
@@ -25,12 +25,12 @@ function DialogHarness() {
   );
 }
 
-describe('TradePlaceSearchDialog', () => {
+describe('KakaoPlaceSearchDialog', () => {
   it('구매 매장 검색에도 알맞은 안내 문구로 재사용할 수 있다', async () => {
     const loadSdk = jest.fn(async () => undefined);
 
     render(
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
@@ -69,7 +69,7 @@ describe('TradePlaceSearchDialog', () => {
     const user = userEvent.setup();
 
     render(
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open
         loadSdk={loadSdk}
         searchPlaces={searchPlaces}
