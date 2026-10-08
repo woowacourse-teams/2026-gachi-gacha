@@ -95,6 +95,11 @@ export const Field = styled.label`
   gap: ${space.xs};
 `;
 
+export const InteractiveField = styled.div`
+  display: grid;
+  gap: ${space.xs};
+`;
+
 export const FieldLabel = styled.span`
   font-size: ${fontSize.bodySmall};
   font-weight: ${fontWeight.bold};
@@ -116,6 +121,76 @@ export const Input = styled.input`
 
   &:focus {
     border-color: ${color.primary};
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+`;
+
+export const PlaceSelectButton = styled.button`
+  display: flex;
+  width: 100%;
+  min-height: 64px;
+  padding: ${space.sm} ${space.md};
+  align-items: center;
+  justify-content: space-between;
+  gap: ${space.md};
+  border: 1px solid ${color.border};
+  border-radius: ${radius.control};
+  background: ${color.surface};
+  color: ${color.text};
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+
+  &:focus-visible {
+    border-color: ${color.primary};
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+`;
+
+export const PlaceSelection = styled.span`
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+`;
+
+export const PlaceSelectionName = styled.strong<{ $empty?: boolean }>`
+  overflow: hidden;
+  color: ${({ $empty }) => ($empty ? color.textSubtle : color.text)};
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.medium};
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const PlaceSelectionAddress = styled.span`
+  overflow: hidden;
+  color: ${color.textSubtle};
+  font-size: ${fontSize.caption};
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const PlaceSearchAction = styled.span`
+  flex: 0 0 auto;
+  color: ${color.primary};
+  font-size: ${fontSize.caption};
+  font-weight: ${fontWeight.bold};
+`;
+
+export const ClearPlaceButton = styled.button`
+  width: fit-content;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: ${color.textMuted};
+  cursor: pointer;
+  font-size: ${fontSize.caption};
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:focus-visible {
     box-shadow: ${focusRing};
     outline: none;
   }
