@@ -7,6 +7,7 @@ export interface UseStoreSearchAreaResult {
   isSearchAreaChanged: boolean;
   updateViewportCenter: (center: MapCoordinate) => void;
   commitViewportCenter: () => void;
+  resetSearchArea: (center: MapCoordinate) => void;
 }
 
 const COORDINATE_EPSILON = 0.00001;
@@ -38,10 +39,16 @@ export function useStoreSearchArea(
     setSearchCenter(viewportCenter);
   }, [viewportCenter]);
 
+  const resetSearchArea = useCallback((center: MapCoordinate) => {
+    setSearchCenter(center);
+    setViewportCenter(center);
+  }, []);
+
   return {
     searchCenter,
     isSearchAreaChanged,
     updateViewportCenter,
     commitViewportCenter,
+    resetSearchArea,
   };
 }
