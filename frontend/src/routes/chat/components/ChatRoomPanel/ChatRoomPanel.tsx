@@ -4,6 +4,7 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 
 import type { ChatRoom } from '../../model/chat';
 import { formatChatDateLabel } from '../../model/chatDate';
@@ -119,7 +120,7 @@ export default function ChatRoomPanel({
             <PartnerName>{room.partnerName}</PartnerName>
           </div>
         </RoomTitleGroup>
-        <TradeStatus>{room.tradeStatus}</TradeStatus>
+        <TradeStatusBadge status={room.tradeStatus} />
       </RoomHeader>
 
       <ProductSummary>
@@ -317,15 +318,6 @@ const PartnerName = styled.h2`
   font-weight: 700;
 `;
 
-const TradeStatus = styled.span`
-  padding: 7px 10px;
-  border-radius: 999px;
-  background: #fce9ef;
-  color: #963c5d;
-  font-size: 12px;
-  font-weight: 700;
-`;
-
 const ProductSummary = styled.div`
   display: flex;
   padding: 14px 24px;
@@ -339,6 +331,7 @@ const ProductImage = styled.div`
   width: 52px;
   height: 52px;
   flex: 0 0 auto;
+  overflow: hidden;
   place-items: center;
   border-radius: 10px;
   background: #f3f0f1;
@@ -348,14 +341,17 @@ const ProductImage = styled.div`
 `;
 
 const ProductPhoto = styled.img`
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
   border-radius: inherit;
   object-fit: cover;
 `;
 
 const ProductInfo = styled.div`
   min-width: 0;
+  flex: 1;
 `;
 
 const ProductLabel = styled.p`
@@ -365,13 +361,16 @@ const ProductLabel = styled.p`
 `;
 
 const ProductTitle = styled.p`
+  display: -webkit-box;
+  height: 2.9em;
   margin: 0;
   overflow: hidden;
   color: #2b2528;
   font-size: 14px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 `;
 
 const Messages = styled.div`

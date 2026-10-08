@@ -16,7 +16,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
     lastMessage: '시나모롤 키링 사진 확인 부탁드려요.',
     lastMessageAt: '오전 9:20',
     unreadCount: 2,
-    status: '교환 가능',
+    status: 'AVAILABLE',
   },
   {
     id: 2,
@@ -26,7 +26,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
     lastMessage: '내일 합정역에서 뵐게요!',
     lastMessageAt: '어제',
     unreadCount: 0,
-    status: '교환 진행 중',
+    status: 'IN_PROGRESS',
   },
   {
     id: 3,
@@ -36,7 +36,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
     lastMessage: '좋은 교환 감사합니다.',
     lastMessageAt: '9월 21일',
     unreadCount: 0,
-    status: '교환 완료',
+    status: 'COMPLETED',
   },
 ];
 
@@ -47,7 +47,7 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
   partnerProfileImageUrl: null,
   itemTitle: '쿠로미 미니 피규어 vol.2',
   itemImageUrl: null,
-  tradeStatus: '교환 가능',
+  tradeStatus: 'AVAILABLE',
   messages: [
     {
       id: '1',
