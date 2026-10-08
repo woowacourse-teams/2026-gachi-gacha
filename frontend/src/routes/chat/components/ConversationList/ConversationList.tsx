@@ -1,5 +1,7 @@
 import styled from '@emotion/styled';
 
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
+
 import type { ChatConversation } from '../../model/chat';
 
 interface ConversationListProps {
@@ -54,7 +56,7 @@ export default function ConversationList({
               <LastMessage>{conversation.lastMessage}</LastMessage>
             </ConversationContent>
             <Meta>
-              <Status>{conversation.status}</Status>
+              <TradeStatusBadge status={conversation.status} />
               {conversation.unreadCount > 0 && (
                 <UnreadCount>{conversation.unreadCount}</UnreadCount>
               )}
@@ -149,6 +151,7 @@ const Avatar = styled.div`
   display: grid;
   width: 48px;
   height: 48px;
+  overflow: hidden;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
@@ -159,8 +162,10 @@ const Avatar = styled.div`
 `;
 
 const AvatarImage = styled.img`
+  display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
   border-radius: inherit;
   object-fit: cover;
 `;
@@ -212,12 +217,6 @@ const Meta = styled.div`
   flex: 0 0 auto;
   justify-items: end;
   gap: 8px;
-`;
-
-const Status = styled.span`
-  color: #ed174c;
-  font-size: 11px;
-  font-weight: 700;
 `;
 
 const UnreadCount = styled.span`

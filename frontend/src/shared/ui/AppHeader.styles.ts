@@ -37,11 +37,11 @@ export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
 
   @media (max-width: 520px) {
     padding: 10px 12px;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-areas: ${({ $hasSearch }) =>
       $hasSearch
-        ? "'navigation actions' 'search search'"
-        : "'navigation actions'"};
+        ? "'brand navigation actions' 'search search search'"
+        : "'brand navigation actions'"};
     gap: 10px 6px;
   }
 `;
@@ -73,7 +73,7 @@ export const Brand = styled.a`
   }
 
   @media (max-width: 520px) {
-    display: none;
+    display: inline-flex;
   }
 `;
 
@@ -105,7 +105,7 @@ export const Navigation = styled.nav`
 
   @media (max-width: 520px) {
     justify-content: flex-start;
-    gap: 2px;
+    gap: 0;
   }
 `;
 
@@ -141,8 +141,13 @@ export const NavigationLink = styled.a<{ $isActive: boolean }>`
 
   @media (max-width: 520px) {
     min-height: 38px;
-    padding: 0 7px;
+    padding: 0 6px;
     font-size: 13px;
+  }
+
+  @media (max-width: 360px) {
+    padding: 0 4px;
+    font-size: 12px;
   }
 `;
 
@@ -218,7 +223,11 @@ export const ActionIcon = styled.svg`
   flex: 0 0 auto;
 `;
 
-export const AccountLabel = styled.span``;
+export const AccountLabel = styled.span`
+  @media (max-width: 360px) {
+    display: none;
+  }
+`;
 
 export const Avatar = styled.img`
   width: 28px;

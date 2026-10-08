@@ -3,12 +3,12 @@ import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import { TradeStatusControl } from '@/domains/trade/components/TradeStatusControl';
 import type {
   TradeDetail as TradeDetailData,
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
-import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
@@ -19,12 +19,6 @@ interface TradeDetailProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
 }
-
-const STATUS_LABELS: Record<TradeStatus, string> = {
-  AVAILABLE: '교환 가능',
-  IN_PROGRESS: '교환 진행 중',
-  COMPLETED: '교환 완료',
-};
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium',
@@ -110,7 +104,7 @@ export default function TradeDetail({
                 onStatusChanged={setCurrentStatus}
               />
             ) : (
-              <span>· {STATUS_LABELS[currentStatus]}</span>
+              <TradeStatusBadge status={currentStatus} />
             )}
           </Meta>
 
