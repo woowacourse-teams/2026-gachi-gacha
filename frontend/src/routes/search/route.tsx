@@ -52,6 +52,7 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
     isSearchAreaChanged,
     updateViewportCenter,
     commitViewportCenter,
+    resetSearchArea,
   } = useStoreSearchArea(HONGDAE_SEARCH_CENTER);
   const storeSearchParams = {
     gachaId: selectedGachaId,
@@ -69,6 +70,11 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
     commitViewportCenter();
   }
 
+  function selectGachaInServiceArea(gachaId: number) {
+    resetSearchArea(HONGDAE_SEARCH_CENTER);
+    selectGacha(gachaId);
+  }
+
   return (
     <Page>
       <PageTitle>
@@ -78,7 +84,7 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
       </PageTitle>
       <AppHeader
         currentPath="/map"
-        search={<GachaSearchBar onSelect={selectGacha} />}
+        search={<GachaSearchBar onSelect={selectGachaInServiceArea} />}
       />
       <StoreResultsSection
         center={searchCenter}
