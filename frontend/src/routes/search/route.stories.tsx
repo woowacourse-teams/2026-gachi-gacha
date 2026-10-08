@@ -53,7 +53,7 @@ function MockedSearchRoute(props: SearchRouteProps) {
   }
 
   return (
-    <MemoryRouter initialEntries={[`/search${activeSearch}`]}>
+    <MemoryRouter initialEntries={[`/map${activeSearch}`]}>
       <SearchRoute
         {...props}
         search={activeSearch}

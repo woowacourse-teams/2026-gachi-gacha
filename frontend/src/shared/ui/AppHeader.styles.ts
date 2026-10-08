@@ -37,6 +37,11 @@ export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
 
   @media (max-width: 520px) {
     padding: 10px 12px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: ${({ $hasSearch }) =>
+      $hasSearch
+        ? "'navigation actions' 'search search'"
+        : "'navigation actions'"};
     gap: 10px 6px;
   }
 `;
@@ -65,6 +70,10 @@ export const Brand = styled.a`
   @media (max-width: 767px) {
     font-size: 0;
     gap: 0;
+  }
+
+  @media (max-width: 520px) {
+    display: none;
   }
 `;
 
@@ -95,6 +104,7 @@ export const Navigation = styled.nav`
   }
 
   @media (max-width: 520px) {
+    justify-content: flex-start;
     gap: 2px;
   }
 `;
@@ -131,7 +141,7 @@ export const NavigationLink = styled.a<{ $isActive: boolean }>`
 
   @media (max-width: 520px) {
     min-height: 38px;
-    padding: 0 8px;
+    padding: 0 7px;
     font-size: 13px;
   }
 `;

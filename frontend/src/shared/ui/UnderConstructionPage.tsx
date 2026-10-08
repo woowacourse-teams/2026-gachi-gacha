@@ -33,7 +33,7 @@ export function UnderConstructionPage({
           <Eyebrow>COMING SOON</Eyebrow>
           <Title>{title}</Title>
           <Description>{description}</Description>
-          <SearchLink href="/search">가챠 매장 찾아보기</SearchLink>
+          <SearchLink href="/map">가챠 매장 찾아보기</SearchLink>
         </Content>
       </Main>
     </Page>

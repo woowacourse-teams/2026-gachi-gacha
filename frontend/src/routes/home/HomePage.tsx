@@ -9,7 +9,7 @@ import SearchHero from './components/SearchHero';
 export default function HomePage() {
   return (
     <Page>
-      <AppHeader currentPath="/" />
+      <AppHeader currentPath="/search" />
 
       <Main>
         <SearchHero />

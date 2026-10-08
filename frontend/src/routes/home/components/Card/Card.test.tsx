@@ -18,7 +18,7 @@ describe('홈 가챠 카드', () => {
     const name = screen.getByText(product.name);
     const thumbnail = link.querySelector('img');
 
-    expect(link).toHaveAttribute('href', '/search?gachaId=42');
+    expect(link).toHaveAttribute('href', '/map?gachaId=42');
     expect(link).toContainElement(name);
     expect(link).toContainElement(thumbnail);
   });
