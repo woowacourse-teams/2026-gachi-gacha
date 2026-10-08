@@ -1,4 +1,5 @@
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
 import {
@@ -27,11 +28,32 @@ export function PrivacyRoute() {
     <Page>
       <Header>
         <HeaderContent>
-          <Brand href="/trade" aria-label="GachiGacha 거래/교환으로 이동">
+          <Brand
+            href="/trade"
+            aria-label="GachiGacha 거래/교환으로 이동"
+            onClick={() =>
+              captureAnalyticsEvent('navigation_selected', {
+                destination: 'brand',
+                source: 'privacy',
+                is_authenticated: null,
+              })
+            }
+          >
             <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
             <span>GachiGacha</span>
           </Brand>
-          <SearchLink href="/map">지도 검색으로 이동</SearchLink>
+          <SearchLink
+            href="/map"
+            onClick={() =>
+              captureAnalyticsEvent('navigation_selected', {
+                destination: 'map',
+                source: 'privacy',
+                is_authenticated: null,
+              })
+            }
+          >
+            지도 검색으로 이동
+          </SearchLink>
         </HeaderContent>
       </Header>
 

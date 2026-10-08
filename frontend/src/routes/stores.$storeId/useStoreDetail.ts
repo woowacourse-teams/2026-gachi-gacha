@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { getStoreDetail } from './api/getStoreDetail';
@@ -86,6 +87,11 @@ export function useStoreDetail(storeId: number | null): UseStoreDetailResult {
       if (controller.signal.aborted) {
         return;
       }
+
+      captureAnalyticsEvent('store_detail_load_completed', {
+        store_id: activeRequest.storeId,
+        outcome: nextState.status === 'success' ? 'success' : 'failure',
+      });
 
       setSnapshot({ request: activeRequest, state: nextState });
     }

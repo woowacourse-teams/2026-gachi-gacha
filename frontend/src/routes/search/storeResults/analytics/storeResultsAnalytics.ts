@@ -5,7 +5,7 @@ import type {
 } from '@/shared/analytics/analyticsEventType';
 
 export function captureStoreSearchSucceeded(
-  gachaId: number,
+  gachaId: number | null,
   searchRadiusMeters: number,
   trigger: StoreSearchTrigger,
   storeCount: number,
@@ -25,7 +25,7 @@ export function captureStoreSearchSucceeded(
 }
 
 export function captureStoreSearchFailed(
-  gachaId: number,
+  gachaId: number | null,
   searchRadiusMeters: number,
   trigger: StoreSearchTrigger,
 ): void {
@@ -37,7 +37,7 @@ export function captureStoreSearchFailed(
 }
 
 export function captureMapAreaResearched(
-  gachaId: number,
+  gachaId: number | null,
   searchRadiusMeters: number,
 ): void {
   captureAnalyticsEvent('map_area_researched', {
@@ -47,11 +47,23 @@ export function captureMapAreaResearched(
 }
 
 export function captureStoreSelected(
-  gachaId: number,
+  gachaId: number | null,
   storeId: number,
   source: StoreSelectionSource,
 ): void {
   captureAnalyticsEvent('store_selected', {
+    gacha_id: gachaId,
+    store_id: storeId,
+    source,
+  });
+}
+
+export function captureStoreOpened(
+  gachaId: number | null,
+  storeId: number,
+  source: StoreSelectionSource,
+): void {
+  captureAnalyticsEvent('store_opened', {
     gacha_id: gachaId,
     store_id: storeId,
     source,

@@ -8,6 +8,7 @@ import {
 import styled from '@emotion/styled';
 
 import type { TradePlaceInput } from '@/domains/trade/tradeCreateType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { loadKakaoMapsSdk } from '@/shared/map/loadKakaoMapsSdk';
 
 import {
@@ -29,6 +30,7 @@ const FOCUSABLE_ELEMENT_SELECTOR = [
 
 export interface TradePlaceSearchDialogProps {
   open: boolean;
+  placeType?: 'purchase_store' | 'trade_place';
   onClose: () => void;
   onSelect: (place: TradePlaceInput) => void;
   title?: string;
@@ -39,6 +41,7 @@ export interface TradePlaceSearchDialogProps {
 
 export default function TradePlaceSearchDialog({
   open,
+  placeType = 'trade_place',
   onClose,
   onSelect,
   title = '교환 장소 선택',
@@ -203,12 +206,24 @@ export default function TradePlaceSearchDialog({
 
       setResults(nextResults);
       setStatus('success');
+      captureAnalyticsEvent('trade_place_search_completed', {
+        place_type: placeType,
+        outcome: 'success',
+        result_count: nextResults.length,
+        query_length: normalizedKeyword.length,
+      });
     } catch (error: unknown) {
       if (searchIdRef.current !== searchId) {
         return;
       }
 
       setStatus('error');
+      captureAnalyticsEvent('trade_place_search_completed', {
+        place_type: placeType,
+        outcome: 'failure',
+        result_count: 0,
+        query_length: normalizedKeyword.length,
+      });
       setErrorMessage(
         error instanceof Error ? error.message : '장소를 검색하지 못했습니다.',
       );
@@ -277,11 +292,15 @@ export default function TradePlaceSearchDialog({
             <ResultMessage>검색된 장소가 없어요.</ResultMessage>
           ) : (
             <ResultList aria-label="장소 검색 결과">
-              {results.map((place) => (
+              {results.map((place, index) => (
                 <ResultItem key={place.id}>
                   <ResultButton
                     type="button"
                     onClick={() => {
+                      captureAnalyticsEvent('trade_place_selected', {
+                        place_type: placeType,
+                        result_position: index,
+                      });
                       onSelect({
                         name: place.name,
                         address: place.address,

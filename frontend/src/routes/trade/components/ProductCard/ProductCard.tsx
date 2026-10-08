@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -9,6 +10,7 @@ import type { TradeItem } from '../../model/tradeItem';
 
 export interface ProductCardProps {
   item: TradeItem;
+  source?: 'trade_list' | 'related_list' | 'mypage';
 }
 
 const STATUS_LABELS: Record<TradeStatus, string> = {
@@ -17,13 +19,25 @@ const STATUS_LABELS: Record<TradeStatus, string> = {
   COMPLETED: '교환 완료',
 };
 
-export default function ProductCard({ item }: ProductCardProps) {
+export default function ProductCard({
+  item,
+  source = 'trade_list',
+}: ProductCardProps) {
   const place =
     item.tradePlace?.name || item.tradePlace?.address || '교환 장소 협의';
   const categories = item.categories.join(' · ') || '카테고리 미설정';
 
   return (
-    <Card to={`/trade/${item.tradeId}`}>
+    <Card
+      to={`/trade/${item.tradeId}`}
+      onClick={() =>
+        captureAnalyticsEvent('trade_selected', {
+          trade_id: item.tradeId,
+          status: item.status,
+          source,
+        })
+      }
+    >
       <Thumbnail>
         {item.thumbnailUrl ? (
           <Image src={item.thumbnailUrl} alt="" />

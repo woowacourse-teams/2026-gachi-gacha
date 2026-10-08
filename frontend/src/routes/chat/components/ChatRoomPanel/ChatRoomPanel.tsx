@@ -4,6 +4,7 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import type { ChatRoom } from '../../model/chat';
 import { formatChatDateLabel } from '../../model/chatDate';
@@ -68,7 +69,14 @@ export default function ChatRoomPanel({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!onSendMessage || !message.trim() || socketStatus !== 'connected') {
+    const roomId = room?.conversationId;
+
+    if (
+      !roomId ||
+      !onSendMessage ||
+      !message.trim() ||
+      socketStatus !== 'connected'
+    ) {
       return;
     }
 
@@ -77,8 +85,18 @@ export default function ChatRoomPanel({
 
     try {
       await onSendMessage(message);
+      captureAnalyticsEvent('chat_message_send_completed', {
+        room_id: roomId,
+        outcome: 'success',
+        message_length: message.trim().length,
+      });
       setMessage('');
     } catch (error) {
+      captureAnalyticsEvent('chat_message_send_completed', {
+        room_id: roomId,
+        outcome: 'failure',
+        message_length: message.trim().length,
+      });
       setSendErrorMessage(
         error instanceof Error
           ? error.message

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { getStoreGachas } from './api/getStoreGachas';
@@ -104,6 +105,13 @@ export function useStoreGachas(storeId: number): UseStoreGachasResult {
       if (controller.signal.aborted) {
         return;
       }
+
+      captureAnalyticsEvent('store_catalog_load_completed', {
+        store_id: activeRequest.storeId,
+        outcome: nextState.status === 'success' ? 'success' : 'failure',
+        item_count:
+          nextState.status === 'success' ? nextState.data.gachas.length : 0,
+      });
 
       setSnapshot({
         request: activeRequest,

@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import type { NavigationDestination } from '@/shared/analytics/analyticsEventType';
 
 import {
   AccountLabel,
@@ -25,10 +27,21 @@ export interface AppHeaderProps {
 }
 
 const NAVIGATION_ITEMS = [
-  { href: '/trade', label: '거래/교환' },
-  { href: '/map', label: '지도' },
-  { href: '/search', label: '검색' },
+  { href: '/trade', label: '거래/교환', destination: 'trade' },
+  { href: '/map', label: '지도', destination: 'map' },
+  { href: '/search', label: '검색', destination: 'search' },
 ] as const;
+
+function captureHeaderNavigation(
+  destination: NavigationDestination,
+  isAuthenticated: boolean,
+) {
+  captureAnalyticsEvent('navigation_selected', {
+    destination,
+    source: 'header',
+    is_authenticated: isAuthenticated,
+  });
+}
 
 function ChatIcon() {
   return (
@@ -84,7 +97,11 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
   return (
     <Header>
       <HeaderContent $hasSearch={Boolean(search)}>
-        <Brand href="/trade" aria-label="GachiGacha 거래/교환으로 이동">
+        <Brand
+          href="/trade"
+          aria-label="GachiGacha 거래/교환으로 이동"
+          onClick={() => captureHeaderNavigation('brand', isAuthenticated)}
+        >
           <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
           <span>GachiGacha</span>
         </Brand>
@@ -92,7 +109,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
         {search && <SearchArea>{search}</SearchArea>}
 
         <Navigation aria-label="주요 메뉴">
-          {NAVIGATION_ITEMS.map(({ href, label }) => {
+          {NAVIGATION_ITEMS.map(({ href, label, destination }) => {
             const isActive = currentPath === href;
 
             return (
@@ -101,6 +118,9 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
                 href={href}
                 $isActive={isActive}
                 aria-current={isActive ? 'page' : undefined}
+                onClick={() =>
+                  captureHeaderNavigation(destination, isAuthenticated)
+                }
               >
                 {label}
               </NavigationLink>
@@ -116,6 +136,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
                 $isActive={currentPath === '/chat'}
                 aria-label="채팅"
                 title="채팅"
+                onClick={() => captureHeaderNavigation('chat', isAuthenticated)}
               >
                 <ChatIcon />
               </ActionLink>
@@ -124,6 +145,9 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
                 $isActive={currentPath === '/notifications'}
                 aria-label="알림"
                 title="알림"
+                onClick={() =>
+                  captureHeaderNavigation('notifications', isAuthenticated)
+                }
               >
                 <NotificationIcon />
               </ActionLink>
@@ -135,6 +159,12 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
             $isAccount
             aria-label={isAuthenticated ? '마이페이지' : '로그인'}
             title={isAuthenticated ? '마이페이지' : '로그인'}
+            onClick={() =>
+              captureHeaderNavigation(
+                isAuthenticated ? 'mypage' : 'login',
+                isAuthenticated,
+              )
+            }
           >
             {isAuthenticated && member?.profileImageUrl ? (
               <Avatar src={member.profileImageUrl} alt="" data-private-media />

@@ -9,6 +9,7 @@ import type {
   CreateTradeRequest,
   TradePlaceInput,
 } from '@/domains/trade/tradeCreateType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
@@ -74,6 +75,11 @@ export default function TradeForm(props: TradeFormProps) {
       : [];
 
   function selectCategory(category: TradeCategory) {
+    captureAnalyticsEvent('trade_category_toggled', {
+      mode: isEditMode ? 'edit' : 'create',
+      category_id: category.categoryId,
+      action: 'selected',
+    });
     setSelectedCategories((currentCategories) => [
       ...currentCategories,
       category,
@@ -81,6 +87,11 @@ export default function TradeForm(props: TradeFormProps) {
   }
 
   function removeCategory(categoryId: number) {
+    captureAnalyticsEvent('trade_category_toggled', {
+      mode: isEditMode ? 'edit' : 'create',
+      category_id: categoryId,
+      action: 'removed',
+    });
     setSelectedCategories((currentCategories) =>
       currentCategories.filter(
         (category) => category.categoryId !== categoryId,
@@ -174,14 +185,38 @@ export default function TradeForm(props: TradeFormProps) {
     submittingRef.current = true;
     setIsSubmitting(true);
 
+    const analyticsMode = isEditMode ? 'edit' : 'create';
+    const editingTradeId = props.mode === 'edit' ? props.tradeId : null;
+
+    captureAnalyticsEvent('trade_form_submitted', {
+      mode: analyticsMode,
+      trade_id: editingTradeId,
+      image_count: images.length || initialValues?.imageUrls.length || 0,
+      category_count: selectedCategories.length,
+      has_purchase_store: purchaseStore !== null,
+      has_trade_place: tradePlace !== null,
+      has_desired_product: Boolean(desiredProduction),
+    });
+
     try {
       const savedTrade =
         props.mode === 'edit'
           ? await updateTrade({ tradeId: props.tradeId, request, images })
           : await createTrade({ request, images });
 
+      captureAnalyticsEvent('trade_form_completed', {
+        mode: analyticsMode,
+        trade_id: savedTrade.tradeId,
+        outcome: 'success',
+      });
+
       navigate(`/trade/${savedTrade.tradeId}`);
     } catch (error: unknown) {
+      captureAnalyticsEvent('trade_form_completed', {
+        mode: analyticsMode,
+        trade_id: editingTradeId,
+        outcome: 'failure',
+      });
       setSubmissionError(
         error instanceof Error
           ? error.message
@@ -324,7 +359,13 @@ export default function TradeForm(props: TradeFormProps) {
           <PlaceSelectButton
             id="purchase-store"
             type="button"
-            onClick={() => setIsPurchaseStoreDialogOpen(true)}
+            onClick={() => {
+              captureAnalyticsEvent('trade_place_dialog_opened', {
+                mode: isEditMode ? 'edit' : 'create',
+                place_type: 'purchase_store',
+              });
+              setIsPurchaseStoreDialogOpen(true);
+            }}
           >
             <LocationIcon aria-hidden="true" />
             <PlaceText>
@@ -378,7 +419,13 @@ export default function TradeForm(props: TradeFormProps) {
           <PlaceSelectButton
             id="trade-place"
             type="button"
-            onClick={() => setIsPlaceDialogOpen(true)}
+            onClick={() => {
+              captureAnalyticsEvent('trade_place_dialog_opened', {
+                mode: isEditMode ? 'edit' : 'create',
+                place_type: 'trade_place',
+              });
+              setIsPlaceDialogOpen(true);
+            }}
           >
             <LocationIcon aria-hidden="true" />
             <PlaceText>
@@ -454,6 +501,7 @@ export default function TradeForm(props: TradeFormProps) {
 
       <TradePlaceSearchDialog
         open={isPurchaseStoreDialogOpen}
+        placeType="purchase_store"
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
         onClose={() => setIsPurchaseStoreDialogOpen(false)}
@@ -461,6 +509,7 @@ export default function TradeForm(props: TradeFormProps) {
       />
       <TradePlaceSearchDialog
         open={isPlaceDialogOpen}
+        placeType="trade_place"
         onClose={() => setIsPlaceDialogOpen(false)}
         onSelect={setTradePlace}
       />

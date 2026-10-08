@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   breakpoint,
   color,
@@ -17,7 +18,15 @@ const CREATE_TRADE_PATH = '/trade/new';
  */
 export default function CreateTradeButton() {
   return (
-    <FloatingLink to={CREATE_TRADE_PATH} aria-label="교환 글 등록">
+    <FloatingLink
+      to={CREATE_TRADE_PATH}
+      aria-label="교환 글 등록"
+      onClick={() =>
+        captureAnalyticsEvent('trade_create_started', {
+          source: 'floating_button',
+        })
+      }
+    >
       <PlusIcon aria-hidden="true" />
     </FloatingLink>
   );

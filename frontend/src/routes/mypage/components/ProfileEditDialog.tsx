@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import type { UpdateCurrentMemberInput } from '@/features/auth/api/updateCurrentMember';
 import type { AuthMember } from '@/features/auth/authMemberType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import {
   Actions,
@@ -89,9 +90,17 @@ export function ProfileEditDialog({
         profileImageUrl: member.profileImageUrl,
         desireTradeLocation: normalizedLocation || null,
       });
+      captureAnalyticsEvent('profile_update_completed', {
+        outcome: 'success',
+        has_trade_location: Boolean(normalizedLocation),
+      });
       onSaved?.();
       dialogRef.current?.close();
     } catch (error) {
+      captureAnalyticsEvent('profile_update_completed', {
+        outcome: 'failure',
+        has_trade_location: Boolean(normalizedLocation),
+      });
       setErrorMessage(
         error instanceof Error
           ? error.message
