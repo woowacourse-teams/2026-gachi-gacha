@@ -1,5 +1,5 @@
 export interface NearbyStoreSearchParams {
-  gachaId: number;
+  gachaId: number | null;
   latitude: number;
   longitude: number;
   radius: number;

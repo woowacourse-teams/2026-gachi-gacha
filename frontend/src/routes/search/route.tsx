@@ -4,7 +4,15 @@ import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
-import { Page, PageTitle, SelectedGachaArea } from './route.styles';
+import {
+  Page,
+  PageTitle,
+  ServiceAreaDescription,
+  ServiceAreaEyebrow,
+  ServiceAreaNotice,
+  ServiceAreaTitle,
+  SelectedGachaArea,
+} from './route.styles';
 import { useSearchRouteNavigation } from './routing/useSearchRouteNavigation';
 import { SelectedGachaSummary } from './selectedGacha/SelectedGachaSummary';
 import { useSearchResults } from './selectedGacha/useSearchResults';
@@ -45,15 +53,12 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
     updateViewportCenter,
     commitViewportCenter,
   } = useStoreSearchArea(HONGDAE_SEARCH_CENTER);
-  const storeSearchParams =
-    selectedGachaId === null
-      ? null
-      : {
-          gachaId: selectedGachaId,
-          latitude: searchCenter.latitude,
-          longitude: searchCenter.longitude,
-          radius: STORE_SEARCH_RADIUS_METERS,
-        };
+  const storeSearchParams = {
+    gachaId: selectedGachaId,
+    latitude: searchCenter.latitude,
+    longitude: searchCenter.longitude,
+    radius: STORE_SEARCH_RADIUS_METERS,
+  };
   const { storesState, retryStores } = useSearchStores(storeSearchParams);
 
   function searchCurrentMapArea() {
@@ -66,7 +71,11 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
 
   return (
     <Page>
-      <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
+      <PageTitle>
+        {selectedGachaId === null
+          ? '홍대 가챠 매장 지도'
+          : '가챠 보유 매장 검색 결과'}
+      </PageTitle>
       <AppHeader
         currentPath="/map"
         search={<GachaSearchBar onSelect={selectGacha} />}
@@ -82,7 +91,15 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
         onSearchArea={searchCurrentMapArea}
         onViewportCenterChange={updateViewportCenter}
         listHeader={
-          selectedGacha.status === 'idle' ? null : (
+          selectedGacha.status === 'idle' ? (
+            <ServiceAreaNotice>
+              <ServiceAreaEyebrow>현재 지원 지역</ServiceAreaEyebrow>
+              <ServiceAreaTitle>홍대 주변 매장을 보여드려요</ServiceAreaTitle>
+              <ServiceAreaDescription>
+                다른 지역의 가챠 매장도 차근차근 준비하고 있어요.
+              </ServiceAreaDescription>
+            </ServiceAreaNotice>
+          ) : (
             <SelectedGachaArea>
               <SelectedGachaSummary selectedGacha={selectedGacha} />
             </SelectedGachaArea>

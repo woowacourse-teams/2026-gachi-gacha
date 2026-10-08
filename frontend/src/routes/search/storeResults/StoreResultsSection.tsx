@@ -98,11 +98,17 @@ export function StoreResultsSection({
   }, [onRevealHeader, showMapAsMainContent]);
 
   return (
-    <Section ref={sectionRef} aria-label="가챠 보유 매장 검색 결과">
+    <Section
+      ref={sectionRef}
+      aria-label={
+        gachaId === null ? '홍대 가챠 매장' : '가챠 보유 매장 검색 결과'
+      }
+    >
       {listHeader && <ListHeaderArea>{listHeader}</ListHeaderArea>}
       <ListArea>
         <StoreListPanel
           storesState={storesState}
+          isGachaSelected={gachaId !== null}
           selectedStoreId={selectedStoreId}
           onOpenStore={onOpenStore}
           onSelectStore={selectStoreFromList}
@@ -112,6 +118,7 @@ export function StoreResultsSection({
       <MapArea>
         <StoreMapPanel
           center={center}
+          isGachaSelected={gachaId !== null}
           storesState={storesState}
           selectedStoreId={selectedStoreId}
           isSearchAreaChanged={isSearchAreaChanged}

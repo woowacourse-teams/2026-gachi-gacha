@@ -13,6 +13,7 @@ import type {
 
 export interface StoreMapPanelProps {
   center: MapCoordinate;
+  isGachaSelected: boolean;
   storesState: AsyncState<NearbyStoresResponseDto>;
   selectedStoreId: number | null;
   isSearchAreaChanged: boolean;
@@ -66,6 +67,7 @@ function useVisibleMapCenter(
 
 export function StoreMapPanel({
   center,
+  isGachaSelected,
   storesState,
   selectedStoreId,
   isSearchAreaChanged,
@@ -118,7 +120,9 @@ export function StoreMapPanel({
     <Panel>
       <KakaoMap
         center={mapCenter}
-        label="검색된 가챠 보유 매장 지도"
+        label={
+          isGachaSelected ? '검색된 가챠 보유 매장 지도' : '홍대 가챠 매장 지도'
+        }
         onBackgroundClick={handleBackgroundClick}
         onDragEnd={onMapDragEnd}
         onMapReady={setMap}

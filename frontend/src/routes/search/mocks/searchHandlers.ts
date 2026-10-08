@@ -1,7 +1,10 @@
 import { http, HttpResponse } from 'msw';
 
 import { createGachaProductMockResponse } from './gachaProductsMock';
-import { createNearbyStoresMockResponse } from './nearbyStoresMock';
+import {
+  createNearbyStoresMockResponse,
+  nearbyStoresMockResponse,
+} from './nearbyStoresMock';
 
 function parseGachaId(value: unknown): number | null {
   if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) {
@@ -35,6 +38,9 @@ export const searchHandlers = [
 
     return HttpResponse.json(response);
   }),
+  http.get('/api/v1/stores/nearby', () =>
+    HttpResponse.json(nearbyStoresMockResponse),
+  ),
   http.get('/api/v1/stores/nearby/:gachaId', ({ params }) => {
     const gachaId = parseGachaId(params.gachaId);
 
