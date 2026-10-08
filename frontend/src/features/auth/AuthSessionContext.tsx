@@ -8,6 +8,8 @@ import {
   useState,
 } from 'react';
 
+import { syncAnalyticsUser } from '@/shared/analytics/analyticsClient';
+
 import { isUnauthorizedAuthApiError } from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
 import { deleteCurrentMember } from './api/deleteCurrentMember';
@@ -215,6 +217,17 @@ export function AuthSessionProvider({
       }),
     [],
   );
+
+  useEffect(() => {
+    if (state.status === 'authenticated') {
+      syncAnalyticsUser(state.memberId);
+      return;
+    }
+
+    if (state.status === 'guest') {
+      syncAnalyticsUser(null);
+    }
+  }, [state.memberId, state.status]);
 
   const authenticate = useCallback(async (tokens: AuthTokens) => {
     const accessToken = tokens.accessToken.trim();
