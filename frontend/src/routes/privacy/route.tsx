@@ -27,11 +27,11 @@ export function PrivacyRoute() {
     <Page>
       <Header>
         <HeaderContent>
-          <Brand href="/search" aria-label="GachiGacha 지도 검색으로 이동">
+          <Brand href="/trade" aria-label="GachiGacha 거래/교환으로 이동">
             <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
             <span>GachiGacha</span>
           </Brand>
-          <SearchLink href="/search">지도 검색으로 이동</SearchLink>
+          <SearchLink href="/map">지도 검색으로 이동</SearchLink>
         </HeaderContent>
       </Header>
 

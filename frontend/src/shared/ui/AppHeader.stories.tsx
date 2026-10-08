@@ -27,7 +27,7 @@ const meta = {
     layout: 'fullscreen',
   },
   args: {
-    currentPath: '/search',
+    currentPath: '/map',
     search: <GachaSearchBar onSelect={() => undefined} />,
   },
   render: (args) => (
@@ -64,7 +64,7 @@ function RefreshingSessionStory({ args }: { args: Story['args'] }) {
     <MockWorkerBoundary handlers={refreshingSessionHandlers}>
       <AuthSessionProvider>
         <AppHeader
-          currentPath={args?.currentPath ?? '/search'}
+          currentPath={args?.currentPath ?? '/map'}
           search={args?.search}
         />
       </AuthSessionProvider>
@@ -74,9 +74,9 @@ function RefreshingSessionStory({ args }: { args: Story['args'] }) {
 
 export const MapActive: Story = {};
 
-export const HomeActive: Story = {
+export const SearchActive: Story = {
   args: {
-    currentPath: '/',
+    currentPath: '/search',
     search: undefined,
   },
 };

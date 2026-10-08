@@ -68,7 +68,7 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
     <Page>
       <PageTitle>가챠 보유 매장 검색 결과</PageTitle>
       <AppHeader
-        currentPath="/search"
+        currentPath="/map"
         search={<GachaSearchBar onSelect={selectGacha} />}
       />
       <StoreResultsSection

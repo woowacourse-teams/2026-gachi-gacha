@@ -25,9 +25,9 @@ export interface AppHeaderProps {
 }
 
 const NAVIGATION_ITEMS = [
-  { href: '/', label: '홈' },
-  { href: '/search', label: '지도' },
-  { href: '/trade', label: '교환' },
+  { href: '/trade', label: '거래/교환' },
+  { href: '/map', label: '지도' },
+  { href: '/search', label: '검색' },
 ] as const;
 
 function ChatIcon() {
@@ -81,14 +81,10 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       );
 
-  function createProtectedHref(pathname: string): string {
-    return isAuthenticated ? pathname : createLoginUrl(pathname);
-  }
-
   return (
     <Header>
       <HeaderContent $hasSearch={Boolean(search)}>
-        <Brand href="/" aria-label="GachiGacha 홈">
+        <Brand href="/trade" aria-label="GachiGacha 거래/교환으로 이동">
           <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
           <span>GachiGacha</span>
         </Brand>
@@ -113,22 +109,26 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
         </Navigation>
 
         <Actions aria-label="사용자 메뉴">
-          <ActionLink
-            href={createProtectedHref('/chat')}
-            $isActive={currentPath === '/chat'}
-            aria-label="채팅"
-            title="채팅"
-          >
-            <ChatIcon />
-          </ActionLink>
-          <ActionLink
-            href={createProtectedHref('/notifications')}
-            $isActive={currentPath === '/notifications'}
-            aria-label="알림"
-            title="알림"
-          >
-            <NotificationIcon />
-          </ActionLink>
+          {isAuthenticated && (
+            <>
+              <ActionLink
+                href="/chat"
+                $isActive={currentPath === '/chat'}
+                aria-label="채팅"
+                title="채팅"
+              >
+                <ChatIcon />
+              </ActionLink>
+              <ActionLink
+                href="/notifications"
+                $isActive={currentPath === '/notifications'}
+                aria-label="알림"
+                title="알림"
+              >
+                <NotificationIcon />
+              </ActionLink>
+            </>
+          )}
           <ActionLink
             href={accountHref}
             $isActive={currentPath === '/mypage'}

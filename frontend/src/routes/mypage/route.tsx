@@ -138,12 +138,12 @@ export function MyPageRoute() {
 
   function handleLogout() {
     logout();
-    replaceBrowserLocation('/search');
+    replaceBrowserLocation('/trade');
   }
 
   async function handleDeleteAccount() {
     await deleteAccount();
-    replaceBrowserLocation('/search');
+    replaceBrowserLocation('/trade');
   }
 
   return (

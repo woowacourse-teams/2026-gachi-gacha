@@ -84,7 +84,7 @@ export function LoginRoute() {
     <Page>
       <Main>
         <Card aria-labelledby="login-title">
-          <Brand href="/search" aria-label="GachiGacha 지도 검색으로 이동">
+          <Brand href="/trade" aria-label="GachiGacha 거래/교환으로 이동">
             <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
             <BrandName>GachiGacha</BrandName>
           </Brand>

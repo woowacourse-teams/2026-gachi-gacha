@@ -168,7 +168,69 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
 
-  it('잘못된 URL은 쿼리와 해시를 유지한 홈 화면으로 이동한다', async () => {
+  it('루트 URL은 거래/교환 화면으로 이동한다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 가챠를 교환해볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+  });
+
+  it('잘못된 URL은 쿼리와 해시를 유지한 거래/교환 화면으로 이동한다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/unknown-page?from=shared-link#results',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 가챠를 교환해볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+    expect(window.location.search).toBe('?from=shared-link');
+    expect(window.location.hash).toBe('#results');
+  });
+
+  it('검색 URL에서 카테고리별 가챠 탐색 화면을 보여준다', async () => {
     server.use(
       http.get('/api/v1/categories', () =>
         HttpResponse.json({
@@ -188,15 +250,13 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     renderWithProviders(<App />, {
       initialAccessToken: null,
-      route: '/unknown-page?from=shared-link#results',
+      route: '/search',
     });
 
     expect(
       await screen.findByText('오늘은 어떤 가챠를 찾아볼까요?'),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/');
-    expect(window.location.search).toBe('?from=shared-link');
-    expect(window.location.hash).toBe('#results');
+    expect(window.location.pathname).toBe('/search');
   });
 
   it('교환 URL에서 TradePage 화면을 보여준다', async () => {
