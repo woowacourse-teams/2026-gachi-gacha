@@ -84,6 +84,7 @@ const meta = {
   },
   args: {
     storesState: successState,
+    isGachaSelected: true,
     selectedStoreId: null,
     onOpenStore: () => undefined,
     onSelectStore: () => undefined,
@@ -96,6 +97,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Success: Story = {};
+
+export const AllHongdaeStores: Story = {
+  args: {
+    isGachaSelected: false,
+  },
+};
 
 export const SelectedStore: Story = {
   args: {

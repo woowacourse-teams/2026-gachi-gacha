@@ -13,7 +13,10 @@ export function createNearbyStoreSearchUrl({
     longitude: String(longitude),
     radius: String(radius),
   });
-  const endpoint = `${NEARBY_STORES_API_PATH}/${encodeURIComponent(gachaId)}`;
+  const endpoint =
+    gachaId === null
+      ? NEARBY_STORES_API_PATH
+      : `${NEARBY_STORES_API_PATH}/${encodeURIComponent(gachaId)}`;
 
   return `${endpoint}?${searchParams}`;
 }
