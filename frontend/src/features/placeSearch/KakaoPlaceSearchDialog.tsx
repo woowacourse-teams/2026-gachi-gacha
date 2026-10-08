@@ -5,15 +5,16 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import styled from '@emotion/styled';
 
-import type { TradePlaceInput } from '@/domains/trade/tradeCreateType';
 import { loadKakaoMapsSdk } from '@/shared/map/loadKakaoMapsSdk';
 
+import type { PlaceSearchSelection } from './placeSearchType';
 import {
   searchKakaoPlaces,
   type KakaoPlaceSearchResult,
-} from '../../kakaoPlaceSearch';
+} from './searchKakaoPlaces';
 
 type LoadSdk = () => Promise<void>;
 type SearchPlaces = (keyword: string) => Promise<KakaoPlaceSearchResult[]>;
@@ -27,17 +28,17 @@ const FOCUSABLE_ELEMENT_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-export interface TradePlaceSearchDialogProps {
+export interface KakaoPlaceSearchDialogProps {
   open: boolean;
   onClose: () => void;
-  onSelect: (place: TradePlaceInput) => void;
+  onSelect: (place: PlaceSearchSelection) => void;
   title?: string;
   description?: string;
   loadSdk?: LoadSdk;
   searchPlaces?: SearchPlaces;
 }
 
-export default function TradePlaceSearchDialog({
+export function KakaoPlaceSearchDialog({
   open,
   onClose,
   onSelect,
@@ -45,7 +46,7 @@ export default function TradePlaceSearchDialog({
   description = '지하철역이나 건물명을 검색해주세요.',
   loadSdk = loadKakaoMapsSdk,
   searchPlaces = searchKakaoPlaces,
-}: TradePlaceSearchDialogProps) {
+}: KakaoPlaceSearchDialogProps) {
   const dialogRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -221,18 +222,18 @@ export default function TradePlaceSearchDialog({
     }
   }
 
-  return (
+  return createPortal(
     <Backdrop onMouseDown={handleBackdropClick}>
       <DialogPanel
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="trade-place-dialog-title"
+        aria-labelledby="kakao-place-dialog-title"
         tabIndex={-1}
       >
         <DialogHeader>
           <div>
-            <DialogTitle id="trade-place-dialog-title">{title}</DialogTitle>
+            <DialogTitle id="kakao-place-dialog-title">{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </div>
           <CloseButton
@@ -300,7 +301,8 @@ export default function TradePlaceSearchDialog({
           )}
         </ResultArea>
       </DialogPanel>
-    </Backdrop>
+    </Backdrop>,
+    document.body,
   );
 }
 
