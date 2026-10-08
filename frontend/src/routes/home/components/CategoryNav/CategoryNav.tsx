@@ -9,7 +9,7 @@ interface Props {
 
 export default function CategoryNav(props: Props) {
   return (
-    <Wrapper>
+    <Wrapper aria-label="가챠 카테고리">
       {CATEGORIES.map((category) => (
         <CategoryItem
           key={category}
@@ -24,14 +24,23 @@ export default function CategoryNav(props: Props) {
   );
 }
 
-const Wrapper = styled.div`
+const Wrapper = styled.nav`
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 20px;
   padding: 16px 24px;
   overflow-x: auto;
   border-bottom: 1px solid #eeeaec;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 16px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+
+  @media (min-width: 768px) {
+    justify-content: center;
+  }
 `;
 
 const CategoryItem = styled.button`
@@ -45,6 +54,7 @@ const CategoryItem = styled.button`
   background: none;
   color: #9a9095;
   cursor: pointer;
+  scroll-snap-align: start;
 
   &[aria-pressed='true'] {
     color: #ed174c;
