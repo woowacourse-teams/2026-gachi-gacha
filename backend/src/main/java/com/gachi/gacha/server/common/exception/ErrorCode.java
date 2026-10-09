@@ -68,6 +68,9 @@ public enum ErrorCode {
     INVALID_TRADE_POLICY(HttpStatus.BAD_REQUEST, "TE002", "유효하지 않은 교환 게시글 정보입니다."),
     TRADE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "TE003", "본인이 작성한 교환 게시글만 수정하거나 삭제할 수 있습니다."),
 
+    // Comment
+    INVALID_COMMENT_POLICY(HttpStatus.BAD_REQUEST, "CME01", "유효하지 않은 댓글 정보입니다."),
+
     // Trade Image
     TRADE_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "TIE01", "존재하지 않는 교환 게시글 사진입니다."),
     INVALID_TRADE_IMAGE_POLICY(HttpStatus.BAD_REQUEST, "TIE02", "유효하지 않은 교환 게시글 사진입니다."),

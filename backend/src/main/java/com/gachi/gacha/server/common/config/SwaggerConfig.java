@@ -2,6 +2,7 @@ package com.gachi.gacha.server.common.config;
 
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.exception.dto.ErrorResponse;
+import com.gachi.gacha.server.common.web.ClientIp;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
@@ -65,7 +66,7 @@ public class SwaggerConfig {
     public static final String BEARER_AUTH = "bearerAuth";
 
     static {
-        SpringDocUtils.getConfig().addAnnotationsToIgnore(Auth.class);
+        SpringDocUtils.getConfig().addAnnotationsToIgnore(Auth.class, ClientIp.class);
     }
 
     @Bean
