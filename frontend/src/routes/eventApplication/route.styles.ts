@@ -275,6 +275,43 @@ export const ConsentLabel = styled.label`
   }
 `;
 
+export const ConsentNotice = styled.div`
+  padding: ${space.md};
+  border: 1px solid ${color.border};
+  border-radius: ${radius.control};
+  background: ${color.surfaceMuted};
+  color: ${color.textMuted};
+  font-size: ${fontSize.caption};
+  line-height: ${lineHeight.body};
+
+  strong {
+    color: ${color.text};
+    font-size: ${fontSize.bodySmall};
+  }
+
+  dl {
+    display: grid;
+    margin: ${space.sm} 0;
+    gap: ${space.xs};
+  }
+
+  dl div {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: ${space.sm};
+  }
+
+  dt {
+    color: ${color.text};
+    font-weight: ${fontWeight.bold};
+  }
+
+  dd,
+  p {
+    margin: 0;
+  }
+`;
+
 export const PrivacyLink = styled.a`
   color: ${color.primary};
   font-weight: ${fontWeight.bold};

@@ -23,6 +23,7 @@ import {
   Actions,
   BackLink,
   ConsentLabel,
+  ConsentNotice,
   EventBadge,
   Field,
   FieldDescription,
@@ -343,6 +344,29 @@ export function EventApplicationRoute({
                 </FieldDescription>
               </Field>
 
+              <ConsentNotice>
+                <strong>이벤트 응모 개인정보 수집·이용 안내</strong>
+                <dl>
+                  <div>
+                    <dt>수집 항목</dt>
+                    <dd>
+                      회원 ID, 희망 트랙, 인스타그램 ID, 교환글 링크, 응모 시각
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>이용 목적</dt>
+                    <dd>응모 자격 확인, 추첨, 당첨 안내 및 경품 전달</dd>
+                  </div>
+                  <div>
+                    <dt>보유기간</dt>
+                    <dd>이벤트 당첨자 경품 전달 완료 후 지체 없이 삭제</dd>
+                  </div>
+                </dl>
+                <p>
+                  동의를 거부할 수 있으나, 필수 정보이므로 동의하지 않으면
+                  이벤트에 응모할 수 없습니다.
+                </p>
+              </ConsentNotice>
               <ConsentLabel>
                 <input
                   type="checkbox"
@@ -351,7 +375,7 @@ export function EventApplicationRoute({
                   required
                 />
                 <span>
-                  이벤트 응모정보 수집·이용을 위한{' '}
+                  위 개인정보 수집·이용 안내와{' '}
                   <PrivacyLink href="/privacy" target="_blank" rel="noreferrer">
                     개인정보처리방침
                   </PrivacyLink>

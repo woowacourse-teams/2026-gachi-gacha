@@ -114,23 +114,32 @@ Apps Script에서 `배포 > 새 배포 > 웹 앱`을 선택하고 실행 계정�
 
 ```dotenv
 EVENT_APPLICATION_ENABLED=true
-EVENT_APPLICATION_START_AT=2026-10-20T00:00:00+09:00
+EVENT_APPLICATION_START_AT=2026-10-09T00:00:00+09:00
 EVENT_APPLICATION_END_AT=2026-10-31T23:59:59+09:00
-EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/.../exec
+EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSHC9ecFZLFLX3xgDVApke_PyhbEj0SqHnETYxVPMC0qJsbv-4bj1Uqc/exec
 ```
 
 시작·종료 시각, 제출 URL 중 하나라도 없거나 잘못되면 마이페이지 버튼은
 노출되지 않고 직접 접근한 페이지에서도 제출 폼을 열지 않습니다.
 
+## 확정된 운영 정책
+
+- 응모 기간은 2026년 10월 9일 00:00부터 10월 31일 23:59:59까지다.
+- 같은 이벤트에 같은 회원이 다시 제출하면 마지막 제출 내용으로 덮어쓴다.
+- 응모정보는 당첨자 경품 전달 완료 후 삭제한다.
+- 완료 트랙은 운영진이 당첨 후보의 회원 ID, 교환글 및 채팅 기록을 서버
+  데이터와 대조해 실제 교환 대화와 완료 여부를 확인한다.
+- 두 트랙에 응모한 회원이 완료 트랙에서 먼저 당첨되면 기본 트랙 추첨
+  대상에서는 제외한다.
+
 ## 운영 전 필수 확인
 
-- 이벤트 응모정보의 보유기간과 파기 시점을 확정하고 개인정보처리방침에
-  `memberId`, Instagram ID, 교환글 링크, 희망 트랙, Google Sheets 사용 목적을
-  반영합니다.
+- 개인정보처리방침에 `memberId`, Instagram ID, 교환글 링크, 희망 트랙,
+  Google Sheets 사용 목적과 경품 전달 완료 후 파기 기준이 반영되었는지
+  확인합니다.
 - 스프레드시트 열람 권한은 이벤트 담당자에게만 부여합니다.
-- 완료 트랙의 인정 기준과 교환 완료 상태를 누가·어떻게 확정하는지 정합니다.
-- 같은 회원의 재제출을 허용할지, 마지막 제출로 덮어쓸지 정책을 확정합니다.
-- 두 트랙 중복 응모와 중복 당첨 제외 순서를 추첨 절차에 기록합니다.
+- 추첨 전 당첨 후보의 응모 회원·교환글 소유권·완료 트랙 자격을 서버 데이터로
+  재검증합니다.
 
 ## 보안상 권장 구조
 
