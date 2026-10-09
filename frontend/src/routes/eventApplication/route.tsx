@@ -25,6 +25,8 @@ import {
   ConsentLabel,
   ConsentNotice,
   EventBadge,
+  EventSchedule,
+  EventScheduleLabel,
   Field,
   FieldDescription,
   FieldLabel,
@@ -61,18 +63,13 @@ const INSTAGRAM_ID_PATTERN = /^[A-Za-z0-9._]{1,30}$/;
 const TRACK_OPTIONS = [
   {
     value: 'BASIC',
-    title: '기본 트랙',
-    description: '본인이 작성한 교환글로 응모해요.',
+    title: '이벤트 A 트랙',
+    description: '회원가입·인스타 팔로우·거래 게시글 1건으로 응모해요.',
   },
   {
     value: 'COMPLETED',
-    title: '완료 트랙',
-    description: '교환을 완료한 게시글로 응모해요.',
-  },
-  {
-    value: 'BOTH',
-    title: '두 트랙 모두',
-    description: '기본·완료 트랙 추첨에 모두 참여해요.',
+    title: '이벤트 B 트랙',
+    description: 'A 트랙 조건에 실제 거래 완료 1건을 더해 응모해요.',
   },
 ] satisfies Array<{
   value: EventApplicationTrack;
@@ -98,23 +95,6 @@ const AVAILABILITY_CONTENT = {
     description: '접수 설정을 확인하고 있습니다. 잠시 후 다시 확인해 주세요.',
   },
 } as const;
-
-function formatEventPeriod(config: EventApplicationConfig): string {
-  const formatter = new Intl.DateTimeFormat('ko-KR', {
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-  const startAt = new Date(config.startAt);
-  const endAt = new Date(config.endAt);
-
-  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
-    return '이벤트 기간은 추후 안내할게요.';
-  }
-
-  return `${formatter.format(startAt)}부터 ${formatter.format(endAt)}까지`;
-}
 
 export interface EventApplicationRouteProps {
   config?: EventApplicationConfig;
@@ -162,7 +142,7 @@ export function EventApplicationRoute({
     const tradeReference = parseTradeReference(tradeLink);
 
     if (!tradeReference) {
-      setErrorMessage('본인이 작성한 가치가챠 교환글 링크를 입력해 주세요.');
+      setErrorMessage('본인이 작성한 가치가챠 거래글 링크를 입력해 주세요.');
       return;
     }
 
@@ -221,10 +201,23 @@ export function EventApplicationRoute({
           <EventBadge>기간 한정 이벤트</EventBadge>
           <Header>가치가챠 굿즈 추첨 이벤트</Header>
           <SectionDescription>
-            교환글을 등록하고 원하는 트랙에 응모해 보세요. 회원 ID는 로그인
+            거래글을 등록하고 원하는 트랙에 응모해 보세요. 회원 ID는 로그인
             정보에서 자동으로 확인합니다.
           </SectionDescription>
-          <SectionDescription>{formatEventPeriod(config)}</SectionDescription>
+          <EventSchedule aria-label="이벤트 일정">
+            <li>
+              <EventScheduleLabel>이벤트 시작</EventScheduleLabel>
+              <strong>10/10 (토)</strong>
+            </li>
+            <li>
+              <EventScheduleLabel>이벤트 마감</EventScheduleLabel>
+              <strong>10/16 (금) 오후 11:59분</strong>
+            </li>
+            <li>
+              <EventScheduleLabel>당첨자 라이브 발표</EventScheduleLabel>
+              <strong>10/31 (토)</strong>
+            </li>
+          </EventSchedule>
         </Hero>
 
         <section aria-labelledby="event-guide-title">
@@ -233,8 +226,8 @@ export function EventApplicationRoute({
             <GuideCard>
               <GuideNumber>1</GuideNumber>
               <GuideText>
-                <strong>로그인</strong>
-                <span>가치가챠 회원으로 로그인해요.</span>
+                <strong>회원가입</strong>
+                <span>가치가챠 서비스에 회원가입</span>
               </GuideText>
             </GuideCard>
             <GuideCard>
@@ -246,22 +239,24 @@ export function EventApplicationRoute({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  @gachi__.gacha
+                  가치가챠 공식 인스타 계정 팔로우
                 </InstagramLink>
               </GuideText>
             </GuideCard>
             <GuideCard>
               <GuideNumber>3</GuideNumber>
               <GuideText>
-                <strong>교환글 등록</strong>
-                <span>본인이 작성한 교환글을 준비해요.</span>
+                <strong>가챠 거래 글 등록</strong>
+                <span>
+                  짱박아둔 가챠 다들 하나씩 있잖아요? 이제 빛을 볼 차례입니다.
+                </span>
               </GuideText>
             </GuideCard>
             <GuideCard>
               <GuideNumber>4</GuideNumber>
               <GuideText>
-                <strong>응모 제출</strong>
-                <span>트랙과 필수 정보를 제출해요.</span>
+                <strong>응모 폼 제출</strong>
+                <span>마이페이지 - 이벤트 응모에서 폼 입력해 제출하면 끝.</span>
               </GuideText>
             </GuideCard>
           </GuideGrid>
@@ -287,7 +282,7 @@ export function EventApplicationRoute({
           <FormCard>
             <SectionTitle>응모 정보</SectionTitle>
             <SectionDescription>
-              모든 항목은 필수입니다. 기존에 작성한 교환글도 사용할 수 있어요.
+              모든 항목은 필수입니다. 기존에 작성한 거래글도 사용할 수 있어요.
             </SectionDescription>
             <Form onSubmit={handleSubmit} data-private>
               <fieldset>
@@ -330,7 +325,7 @@ export function EventApplicationRoute({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="event-trade-link">교환글 링크</FieldLabel>
+                <FieldLabel htmlFor="event-trade-link">거래글 링크</FieldLabel>
                 <Input
                   id="event-trade-link"
                   type="url"
@@ -340,7 +335,7 @@ export function EventApplicationRoute({
                   required
                 />
                 <FieldDescription>
-                  본인이 작성한 가치가챠 교환글 주소를 입력해 주세요.
+                  본인이 작성한 가치가챠 거래글 주소를 입력해 주세요.
                 </FieldDescription>
               </Field>
 
@@ -350,7 +345,7 @@ export function EventApplicationRoute({
                   <div>
                     <dt>수집 항목</dt>
                     <dd>
-                      회원 ID, 희망 트랙, 인스타그램 ID, 교환글 링크, 응모 시각
+                      회원 ID, 희망 트랙, 인스타그램 ID, 거래글 링크, 응모 시각
                     </dd>
                   </div>
                   <div>

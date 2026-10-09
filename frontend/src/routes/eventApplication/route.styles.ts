@@ -84,6 +84,39 @@ export const SectionDescription = styled.p`
   line-height: ${lineHeight.relaxed};
 `;
 
+export const EventSchedule = styled.ul`
+  display: grid;
+  padding: ${space.md};
+  border: 1px solid rgb(237 142 78 / 24%);
+  border-radius: ${radius.control};
+  margin: ${space.lg} 0 0;
+  background: rgb(255 255 255 / 68%);
+  gap: ${space.xs};
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(124px, auto) 1fr;
+    gap: ${space.sm};
+  }
+
+  strong {
+    color: ${color.text};
+  }
+
+  @media (max-width: 440px) {
+    li {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+  }
+`;
+
+export const EventScheduleLabel = styled.span`
+  color: ${color.textMuted};
+  font-weight: ${fontWeight.bold};
+`;
+
 export const GuideGrid = styled.ol`
   display: grid;
   padding: 0;
@@ -167,7 +200,7 @@ export const Form = styled.form`
 export const TrackGrid = styled.div`
   display: grid;
   margin-top: ${space.sm};
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: ${space.sm};
 
   @media (max-width: 680px) {
@@ -195,6 +228,7 @@ export const TrackLabel = styled.label`
   input:checked + div {
     border-color: ${color.primary};
     background: ${color.primarySoft};
+    box-shadow: inset 0 0 0 2px ${color.primary};
   }
 `;
 
