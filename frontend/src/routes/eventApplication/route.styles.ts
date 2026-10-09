@@ -228,6 +228,7 @@ export const TrackLabel = styled.label`
   input:checked + div {
     border-color: ${color.primary};
     background: ${color.primarySoft};
+    box-shadow: inset 0 0 0 2px ${color.primary};
   }
 `;
 

@@ -43,6 +43,7 @@ function useAuthenticatedMember() {
 describe('EventApplicationRoute', () => {
   it('확정된 일정과 A·B 두 개의 응모 트랙만 안내한다', async () => {
     useAuthenticatedMember();
+    const user = userEvent.setup();
 
     renderWithProviders(
       <RequireAuth>
@@ -67,6 +68,11 @@ describe('EventApplicationRoute', () => {
     expect(
       screen.queryByRole('radio', { name: /두 트랙 모두/ }),
     ).not.toBeInTheDocument();
+
+    await user.click(screen.getByText('이벤트 B 트랙'));
+    expect(
+      screen.getByRole('radio', { name: /이벤트 B 트랙/ }),
+    ).toBeChecked();
   });
 
   it('로그인한 회원 ID와 입력한 응모 정보를 함께 제출한다', async () => {
