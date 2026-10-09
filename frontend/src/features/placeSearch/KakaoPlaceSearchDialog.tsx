@@ -56,7 +56,7 @@ export function KakaoPlaceSearchDialog({
   loadSdk = loadKakaoMapsSdk,
   searchPlaces = searchKakaoPlaces,
 }: KakaoPlaceSearchDialogProps) {
-  const dialogRef = useRef<HTMLElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const searchIdRef = useRef(0);
@@ -65,6 +65,24 @@ export function KakaoPlaceSearchDialog({
   const [status, setStatus] = useState<SearchStatus>('idle');
   const [results, setResults] = useState<KakaoPlaceSearchResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+
+    if (!dialog) {
+      return;
+    }
+
+    if (open && !dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -143,11 +161,6 @@ export function KakaoPlaceSearchDialog({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose();
-        return;
-      }
-
       if (event.key !== 'Tab') {
         return;
       }
@@ -190,7 +203,7 @@ export function KakaoPlaceSearchDialog({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;
@@ -248,21 +261,23 @@ export function KakaoPlaceSearchDialog({
     }
   }
 
-  function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
+  function handleBackdropClick(event: MouseEvent<HTMLDialogElement>) {
     if (event.target === event.currentTarget) {
       onClose();
     }
   }
 
   return createPortal(
-    <Backdrop onMouseDown={handleBackdropClick}>
-      <DialogPanel
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="kakao-place-dialog-title"
-        tabIndex={-1}
-      >
+    <Backdrop
+      ref={dialogRef}
+      aria-labelledby="kakao-place-dialog-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onMouseDown={handleBackdropClick}
+    >
+      <DialogPanel tabIndex={-1}>
         <DialogHeader>
           <div>
             <DialogTitle id="kakao-place-dialog-title">{title}</DialogTitle>
@@ -343,15 +358,27 @@ export function KakaoPlaceSearchDialog({
   );
 }
 
-const Backdrop = styled.div`
+const Backdrop = styled.dialog`
   position: fixed;
-  z-index: 100;
   inset: 0;
-  display: grid;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
   padding: 24px;
+  border: 0;
+  margin: 0;
   overflow-y: auto;
-  place-items: center;
-  background: rgb(20 20 24 / 48%);
+  background: transparent;
+
+  &[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  &::backdrop {
+    background: rgb(20 20 24 / 48%);
+  }
 `;
 
 const DialogPanel = styled.section`
