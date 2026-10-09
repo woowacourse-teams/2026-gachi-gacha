@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
 import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
-import { TradeStatusControl } from '@/domains/trade/components/TradeStatusControl';
 import type {
   TradeDetail as TradeDetailData,
   TradePlace,
@@ -50,13 +49,8 @@ export default function TradeDetail({
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [currentStatus, setCurrentStatus] = useState(detail.status);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
-
-  useEffect(() => {
-    setCurrentStatus(detail.status);
-  }, [detail.status]);
 
   return (
     <Wrapper>
@@ -105,15 +99,7 @@ export default function TradeDetail({
           <Title>{detail.title}</Title>
           <Meta>
             <span>{formatRelativeTime(detail.createdAt)}</span>
-            {action === 'edit' ? (
-              <TradeStatusControl
-                tradeId={detail.tradeId}
-                status={currentStatus}
-                onStatusChanged={setCurrentStatus}
-              />
-            ) : (
-              <TradeStatusBadge status={currentStatus} />
-            )}
+            <TradeStatusBadge status={detail.status} />
           </Meta>
 
           <Divider />

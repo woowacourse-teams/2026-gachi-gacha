@@ -3,7 +3,7 @@ import { useState } from 'react';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
-import { TradeStatusControl } from '@/domains/trade/components/TradeStatusControl';
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
@@ -118,7 +118,6 @@ export function MyPageRoute() {
     status: tradeStatus,
     errorMessage,
     retry,
-    applyStatusChange,
   } = useMyPageTrades();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
@@ -347,14 +346,7 @@ export function MyPageRoute() {
                         <TradeMeta>{getTradeMeta(trade)}</TradeMeta>
                       </TradeCopy>
                       <TradeSide>
-                        <TradeStatusControl
-                          tradeId={trade.tradeId}
-                          status={trade.status}
-                          contextLabel={trade.title}
-                          onStatusChanged={(status) =>
-                            applyStatusChange(trade.tradeId, status)
-                          }
-                        />
+                        <TradeStatusBadge status={trade.status} />
                         <TradeEditLink
                           to={`/trade/${trade.tradeId}/edit`}
                           aria-label={`${trade.title} 수정`}
