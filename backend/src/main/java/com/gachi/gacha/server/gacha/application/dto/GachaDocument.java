@@ -22,7 +22,7 @@ public record GachaDocument(
 ) {
     public record Location(double lat, double lon) {}
 
-    public static GachaDocument of(Gacha gacha, List<Store> stores) {
+    public static GachaDocument of(final Gacha gacha, final List<Store> stores) {
         var categories = gacha.getGachaCategories().stream()
                 .map(GachaCategory::getCategory).toList();
 
