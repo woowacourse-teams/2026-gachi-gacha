@@ -41,7 +41,7 @@ function useAuthenticatedMember() {
 }
 
 describe('EventApplicationRoute', () => {
-  it('확정된 일정과 A·B 두 개의 응모 트랙만 안내한다', async () => {
+  it('확정된 일정과 A·B·두 트랙 모두 응모 선택지를 안내한다', async () => {
     useAuthenticatedMember();
     const user = userEvent.setup();
 
@@ -58,7 +58,7 @@ describe('EventApplicationRoute', () => {
     expect(await screen.findByText('10/10 (토)')).toBeInTheDocument();
     expect(screen.getByText('10/16 (금) 오후 11:59분')).toBeInTheDocument();
     expect(screen.getByText('10/31 (토)')).toBeInTheDocument();
-    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(
       screen.getByRole('radio', { name: /이벤트 A 트랙/ }),
     ).toBeInTheDocument();
@@ -66,11 +66,17 @@ describe('EventApplicationRoute', () => {
       screen.getByRole('radio', { name: /이벤트 B 트랙/ }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('radio', { name: /두 트랙 모두/ }),
-    ).not.toBeInTheDocument();
+      screen.getByRole('radio', { name: /두 트랙 모두/ }),
+    ).toBeInTheDocument();
 
-    await user.click(screen.getByText('이벤트 B 트랙'));
-    expect(screen.getByRole('radio', { name: /이벤트 B 트랙/ })).toBeChecked();
+    await user.click(screen.getByText('두 트랙 모두'));
+    expect(screen.getByRole('radio', { name: /두 트랙 모두/ })).toBeChecked();
+    expect(
+      screen.getByRole('radio', { name: /이벤트 A 트랙/ }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole('radio', { name: /이벤트 B 트랙/ }),
+    ).not.toBeChecked();
   });
 
   it('로그인한 회원 ID와 입력한 응모 정보를 함께 제출한다', async () => {
@@ -95,7 +101,7 @@ describe('EventApplicationRoute', () => {
     );
 
     await user.click(
-      await screen.findByRole('radio', { name: /이벤트 B 트랙/ }),
+      await screen.findByRole('radio', { name: /두 트랙 모두/ }),
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), '@gachi__.gacha');
     await user.type(
@@ -111,7 +117,7 @@ describe('EventApplicationRoute', () => {
       expect(submitApplication).toHaveBeenCalledWith({
         eventId: 'popular-goods-giveaway-2026',
         memberId: '37',
-        desiredTrack: 'COMPLETED',
+        desiredTrack: 'BOTH',
         instagramId: 'gachi__.gacha',
         tradeId: 153,
         tradeUrl: 'https://gachigacha.kro.kr/trade/153',

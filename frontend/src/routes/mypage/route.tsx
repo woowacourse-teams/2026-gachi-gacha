@@ -304,7 +304,7 @@ export function MyPageRoute() {
                   </SummaryIcon>
                 </SummaryTop>
                 <SummaryValue>—</SummaryValue>
-                <SummaryDescription>관심 API 연결 준비 중</SummaryDescription>
+                <SummaryDescription>관심 기능 준비 중</SummaryDescription>
               </SummaryCard>
               <SummaryCard>
                 <SummaryTop>
@@ -314,7 +314,7 @@ export function MyPageRoute() {
                   </SummaryIcon>
                 </SummaryTop>
                 <SummaryValue>—</SummaryValue>
-                <SummaryDescription>관심 API 연결 준비 중</SummaryDescription>
+                <SummaryDescription>관심 기능 준비 중</SummaryDescription>
               </SummaryCard>
             </SummaryGrid>
 
@@ -401,7 +401,7 @@ export function MyPageRoute() {
               <Card>
                 <CardHeader>
                   <CardTitle>관심 가챠</CardTitle>
-                  <PreparationBadge>API 준비 중</PreparationBadge>
+                  <PreparationBadge>기능 준비 중</PreparationBadge>
                 </CardHeader>
                 <InterestBody>
                   <EmptyIcon>
@@ -416,7 +416,7 @@ export function MyPageRoute() {
               <Card>
                 <CardHeader>
                   <CardTitle>관심 매장</CardTitle>
-                  <PreparationBadge>API 준비 중</PreparationBadge>
+                  <PreparationBadge>기능 준비 중</PreparationBadge>
                 </CardHeader>
                 <InterestBody>
                   <EmptyIcon>

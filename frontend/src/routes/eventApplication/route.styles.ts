@@ -200,10 +200,10 @@ export const Form = styled.form`
 export const TrackGrid = styled.div`
   display: grid;
   margin-top: ${space.sm};
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: ${space.sm};
 
-  @media (max-width: 680px) {
+  @media (max-width: 760px) {
     grid-template-columns: 1fr;
   }
 `;

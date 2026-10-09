@@ -72,6 +72,19 @@ describe('MyPageRoute 내 교환글 수정', () => {
       await screen.findByRole('link', { name: /이벤트 응모/ }),
     ).toHaveAttribute('href', '/events/popular-goods');
   });
+
+  it('준비 중인 기능을 기술 용어 없이 안내한다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(await screen.findAllByText('관심 기능 준비 중')).toHaveLength(2);
+    expect(screen.getAllByText('기능 준비 중')).toHaveLength(2);
+    expect(screen.queryByText(/API.*준비|준비.*API/)).not.toBeInTheDocument();
+  });
 });
 
 describe('MyPageRoute 내 교환글 상태 조회', () => {
