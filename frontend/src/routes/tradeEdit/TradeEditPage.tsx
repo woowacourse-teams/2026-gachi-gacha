@@ -49,9 +49,9 @@ export default function TradeEditPage({
 
       <Main>
         <Heading>
-          <Title>교환 글 수정</Title>
+          <Title>거래 글 수정</Title>
           <Description>
-            등록한 교환 정보를 확인하고 수정할 수 있어요.
+            등록한 거래 정보를 확인하고 수정할 수 있어요.
           </Description>
         </Heading>
 

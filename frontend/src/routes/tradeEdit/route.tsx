@@ -40,7 +40,7 @@ export function TradeEditRoute({ tradeId }: TradeEditRouteProps) {
     categoryState.status === 'loading' ||
     categoryState.status === 'idle'
   ) {
-    return <PageLoadingFallback label="수정할 교환 글을 불러오고 있어요." />;
+    return <PageLoadingFallback label="수정할 거래 글을 불러오고 있어요." />;
   }
 
   if (detailState.status === 'error' || categoryState.status === 'error') {
@@ -49,11 +49,11 @@ export function TradeEditRoute({ tradeId }: TradeEditRouteProps) {
         ? detailState.errorMessage
         : categoryState.status === 'error'
           ? categoryState.errorMessage
-          : '수정할 교환 글을 불러오지 못했습니다.';
+          : '수정할 거래 글을 불러오지 못했습니다.';
 
     return (
       <MessagePage
-        title="수정할 교환 글을 불러오지 못했어요"
+        title="수정할 거래 글을 불러오지 못했어요"
         description={errorMessage}
         actionLabel="다시 시도"
         onAction={() => {
@@ -68,7 +68,7 @@ export function TradeEditRoute({ tradeId }: TradeEditRouteProps) {
     return (
       <MessagePage
         title="게시글을 수정할 수 없어요"
-        description="작성자만 교환 게시글을 수정할 수 있습니다."
+        description="작성자만 거래 게시글을 수정할 수 있습니다."
         href={`/trade/${tradeId}`}
         actionLabel="게시글로 돌아가기"
       />

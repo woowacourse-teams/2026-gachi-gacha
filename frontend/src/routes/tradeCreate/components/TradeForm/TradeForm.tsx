@@ -220,7 +220,7 @@ export default function TradeForm(props: TradeFormProps) {
       setSubmissionError(
         error instanceof Error
           ? error.message
-          : `교환 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
+          : `거래 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
       );
     } finally {
       submittingRef.current = false;
@@ -259,7 +259,7 @@ export default function TradeForm(props: TradeFormProps) {
             aria-describedby={
               titleErrorMessage ? 'trade-title-error' : undefined
             }
-            placeholder="교환할 가챠를 알아보기 쉽게 적어주세요"
+            placeholder="거래할 가챠를 알아보기 쉽게 적어주세요"
             onChange={() => {
               if (titleErrorMessage) {
                 setTitleErrorMessage(null);
@@ -274,7 +274,22 @@ export default function TradeForm(props: TradeFormProps) {
         </Field>
 
         <Field>
-          <Label htmlFor="trade-category-search">카테고리</Label>
+          <Label htmlFor="trade-description">
+            설명 <RequiredMark aria-hidden="true">*</RequiredMark>
+          </Label>
+          <Textarea
+            id="trade-description"
+            name="description"
+            defaultValue={initialValues?.description}
+            required
+            placeholder="가챠의 상태와 거래 방법을 자세히 적어주세요"
+          />
+        </Field>
+
+        <Field>
+          <Label htmlFor="trade-category-search">
+            카테고리 <OptionalMark>(선택)</OptionalMark>
+          </Label>
           <Input
             id="trade-category-search"
             type="search"
@@ -344,18 +359,22 @@ export default function TradeForm(props: TradeFormProps) {
         </Field>
 
         <Field>
-          <Label htmlFor="trade-desired-production">교환 희망 상품</Label>
+          <Label htmlFor="trade-desired-production">
+            거래 희망 상품 <OptionalMark>(선택)</OptionalMark>
+          </Label>
           <Input
             id="trade-desired-production"
             name="desiredProduction"
             defaultValue={initialValues?.desiredProduction}
             maxLength={MAX_SHORT_TEXT_LENGTH}
-            placeholder="예: 시나모롤 키링 또는 산리오 랜덤 교환"
+            placeholder="예: 시나모롤 키링 또는 산리오 랜덤 상품"
           />
         </Field>
 
         <Field>
-          <Label htmlFor="purchase-store">구매 매장</Label>
+          <Label htmlFor="purchase-store">
+            구매 매장 <OptionalMark>(선택)</OptionalMark>
+          </Label>
           <PlaceSelectButton
             id="purchase-store"
             type="button"
@@ -415,7 +434,9 @@ export default function TradeForm(props: TradeFormProps) {
         </Field>
 
         <Field>
-          <Label htmlFor="trade-place">교환 장소</Label>
+          <Label htmlFor="trade-place">
+            거래 장소 <OptionalMark>(선택)</OptionalMark>
+          </Label>
           <PlaceSelectButton
             id="trade-place"
             type="button"
@@ -426,7 +447,7 @@ export default function TradeForm(props: TradeFormProps) {
               <PlacePrimary data-placeholder={!tradePlace}>
                 {tradePlace?.name ||
                   tradePlace?.address ||
-                  '교환할 장소를 선택해주세요'}
+                  '거래할 장소를 선택해주세요'}
               </PlacePrimary>
               {tradePlace?.name && (
                 <PlaceSecondary>{tradePlace.address}</PlaceSecondary>
@@ -437,7 +458,7 @@ export default function TradeForm(props: TradeFormProps) {
             <>
               <ClearPlaceButton
                 type="button"
-                aria-label="교환 장소 선택 해제"
+                aria-label="거래 장소 선택 해제"
                 onClick={() => {
                   captureAnalyticsEvent('place_selection_cleared', {
                     place_context: 'trade_exchange_place',
@@ -474,19 +495,6 @@ export default function TradeForm(props: TradeFormProps) {
           )}
         </Field>
 
-        <Field>
-          <Label htmlFor="trade-description">
-            설명 <RequiredMark aria-hidden="true">*</RequiredMark>
-          </Label>
-          <Textarea
-            id="trade-description"
-            name="description"
-            defaultValue={initialValues?.description}
-            required
-            placeholder="가챠의 상태와 교환 방법을 자세히 적어주세요"
-          />
-        </Field>
-
         {submissionError && (
           <SubmissionError role="alert">{submissionError}</SubmissionError>
         )}
@@ -512,6 +520,8 @@ export default function TradeForm(props: TradeFormProps) {
         open={isPlaceDialogOpen}
         analyticsContext="trade_exchange_place"
         analyticsTradeFormMode={isEditMode ? 'edit' : 'create'}
+        title="거래 장소 선택"
+        description="지하철역이나 건물명을 검색해주세요."
         onClose={() => setIsPlaceDialogOpen(false)}
         onSelect={setTradePlace}
       />
@@ -563,6 +573,13 @@ const Label = styled.label`
 
 const RequiredMark = styled.span`
   color: #ed174c;
+`;
+
+const OptionalMark = styled.span`
+  margin-left: 4px;
+  color: #92949c;
+  font-size: 13px;
+  font-weight: 500;
 `;
 
 const Input = styled.input`

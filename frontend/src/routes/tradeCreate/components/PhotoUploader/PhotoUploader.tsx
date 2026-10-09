@@ -104,16 +104,16 @@ export default function PhotoUploader({
 
         {visibleInitialImageUrls.map((url, index) => (
           <PreviewItem key={url}>
-            <PreviewImage src={url} alt={`기존 교환 사진 ${index + 1}`} />
+            <PreviewImage src={url} alt={`기존 거래 사진 ${index + 1}`} />
           </PreviewItem>
         ))}
 
         {previewUrls.map((url, index) => (
           <PreviewItem key={url}>
-            <PreviewImage src={url} alt={`교환 사진 ${index + 1}`} />
+            <PreviewImage src={url} alt={`거래 사진 ${index + 1}`} />
             <RemoveButton
               type="button"
-              aria-label={`교환 사진 ${index + 1} 삭제`}
+              aria-label={`거래 사진 ${index + 1} 삭제`}
               onClick={() => handleRemove(index)}
             >
               ×

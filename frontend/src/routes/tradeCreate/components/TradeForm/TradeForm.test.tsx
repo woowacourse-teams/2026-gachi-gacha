@@ -18,7 +18,7 @@ import TradeForm from './TradeForm';
 jest.mock('@/features/placeSearch/KakaoPlaceSearchDialog', () => ({
   KakaoPlaceSearchDialog: ({
     open,
-    title = '교환 장소 선택',
+    title = '거래 장소 선택',
     onClose,
     onSelect,
   }: {
@@ -65,7 +65,7 @@ function renderTradeFormWithDetailRoute() {
         <Route path="/trade/new" element={<TradeForm />} />
         <Route
           path="/trade/:tradeId"
-          element={<p>등록된 교환 게시글 상세</p>}
+          element={<p>등록된 거래 게시글 상세</p>}
         />
       </Routes>
     </MemoryRouter>,
@@ -151,7 +151,7 @@ describe('TradeForm', () => {
     expect(requestedKeywords).toHaveLength(0);
 
     await user.type(
-      screen.getByRole('searchbox', { name: '카테고리' }),
+      screen.getByRole('searchbox', { name: /카테고리/ }),
       '포켓',
     );
 
@@ -187,7 +187,9 @@ describe('TradeForm', () => {
     );
     const user = userEvent.setup();
     renderTradeForm();
-    const categorySearch = screen.getByRole('searchbox', { name: '카테고리' });
+    const categorySearch = screen.getByRole('searchbox', {
+      name: /카테고리/,
+    });
 
     await user.type(categorySearch, '포켓');
     await screen.findByRole('button', { name: '포켓몬' });
@@ -204,8 +206,8 @@ describe('TradeForm', () => {
     renderTradeForm();
     const singleLineInputs = [
       screen.getByRole('textbox', { name: /제목/ }),
-      screen.getByRole('textbox', { name: '교환 희망 상품' }),
-      screen.getByRole('searchbox', { name: '카테고리' }),
+      screen.getByRole('textbox', { name: /거래 희망 상품/ }),
+      screen.getByRole('searchbox', { name: /카테고리/ }),
     ];
 
     singleLineInputs.forEach((input) => {
@@ -226,10 +228,10 @@ describe('TradeForm', () => {
     expect(screen.getByRole('textbox', { name: /제목/ })).toBeRequired();
     expect(screen.getByRole('textbox', { name: /설명/ })).toBeRequired();
     expect(
-      screen.getByRole('textbox', { name: '교환 희망 상품' }),
+      screen.getByRole('textbox', { name: /거래 희망 상품/ }),
     ).not.toBeRequired();
     expect(
-      screen.getByRole('searchbox', { name: '카테고리' }),
+      screen.getByRole('searchbox', { name: /카테고리/ }),
     ).not.toBeRequired();
 
     fireEvent.submit(container.querySelector('form') as HTMLFormElement);
@@ -239,12 +241,33 @@ describe('TradeForm', () => {
     );
   });
 
-  it('제목과 교환 희망 상품을 255자로 제한하고 공백 제목을 안내한다', async () => {
+  it('필수 항목을 먼저 보여주고 선택 항목임을 일관되게 안내한다', () => {
+    renderTradeForm();
+    const fields = [
+      screen.getByRole('group', { name: /사진/ }),
+      screen.getByRole('textbox', { name: /제목/ }),
+      screen.getByRole('textbox', { name: /설명/ }),
+      screen.getByRole('searchbox', { name: /카테고리/ }),
+      screen.getByRole('textbox', { name: /거래 희망 상품/ }),
+      screen.getByRole('button', { name: /구매 매장/ }),
+      screen.getByRole('button', { name: /거래 장소/ }),
+    ];
+
+    fields.slice(0, -1).forEach((field, index) => {
+      expect(
+        field.compareDocumentPosition(fields[index + 1]!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+    expect(screen.getAllByText('(선택)')).toHaveLength(4);
+  });
+
+  it('제목과 거래 희망 상품을 255자로 제한하고 공백 제목을 안내한다', async () => {
     const user = userEvent.setup();
     const { container } = renderTradeForm();
     const titleInput = screen.getByRole('textbox', { name: /제목/ });
     const desiredProductionInput = screen.getByRole('textbox', {
-      name: '교환 희망 상품',
+      name: /거래 희망 상품/,
     });
 
     expect(titleInput).toHaveAttribute('maxlength', '255');
@@ -262,13 +285,13 @@ describe('TradeForm', () => {
     );
   });
 
-  it('선택한 구매 매장과 교환 장소를 다시 해제한다', async () => {
+  it('선택한 구매 매장과 거래 장소를 다시 해제한다', async () => {
     const user = userEvent.setup();
     const { container } = renderTradeForm();
 
     await user.click(
       screen.getByRole('button', {
-        name: '구매 매장',
+        name: /구매 매장/,
       }),
     );
     await user.click(
@@ -287,9 +310,9 @@ describe('TradeForm', () => {
       container.querySelector('input[name="purchaseStore.address"]'),
     ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '교환 장소' }));
+    await user.click(screen.getByRole('button', { name: /거래 장소/ }));
     await user.click(
-      screen.getByRole('button', { name: '교환 장소 선택 테스트 장소 선택' }),
+      screen.getByRole('button', { name: '거래 장소 선택 테스트 장소 선택' }),
     );
 
     expect(
@@ -297,7 +320,7 @@ describe('TradeForm', () => {
     ).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', { name: '교환 장소 선택 해제' }),
+      screen.getByRole('button', { name: '거래 장소 선택 해제' }),
     );
 
     expect(
@@ -341,7 +364,7 @@ describe('TradeForm', () => {
     releaseRequest();
 
     expect(
-      await screen.findByText('등록된 교환 게시글 상세'),
+      await screen.findByText('등록된 거래 게시글 상세'),
     ).toBeInTheDocument();
   });
 

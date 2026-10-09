@@ -41,13 +41,13 @@ describe('PhotoUploader', () => {
 
     expect(fileInput?.files).toHaveLength(0);
     expect(
-      await screen.findByRole('img', { name: '교환 사진 1' }),
+      await screen.findByRole('img', { name: '거래 사진 1' }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '교환 사진 1 삭제' }));
+    await user.click(screen.getByRole('button', { name: '거래 사진 1 삭제' }));
 
     expect(
-      screen.queryByRole('img', { name: '교환 사진 1' }),
+      screen.queryByRole('img', { name: '거래 사진 1' }),
     ).not.toBeInTheDocument();
   });
 
@@ -60,7 +60,7 @@ describe('PhotoUploader', () => {
       container.querySelector<HTMLInputElement>('input[type="file"]');
 
     expect(
-      screen.getAllByRole('img', { name: /^기존 교환 사진/ }),
+      screen.getAllByRole('img', { name: /^기존 거래 사진/ }),
     ).toHaveLength(5);
     expect(screen.getByText('(5/5)')).toBeInTheDocument();
     // 기존 사진이 가득 차 있어도 교체할 수 있도록 추가 버튼을 보여준다.
@@ -74,17 +74,17 @@ describe('PhotoUploader', () => {
     );
 
     expect(
-      await screen.findByRole('img', { name: '교환 사진 1' }),
+      await screen.findByRole('img', { name: '거래 사진 1' }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole('img', { name: /^기존 교환 사진/ }),
+      screen.queryByRole('img', { name: /^기존 거래 사진/ }),
     ).not.toBeInTheDocument();
     expect(screen.getByText('(1/5)')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: '교환 사진 1 삭제' }));
+    await user.click(screen.getByRole('button', { name: '거래 사진 1 삭제' }));
 
     expect(
-      screen.getAllByRole('img', { name: /^기존 교환 사진/ }),
+      screen.getAllByRole('img', { name: /^기존 거래 사진/ }),
     ).toHaveLength(5);
   });
 
@@ -103,7 +103,7 @@ describe('PhotoUploader', () => {
     await user.upload(fileInput as HTMLInputElement, newImages);
 
     expect(
-      await screen.findAllByRole('img', { name: /^교환 사진/ }),
+      await screen.findAllByRole('img', { name: /^거래 사진/ }),
     ).toHaveLength(5);
     expect(
       screen.queryByRole('button', { name: '사진 추가' }),
@@ -132,7 +132,7 @@ describe('PhotoUploader', () => {
       '지원하지 않는 형식입니다.',
     );
     expect(
-      screen.queryByRole('img', { name: /^교환 사진/ }),
+      screen.queryByRole('img', { name: /^거래 사진/ }),
     ).not.toBeInTheDocument();
 
     await user.upload(
@@ -141,7 +141,7 @@ describe('PhotoUploader', () => {
     );
 
     expect(
-      await screen.findByRole('img', { name: '교환 사진 1' }),
+      await screen.findByRole('img', { name: '거래 사진 1' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -159,7 +159,7 @@ describe('PhotoUploader', () => {
     ]);
 
     expect(
-      await screen.findAllByRole('img', { name: /^교환 사진/ }),
+      await screen.findAllByRole('img', { name: /^거래 사진/ }),
     ).toHaveLength(1);
     expect(screen.getByRole('alert')).toHaveTextContent(
       '지원하지 않는 형식입니다.',
@@ -182,7 +182,7 @@ describe('PhotoUploader', () => {
       '사진은 한 장당 10MB 이하만 올릴 수 있어요.',
     );
     expect(
-      screen.queryByRole('img', { name: /^교환 사진/ }),
+      screen.queryByRole('img', { name: /^거래 사진/ }),
     ).not.toBeInTheDocument();
   });
 });
