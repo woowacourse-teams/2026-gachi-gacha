@@ -15,6 +15,11 @@ const POSTHOG_ENABLED = process.env.POSTHOG_ENABLED === 'true';
 const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY ?? '';
 const POSTHOG_API_HOST =
   process.env.POSTHOG_API_HOST ?? 'https://us.i.posthog.com';
+const EVENT_APPLICATION_ENABLED =
+  process.env.EVENT_APPLICATION_ENABLED === 'true';
+const EVENT_APPLICATION_ENDPOINT = process.env.EVENT_APPLICATION_ENDPOINT ?? '';
+const EVENT_APPLICATION_START_AT = process.env.EVENT_APPLICATION_START_AT ?? '';
+const EVENT_APPLICATION_END_AT = process.env.EVENT_APPLICATION_END_AT ?? '';
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
 const DEV_SERVER_PORT = Number(process.env.DEV_SERVER_PORT ?? 3000);
@@ -95,6 +100,16 @@ module.exports = (_env, argv) => {
         __POSTHOG_ENABLED__: JSON.stringify(POSTHOG_ENABLED),
         __POSTHOG_API_KEY__: JSON.stringify(POSTHOG_API_KEY),
         __POSTHOG_API_HOST__: JSON.stringify(POSTHOG_API_HOST),
+        __EVENT_APPLICATION_ENABLED__: JSON.stringify(
+          EVENT_APPLICATION_ENABLED,
+        ),
+        __EVENT_APPLICATION_ENDPOINT__: JSON.stringify(
+          EVENT_APPLICATION_ENDPOINT,
+        ),
+        __EVENT_APPLICATION_START_AT__: JSON.stringify(
+          EVENT_APPLICATION_START_AT,
+        ),
+        __EVENT_APPLICATION_END_AT__: JSON.stringify(EVENT_APPLICATION_END_AT),
         __APP_ENV__: JSON.stringify(appEnvironment),
         __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),

@@ -99,8 +99,12 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `profile_update_completed`    | 프로필 저장 완료                 | `outcome`, `has_trade_location`, `trade_location_change` |
 | `account_menu_selected`       | 방침·고객센터·로그아웃·탈퇴 선택 | `target`, `source`                                       |
 | `account_deletion_completed`  | 회원 탈퇴 요청 완료              | `outcome`                                                |
+| `event_application_started`   | 마이페이지에서 이벤트 응모 진입  | `source`                                                 |
+| `event_application_completed` | 이벤트 응모 제출 완료            | `track`, `outcome`                                       |
 
 `trade_location_change`는 `unchanged`, `set`, `changed`, `cleared` 중 하나다. 위치명과 주소 자체는 전송하지 않는다.
+
+이벤트 분석에는 Instagram ID, 교환글 링크, memberId를 이벤트 속성으로 보내지 않는다. 로그인 회원 식별은 기존 PostHog identify 문맥을 사용하며 `track`은 `BASIC`, `COMPLETED`, `BOTH` 중 하나다.
 
 ## 핵심 지표와 해석
 
@@ -189,7 +193,11 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 검색만 하고 저장하지 않는 이탈과, 기존 값을 해제하는 행동을 구분할 수 있다.
 
-### F. 기능 안정성
+### F. 이벤트 응모 전환율
+
+`event_application_started` 대비 성공한 `event_application_completed` 비율을 보고, `track`별 응모 비중과 제출 실패율을 함께 확인한다. 실제 응모자 수와 중복 여부의 기준값은 Google Sheets 또는 백엔드 접수 데이터로 두며 PostHog에는 개인정보를 보내지 않는다.
+
+### G. 기능 안정성
 
 - `*_completed`의 `outcome = failure` 추이
 - `gacha_search_failed`, `store_results_failed`
