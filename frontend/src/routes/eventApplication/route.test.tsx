@@ -70,9 +70,7 @@ describe('EventApplicationRoute', () => {
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByText('이벤트 B 트랙'));
-    expect(
-      screen.getByRole('radio', { name: /이벤트 B 트랙/ }),
-    ).toBeChecked();
+    expect(screen.getByRole('radio', { name: /이벤트 B 트랙/ })).toBeChecked();
   });
 
   it('로그인한 회원 ID와 입력한 응모 정보를 함께 제출한다', async () => {
