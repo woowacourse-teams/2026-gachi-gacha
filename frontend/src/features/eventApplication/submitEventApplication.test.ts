@@ -6,7 +6,7 @@ import { submitEventApplication } from './submitEventApplication';
 const INPUT = {
   eventId: 'popular-goods-giveaway-2026',
   memberId: '17',
-  desiredTrack: 'COMPLETED',
+  desiredTrack: 'BOTH',
   instagramId: 'gachi__.gacha',
   tradeId: 153,
   tradeUrl: 'https://gachigacha.kro.kr/trade/153',

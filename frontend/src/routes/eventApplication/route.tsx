@@ -71,6 +71,11 @@ const TRACK_OPTIONS = [
     title: '이벤트 B 트랙',
     description: 'A 트랙 조건에 실제 거래 완료 1건을 더해 응모해요.',
   },
+  {
+    value: 'BOTH',
+    title: '두 트랙 모두',
+    description: 'A·B 트랙에 모두 응모해요. 실제 거래 완료 1건이 필요해요.',
+  },
 ] satisfies Array<{
   value: EventApplicationTrack;
   title: string;

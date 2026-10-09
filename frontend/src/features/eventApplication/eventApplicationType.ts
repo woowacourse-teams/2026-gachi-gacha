@@ -1,4 +1,4 @@
-export type EventApplicationTrack = 'BASIC' | 'COMPLETED';
+export type EventApplicationTrack = 'BASIC' | 'COMPLETED' | 'BOTH';
 
 export interface EventApplicationInput {
   eventId: 'popular-goods-giveaway-2026';
