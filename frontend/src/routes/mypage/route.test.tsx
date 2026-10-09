@@ -57,7 +57,7 @@ describe('MyPageRoute 내 교환글 수정', () => {
   });
 });
 
-describe('MyPageRoute 내 교환글 상태 변경', () => {
+describe('MyPageRoute 내 교환글 상태 조회', () => {
   beforeEach(() => {
     storeAuthTokens({
       accessToken: AUTH_STORY_TOKEN,
@@ -65,37 +65,8 @@ describe('MyPageRoute 내 교환글 상태 변경', () => {
     });
   });
 
-  it('상태를 변경하면 카드와 진행 중 집계에 즉시 반영한다', async () => {
-    const user = userEvent.setup();
-    let requestBody: unknown = null;
-
-    server.use(
-      authenticatedMemberHandler,
-      myTradesHandler,
-      http.patch('/api/v1/trades/17/status', async ({ request }) => {
-        requestBody = await request.json();
-
-        return HttpResponse.json({
-          code: 'C002',
-          message: '정상 수정',
-          data: {
-            tradeId: 17,
-            memberId: 1,
-            title: '쿠로미 미니 피규어 vol.2 교환해요',
-            description: null,
-            desiredProduction: null,
-            categories: ['산리오', '피규어'],
-            status: 'COMPLETED',
-            purchaseStore: null,
-            tradePlace: null,
-            availableTime: null,
-            imageUrls: [],
-            createdAt: '2026-09-25T19:30:00',
-            updatedAt: '2026-10-06T17:00:00',
-          },
-        });
-      }),
-    );
+  it('현재 상태를 배지로 보여주되 직접 변경하는 버튼은 제공하지 않는다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
 
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
@@ -108,23 +79,10 @@ describe('MyPageRoute 내 교환글 상태 변경', () => {
 
     expect(inProgressSummary).not.toBeNull();
     expect(within(inProgressSummary!).getByText('1')).toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('button', {
-        name: '쿠로미 미니 피규어 vol.2 교환해요 교환 상태: 교환 진행 중',
-      }),
-    );
-    await user.click(screen.getByRole('menuitemradio', { name: '교환 완료' }));
-
-    expect(requestBody).toEqual({ status: 'COMPLETED' });
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', {
-          name: '쿠로미 미니 피규어 vol.2 교환해요 교환 상태: 교환 완료',
-        }),
-      ).toBeInTheDocument();
-      expect(within(inProgressSummary!).getByText('0')).toBeInTheDocument();
-    });
+    expect(screen.getByText('교환 진행 중')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /교환 상태:/ }),
+    ).not.toBeInTheDocument();
   });
 });
 
