@@ -1,0 +1,148 @@
+# 이벤트 응모 운영 가이드
+
+## 현재 프론트 계약
+
+응모 페이지는 다음 JSON을 `EVENT_APPLICATION_ENDPOINT`에 `POST`합니다.
+
+```json
+{
+  "eventId": "popular-goods-giveaway-2026",
+  "memberId": "37",
+  "desiredTrack": "BOTH",
+  "instagramId": "gachi__.gacha",
+  "tradeId": 153,
+  "tradeUrl": "https://gachigacha.kro.kr/trade/153",
+  "privacyConsent": true
+}
+```
+
+`desiredTrack`은 `BASIC`, `COMPLETED`, `BOTH` 중 하나입니다. 프론트는
+Google Apps Script의 CORS 사전 요청을 피하기 위해 `Content-Type:
+text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
+
+## 스프레드시트 준비
+
+첫 번째 행에 다음 열을 만듭니다.
+
+```text
+submittedAt | eventId | memberId | desiredTrack | instagramId | tradeId | tradeUrl | privacyConsent
+```
+
+스프레드시트의 `확장 프로그램 > Apps Script`에서 아래 예시를 사용할 수
+있습니다. 같은 이벤트와 회원의 재제출은 새 행을 만들지 않고 기존 행을 최신
+내용으로 교체합니다.
+
+```javascript
+const SHEET_NAME = '응모';
+
+function json(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
+}
+
+function doPost(event) {
+  const lock = LockService.getScriptLock();
+
+  try {
+    const input = JSON.parse(event.postData.contents);
+    const required = [
+      'eventId',
+      'memberId',
+      'desiredTrack',
+      'instagramId',
+      'tradeId',
+      'tradeUrl',
+      'privacyConsent',
+    ];
+
+    if (required.some((key) => input[key] === undefined || input[key] === '')) {
+      return json({ ok: false, message: '필수 응모 정보가 없습니다.' });
+    }
+
+    if (!['BASIC', 'COMPLETED', 'BOTH'].includes(input.desiredTrack)) {
+      return json({ ok: false, message: '희망 트랙이 올바르지 않습니다.' });
+    }
+
+    lock.waitLock(10000);
+
+    const sheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return json({ ok: false, message: '응모 시트를 찾지 못했습니다.' });
+    }
+
+    const row = [
+      new Date(),
+      input.eventId,
+      String(input.memberId),
+      input.desiredTrack,
+      input.instagramId,
+      Number(input.tradeId),
+      input.tradeUrl,
+      input.privacyConsent === true,
+    ];
+    const values = sheet.getDataRange().getValues();
+    const existingIndex = values.findIndex(
+      (current, index) =>
+        index > 0 &&
+        current[1] === input.eventId &&
+        String(current[2]) === String(input.memberId),
+    );
+
+    if (existingIndex >= 0) {
+      sheet.getRange(existingIndex + 1, 1, 1, row.length).setValues([row]);
+    } else {
+      sheet.appendRow(row);
+    }
+
+    return json({ ok: true });
+  } catch (error) {
+    return json({ ok: false, message: '응모 정보를 저장하지 못했습니다.' });
+  } finally {
+    lock.releaseLock();
+  }
+}
+```
+
+Apps Script에서 `배포 > 새 배포 > 웹 앱`을 선택하고 실행 계정과 접근 범위를
+설정한 뒤 `/exec`로 끝나는 웹 앱 URL을 사용합니다. 개발 도메인에서 실제 POST를
+한 번 보내 리디렉션과 CORS 동작까지 확인해야 합니다.
+
+## 프론트 배포 환경변수
+
+```dotenv
+EVENT_APPLICATION_ENABLED=true
+EVENT_APPLICATION_START_AT=2026-10-20T00:00:00+09:00
+EVENT_APPLICATION_END_AT=2026-10-31T23:59:59+09:00
+EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/.../exec
+```
+
+시작·종료 시각, 제출 URL 중 하나라도 없거나 잘못되면 마이페이지 버튼은
+노출되지 않고 직접 접근한 페이지에서도 제출 폼을 열지 않습니다.
+
+## 운영 전 필수 확인
+
+- 이벤트 응모정보의 보유기간과 파기 시점을 확정하고 개인정보처리방침에
+  `memberId`, Instagram ID, 교환글 링크, 희망 트랙, Google Sheets 사용 목적을
+  반영합니다.
+- 스프레드시트 열람 권한은 이벤트 담당자에게만 부여합니다.
+- 완료 트랙의 인정 기준과 교환 완료 상태를 누가·어떻게 확정하는지 정합니다.
+- 같은 회원의 재제출을 허용할지, 마지막 제출로 덮어쓸지 정책을 확정합니다.
+- 두 트랙 중복 응모와 중복 당첨 제외 순서를 추첨 절차에 기록합니다.
+
+## 보안상 권장 구조
+
+Apps Script URL은 브라우저에 공개되며, 브라우저가 보내는 `memberId`는 위조할 수
+있습니다. 따라서 직접 시트 전송 방식은 참가 후보를 모으는 임시 수단으로만
+사용하고 모든 당첨 후보를 서버 데이터로 다시 검증해야 합니다.
+
+경품과 중복 응모를 정확히 통제하려면 다음 구조가 권장됩니다.
+
+1. 프론트가 가치가챠 백엔드의 인증 필요 응모 API를 호출합니다.
+2. 백엔드는 access token으로 `memberId`를 결정합니다.
+3. 백엔드가 교환글 소유권, 완료 상태, 중복 응모를 검증합니다.
+4. 검증된 응모를 DB에 저장하고 Google Sheets에는 운영용으로 동기화합니다.
+
+이 구조에서는 프론트 요청 본문에 `memberId`를 포함할 필요가 없습니다.
