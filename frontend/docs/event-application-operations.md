@@ -22,10 +22,12 @@ text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
 
 ## 스프레드시트 준비
 
-첫 번째 행에 다음 열을 만듭니다.
+시트 탭 이름은 `응모`로 지정하고 첫 번째 행에 다음 열을 순서대로 만듭니다.
+현재 Apps Script는 헤더 문자열 자체가 아니라 열 순서로 값을 기록하므로 아래
+한국어 이름을 그대로 사용할 수 있습니다.
 
 ```text
-submittedAt | eventId | memberId | desiredTrack | instagramId | tradeId | tradeUrl | privacyConsent
+제출시기 | eventId | memberId | 지원트랙 | 인스타Id | 거래Id | 거래글Url | 개인정보사용동의
 ```
 
 스프레드시트의 `확장 프로그램 > Apps Script`에서 아래 예시를 사용할 수
