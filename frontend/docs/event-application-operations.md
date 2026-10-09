@@ -8,7 +8,7 @@
 {
   "eventId": "popular-goods-giveaway-2026",
   "memberId": "37",
-  "desiredTrack": "COMPLETED",
+  "desiredTrack": "BOTH",
   "instagramId": "gachi__.gacha",
   "tradeId": 153,
   "tradeUrl": "https://gachigacha.kro.kr/trade/153",
@@ -16,9 +16,9 @@
 }
 ```
 
-`desiredTrack`은 화면의 이벤트 A/B 트랙을 각각 `BASIC`, `COMPLETED`로
-전송합니다. 기존 Apps Script와 시트 데이터 호환을 위해 전송 값은
-유지합니다. 프론트는
+`desiredTrack`은 화면의 이벤트 A/B 트랙을 각각 `BASIC`, `COMPLETED`로,
+두 트랙 모두 응모는 `BOTH`로 전송합니다. Apps Script의 허용 목록도 이 세
+값과 일치해야 합니다. 프론트는
 Google Apps Script의 CORS 사전 요청을 피하기 위해 `Content-Type:
 text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
 
@@ -64,7 +64,7 @@ function doPost(event) {
       return json({ ok: false, message: '필수 응모 정보가 없습니다.' });
     }
 
-    if (!['BASIC', 'COMPLETED'].includes(input.desiredTrack)) {
+    if (!['BASIC', 'COMPLETED', 'BOTH'].includes(input.desiredTrack)) {
       return json({ ok: false, message: '희망 트랙이 올바르지 않습니다.' });
     }
 
@@ -114,6 +114,10 @@ Apps Script에서 `배포 > 새 배포 > 웹 앱`을 선택하고 실행 계정�
 설정한 뒤 `/exec`로 끝나는 웹 앱 URL을 사용합니다. 개발 도메인에서 실제 POST를
 한 번 보내 리디렉션과 CORS 동작까지 확인해야 합니다.
 
+기존 웹 앱이 `BASIC`, `COMPLETED`만 허용하고 있다면 위 허용 목록에 `BOTH`를
+추가한 뒤 반드시 새 버전으로 다시 배포해야 합니다. 코드를 저장하기만 하면 현재
+`/exec` 배포에는 반영되지 않습니다.
+
 ## 프론트 배포 환경변수
 
 ```dotenv
@@ -137,6 +141,9 @@ EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSH
 - 이벤트 B 트랙은 A 트랙 조건을 포함하고 실제 거래 완료 1건을 추가로
   요구한다. 운영진이 당첨 후보의 회원 ID, 거래글 및 채팅 기록을 서버
   데이터와 대조해 실제 거래 대화와 완료 여부를 확인한다.
+- 두 트랙 모두를 선택한 응모는 `BOTH`로 저장하며 A 트랙과 B 트랙 추첨 대상에
+  각각 한 번씩 포함한다. 동일 회원의 당첨은 최대 1개로 제한한다. B 트랙 당첨자
+  2명을 먼저 추첨하고 해당 회원을 제외한 뒤 A 트랙 당첨자 3명을 추첨한다.
 
 ## 운영 전 필수 확인
 
@@ -146,6 +153,8 @@ EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSH
 - 스프레드시트 열람 권한은 이벤트 담당자에게만 부여합니다.
 - 추첨 전 당첨 후보의 응모 회원·거래글 소유권·B 트랙 자격을 서버 데이터로
   재검증합니다.
+- 운영 Apps Script가 `BASIC`, `COMPLETED`, `BOTH`를 모두 허용하도록 새 버전으로
+  배포되었는지 확인합니다.
 
 ## 보안상 권장 구조
 
