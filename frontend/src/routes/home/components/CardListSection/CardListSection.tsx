@@ -50,8 +50,13 @@ export default function CardListSection(props: Props) {
     <Wrapper>
       <Title>{props.title}</Title>
       <List>
-        {props.items.map((item) => (
-          <Card key={item.gachaId} product={item} />
+        {props.items.map((item, index) => (
+          <Card
+            key={item.gachaId}
+            product={item}
+            categoryName={props.title}
+            resultPosition={index}
+          />
         ))}
       </List>
 

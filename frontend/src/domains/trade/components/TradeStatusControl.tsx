@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+
 import { updateTradeStatus } from '../api/updateTradeStatus';
 import { getTradeStatusPresentation } from '../tradeStatusPresentation';
 import { TRADE_STATUSES, type TradeStatus } from '../tradeSummaryType';
@@ -70,8 +72,20 @@ export function TradeStatusControl({
         status: nextStatus,
       });
 
+      captureAnalyticsEvent('trade_status_update_completed', {
+        trade_id: tradeId,
+        previous_status: status,
+        next_status: updatedTrade.status,
+        outcome: 'success',
+      });
       onStatusChanged(updatedTrade.status);
     } catch (error: unknown) {
+      captureAnalyticsEvent('trade_status_update_completed', {
+        trade_id: tradeId,
+        previous_status: status,
+        next_status: nextStatus,
+        outcome: 'failure',
+      });
       setSelectedStatus(status);
       setErrorMessage(
         error instanceof Error

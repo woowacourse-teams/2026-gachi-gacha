@@ -10,6 +10,7 @@ import type {
   TradePlaceInput,
 } from '@/domains/trade/tradeCreateType';
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
@@ -74,6 +75,11 @@ export default function TradeForm(props: TradeFormProps) {
       : [];
 
   function selectCategory(category: TradeCategory) {
+    captureAnalyticsEvent('trade_category_toggled', {
+      mode: isEditMode ? 'edit' : 'create',
+      category_id: category.categoryId,
+      action: 'selected',
+    });
     setSelectedCategories((currentCategories) => [
       ...currentCategories,
       category,
@@ -81,6 +87,11 @@ export default function TradeForm(props: TradeFormProps) {
   }
 
   function removeCategory(categoryId: number) {
+    captureAnalyticsEvent('trade_category_toggled', {
+      mode: isEditMode ? 'edit' : 'create',
+      category_id: categoryId,
+      action: 'removed',
+    });
     setSelectedCategories((currentCategories) =>
       currentCategories.filter(
         (category) => category.categoryId !== categoryId,
@@ -174,14 +185,38 @@ export default function TradeForm(props: TradeFormProps) {
     submittingRef.current = true;
     setIsSubmitting(true);
 
+    const analyticsMode = isEditMode ? 'edit' : 'create';
+    const editingTradeId = props.mode === 'edit' ? props.tradeId : null;
+
+    captureAnalyticsEvent('trade_form_submitted', {
+      mode: analyticsMode,
+      trade_id: editingTradeId,
+      image_count: images.length || initialValues?.imageUrls.length || 0,
+      category_count: selectedCategories.length,
+      has_purchase_store: purchaseStore !== null,
+      has_trade_place: tradePlace !== null,
+      has_desired_product: Boolean(desiredProduction),
+    });
+
     try {
       const savedTrade =
         props.mode === 'edit'
           ? await updateTrade({ tradeId: props.tradeId, request, images })
           : await createTrade({ request, images });
 
+      captureAnalyticsEvent('trade_form_completed', {
+        mode: analyticsMode,
+        trade_id: savedTrade.tradeId,
+        outcome: 'success',
+      });
+
       navigate(`/trade/${savedTrade.tradeId}`);
     } catch (error: unknown) {
+      captureAnalyticsEvent('trade_form_completed', {
+        mode: analyticsMode,
+        trade_id: editingTradeId,
+        outcome: 'failure',
+      });
       setSubmissionError(
         error instanceof Error
           ? error.message
@@ -343,7 +378,13 @@ export default function TradeForm(props: TradeFormProps) {
               <ClearPlaceButton
                 type="button"
                 aria-label="구매 매장 선택 해제"
-                onClick={() => setPurchaseStore(null)}
+                onClick={() => {
+                  captureAnalyticsEvent('place_selection_cleared', {
+                    place_context: 'trade_purchase_store',
+                    trade_form_mode: isEditMode ? 'edit' : 'create',
+                  });
+                  setPurchaseStore(null);
+                }}
               >
                 선택 해제
               </ClearPlaceButton>
@@ -397,7 +438,13 @@ export default function TradeForm(props: TradeFormProps) {
               <ClearPlaceButton
                 type="button"
                 aria-label="교환 장소 선택 해제"
-                onClick={() => setTradePlace(null)}
+                onClick={() => {
+                  captureAnalyticsEvent('place_selection_cleared', {
+                    place_context: 'trade_exchange_place',
+                    trade_form_mode: isEditMode ? 'edit' : 'create',
+                  });
+                  setTradePlace(null);
+                }}
               >
                 선택 해제
               </ClearPlaceButton>
@@ -454,6 +501,8 @@ export default function TradeForm(props: TradeFormProps) {
 
       <KakaoPlaceSearchDialog
         open={isPurchaseStoreDialogOpen}
+        analyticsContext="trade_purchase_store"
+        analyticsTradeFormMode={isEditMode ? 'edit' : 'create'}
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
         onClose={() => setIsPurchaseStoreDialogOpen(false)}
@@ -461,6 +510,8 @@ export default function TradeForm(props: TradeFormProps) {
       />
       <KakaoPlaceSearchDialog
         open={isPlaceDialogOpen}
+        analyticsContext="trade_exchange_place"
+        analyticsTradeFormMode={isEditMode ? 'edit' : 'create'}
         onClose={() => setIsPlaceDialogOpen(false)}
         onSelect={setTradePlace}
       />

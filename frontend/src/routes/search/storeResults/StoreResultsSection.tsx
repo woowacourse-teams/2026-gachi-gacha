@@ -8,7 +8,10 @@ import type {
   NearbyStoreResponseDto,
   NearbyStoresResponseDto,
 } from '../api/nearbyStoresResponseType';
-import { captureStoreSelected } from './analytics/storeResultsAnalytics';
+import {
+  captureStoreOpened,
+  captureStoreSelected,
+} from './analytics/storeResultsAnalytics';
 import { StoreListPanel } from './list/StoreListPanel';
 import { StoreMapPanel } from './map/StoreMapPanel';
 import {
@@ -62,9 +65,7 @@ export function StoreResultsSection({
   }, []);
   const selectStoreFromList = useCallback(
     (storeId: number) => {
-      if (gachaId !== null) {
-        captureStoreSelected(gachaId, storeId, 'list');
-      }
+      captureStoreSelected(gachaId, storeId, 'list');
 
       selectStore(storeId);
       window.requestAnimationFrame(showMapAsMainContent);
@@ -73,14 +74,19 @@ export function StoreResultsSection({
   );
   const selectStoreFromMapMarker = useCallback(
     (storeId: number) => {
-      if (gachaId !== null) {
-        captureStoreSelected(gachaId, storeId, 'map_marker');
-      }
+      captureStoreSelected(gachaId, storeId, 'map_marker');
 
       selectStore(storeId);
       window.requestAnimationFrame(showMapAsMainContent);
     },
     [gachaId, selectStore, showMapAsMainContent],
+  );
+  const openStoreFromList = useCallback(
+    (storeId: number) => {
+      captureStoreOpened(gachaId, storeId, 'list');
+      onOpenStore(storeId);
+    },
+    [gachaId, onOpenStore],
   );
   const toggleMobileHeader = useCallback(() => {
     if (!window.matchMedia('(max-width: 767px)').matches) {
@@ -110,7 +116,7 @@ export function StoreResultsSection({
           storesState={storesState}
           isGachaSelected={gachaId !== null}
           selectedStoreId={selectedStoreId}
-          onOpenStore={onOpenStore}
+          onOpenStore={openStoreFromList}
           onSelectStore={selectStoreFromList}
           onRetry={onRetry}
         />

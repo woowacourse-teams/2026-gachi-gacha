@@ -2,16 +2,32 @@ import styled from '@emotion/styled';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 export interface CardProps {
   product: GachaProductSummary;
+  categoryName?: string;
+  resultPosition?: number;
 }
 
-export default function Card({ product }: CardProps) {
+export default function Card({
+  product,
+  categoryName = product.categories[0] ?? '미분류',
+  resultPosition = 0,
+}: CardProps) {
   return (
-    <Wrapper href={createGachaSearchResultsUrl(product.gachaId)}>
+    <Wrapper
+      href={createGachaSearchResultsUrl(product.gachaId)}
+      onClick={() =>
+        captureAnalyticsEvent('category_gacha_selected', {
+          category_name: categoryName,
+          gacha_id: product.gachaId,
+          result_position: resultPosition,
+        })
+      }
+    >
       <Thumbnail>
         <ImagePlaceholder aria-hidden="true">
           <LogoImagePlaceholder />

@@ -4,6 +4,8 @@ import type { UpdateCurrentMemberInput } from '@/features/auth/api/updateCurrent
 import type { AuthMember } from '@/features/auth/authMemberType';
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import type { PlaceSearchSelection } from '@/features/placeSearch/placeSearchType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import type { ProfileTradeLocationChange } from '@/shared/analytics/analyticsEventType';
 
 import {
   Actions,
@@ -31,6 +33,28 @@ import {
 } from './AccountDialog.styles';
 
 const MAX_FIELD_LENGTH = 255;
+
+function getTradeLocationChange(
+  previousLocation: string | null,
+  nextLocation: string | null,
+): ProfileTradeLocationChange {
+  const normalizedPreviousLocation = previousLocation?.trim() || null;
+  const normalizedNextLocation = nextLocation?.trim() || null;
+
+  if (normalizedPreviousLocation === normalizedNextLocation) {
+    return 'unchanged';
+  }
+
+  if (!normalizedPreviousLocation && normalizedNextLocation) {
+    return 'set';
+  }
+
+  if (normalizedPreviousLocation && !normalizedNextLocation) {
+    return 'cleared';
+  }
+
+  return 'changed';
+}
 
 export interface ProfileEditDialogProps {
   open: boolean;
@@ -91,6 +115,10 @@ export function ProfileEditDialog({
   }
 
   function clearTradeLocation() {
+    captureAnalyticsEvent('place_selection_cleared', {
+      place_context: 'profile_preferred_area',
+      trade_form_mode: null,
+    });
     setDesireTradeLocation('');
     setSelectedPlaceAddress(null);
   }
@@ -99,6 +127,10 @@ export function ProfileEditDialog({
     event.preventDefault();
     const normalizedNickname = nickname.trim();
     const normalizedLocation = desireTradeLocation.trim();
+    const tradeLocationChange = getTradeLocationChange(
+      member.desireTradeLocation,
+      normalizedLocation || null,
+    );
 
     if (!normalizedNickname) {
       setErrorMessage('닉네임을 입력해 주세요.');
@@ -114,9 +146,19 @@ export function ProfileEditDialog({
         profileImageUrl: member.profileImageUrl,
         desireTradeLocation: normalizedLocation || null,
       });
+      captureAnalyticsEvent('profile_update_completed', {
+        outcome: 'success',
+        has_trade_location: Boolean(normalizedLocation),
+        trade_location_change: tradeLocationChange,
+      });
       onSaved?.();
       dialogRef.current?.close();
     } catch (error) {
+      captureAnalyticsEvent('profile_update_completed', {
+        outcome: 'failure',
+        has_trade_location: Boolean(normalizedLocation),
+        trade_location_change: tradeLocationChange,
+      });
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -219,6 +261,7 @@ export function ProfileEditDialog({
       </Panel>
       <KakaoPlaceSearchDialog
         open={isPlaceSearchOpen}
+        analyticsContext="profile_preferred_area"
         title="선호 거래 지역 선택"
         description="자주 거래하고 싶은 지하철역이나 장소를 검색해 주세요."
         onClose={() => setIsPlaceSearchOpen(false)}

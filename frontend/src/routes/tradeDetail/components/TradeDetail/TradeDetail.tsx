@@ -10,6 +10,7 @@ import type {
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -84,7 +85,14 @@ export default function TradeDetail({
                   type="button"
                   data-selected={index === selectedImageIndex}
                   aria-label={`${index + 1}번 사진 보기`}
-                  onClick={() => setSelectedImageIndex(index)}
+                  onClick={() => {
+                    captureAnalyticsEvent('trade_detail_photo_selected', {
+                      trade_id: detail.tradeId,
+                      photo_index: index,
+                      photo_count: detail.imageUrls.length,
+                    });
+                    setSelectedImageIndex(index);
+                  }}
                 >
                   <ThumbnailPhoto src={imageUrl} alt="" />
                 </Thumbnail>
@@ -151,24 +159,52 @@ export default function TradeDetail({
             <ActionGroup>
               {action === 'edit' ? (
                 <OwnerActions>
-                  <EditLink to={`/trade/${detail.tradeId}/edit`}>
+                  <EditLink
+                    to={`/trade/${detail.tradeId}/edit`}
+                    onClick={() =>
+                      captureAnalyticsEvent('trade_edit_started', {
+                        trade_id: detail.tradeId,
+                        source: 'trade_detail',
+                      })
+                    }
+                  >
                     수정하기
                   </EditLink>
                   <DeleteButton
                     type="button"
-                    onClick={() => setIsDeleteDialogOpen(true)}
+                    onClick={() => {
+                      captureAnalyticsEvent('trade_delete_started', {
+                        trade_id: detail.tradeId,
+                        source: 'trade_detail',
+                      });
+                      setIsDeleteDialogOpen(true);
+                    }}
                   >
                     삭제
                   </DeleteButton>
                 </OwnerActions>
               ) : action === 'login' ? (
-                <ChatLink to={createLoginUrl(`/trade/${detail.tradeId}`)}>
+                <ChatLink
+                  to={createLoginUrl(`/trade/${detail.tradeId}`)}
+                  onClick={() =>
+                    captureAnalyticsEvent('trade_chat_started', {
+                      trade_id: detail.tradeId,
+                      is_authenticated: false,
+                    })
+                  }
+                >
                   채팅하기
                 </ChatLink>
               ) : (
                 <ChatLink
                   to={`/chat/start/${detail.tradeId}`}
                   state={{ backgroundLocation: location }}
+                  onClick={() =>
+                    captureAnalyticsEvent('trade_chat_started', {
+                      trade_id: detail.tradeId,
+                      is_authenticated: true,
+                    })
+                  }
                 >
                   채팅하기
                 </ChatLink>

@@ -9,6 +9,7 @@ import {
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -41,6 +42,10 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         await authenticate(authTokens);
 
         if (isCurrent) {
+          captureAnalyticsEvent('oauth_login_completed', {
+            provider,
+            outcome: 'success',
+          });
           replaceBrowserLocation(consumeAuthReturnPath());
         }
       })
@@ -48,6 +53,11 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         if (!isCurrent) {
           return;
         }
+
+        captureAnalyticsEvent('oauth_login_completed', {
+          provider,
+          outcome: 'failure',
+        });
 
         setErrorMessage(
           error instanceof Error

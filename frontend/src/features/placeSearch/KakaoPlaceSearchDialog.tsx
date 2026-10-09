@@ -8,6 +8,11 @@ import {
 import { createPortal } from 'react-dom';
 import styled from '@emotion/styled';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import type {
+  PlaceSearchContext,
+  TradeFormMode,
+} from '@/shared/analytics/analyticsEventType';
 import { loadKakaoMapsSdk } from '@/shared/map/loadKakaoMapsSdk';
 
 import type { PlaceSearchSelection } from './placeSearchType';
@@ -30,6 +35,8 @@ const FOCUSABLE_ELEMENT_SELECTOR = [
 
 export interface KakaoPlaceSearchDialogProps {
   open: boolean;
+  analyticsContext: PlaceSearchContext;
+  analyticsTradeFormMode?: TradeFormMode;
   onClose: () => void;
   onSelect: (place: PlaceSearchSelection) => void;
   title?: string;
@@ -40,6 +47,8 @@ export interface KakaoPlaceSearchDialogProps {
 
 export function KakaoPlaceSearchDialog({
   open,
+  analyticsContext,
+  analyticsTradeFormMode,
   onClose,
   onSelect,
   title = '교환 장소 선택',
@@ -56,6 +65,15 @@ export function KakaoPlaceSearchDialog({
   const [status, setStatus] = useState<SearchStatus>('idle');
   const [results, setResults] = useState<KakaoPlaceSearchResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      captureAnalyticsEvent('place_search_opened', {
+        place_context: analyticsContext,
+        trade_form_mode: analyticsTradeFormMode ?? null,
+      });
+    }
+  }, [analyticsContext, analyticsTradeFormMode, open]);
 
   useEffect(() => {
     if (!open) {
@@ -204,12 +222,26 @@ export function KakaoPlaceSearchDialog({
 
       setResults(nextResults);
       setStatus('success');
+      captureAnalyticsEvent('place_search_completed', {
+        place_context: analyticsContext,
+        trade_form_mode: analyticsTradeFormMode ?? null,
+        outcome: 'success',
+        result_count: nextResults.length,
+        query_length: normalizedKeyword.length,
+      });
     } catch (error: unknown) {
       if (searchIdRef.current !== searchId) {
         return;
       }
 
       setStatus('error');
+      captureAnalyticsEvent('place_search_completed', {
+        place_context: analyticsContext,
+        trade_form_mode: analyticsTradeFormMode ?? null,
+        outcome: 'failure',
+        result_count: 0,
+        query_length: normalizedKeyword.length,
+      });
       setErrorMessage(
         error instanceof Error ? error.message : '장소를 검색하지 못했습니다.',
       );
@@ -278,11 +310,16 @@ export function KakaoPlaceSearchDialog({
             <ResultMessage>검색된 장소가 없어요.</ResultMessage>
           ) : (
             <ResultList aria-label="장소 검색 결과">
-              {results.map((place) => (
+              {results.map((place, index) => (
                 <ResultItem key={place.id}>
                   <ResultButton
                     type="button"
                     onClick={() => {
+                      captureAnalyticsEvent('place_search_result_selected', {
+                        place_context: analyticsContext,
+                        trade_form_mode: analyticsTradeFormMode ?? null,
+                        result_position: index + 1,
+                      });
                       onSelect({
                         name: place.name,
                         address: place.address,

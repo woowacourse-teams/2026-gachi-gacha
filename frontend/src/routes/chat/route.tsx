@@ -16,6 +16,7 @@ import type {
 } from '@/domains/chat/chatType';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
@@ -237,6 +238,11 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         lastSequence: requestedLastSequence,
       });
 
+      captureAnalyticsEvent('chat_history_load_completed', {
+        room_id: requestedRoomId,
+        outcome: 'success',
+      });
+
       setState((current) => {
         if (current.selectedRoom?.roomId !== requestedRoomId) {
           return current;
@@ -261,6 +267,10 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         };
       });
     } catch (error) {
+      captureAnalyticsEvent('chat_history_load_completed', {
+        room_id: requestedRoomId,
+        outcome: 'failure',
+      });
       setState((current) => ({
         ...current,
         isLoadingPreviousMessages: false,
@@ -303,7 +313,15 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         <ErrorPanel role="alert">
           <h1>채팅을 불러오지 못했어요</h1>
           <p>{state.errorMessage}</p>
-          <RetryButton type="button" onClick={() => window.location.reload()}>
+          <RetryButton
+            type="button"
+            onClick={() => {
+              captureAnalyticsEvent('recovery_action_selected', {
+                feature: 'chat',
+              });
+              window.location.reload();
+            }}
+          >
             다시 시도
           </RetryButton>
         </ErrorPanel>
@@ -331,6 +349,12 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
           }
         : {})}
       onSelectConversation={(conversationId) => {
+        if (conversationId !== null) {
+          captureAnalyticsEvent('chat_room_selected', {
+            room_id: conversationId,
+            source: 'conversation_list',
+          });
+        }
         setSelectedListRoomId(conversationId ?? undefined);
       }}
     />
@@ -353,6 +377,7 @@ export function ChatStartRoute({
   const [attempt, setAttempt] = useState(0);
 
   function retryEnterChatRoom() {
+    captureAnalyticsEvent('recovery_action_selected', { feature: 'chat' });
     setErrorMessage(null);
     setAttempt((current) => current + 1);
   }
@@ -370,6 +395,12 @@ export function ChatStartRoute({
           existingRoomId ?? (await createChatRoom(tradeId, controller.signal));
 
         if (!controller.signal.aborted) {
+          captureAnalyticsEvent('chat_room_entry_completed', {
+            trade_id: tradeId,
+            room_id: roomId,
+            room_was_created: existingRoomId === null,
+            outcome: 'success',
+          });
           navigate(`/chat/${roomId}`, {
             replace: true,
             state: location.state,
@@ -377,6 +408,12 @@ export function ChatStartRoute({
         }
       } catch (error) {
         if (!controller.signal.aborted) {
+          captureAnalyticsEvent('chat_room_entry_completed', {
+            trade_id: tradeId,
+            room_id: null,
+            room_was_created: false,
+            outcome: 'failure',
+          });
           setErrorMessage(
             error instanceof Error
               ? error.message

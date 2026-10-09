@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import {
   Content,
@@ -33,7 +34,18 @@ export function UnderConstructionPage({
           <Eyebrow>COMING SOON</Eyebrow>
           <Title>{title}</Title>
           <Description>{description}</Description>
-          <SearchLink href="/map">가챠 매장 찾아보기</SearchLink>
+          <SearchLink
+            href="/map"
+            onClick={() =>
+              captureAnalyticsEvent('navigation_selected', {
+                destination: 'map',
+                source: 'under_construction',
+                is_authenticated: true,
+              })
+            }
+          >
+            가챠 매장 찾아보기
+          </SearchLink>
         </Content>
       </Main>
     </Page>

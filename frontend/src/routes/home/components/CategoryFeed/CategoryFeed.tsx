@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+
 import { DEFAULT_CATEGORY } from '../../model/categories';
 import CardListSection from '../CardListSection';
 import CategoryNav from '../CategoryNav';
@@ -9,9 +11,19 @@ import { useInfiniteCategoryGachas } from './useInfiniteCategoryGachas';
 export default function CategoryFeed() {
   const [selectedCategory, selectCategory] = useState(DEFAULT_CATEGORY);
 
+  function handleSelectCategory(categoryName: string) {
+    captureAnalyticsEvent('category_selected', {
+      category_name: categoryName,
+    });
+    selectCategory(categoryName);
+  }
+
   return (
     <>
-      <CategoryNav selected={selectedCategory} onSelect={selectCategory} />
+      <CategoryNav
+        selected={selectedCategory}
+        onSelect={handleSelectCategory}
+      />
       <CategoryFeedContent categoryName={selectedCategory} />
     </>
   );
@@ -24,6 +36,15 @@ interface CategoryFeedContentProps {
 function CategoryFeedContent({ categoryName }: CategoryFeedContentProps) {
   const { itemsState, hasNextPage, loadMoreStatus, loadNextPage } =
     useInfiniteCategoryGachas(categoryName);
+
+  function loadMore() {
+    captureAnalyticsEvent('category_feed_more_requested', {
+      category_name: categoryName,
+      loaded_item_count:
+        itemsState.status === 'success' ? itemsState.data.length : 0,
+    });
+    loadNextPage();
+  }
 
   if (itemsState.status === 'idle') return null;
 
@@ -50,7 +71,7 @@ function CategoryFeedContent({ categoryName }: CategoryFeedContentProps) {
         items={itemsState.data}
         hasNextPage={hasNextPage}
         loadMoreStatus={loadMoreStatus}
-        onEndReached={loadNextPage}
+        onEndReached={loadMore}
       />
     </SectionList>
   );

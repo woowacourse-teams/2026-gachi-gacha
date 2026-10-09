@@ -17,6 +17,7 @@ function DialogHarness() {
       </button>
       <KakaoPlaceSearchDialog
         open={open}
+        analyticsContext="trade_exchange_place"
         loadSdk={loadSdk}
         onSelect={jest.fn()}
         onClose={() => setOpen(false)}
@@ -32,6 +33,7 @@ describe('KakaoPlaceSearchDialog', () => {
     render(
       <KakaoPlaceSearchDialog
         open
+        analyticsContext="trade_purchase_store"
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
         loadSdk={loadSdk}
@@ -71,6 +73,7 @@ describe('KakaoPlaceSearchDialog', () => {
     render(
       <KakaoPlaceSearchDialog
         open
+        analyticsContext="trade_exchange_place"
         loadSdk={loadSdk}
         searchPlaces={searchPlaces}
         onSelect={onSelect}

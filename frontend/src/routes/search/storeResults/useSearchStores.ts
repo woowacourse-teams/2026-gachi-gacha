@@ -143,17 +143,14 @@ export function useSearchStores(
 
       lastSettledRequestRef.current = activeRequestParams;
 
-      if (
-        nextState.status === 'success' &&
-        activeRequestParams.gachaId !== null
-      ) {
+      if (nextState.status === 'success') {
         captureStoreSearchSucceeded(
           activeRequestParams.gachaId,
           activeRequestParams.radius,
           trigger,
           nextState.data.stores.length,
         );
-      } else if (activeRequestParams.gachaId !== null) {
+      } else {
         captureStoreSearchFailed(
           activeRequestParams.gachaId,
           activeRequestParams.radius,

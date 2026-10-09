@@ -1,6 +1,7 @@
 import { useId } from 'react';
 
 import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 import {
@@ -53,6 +54,18 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
     retryStoreGachas,
     loadMoreStoreGachas,
   } = useStoreGachas(storeId);
+  const loadedItemCount =
+    storeGachaState.status === 'success'
+      ? storeGachaState.data.gachas.length
+      : 0;
+
+  function loadMore() {
+    captureAnalyticsEvent('store_catalog_more_requested', {
+      store_id: storeId,
+      loaded_item_count: loadedItemCount,
+    });
+    loadMoreStoreGachas();
+  }
 
   return (
     <Section aria-labelledby={titleId}>
@@ -78,7 +91,15 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
       {storeGachaState.status === 'error' && (
         <EmptyState role="alert">
           <ErrorMessage>{storeGachaState.errorMessage}</ErrorMessage>
-          <RetryButton type="button" onClick={retryStoreGachas}>
+          <RetryButton
+            type="button"
+            onClick={() => {
+              captureAnalyticsEvent('recovery_action_selected', {
+                feature: 'store_catalog',
+              });
+              retryStoreGachas();
+            }}
+          >
             다시 시도
           </RetryButton>
         </EmptyState>
@@ -109,12 +130,12 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
                 ) : loadMoreErrorMessage ? (
                   <>
                     <ErrorMessage>{loadMoreErrorMessage}</ErrorMessage>
-                    <RetryButton type="button" onClick={loadMoreStoreGachas}>
+                    <RetryButton type="button" onClick={loadMore}>
                       더 불러오기 재시도
                     </RetryButton>
                   </>
                 ) : (
-                  <RetryButton type="button" onClick={loadMoreStoreGachas}>
+                  <RetryButton type="button" onClick={loadMore}>
                     더 보기
                   </RetryButton>
                 )}

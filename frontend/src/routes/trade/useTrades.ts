@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getTrades } from '@/domains/trade/api/getTrades';
 import type { TradeSummaryPage } from '@/domains/trade/tradeSummaryType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 const DEFAULT_ERROR_MESSAGE = '교환 게시글을 불러오지 못했습니다.';
@@ -55,11 +56,25 @@ export function useTrades(keyword: string) {
           return;
         }
 
+        captureAnalyticsEvent('trade_list_load_completed', {
+          query_applied: Boolean(request.keyword),
+          outcome: 'success',
+          result_count: data.content.length,
+          total_count: data.totalElements,
+        });
+
         setState({ status: 'success', data, errorMessage: null });
       } catch (error: unknown) {
         if (controller.signal.aborted || isAbortError(error)) {
           return;
         }
+
+        captureAnalyticsEvent('trade_list_load_completed', {
+          query_applied: Boolean(request.keyword),
+          outcome: 'failure',
+          result_count: 0,
+          total_count: 0,
+        });
 
         setState({
           status: 'error',

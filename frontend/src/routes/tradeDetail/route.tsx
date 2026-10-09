@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   color,
   fontSize,
@@ -41,7 +42,15 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
           <ErrorTitle>교환 게시글을 보여드리지 못했어요</ErrorTitle>
           <ErrorDescription>{state.errorMessage}</ErrorDescription>
           <ErrorActions>
-            <RetryButton type="button" onClick={retry}>
+            <RetryButton
+              type="button"
+              onClick={() => {
+                captureAnalyticsEvent('recovery_action_selected', {
+                  feature: 'trade_detail',
+                });
+                retry();
+              }}
+            >
               다시 시도
             </RetryButton>
             <BackLink href="/trade">목록으로 돌아가기</BackLink>

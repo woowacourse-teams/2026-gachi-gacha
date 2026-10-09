@@ -1,5 +1,6 @@
 import { createStoreDetailUrl } from '@/domains/store/storeRoute';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 import { AppHeader } from '@/shared/ui/AppHeader';
@@ -63,9 +64,7 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
   const { storesState, retryStores } = useSearchStores(storeSearchParams);
 
   function searchCurrentMapArea() {
-    if (selectedGachaId !== null) {
-      captureMapAreaResearched(selectedGachaId, STORE_SEARCH_RADIUS_METERS);
-    }
+    captureMapAreaResearched(selectedGachaId, STORE_SEARCH_RADIUS_METERS);
 
     commitViewportCenter();
   }
@@ -92,7 +91,12 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
         storesState={storesState}
         isSearchAreaChanged={isSearchAreaChanged}
         onOpenStore={openStoreDetail}
-        onRetry={retryStores}
+        onRetry={() => {
+          captureAnalyticsEvent('recovery_action_selected', {
+            feature: 'store_search',
+          });
+          retryStores();
+        }}
         onRevealHeader={revealPageHeader}
         onSearchArea={searchCurrentMapArea}
         onViewportCenterChange={updateViewportCenter}

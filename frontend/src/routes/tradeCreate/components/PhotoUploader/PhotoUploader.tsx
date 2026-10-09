@@ -8,6 +8,7 @@ import {
   UNSUPPORTED_IMAGE_TYPE_MESSAGE,
   validateTradeImage,
 } from '@/domains/trade/tradeImagePolicy';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 const MAX_PHOTO_COUNT = 5;
 
@@ -67,6 +68,12 @@ export default function PhotoUploader({
     if (nextFiles.length > 0) {
       onFilesChange([...files, ...nextFiles]);
     }
+
+    captureAnalyticsEvent('trade_photo_selection_completed', {
+      accepted_count: nextFiles.length,
+      rejected_count: rejections.filter(Boolean).length,
+      total_count: files.length + nextFiles.length,
+    });
 
     event.target.value = '';
   };

@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetailType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import TradeDetail from './components/TradeDetail';
@@ -43,7 +44,11 @@ export default function TradeDetailPage({
 
               <ProductGrid>
                 {relatedItems.map((item) => (
-                  <ProductCard key={item.tradeId} item={item} />
+                  <ProductCard
+                    key={item.tradeId}
+                    item={item}
+                    source="related_list"
+                  />
                 ))}
               </ProductGrid>
 
@@ -51,7 +56,14 @@ export default function TradeDetailPage({
                 <MoreButton
                   type="button"
                   disabled={isLoadingRelatedItems}
-                  onClick={onLoadMoreRelatedItems}
+                  onClick={() => {
+                    captureAnalyticsEvent('trade_list_more_requested', {
+                      query_applied: false,
+                      loaded_item_count: relatedItems.length,
+                      source: 'related_list',
+                    });
+                    onLoadMoreRelatedItems?.();
+                  }}
                 >
                   {isLoadingRelatedItems ? '불러오는 중...' : '더보기'}
                 </MoreButton>
