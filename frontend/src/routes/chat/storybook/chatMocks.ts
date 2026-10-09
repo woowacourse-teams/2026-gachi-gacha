@@ -48,7 +48,7 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
   itemTitle: '쿠로미 미니 피규어 vol.2',
   itemImageUrl: null,
   tradeStatus: 'AVAILABLE',
-  tradeAction: 'confirm_reservation',
+  tradeAction: 'CONFIRM_RESERVATION',
   messages: [
     {
       id: '1',

@@ -5,25 +5,22 @@ import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { server } from '@/test/server';
 
 import {
-  cancelTradeReservation,
-  completeChatTrade,
-  confirmTradeReservation,
   createChatRoom,
   findChatRoomByTrade,
   getChatMessages,
   getChatRooms,
   markChatMessagesRead,
+  updateChatTrade,
 } from './chatApi';
 
 const room = {
   roomId: 7,
   trade: {
     tradeId: 15,
-    memberId: 3,
     title: '쿠로미 피규어 교환해요',
     status: 'AVAILABLE',
     thumbnailUrl: null,
-    isReservedRoom: false,
+    availableAction: 'CONFIRM_RESERVATION',
   },
   otherMember: {
     memberId: 8,
@@ -99,42 +96,46 @@ describe('chatApi', () => {
   });
 
   it.each([
-    ['예약 확정', 'POST', '/reservation', confirmTradeReservation],
-    ['예약 취소', 'DELETE', '/reservation', cancelTradeReservation],
-    ['거래 완료', 'POST', '/completion', completeChatTrade],
-  ] as const)(
-    '%s 요청을 현재 채팅방 기준으로 전송한다',
-    async (_, method, path, request) => {
-      let receivedMethod = '';
+    ['예약 확정', 'CONFIRM_RESERVATION'],
+    ['예약 취소', 'CANCEL_RESERVATION'],
+    ['거래 완료', 'COMPLETE_TRADE'],
+  ] as const)('%s 액션을 현재 채팅방 기준으로 전송한다', async (_, action) => {
+    let receivedMethod = '';
+    let receivedBody: unknown = null;
 
-      server.use(
-        http.all(
-          `/api/v1/chat/rooms/7${path}`,
-          ({ request: incomingRequest }) => {
-            receivedMethod = incomingRequest.method;
+    server.use(
+      http.patch(
+        '/api/v1/chat/rooms/7/trade',
+        async ({ request: incomingRequest }) => {
+          receivedMethod = incomingRequest.method;
+          receivedBody = await incomingRequest.json();
 
-            return HttpResponse.json({
-              code: 'C002',
-              message: '정상 수정',
-              data: {
-                ...room,
-                trade: {
-                  ...room.trade,
-                  status: path === '/completion' ? 'COMPLETED' : 'IN_PROGRESS',
-                  isReservedRoom: path === '/reservation' && method === 'POST',
-                },
+          return HttpResponse.json({
+            code: 'C002',
+            message: '정상 수정',
+            data: {
+              ...room,
+              trade: {
+                ...room.trade,
+                status:
+                  action === 'COMPLETE_TRADE' ? 'COMPLETED' : 'IN_PROGRESS',
+                availableAction:
+                  action === 'CONFIRM_RESERVATION'
+                    ? 'CANCEL_RESERVATION'
+                    : null,
               },
-            });
-          },
-        ),
-      );
+            },
+          });
+        },
+      ),
+    );
 
-      const updatedRoom = await request(7);
+    const updatedRoom = await updateChatTrade(7, action);
 
-      expect(receivedMethod).toBe(method);
-      expect(updatedRoom.roomId).toBe(7);
-    },
-  );
+    expect(receivedMethod).toBe('PATCH');
+    expect(receivedBody).toEqual({ action });
+    expect(updatedRoom.roomId).toBe(7);
+  });
 
   it('메시지 목록을 조회하고 마지막 sequence까지 읽음 처리한다', async () => {
     let receivedSequence: unknown = null;

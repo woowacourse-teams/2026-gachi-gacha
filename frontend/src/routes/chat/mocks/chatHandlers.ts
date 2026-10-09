@@ -1,5 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
+import type { ChatTradeAction } from '@/domains/chat/chatType';
+
 const CHAT_ROOMS_PATH = '/api/v1/chat/rooms';
 
 const rooms = [
@@ -7,11 +9,10 @@ const rooms = [
     roomId: 1,
     trade: {
       tradeId: 1,
-      memberId: 3,
       title: '쿠로미 미니 피규어 vol.2',
       status: 'AVAILABLE',
       thumbnailUrl: 'https://placehold.co/205x205/png?text=Kuromi',
-      isReservedRoom: false,
+      availableAction: 'CONFIRM_RESERVATION' as ChatTradeAction | null,
     },
     otherMember: {
       memberId: 8,
@@ -29,11 +30,10 @@ const rooms = [
     roomId: 2,
     trade: {
       tradeId: 2,
-      memberId: 4,
       title: '마이멜로디 미니피규어',
       status: 'IN_PROGRESS',
       thumbnailUrl: null,
-      isReservedRoom: true,
+      availableAction: 'COMPLETE_TRADE' as ChatTradeAction | null,
     },
     otherMember: {
       memberId: 9,
@@ -129,11 +129,10 @@ export const chatHandlers = [
       roomId,
       trade: {
         tradeId: body.tradeId ?? 0,
-        memberId: 4,
         title: `교환 게시글 ${body.tradeId ?? ''}`.trim(),
         status: 'AVAILABLE',
         thumbnailUrl: null,
-        isReservedRoom: false,
+        availableAction: null,
       },
       otherMember: {
         memberId: 4,

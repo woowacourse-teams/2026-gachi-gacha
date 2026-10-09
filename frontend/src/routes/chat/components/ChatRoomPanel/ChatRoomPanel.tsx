@@ -247,11 +247,11 @@ export default function ChatRoomPanel({
 }
 
 function getTradeActionLabel(action: ChatTradeAction): string {
-  if (action === 'confirm_reservation') {
+  if (action === 'CONFIRM_RESERVATION') {
     return '예약확정';
   }
 
-  if (action === 'cancel_reservation') {
+  if (action === 'CANCEL_RESERVATION') {
     return '예약취소';
   }
 
@@ -442,7 +442,7 @@ const TradeActionButton = styled.button`
   white-space: nowrap;
   cursor: pointer;
 
-  &[data-action='cancel_reservation'] {
+  &[data-action='CANCEL_RESERVATION'] {
     background: #ffffff;
     color: #b82f47;
   }

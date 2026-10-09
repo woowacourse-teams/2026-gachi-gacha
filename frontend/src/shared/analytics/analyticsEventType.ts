@@ -214,7 +214,7 @@ export interface AnalyticsEventPropertiesMap {
     outcome: AnalyticsOutcome;
   };
   chat_trade_action_completed: {
-    action: 'confirm_reservation' | 'cancel_reservation' | 'complete_trade';
+    action: 'CONFIRM_RESERVATION' | 'CANCEL_RESERVATION' | 'COMPLETE_TRADE';
     trade_id: number;
     room_id: number;
     previous_status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';

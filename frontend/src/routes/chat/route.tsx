@@ -10,15 +10,13 @@ import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import {
-  cancelTradeReservation,
-  completeChatTrade,
-  confirmTradeReservation,
   createChatRoom,
   findChatRoomByTrade,
   getChatMessages,
   getChatRoom,
   getChatRooms,
   markChatMessagesRead,
+  updateChatTrade,
 } from '@/domains/chat/api/chatApi';
 import type {
   ChatMessage as ChatMessageData,
@@ -40,7 +38,6 @@ import type {
   ChatTradeAction,
 } from './model/chat';
 import { toChatDateKey } from './model/chatDate';
-import { getChatTradeAction } from './model/chatTradeAction';
 import { useChatReadMarker } from './useChatReadMarker';
 
 interface ChatRouteProps {
@@ -59,6 +56,8 @@ interface ChatRouteState {
   nextLastSequence: number | null;
   previousMessagesError: string;
 }
+
+const CHAT_ROOM_SYNC_INTERVAL_MS = 15_000;
 
 export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const { memberId } = useAuthSession();
@@ -230,6 +229,30 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     setIsUpdatingTrade(false);
   }, [activeRoomId]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const refreshVisibleRooms = () => {
+      if (document.visibilityState === 'visible') {
+        void synchronizeChatRooms(setState, controller.signal);
+      }
+    };
+
+    const intervalId = window.setInterval(
+      refreshVisibleRooms,
+      CHAT_ROOM_SYNC_INTERVAL_MS,
+    );
+    window.addEventListener('focus', refreshVisibleRooms);
+    document.addEventListener('visibilitychange', refreshVisibleRooms);
+
+    return () => {
+      controller.abort();
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshVisibleRooms);
+      document.removeEventListener('visibilitychange', refreshVisibleRooms);
+    };
+  }, []);
+
   const conversations = useMemo(
     () => state.rooms.map(toConversation),
     [state.rooms],
@@ -257,7 +280,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       setTradeActionError(null);
 
       try {
-        const updatedRoom = await requestTradeAction(action, room.roomId);
+        const updatedRoom = await updateChatTrade(room.roomId, action);
 
         setState((current) => mergeTradeRoomUpdate(current, updatedRoom));
         captureAnalyticsEvent('chat_trade_action_completed', {
@@ -442,27 +465,12 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   );
 }
 
-function requestTradeAction(
-  action: ChatTradeAction,
-  roomId: number,
-): Promise<ChatRoomSummary> {
-  if (action === 'confirm_reservation') {
-    return confirmTradeReservation(roomId);
-  }
-
-  if (action === 'cancel_reservation') {
-    return cancelTradeReservation(roomId);
-  }
-
-  return completeChatTrade(roomId);
-}
-
 function getNextTradeStatus(action: ChatTradeAction) {
-  if (action === 'confirm_reservation') {
+  if (action === 'CONFIRM_RESERVATION') {
     return 'IN_PROGRESS' as const;
   }
 
-  if (action === 'cancel_reservation') {
+  if (action === 'CANCEL_RESERVATION') {
     return 'AVAILABLE' as const;
   }
 
@@ -487,7 +495,7 @@ function mergeTradeRoomUpdate(
       trade: {
         ...room.trade,
         status: updatedRoom.trade.status,
-        isReservedRoom: false,
+        availableAction: null,
       },
     };
   };
@@ -527,9 +535,14 @@ function mergeSingleRoomUpdate(
 
 async function synchronizeChatRooms(
   setState: Dispatch<SetStateAction<ChatRouteState>>,
+  signal?: AbortSignal,
 ): Promise<void> {
   try {
-    const rooms = await getChatRooms();
+    const rooms = await getChatRooms(signal);
+
+    if (signal?.aborted) {
+      return;
+    }
 
     setState((current) => ({
       ...current,
@@ -670,9 +683,6 @@ function toChatRoom(
   messages: ChatMessageData[],
   memberId: string | null,
 ): ChatRoom {
-  const isTradeOwner =
-    room.trade.memberId !== null && String(room.trade.memberId) === memberId;
-
   return {
     conversationId: room.roomId,
     tradeId: room.trade.tradeId,
@@ -681,11 +691,7 @@ function toChatRoom(
     itemTitle: room.trade.title,
     itemImageUrl: room.trade.thumbnailUrl,
     tradeStatus: room.trade.status,
-    tradeAction: getChatTradeAction({
-      status: room.trade.status,
-      isReservedRoom: room.trade.isReservedRoom,
-      isTradeOwner,
-    }),
+    tradeAction: room.trade.availableAction,
     messages: messages.map((message) => toMessage(message, memberId)),
   };
 }

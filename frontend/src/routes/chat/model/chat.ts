@@ -1,8 +1,8 @@
+import type { ChatTradeAction } from '@/domains/chat/chatType';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 
 export type ChatTradeStatus = TradeStatus;
-export type ChatTradeAction =
-  'confirm_reservation' | 'cancel_reservation' | 'complete_trade';
+export type { ChatTradeAction };
 
 export interface ChatConversation {
   id: number;

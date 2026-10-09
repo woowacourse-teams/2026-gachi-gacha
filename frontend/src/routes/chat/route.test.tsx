@@ -4,7 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 
-import type { ChatMessage, ChatRoomUpdate } from '@/domains/chat/chatType';
+import type {
+  ChatMessage,
+  ChatRoomUpdate,
+  ChatTradeAction,
+} from '@/domains/chat/chatType';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -157,17 +161,16 @@ describe('ChatRoute', () => {
   it('글 작성자가 예약을 확정하면 현재 방만 예약된 진행 중 상태로 갱신한다', async () => {
     const user = userEvent.setup();
     let status = 'AVAILABLE' as 'AVAILABLE' | 'IN_PROGRESS';
-    let isReservedRoom = false;
+    let availableAction: ChatTradeAction | null = 'CONFIRM_RESERVATION';
     let reservationRequestCount = 0;
     const createRoom = () => ({
       roomId: 1,
       trade: {
         tradeId: 1,
-        memberId: 3,
         title: '쿠로미 미니 피규어 vol.2',
         status,
         thumbnailUrl: null,
-        isReservedRoom,
+        availableAction,
       },
       otherMember: {
         memberId: 8,
@@ -194,10 +197,10 @@ describe('ChatRoute', () => {
           data: createRoom(),
         }),
       ),
-      http.post('/api/v1/chat/rooms/1/reservation', () => {
+      http.patch('/api/v1/chat/rooms/1/trade', () => {
         reservationRequestCount += 1;
         status = 'IN_PROGRESS';
-        isReservedRoom = true;
+        availableAction = 'CANCEL_RESERVATION';
 
         return HttpResponse.json({
           code: 'C002',
@@ -225,7 +228,7 @@ describe('ChatRoute', () => {
     const user = userEvent.setup();
 
     server.use(
-      http.post('/api/v1/chat/rooms/1/reservation', () =>
+      http.patch('/api/v1/chat/rooms/1/trade', () =>
         HttpResponse.json(
           { code: 'T009', message: '다른 채팅방에서 이미 예약됐습니다.' },
           { status: 409 },
@@ -261,11 +264,10 @@ describe('ChatRoute', () => {
           roomId: 1,
           trade: {
             tradeId: 1,
-            memberId: 3,
             title: '쿠로미 미니 피규어 vol.2',
             status: 'IN_PROGRESS',
             thumbnailUrl: null,
-            isReservedRoom: true,
+            availableAction: 'CANCEL_RESERVATION',
           },
           otherMember: {
             memberId: 8,
@@ -279,6 +281,63 @@ describe('ChatRoute', () => {
         totalUnreadCount: 0,
       });
     });
+
+    expect(
+      await screen.findByRole('button', { name: '예약취소' }),
+    ).toBeInTheDocument();
+  });
+
+  it('창에 다시 포커스하면 서버 상태를 재조회해 WebSocket 갱신 누락을 보완한다', async () => {
+    let status = 'AVAILABLE' as 'AVAILABLE' | 'IN_PROGRESS';
+    let availableAction: ChatTradeAction | null = 'CONFIRM_RESERVATION';
+    const createRoom = () => ({
+      roomId: 1,
+      trade: {
+        tradeId: 1,
+        title: '쿠로미 미니 피규어 vol.2',
+        status,
+        thumbnailUrl: null,
+        availableAction,
+      },
+      otherMember: {
+        memberId: 8,
+        nickname: '가챠좋아',
+        profileImageUrl: null,
+      },
+      lastMessage: null,
+      unreadCount: 0,
+      createdAt: '2026-10-01T09:00:00',
+    });
+
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { rooms: [createRoom()] },
+        }),
+      ),
+      http.get('/api/v1/chat/rooms/1', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: createRoom(),
+        }),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    expect(
+      await screen.findByRole('button', { name: '예약확정' }),
+    ).toBeInTheDocument();
+
+    status = 'IN_PROGRESS';
+    availableAction = 'CANCEL_RESERVATION';
+    act(() => window.dispatchEvent(new Event('focus')));
 
     expect(
       await screen.findByRole('button', { name: '예약취소' }),

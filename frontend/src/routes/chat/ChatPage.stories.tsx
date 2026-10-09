@@ -32,7 +32,7 @@ export const ReservedByOwner: Story = {
     selectedRoom: {
       ...SELECTED_CHAT_ROOM,
       tradeStatus: 'IN_PROGRESS',
-      tradeAction: 'cancel_reservation',
+      tradeAction: 'CANCEL_RESERVATION',
     },
     onTradeAction: async () => undefined,
   },
@@ -43,7 +43,7 @@ export const ReservedByRequester: Story = {
     selectedRoom: {
       ...SELECTED_CHAT_ROOM,
       tradeStatus: 'IN_PROGRESS',
-      tradeAction: 'complete_trade',
+      tradeAction: 'COMPLETE_TRADE',
     },
     onTradeAction: async () => undefined,
   },

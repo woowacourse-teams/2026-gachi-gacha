@@ -109,9 +109,9 @@ describe('ChatRoomPanel', () => {
   });
 
   it.each([
-    ['confirm_reservation', '예약확정'],
-    ['cancel_reservation', '예약취소'],
-    ['complete_trade', '거래/교환 완료'],
+    ['CONFIRM_RESERVATION', '예약확정'],
+    ['CANCEL_RESERVATION', '예약취소'],
+    ['COMPLETE_TRADE', '거래/교환 완료'],
   ] as const)(
     '%s 액션을 상품 요약 오른쪽에 표시하고 전달한다',
     async (action, label) => {
