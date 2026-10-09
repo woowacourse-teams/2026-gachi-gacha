@@ -64,7 +64,7 @@ describe('TradeEditRoute', () => {
     });
 
     expect(
-      await screen.findByRole('heading', { name: '교환 글 수정' }),
+      await screen.findByRole('heading', { name: '거래 글 수정' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(
       TRADE_DETAIL.title,
@@ -72,7 +72,7 @@ describe('TradeEditRoute', () => {
     expect(screen.getByRole('textbox', { name: /설명/ })).toHaveValue(
       TRADE_DETAIL.description,
     );
-    expect(screen.getByRole('textbox', { name: '교환 희망 상품' })).toHaveValue(
+    expect(screen.getByRole('textbox', { name: /거래 희망 상품/ })).toHaveValue(
       TRADE_DETAIL.desiredProduction,
     );
     expect(
@@ -81,14 +81,14 @@ describe('TradeEditRoute', () => {
     expect(
       screen.getByRole('button', { name: '피규어 카테고리 선택 해제' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '구매 매장' })).toHaveTextContent(
-      '가챠샵 홍대점',
-    );
-    expect(screen.getByRole('button', { name: '교환 장소' })).toHaveTextContent(
-      '홍대입구역 8번 출구',
-    );
     expect(
-      screen.getByRole('img', { name: '기존 교환 사진 1' }),
+      screen.getByRole('button', { name: '구매 매장 (선택)' }),
+    ).toHaveTextContent('가챠샵 홍대점');
+    expect(
+      screen.getByRole('button', { name: '거래 장소 (선택)' }),
+    ).toHaveTextContent('홍대입구역 8번 출구');
+    expect(
+      screen.getByRole('img', { name: '기존 거래 사진 1' }),
     ).toHaveAttribute('src', 'https://cdn.example.com/trade.jpg');
     expect(screen.getByRole('button', { name: '수정하기' })).toBeEnabled();
   });
@@ -190,10 +190,10 @@ describe('TradeEditRoute', () => {
     });
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      '작성자만 교환 게시글을 수정할 수 있습니다.',
+      '작성자만 거래 게시글을 수정할 수 있습니다.',
     );
     expect(
-      screen.queryByRole('heading', { name: '교환 글 수정' }),
+      screen.queryByRole('heading', { name: '거래 글 수정' }),
     ).not.toBeInTheDocument();
   });
 });

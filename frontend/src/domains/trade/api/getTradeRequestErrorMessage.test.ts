@@ -5,7 +5,7 @@ import {
   PAYLOAD_TOO_LARGE_MESSAGE,
 } from './getTradeRequestErrorMessage';
 
-const FALLBACK = '교환 게시글을 등록하지 못했습니다.';
+const FALLBACK = '거래 게시글을 등록하지 못했습니다.';
 
 describe('getTradeRequestErrorMessage', () => {
   it('413이면 본문과 관계없이 사진 용량 안내를 반환한다', () => {

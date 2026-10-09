@@ -9,7 +9,7 @@ import { parseTradeDetailData } from './parseTradeDetailResponse';
 
 const TRADES_API_PATH = '/api/v1/trades';
 const JSON_CONTENT_TYPE = 'application/json';
-const DEFAULT_ERROR_MESSAGE = '교환 게시글을 수정하지 못했습니다.';
+const DEFAULT_ERROR_MESSAGE = '거래 게시글을 수정하지 못했습니다.';
 // 백엔드 BaseResponse.updated()의 성공 코드(정상 수정)
 const UPDATED_CODE = 'C002';
 
