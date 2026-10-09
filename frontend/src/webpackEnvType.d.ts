@@ -3,6 +3,10 @@ declare const __USE_MSW__: boolean;
 declare const __POSTHOG_ENABLED__: boolean;
 declare const __POSTHOG_API_KEY__: string;
 declare const __POSTHOG_API_HOST__: string;
+declare const __EVENT_APPLICATION_ENABLED__: boolean;
+declare const __EVENT_APPLICATION_ENDPOINT__: string;
+declare const __EVENT_APPLICATION_START_AT__: string;
+declare const __EVENT_APPLICATION_END_AT__: string;
 declare const __APP_ENV__: string;
 declare const __APP_VERSION__: string;
 

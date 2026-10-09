@@ -30,7 +30,53 @@ export const Main = styled.main`
   }
 `;
 
-export const PageHeader = styled.header``;
+export const PageHeader = styled.header`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: ${space.lg};
+
+  @media (max-width: 640px) {
+    align-items: stretch;
+    flex-direction: column;
+  }
+`;
+
+export const EventApplicationLink = styled(Link)`
+  display: inline-flex;
+  min-height: 48px;
+  padding: 0 ${space.lg};
+  align-items: center;
+  justify-content: center;
+  border-radius: ${radius.control};
+  background: ${color.primary};
+  box-shadow: ${shadow.card};
+  color: #ffffff;
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.bold};
+  gap: ${space.xs};
+  text-decoration: none;
+
+  span {
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 18%);
+    font-size: ${fontSize.caption};
+  }
+
+  &:hover {
+    filter: brightness(0.98);
+  }
+
+  &:focus-visible {
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+
+  @media (max-width: 640px) {
+    width: 100%;
+  }
+`;
 
 export const Heading = styled.h1`
   margin: 0;

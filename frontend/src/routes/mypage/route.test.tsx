@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -15,6 +15,10 @@ import { server } from '@/test/server';
 
 import { myTradesHandler } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
+
+jest.mock('@/features/eventApplication/eventApplicationConfig', () => ({
+  isEventApplicationOpen: () => true,
+}));
 
 describe('MyPageRoute 내 교환글 수정', () => {
   beforeEach(() => {
@@ -54,6 +58,19 @@ describe('MyPageRoute 내 교환글 수정', () => {
     expect(
       await screen.findByRole('link', { name: /고객센터/ }),
     ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
+  });
+
+  it('이벤트 기간에는 응모 페이지 링크를 보여준다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', { name: /이벤트 응모/ }),
+    ).toHaveAttribute('href', '/events/popular-goods');
   });
 });
 

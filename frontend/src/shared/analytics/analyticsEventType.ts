@@ -7,6 +7,7 @@ export type PlaceSearchContext =
   'trade_purchase_store' | 'trade_exchange_place' | 'profile_preferred_area';
 export type ProfileTradeLocationChange =
   'unchanged' | 'set' | 'changed' | 'cleared';
+export type EventApplicationTrack = 'BASIC' | 'COMPLETED' | 'BOTH';
 export type NavigationDestination =
   | 'brand'
   | 'trade'
@@ -230,6 +231,13 @@ export interface AnalyticsEventPropertiesMap {
     source: 'login' | 'mypage';
   };
   account_deletion_completed: {
+    outcome: AnalyticsOutcome;
+  };
+  event_application_started: {
+    source: 'mypage';
+  };
+  event_application_completed: {
+    track: EventApplicationTrack;
     outcome: AnalyticsOutcome;
   };
   recovery_action_selected: {

@@ -6,6 +6,7 @@ import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog'
 import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { isEventApplicationOpen } from '@/features/eventApplication/eventApplicationConfig';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
@@ -34,6 +35,7 @@ import {
   Dashboard,
   DeleteAccountMenuButton,
   EmptyIcon,
+  EventApplicationLink,
   Heading,
   InterestBody,
   InterestGrid,
@@ -123,6 +125,7 @@ export function MyPageRoute() {
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TradeSummary | null>(null);
+  const eventApplicationOpen = isEventApplicationOpen();
 
   if (!member) {
     return <PageLoadingFallback label="회원 정보를 확인하고 있어요." />;
@@ -174,10 +177,25 @@ export function MyPageRoute() {
 
       <Main>
         <PageHeader>
-          <Heading>마이페이지</Heading>
-          <Subheading>
-            내 교환 활동과 관심 가챠·매장을 한곳에서 확인해요.
-          </Subheading>
+          <div>
+            <Heading>마이페이지</Heading>
+            <Subheading>
+              내 교환 활동과 관심 가챠·매장을 한곳에서 확인해요.
+            </Subheading>
+          </div>
+          {eventApplicationOpen && (
+            <EventApplicationLink
+              to="/events/popular-goods"
+              onClick={() =>
+                captureAnalyticsEvent('event_application_started', {
+                  source: 'mypage',
+                })
+              }
+            >
+              <span>기간 한정</span>
+              이벤트 응모
+            </EventApplicationLink>
+          )}
         </PageHeader>
 
         {profileNotice && (
