@@ -1,11 +1,15 @@
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 
+export type ChatTradeAction =
+  'CONFIRM_RESERVATION' | 'CANCEL_RESERVATION' | 'COMPLETE_TRADE';
+
 export interface ChatTradeSummary {
   tradeId: number;
-  memberId: number;
   title: string;
   status: TradeStatus;
   thumbnailUrl: string | null;
+  /** 서버가 현재 사용자와 채팅방을 기준으로 허용한 액션 */
+  availableAction: ChatTradeAction | null;
 }
 
 export interface ChatMemberSummary {
@@ -26,6 +30,11 @@ export interface ChatRoomSummary {
   lastMessage: ChatLastMessage | null;
   unreadCount: number;
   createdAt: string;
+}
+
+export interface ChatRoomUpdate {
+  room: ChatRoomSummary;
+  totalUnreadCount: number;
 }
 
 export type ChatMessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'ENTER' | 'LEAVE';

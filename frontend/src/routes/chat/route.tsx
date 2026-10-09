@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
@@ -9,10 +16,12 @@ import {
   getChatRoom,
   getChatRooms,
   markChatMessagesRead,
+  updateChatTrade,
 } from '@/domains/chat/api/chatApi';
 import type {
   ChatMessage as ChatMessageData,
   ChatRoomSummary,
+  ChatRoomUpdate,
 } from '@/domains/chat/chatType';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
@@ -22,7 +31,12 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import ChatPage from './ChatPage';
-import type { ChatConversation, ChatMessage, ChatRoom } from './model/chat';
+import type {
+  ChatConversation,
+  ChatMessage,
+  ChatRoom,
+  ChatTradeAction,
+} from './model/chat';
 import { toChatDateKey } from './model/chatDate';
 import { useChatReadMarker } from './useChatReadMarker';
 
@@ -43,6 +57,8 @@ interface ChatRouteState {
   previousMessagesError: string;
 }
 
+const CHAT_ROOM_SYNC_INTERVAL_MS = 15_000;
+
 export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const { memberId } = useAuthSession();
   const navigate = useNavigate();
@@ -61,6 +77,8 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     nextLastSequence: null,
     previousMessagesError: '',
   });
+  const [isUpdatingTrade, setIsUpdatingTrade] = useState(false);
+  const [tradeActionError, setTradeActionError] = useState<string | null>(null);
 
   const markRead = useChatReadMarker(activeRoomId);
 
@@ -105,6 +123,9 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     },
     [activeRoomId, markRead, memberId],
   );
+  const receiveRoomUpdate = useCallback((update: ChatRoomUpdate) => {
+    setState((current) => mergeSingleRoomUpdate(current, update.room));
+  }, []);
   const {
     status: socketStatus,
     errorMessage: socketErrorMessage,
@@ -113,6 +134,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     roomId: activeRoomId,
     memberId,
     onMessage: receiveMessage,
+    onRoomUpdated: receiveRoomUpdate,
   });
 
   useEffect(() => {
@@ -202,6 +224,35 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     };
   }, [activeRoomId]);
 
+  useEffect(() => {
+    setTradeActionError(null);
+    setIsUpdatingTrade(false);
+  }, [activeRoomId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const refreshVisibleRooms = () => {
+      if (document.visibilityState === 'visible') {
+        void synchronizeChatRooms(setState, controller.signal);
+      }
+    };
+
+    const intervalId = window.setInterval(
+      refreshVisibleRooms,
+      CHAT_ROOM_SYNC_INTERVAL_MS,
+    );
+    window.addEventListener('focus', refreshVisibleRooms);
+    document.addEventListener('visibilitychange', refreshVisibleRooms);
+
+    return () => {
+      controller.abort();
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshVisibleRooms);
+      document.removeEventListener('visibilitychange', refreshVisibleRooms);
+    };
+  }, []);
+
   const conversations = useMemo(
     () => state.rooms.map(toConversation),
     [state.rooms],
@@ -212,6 +263,56 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         ? toChatRoom(state.selectedRoom, state.messages, memberId)
         : undefined,
     [memberId, state.messages, state.selectedRoom],
+  );
+
+  const handleTradeAction = useCallback(
+    async (action: ChatTradeAction) => {
+      const room = state.selectedRoom;
+
+      if (!room || isUpdatingTrade) {
+        return;
+      }
+
+      const previousStatus = room.trade.status;
+      const nextStatus = getNextTradeStatus(action);
+
+      setIsUpdatingTrade(true);
+      setTradeActionError(null);
+
+      try {
+        const updatedRoom = await updateChatTrade(room.roomId, action);
+
+        setState((current) => mergeTradeRoomUpdate(current, updatedRoom));
+        captureAnalyticsEvent('chat_trade_action_completed', {
+          action,
+          trade_id: room.trade.tradeId,
+          room_id: room.roomId,
+          previous_status: previousStatus,
+          next_status: nextStatus,
+          outcome: 'success',
+        });
+
+        void synchronizeChatRooms(setState);
+      } catch (error) {
+        captureAnalyticsEvent('chat_trade_action_completed', {
+          action,
+          trade_id: room.trade.tradeId,
+          room_id: room.roomId,
+          previous_status: previousStatus,
+          next_status: nextStatus,
+          outcome: 'failure',
+        });
+        setTradeActionError(
+          error instanceof Error
+            ? error.message
+            : '교환 상태를 변경하지 못했습니다.',
+        );
+        void synchronizeChatRooms(setState);
+      } finally {
+        setIsUpdatingTrade(false);
+      }
+    },
+    [isUpdatingTrade, state.selectedRoom],
   );
 
   const loadPreviousMessages = useCallback(async () => {
@@ -340,6 +441,9 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       isLoadingPreviousMessages={state.isLoadingPreviousMessages}
       previousMessagesError={state.previousMessagesError}
       onLoadPreviousMessages={loadPreviousMessages}
+      onTradeAction={handleTradeAction}
+      isUpdatingTrade={isUpdatingTrade}
+      tradeActionError={tradeActionError}
       presentation={roomId ? (presentation ?? 'drawer') : 'split'}
       {...(presentation === 'modal'
         ? {
@@ -359,6 +463,98 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       }}
     />
   );
+}
+
+function getNextTradeStatus(action: ChatTradeAction) {
+  if (action === 'CONFIRM_RESERVATION') {
+    return 'IN_PROGRESS' as const;
+  }
+
+  if (action === 'CANCEL_RESERVATION') {
+    return 'AVAILABLE' as const;
+  }
+
+  return 'COMPLETED' as const;
+}
+
+function mergeTradeRoomUpdate(
+  current: ChatRouteState,
+  updatedRoom: ChatRoomSummary,
+): ChatRouteState {
+  const updateRoom = (room: ChatRoomSummary): ChatRoomSummary => {
+    if (room.trade.tradeId !== updatedRoom.trade.tradeId) {
+      return room;
+    }
+
+    if (room.roomId === updatedRoom.roomId) {
+      return updatedRoom;
+    }
+
+    return {
+      ...room,
+      trade: {
+        ...room.trade,
+        status: updatedRoom.trade.status,
+        availableAction: null,
+      },
+    };
+  };
+
+  return {
+    ...current,
+    rooms: current.rooms.map(updateRoom),
+    selectedRoom: current.selectedRoom
+      ? updateRoom(current.selectedRoom)
+      : null,
+  };
+}
+
+function mergeSingleRoomUpdate(
+  current: ChatRouteState,
+  updatedRoom: ChatRoomSummary,
+): ChatRouteState {
+  const roomIndex = current.rooms.findIndex(
+    (room) => room.roomId === updatedRoom.roomId,
+  );
+  const rooms =
+    roomIndex === -1
+      ? [updatedRoom, ...current.rooms]
+      : current.rooms.map((room) =>
+          room.roomId === updatedRoom.roomId ? updatedRoom : room,
+        );
+
+  return {
+    ...current,
+    rooms,
+    selectedRoom:
+      current.selectedRoom?.roomId === updatedRoom.roomId
+        ? updatedRoom
+        : current.selectedRoom,
+  };
+}
+
+async function synchronizeChatRooms(
+  setState: Dispatch<SetStateAction<ChatRouteState>>,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    const rooms = await getChatRooms(signal);
+
+    if (signal?.aborted) {
+      return;
+    }
+
+    setState((current) => ({
+      ...current,
+      rooms,
+      selectedRoom: current.selectedRoom
+        ? (rooms.find((room) => room.roomId === current.selectedRoom?.roomId) ??
+          current.selectedRoom)
+        : null,
+    }));
+  } catch {
+    // 액션 응답으로 현재 방은 반영했으므로 백그라운드 동기화 실패가 흐름을 막지 않는다.
+  }
 }
 
 interface ChatStartRouteProps {
@@ -495,6 +691,7 @@ function toChatRoom(
     itemTitle: room.trade.title,
     itemImageUrl: room.trade.thumbnailUrl,
     tradeStatus: room.trade.status,
+    tradeAction: room.trade.availableAction,
     messages: messages.map((message) => toMessage(message, memberId)),
   };
 }

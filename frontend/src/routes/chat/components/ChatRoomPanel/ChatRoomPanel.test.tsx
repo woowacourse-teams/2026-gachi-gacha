@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import ChatRoomPanel from './ChatRoomPanel';
+import type { ChatTradeAction } from '../../model/chat';
 import { SELECTED_CHAT_ROOM } from '../../storybook/chatMocks';
 
 describe('ChatRoomPanel', () => {
@@ -105,5 +106,61 @@ describe('ChatRoomPanel', () => {
     expect(
       screen.getByRole('button', { name: '불러오는 중...' }),
     ).toBeDisabled();
+  });
+
+  it.each([
+    ['CONFIRM_RESERVATION', '예약확정'],
+    ['CANCEL_RESERVATION', '예약취소'],
+    ['COMPLETE_TRADE', '거래/교환 완료'],
+  ] as const)(
+    '%s 액션을 상품 요약 오른쪽에 표시하고 전달한다',
+    async (action, label) => {
+      const user = userEvent.setup();
+      const handleTradeAction =
+        jest.fn<(requestedAction: ChatTradeAction) => Promise<void>>();
+      handleTradeAction.mockResolvedValue();
+
+      render(
+        <ChatRoomPanel
+          room={{ ...SELECTED_CHAT_ROOM, tradeAction: action }}
+          onTradeAction={handleTradeAction}
+        />,
+      );
+
+      await user.click(screen.getByRole('button', { name: label }));
+
+      expect(handleTradeAction).toHaveBeenCalledWith(action);
+    },
+  );
+
+  it('예약 액션 요청 중에는 중복 요청을 막고 실패 메시지를 보여준다', () => {
+    render(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        onTradeAction={async () => undefined}
+        isUpdatingTrade
+        tradeActionError="다른 채팅방에서 이미 예약됐습니다."
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '처리 중' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '다른 채팅방에서 이미 예약됐습니다.',
+    );
+  });
+
+  it('예약되지 않은 다른 채팅방에는 거래 액션을 표시하지 않는다', () => {
+    render(
+      <ChatRoomPanel
+        room={{ ...SELECTED_CHAT_ROOM, tradeAction: null }}
+        onTradeAction={async () => undefined}
+      />,
+    );
+
+    expect(
+      screen.queryByRole('button', {
+        name: /예약확정|예약취소|거래\/교환 완료/,
+      }),
+    ).not.toBeInTheDocument();
   });
 });

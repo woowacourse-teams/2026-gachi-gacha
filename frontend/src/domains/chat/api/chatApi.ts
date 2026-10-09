@@ -4,6 +4,7 @@ import type {
   ChatMessage,
   ChatMessagePage,
   ChatRoomSummary,
+  ChatTradeAction,
 } from '../chatType';
 
 const CHAT_ROOMS_PATH = '/api/v1/chat/rooms';
@@ -58,7 +59,9 @@ export async function getChatRooms(
     '채팅방 목록을 불러오지 못했습니다.',
   );
 
-  return Array.isArray(data.rooms) ? data.rooms.map(normalizeRoom) : [];
+  return Array.isArray(data.rooms)
+    ? data.rooms.map(normalizeChatRoomSummary)
+    : [];
 }
 
 export async function getChatRoom(
@@ -75,7 +78,7 @@ export async function getChatRoom(
     '채팅방을 불러오지 못했습니다.',
   );
 
-  return normalizeRoom(data);
+  return normalizeChatRoomSummary(data);
 }
 
 export async function getChatMessages(
@@ -160,6 +163,27 @@ export async function createChatRoom(
   return data.roomId;
 }
 
+export async function updateChatTrade(
+  roomId: number,
+  action: ChatTradeAction,
+): Promise<ChatRoomSummary> {
+  validatePositiveId(roomId, '채팅방');
+  const response = await authenticatedFetch(
+    `${CHAT_ROOMS_PATH}/${roomId}/trade`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': JSON_CONTENT_TYPE },
+      body: JSON.stringify({ action }),
+    },
+  );
+  const data = await readJson<ChatRoomSummary>(
+    response,
+    '교환 상태를 변경하지 못했습니다.',
+  );
+
+  return normalizeChatRoomSummary(data);
+}
+
 export async function markChatMessagesRead(
   roomId: number,
   lastReadSequence: number,
@@ -193,9 +217,17 @@ function validatePositiveId(id: number, subject: string): void {
   }
 }
 
-function normalizeRoom(room: ChatRoomSummary): ChatRoomSummary {
+export function normalizeChatRoomSummary(
+  room: ChatRoomSummary,
+): ChatRoomSummary {
   return {
     ...room,
+    trade: {
+      ...room.trade,
+      availableAction: isChatTradeAction(room.trade.availableAction)
+        ? room.trade.availableAction
+        : null,
+    },
     lastMessage: room.lastMessage
       ? {
           ...room.lastMessage,
@@ -206,6 +238,14 @@ function normalizeRoom(room: ChatRoomSummary): ChatRoomSummary {
         }
       : null,
   };
+}
+
+function isChatTradeAction(value: unknown): value is ChatTradeAction {
+  return (
+    value === 'CONFIRM_RESERVATION' ||
+    value === 'CANCEL_RESERVATION' ||
+    value === 'COMPLETE_TRADE'
+  );
 }
 
 interface ChatLastMessageWire {
