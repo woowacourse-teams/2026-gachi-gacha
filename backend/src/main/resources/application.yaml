@@ -89,3 +89,8 @@ springdoc:
   ai:
     mcp:
       enabled: false
+
+elasticsearch:
+  url: ${ELASTIC_SEARCH_URL}
+  api-key: ${ELASTIC_SEARCH_API_KEY}
+  index: ${ELASTIC_INDEX}

@@ -1,14 +1,18 @@
 package com.gachi.gacha.server.gacha.presentation;
 
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
+import com.gachi.gacha.server.gacha.application.GachaSearchService;
 import com.gachi.gacha.server.gacha.application.GachaService;
+import com.gachi.gacha.server.gacha.application.dto.GachaDocument;
 import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
+import com.gachi.gacha.server.gacha.application.dto.GachaSearchCondition;
 import com.gachi.gacha.server.gacha.application.dto.GachaWithStoreCountInfo;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaWithStoreCountResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GachaController {
 
     private final GachaService gachaService;
+    private final GachaSearchService gachaSearchService;
 
     @Operation(summary = "가챠 목록 조회")
     @GetMapping(params = {"!categoryIds"})
@@ -65,5 +70,17 @@ public class GachaController {
     ) {
         GachaInfo gachaInfo = gachaService.findGachaById(gachaId);
         return BaseResponse.ok(GachaResponse.from(gachaInfo));
+    }
+
+    @GetMapping("/search")
+    public List<GachaDocument> search(
+            @RequestParam(required = false) final String keyword,
+            @RequestParam(required = false) final List<Long> categoryIds,
+            @RequestParam(required = false) final Double lat,
+            @RequestParam(required = false) final Double lon,
+            @RequestParam(required = false) final Double distanceKm,
+            @RequestParam(defaultValue = "0") final int page,
+            @RequestParam(defaultValue = "20") final int size) throws IOException {
+        return gachaSearchService.search(new GachaSearchCondition(keyword, categoryIds, lat, lon, distanceKm, page, Math.min(size, 50)));
     }
 }
