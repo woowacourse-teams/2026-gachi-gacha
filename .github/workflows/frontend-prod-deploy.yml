@@ -61,6 +61,10 @@ jobs:
           POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST }}
           POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
           POSTHOG_ENABLED: ${{ vars.POSTHOG_ENABLED }}
+          EVENT_APPLICATION_ENABLED: ${{ vars.EVENT_APPLICATION_ENABLED }}
+          EVENT_APPLICATION_ENDPOINT: ${{ vars.EVENT_APPLICATION_ENDPOINT }}
+          EVENT_APPLICATION_START_AT: ${{ vars.EVENT_APPLICATION_START_AT }}
+          EVENT_APPLICATION_END_AT: ${{ vars.EVENT_APPLICATION_END_AT }}
         run: pnpm build
 
       - name: Deploy to Nginx Directory

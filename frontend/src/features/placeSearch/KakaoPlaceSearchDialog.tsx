@@ -5,15 +5,21 @@ import {
   useRef,
   useState,
 } from 'react';
+import { createPortal } from 'react-dom';
 import styled from '@emotion/styled';
 
-import type { TradePlaceInput } from '@/domains/trade/tradeCreateType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import type {
+  PlaceSearchContext,
+  TradeFormMode,
+} from '@/shared/analytics/analyticsEventType';
 import { loadKakaoMapsSdk } from '@/shared/map/loadKakaoMapsSdk';
 
+import type { PlaceSearchSelection } from './placeSearchType';
 import {
   searchKakaoPlaces,
   type KakaoPlaceSearchResult,
-} from '../../kakaoPlaceSearch';
+} from './searchKakaoPlaces';
 
 type LoadSdk = () => Promise<void>;
 type SearchPlaces = (keyword: string) => Promise<KakaoPlaceSearchResult[]>;
@@ -27,26 +33,30 @@ const FOCUSABLE_ELEMENT_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-export interface TradePlaceSearchDialogProps {
+export interface KakaoPlaceSearchDialogProps {
   open: boolean;
+  analyticsContext: PlaceSearchContext;
+  analyticsTradeFormMode?: TradeFormMode;
   onClose: () => void;
-  onSelect: (place: TradePlaceInput) => void;
+  onSelect: (place: PlaceSearchSelection) => void;
   title?: string;
   description?: string;
   loadSdk?: LoadSdk;
   searchPlaces?: SearchPlaces;
 }
 
-export default function TradePlaceSearchDialog({
+export function KakaoPlaceSearchDialog({
   open,
+  analyticsContext,
+  analyticsTradeFormMode,
   onClose,
   onSelect,
   title = '교환 장소 선택',
   description = '지하철역이나 건물명을 검색해주세요.',
   loadSdk = loadKakaoMapsSdk,
   searchPlaces = searchKakaoPlaces,
-}: TradePlaceSearchDialogProps) {
-  const dialogRef = useRef<HTMLElement>(null);
+}: KakaoPlaceSearchDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const searchIdRef = useRef(0);
@@ -55,6 +65,33 @@ export default function TradePlaceSearchDialog({
   const [status, setStatus] = useState<SearchStatus>('idle');
   const [results, setResults] = useState<KakaoPlaceSearchResult[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+
+    if (!dialog) {
+      return;
+    }
+
+    if (open && !dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (open) {
+      captureAnalyticsEvent('place_search_opened', {
+        place_context: analyticsContext,
+        trade_form_mode: analyticsTradeFormMode ?? null,
+      });
+    }
+  }, [analyticsContext, analyticsTradeFormMode, open]);
 
   useEffect(() => {
     if (!open) {
@@ -124,11 +161,6 @@ export default function TradePlaceSearchDialog({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        onClose();
-        return;
-      }
-
       if (event.key !== 'Tab') {
         return;
       }
@@ -171,7 +203,7 @@ export default function TradePlaceSearchDialog({
     window.addEventListener('keydown', handleKeyDown);
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;
@@ -203,36 +235,52 @@ export default function TradePlaceSearchDialog({
 
       setResults(nextResults);
       setStatus('success');
+      captureAnalyticsEvent('place_search_completed', {
+        place_context: analyticsContext,
+        trade_form_mode: analyticsTradeFormMode ?? null,
+        outcome: 'success',
+        result_count: nextResults.length,
+        query_length: normalizedKeyword.length,
+      });
     } catch (error: unknown) {
       if (searchIdRef.current !== searchId) {
         return;
       }
 
       setStatus('error');
+      captureAnalyticsEvent('place_search_completed', {
+        place_context: analyticsContext,
+        trade_form_mode: analyticsTradeFormMode ?? null,
+        outcome: 'failure',
+        result_count: 0,
+        query_length: normalizedKeyword.length,
+      });
       setErrorMessage(
         error instanceof Error ? error.message : '장소를 검색하지 못했습니다.',
       );
     }
   }
 
-  function handleBackdropClick(event: MouseEvent<HTMLDivElement>) {
+  function handleBackdropClick(event: MouseEvent<HTMLDialogElement>) {
     if (event.target === event.currentTarget) {
       onClose();
     }
   }
 
-  return (
-    <Backdrop onMouseDown={handleBackdropClick}>
-      <DialogPanel
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="trade-place-dialog-title"
-        tabIndex={-1}
-      >
+  return createPortal(
+    <Backdrop
+      ref={dialogRef}
+      aria-labelledby="kakao-place-dialog-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onMouseDown={handleBackdropClick}
+    >
+      <DialogPanel tabIndex={-1}>
         <DialogHeader>
           <div>
-            <DialogTitle id="trade-place-dialog-title">{title}</DialogTitle>
+            <DialogTitle id="kakao-place-dialog-title">{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </div>
           <CloseButton
@@ -277,11 +325,16 @@ export default function TradePlaceSearchDialog({
             <ResultMessage>검색된 장소가 없어요.</ResultMessage>
           ) : (
             <ResultList aria-label="장소 검색 결과">
-              {results.map((place) => (
+              {results.map((place, index) => (
                 <ResultItem key={place.id}>
                   <ResultButton
                     type="button"
                     onClick={() => {
+                      captureAnalyticsEvent('place_search_result_selected', {
+                        place_context: analyticsContext,
+                        trade_form_mode: analyticsTradeFormMode ?? null,
+                        result_position: index + 1,
+                      });
                       onSelect({
                         name: place.name,
                         address: place.address,
@@ -300,19 +353,32 @@ export default function TradePlaceSearchDialog({
           )}
         </ResultArea>
       </DialogPanel>
-    </Backdrop>
+    </Backdrop>,
+    document.body,
   );
 }
 
-const Backdrop = styled.div`
+const Backdrop = styled.dialog`
   position: fixed;
-  z-index: 100;
   inset: 0;
-  display: grid;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
   padding: 24px;
+  border: 0;
+  margin: 0;
   overflow-y: auto;
-  place-items: center;
-  background: rgb(20 20 24 / 48%);
+  background: transparent;
+
+  &[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  &::backdrop {
+    background: rgb(20 20 24 / 48%);
+  }
 `;
 
 const DialogPanel = styled.section`

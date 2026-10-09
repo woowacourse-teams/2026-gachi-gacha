@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect } from 'react';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -19,6 +20,10 @@ export function RequireAuth({ children }: RequireAuthProps) {
     }
 
     const returnPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+    captureAnalyticsEvent('auth_required_redirected', {
+      target_pathname: window.location.pathname,
+    });
 
     replaceBrowserLocation(createLoginUrl(returnPath));
   }, [status]);

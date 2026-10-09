@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactNode } from 'react';
 
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
 import { StoreAmenities } from './StoreAmenities';
@@ -105,7 +106,14 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
                   ? imageUrls.length
                   : null
               }
-              onOpen={() => setViewerStartIndex(index)}
+              onOpen={() => {
+                captureAnalyticsEvent('store_photo_viewed', {
+                  store_id: store.storeId,
+                  photo_index: index,
+                  photo_count: imageUrls.length,
+                });
+                setViewerStartIndex(index);
+              }}
             >
               <LogoImagePlaceholder />
               <GalleryImage

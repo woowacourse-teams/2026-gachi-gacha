@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 import { deleteTrade } from '../api/deleteTrade';
@@ -38,9 +39,17 @@ export function TradeDeleteDialog({
 
     try {
       await deleteTrade(tradeId);
+      captureAnalyticsEvent('trade_delete_completed', {
+        trade_id: tradeId,
+        outcome: 'success',
+      });
       setIsDeleting(false);
       onDeleted();
     } catch (error: unknown) {
+      captureAnalyticsEvent('trade_delete_completed', {
+        trade_id: tradeId,
+        outcome: 'failure',
+      });
       setErrorMessage(
         error instanceof Error
           ? error.message

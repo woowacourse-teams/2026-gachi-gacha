@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import type { NavigationDestination } from '@/shared/analytics/analyticsEventType';
 
 import {
   AccountLabel,
@@ -25,10 +27,21 @@ export interface AppHeaderProps {
 }
 
 const NAVIGATION_ITEMS = [
-  { href: '/', label: '홈' },
-  { href: '/search', label: '지도' },
-  { href: '/trade', label: '교환' },
+  { href: '/trade', label: '거래/교환', destination: 'trade' },
+  { href: '/map', label: '지도', destination: 'map' },
+  { href: '/search', label: '검색', destination: 'search' },
 ] as const;
+
+function captureHeaderNavigation(
+  destination: NavigationDestination,
+  isAuthenticated: boolean,
+) {
+  captureAnalyticsEvent('navigation_selected', {
+    destination,
+    source: 'header',
+    is_authenticated: isAuthenticated,
+  });
+}
 
 function ChatIcon() {
   return (
@@ -81,14 +94,14 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       );
 
-  function createProtectedHref(pathname: string): string {
-    return isAuthenticated ? pathname : createLoginUrl(pathname);
-  }
-
   return (
     <Header>
       <HeaderContent $hasSearch={Boolean(search)}>
-        <Brand href="/" aria-label="GachiGacha 홈">
+        <Brand
+          href="/trade"
+          aria-label="GachiGacha 거래/교환으로 이동"
+          onClick={() => captureHeaderNavigation('brand', isAuthenticated)}
+        >
           <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
           <span>GachiGacha</span>
         </Brand>
@@ -96,7 +109,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
         {search && <SearchArea>{search}</SearchArea>}
 
         <Navigation aria-label="주요 메뉴">
-          {NAVIGATION_ITEMS.map(({ href, label }) => {
+          {NAVIGATION_ITEMS.map(({ href, label, destination }) => {
             const isActive = currentPath === href;
 
             return (
@@ -105,6 +118,9 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
                 href={href}
                 $isActive={isActive}
                 aria-current={isActive ? 'page' : undefined}
+                onClick={() =>
+                  captureHeaderNavigation(destination, isAuthenticated)
+                }
               >
                 {label}
               </NavigationLink>
@@ -113,28 +129,42 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
         </Navigation>
 
         <Actions aria-label="사용자 메뉴">
-          <ActionLink
-            href={createProtectedHref('/chat')}
-            $isActive={currentPath === '/chat'}
-            aria-label="채팅"
-            title="채팅"
-          >
-            <ChatIcon />
-          </ActionLink>
-          <ActionLink
-            href={createProtectedHref('/notifications')}
-            $isActive={currentPath === '/notifications'}
-            aria-label="알림"
-            title="알림"
-          >
-            <NotificationIcon />
-          </ActionLink>
+          {isAuthenticated && (
+            <>
+              <ActionLink
+                href="/chat"
+                $isActive={currentPath === '/chat'}
+                aria-label="채팅"
+                title="채팅"
+                onClick={() => captureHeaderNavigation('chat', isAuthenticated)}
+              >
+                <ChatIcon />
+              </ActionLink>
+              <ActionLink
+                href="/notifications"
+                $isActive={currentPath === '/notifications'}
+                aria-label="알림"
+                title="알림"
+                onClick={() =>
+                  captureHeaderNavigation('notifications', isAuthenticated)
+                }
+              >
+                <NotificationIcon />
+              </ActionLink>
+            </>
+          )}
           <ActionLink
             href={accountHref}
             $isActive={currentPath === '/mypage'}
             $isAccount
             aria-label={isAuthenticated ? '마이페이지' : '로그인'}
             title={isAuthenticated ? '마이페이지' : '로그인'}
+            onClick={() =>
+              captureHeaderNavigation(
+                isAuthenticated ? 'mypage' : 'login',
+                isAuthenticated,
+              )
+            }
           >
             {isAuthenticated && member?.profileImageUrl ? (
               <Avatar src={member.profileImageUrl} alt="" data-private-media />

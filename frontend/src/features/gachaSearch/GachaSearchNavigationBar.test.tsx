@@ -95,7 +95,7 @@ describe('가챠 검색 내비게이션', () => {
     await user.click(result);
 
     expect(mockedAssignBrowserLocation).toHaveBeenCalledWith(
-      '/search?gachaId=101',
+      '/map?gachaId=101',
     );
   });
 });

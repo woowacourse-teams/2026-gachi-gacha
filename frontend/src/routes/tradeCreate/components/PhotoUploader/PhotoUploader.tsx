@@ -8,6 +8,7 @@ import {
   UNSUPPORTED_IMAGE_TYPE_MESSAGE,
   validateTradeImage,
 } from '@/domains/trade/tradeImagePolicy';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 const MAX_PHOTO_COUNT = 5;
 
@@ -68,6 +69,12 @@ export default function PhotoUploader({
       onFilesChange([...files, ...nextFiles]);
     }
 
+    captureAnalyticsEvent('trade_photo_selection_completed', {
+      accepted_count: nextFiles.length,
+      rejected_count: rejections.filter(Boolean).length,
+      total_count: files.length + nextFiles.length,
+    });
+
     event.target.value = '';
   };
 
@@ -97,16 +104,16 @@ export default function PhotoUploader({
 
         {visibleInitialImageUrls.map((url, index) => (
           <PreviewItem key={url}>
-            <PreviewImage src={url} alt={`기존 교환 사진 ${index + 1}`} />
+            <PreviewImage src={url} alt={`기존 거래 사진 ${index + 1}`} />
           </PreviewItem>
         ))}
 
         {previewUrls.map((url, index) => (
           <PreviewItem key={url}>
-            <PreviewImage src={url} alt={`교환 사진 ${index + 1}`} />
+            <PreviewImage src={url} alt={`거래 사진 ${index + 1}`} />
             <RemoveButton
               type="button"
-              aria-label={`교환 사진 ${index + 1} 삭제`}
+              aria-label={`거래 사진 ${index + 1} 삭제`}
               onClick={() => handleRemove(index)}
             >
               ×

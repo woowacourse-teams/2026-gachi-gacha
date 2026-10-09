@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -15,6 +15,10 @@ import { server } from '@/test/server';
 
 import { myTradesHandler } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
+
+jest.mock('@/features/eventApplication/eventApplicationConfig', () => ({
+  isEventApplicationOpen: () => true,
+}));
 
 describe('MyPageRoute 내 교환글 수정', () => {
   beforeEach(() => {
@@ -54,6 +58,61 @@ describe('MyPageRoute 내 교환글 수정', () => {
     expect(
       await screen.findByRole('link', { name: /고객센터/ }),
     ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
+  });
+
+  it('이벤트 기간에는 응모 페이지 링크를 보여준다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', { name: /이벤트 응모/ }),
+    ).toHaveAttribute('href', '/events/popular-goods');
+  });
+
+  it('준비 중인 기능을 기술 용어 없이 안내한다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(await screen.findAllByText('관심 기능 준비 중')).toHaveLength(2);
+    expect(screen.getAllByText('기능 준비 중')).toHaveLength(2);
+    expect(screen.queryByText(/API.*준비|준비.*API/)).not.toBeInTheDocument();
+  });
+});
+
+describe('MyPageRoute 내 교환글 상태 조회', () => {
+  beforeEach(() => {
+    storeAuthTokens({
+      accessToken: AUTH_STORY_TOKEN,
+      refreshToken: AUTH_STORY_REFRESH_TOKEN,
+    });
+  });
+
+  it('현재 상태를 배지로 보여주되 직접 변경하는 버튼은 제공하지 않는다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    const inProgressSummary = (await screen.findByText('진행 중 교환')).closest(
+      'article',
+    );
+
+    expect(inProgressSummary).not.toBeNull();
+    expect(within(inProgressSummary!).getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('교환 진행 중')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /교환 상태:/ }),
+    ).not.toBeInTheDocument();
   });
 });
 

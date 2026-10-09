@@ -92,13 +92,14 @@ export function useSearchStores(
   const [settledResult, setSettledResult] =
     useState<SettledSearchResult | null>(null);
   const lastSettledRequestRef = useRef<SearchStoresRequest | null>(null);
+  const hasSearchParams = params !== null;
   const gachaId = params?.gachaId;
   const latitude = params?.latitude;
   const longitude = params?.longitude;
   const radius = params?.radius;
   const requestParams = useMemo<SearchStoresRequest | null>(() => {
     if (
-      gachaId === undefined ||
+      !hasSearchParams ||
       latitude === undefined ||
       longitude === undefined ||
       radius === undefined
@@ -107,13 +108,13 @@ export function useSearchStores(
     }
 
     return {
-      gachaId,
+      gachaId: gachaId ?? null,
       latitude,
       longitude,
       radius,
       attempt,
     };
-  }, [attempt, gachaId, latitude, longitude, radius]);
+  }, [attempt, gachaId, hasSearchParams, latitude, longitude, radius]);
   const retryStores = useCallback(() => {
     setAttempt((currentAttempt) => currentAttempt + 1);
   }, []);

@@ -62,6 +62,10 @@ const config: StorybookConfig = {
         __POSTHOG_API_HOST__: JSON.stringify(''),
         __POSTHOG_API_KEY__: JSON.stringify(''),
         __POSTHOG_ENABLED__: JSON.stringify(false),
+        __EVENT_APPLICATION_ENABLED__: JSON.stringify(false),
+        __EVENT_APPLICATION_ENDPOINT__: JSON.stringify(''),
+        __EVENT_APPLICATION_START_AT__: JSON.stringify(''),
+        __EVENT_APPLICATION_END_AT__: JSON.stringify(''),
       }),
     );
 

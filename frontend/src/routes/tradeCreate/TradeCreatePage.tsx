@@ -11,9 +11,9 @@ export default function TradeCreatePage() {
 
       <Main>
         <Heading>
-          <Title>교환 글쓰기</Title>
+          <Title>거래 글쓰기</Title>
           <Description>
-            교환할 가챠 사진과 만날 장소를 입력하면 피드에 올라가요.
+            거래할 가챠의 사진과 정보를 입력하면 피드에 올라가요.
           </Description>
         </Heading>
 

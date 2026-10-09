@@ -23,7 +23,7 @@ describe('TradeDetail', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('작성자에게는 채팅하기 대신 수정하기 링크를 보여준다', () => {
+  it('작성자에게는 채팅하기 대신 수정하기 링크와 조회용 상태를 보여준다', () => {
     render(
       <MemoryRouter>
         <TradeDetail detail={TRADE_DETAIL} action="edit" />
@@ -36,6 +36,22 @@ describe('TradeDetail', () => {
     );
     expect(
       screen.queryByRole('link', { name: '채팅하기' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText('교환 가능')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /교환 상태:/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('작성자가 아니면 상태 선택 UI를 보여주지 않는다', () => {
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={TRADE_DETAIL} action="chat" />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.queryByRole('button', { name: /교환 상태:/ }),
     ).not.toBeInTheDocument();
   });
 

@@ -1,11 +1,22 @@
 import { useState } from 'react';
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeAll, describe, expect, it, jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import TradePlaceSearchDialog from './TradePlaceSearchDialog';
+import { KakaoPlaceSearchDialog } from './KakaoPlaceSearchDialog';
 
 const loadSdk = async () => undefined;
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.open = true;
+  };
+
+  HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+    this.dispatchEvent(new Event('close'));
+  };
+});
 
 function DialogHarness() {
   const [open, setOpen] = useState(false);
@@ -15,8 +26,9 @@ function DialogHarness() {
       <button type="button" onClick={() => setOpen(true)}>
         장소 선택 열기
       </button>
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open={open}
+        analyticsContext="trade_exchange_place"
         loadSdk={loadSdk}
         onSelect={jest.fn()}
         onClose={() => setOpen(false)}
@@ -25,13 +37,30 @@ function DialogHarness() {
   );
 }
 
-describe('TradePlaceSearchDialog', () => {
+describe('KakaoPlaceSearchDialog', () => {
+  it('중첩 모달에서도 최상위 레이어에 표시되도록 네이티브 모달로 연다', async () => {
+    render(
+      <KakaoPlaceSearchDialog
+        open
+        analyticsContext="profile_preferred_area"
+        loadSdk={loadSdk}
+        onSelect={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+
+    expect(await screen.findByPlaceholderText('예: 홍대입구역')).toBeEnabled();
+    expect(screen.getByRole('dialog')).toBeInstanceOf(HTMLDialogElement);
+    expect(screen.getByRole('dialog')).toHaveAttribute('open');
+  });
+
   it('구매 매장 검색에도 알맞은 안내 문구로 재사용할 수 있다', async () => {
     const loadSdk = jest.fn(async () => undefined);
 
     render(
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open
+        analyticsContext="trade_purchase_store"
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
         loadSdk={loadSdk}
@@ -69,8 +98,9 @@ describe('TradePlaceSearchDialog', () => {
     const user = userEvent.setup();
 
     render(
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open
+        analyticsContext="trade_exchange_place"
         loadSdk={loadSdk}
         searchPlaces={searchPlaces}
         onSelect={onSelect}

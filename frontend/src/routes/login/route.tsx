@@ -7,6 +7,7 @@ import {
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -76,15 +77,29 @@ export function LoginRoute() {
     return <PageLoadingFallback label="로그인 상태를 확인하고 있어요." />;
   }
 
-  function prepareOAuthLogin() {
+  function prepareOAuthLogin(provider: OAuthProvider) {
     storeAuthReturnPath(returnPath);
+    captureAnalyticsEvent('oauth_login_started', {
+      provider,
+      return_pathname: new URL(returnPath, window.location.origin).pathname,
+    });
   }
 
   return (
     <Page>
       <Main>
         <Card aria-labelledby="login-title">
-          <Brand href="/search" aria-label="GachiGacha 지도 검색으로 이동">
+          <Brand
+            href="/trade"
+            aria-label="GachiGacha 거래/교환으로 이동"
+            onClick={() =>
+              captureAnalyticsEvent('navigation_selected', {
+                destination: 'brand',
+                source: 'login_brand',
+                is_authenticated: false,
+              })
+            }
+          >
             <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
             <BrandName>GachiGacha</BrandName>
           </Brand>
@@ -98,7 +113,15 @@ export function LoginRoute() {
             <ErrorMessage role="alert">
               {errorMessage}
               <br />
-              <RetryButton type="button" onClick={retry}>
+              <RetryButton
+                type="button"
+                onClick={() => {
+                  captureAnalyticsEvent('recovery_action_selected', {
+                    feature: 'auth_session',
+                  });
+                  retry();
+                }}
+              >
                 로그인 상태 다시 확인
               </RetryButton>
             </ErrorMessage>
@@ -111,7 +134,7 @@ export function LoginRoute() {
                 href={`/api/v1/oauth/${provider}`}
                 aria-label={label}
                 $provider={provider}
-                onClick={prepareOAuthLogin}
+                onClick={() => prepareOAuthLogin(provider)}
               >
                 <ProviderBrandIcon provider={provider} />
                 <span>{label}</span>
@@ -121,7 +144,17 @@ export function LoginRoute() {
 
           <PrivacyNote>
             로그인하면{' '}
-            <PrivacyLink href="/privacy" target="_blank" rel="noreferrer">
+            <PrivacyLink
+              href="/privacy"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() =>
+                captureAnalyticsEvent('account_menu_selected', {
+                  target: 'privacy',
+                  source: 'login',
+                })
+              }
+            >
               개인정보처리방침
             </PrivacyLink>
             에 동의한 것으로 간주합니다.

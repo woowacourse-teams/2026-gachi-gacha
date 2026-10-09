@@ -3,12 +3,12 @@ import { useState } from 'react';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
-import type {
-  TradeStatus,
-  TradeSummary,
-} from '@/domains/trade/tradeSummaryType';
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
+import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { isEventApplicationOpen } from '@/features/eventApplication/eventApplicationConfig';
 import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   assignBrowserLocation,
   replaceBrowserLocation,
@@ -35,6 +35,7 @@ import {
   Dashboard,
   DeleteAccountMenuButton,
   EmptyIcon,
+  EventApplicationLink,
   Heading,
   InterestBody,
   InterestGrid,
@@ -65,7 +66,6 @@ import {
   StateDescription,
   StatePanel,
   StateTitle,
-  StatusBadge,
   Subheading,
   SummaryCard,
   SummaryDescription,
@@ -85,12 +85,6 @@ import {
   TradeTitle,
 } from './route.styles';
 import { useMyPageTrades } from './useMyPageTrades';
-
-const TRADE_STATUS_LABELS: Record<TradeStatus, string> = {
-  AVAILABLE: '교환 가능',
-  IN_PROGRESS: '교환 진행 중',
-  COMPLETED: '교환 완료',
-};
 
 const tradeDateFormatter = new Intl.DateTimeFormat('ko-KR', {
   month: 'short',
@@ -131,6 +125,7 @@ export function MyPageRoute() {
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
   const [profileNotice, setProfileNotice] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TradeSummary | null>(null);
+  const eventApplicationOpen = isEventApplicationOpen();
 
   if (!member) {
     return <PageLoadingFallback label="회원 정보를 확인하고 있어요." />;
@@ -145,13 +140,32 @@ export function MyPageRoute() {
   };
 
   function handleLogout() {
+    captureAnalyticsEvent('account_menu_selected', {
+      target: 'logout',
+      source: 'mypage',
+    });
     logout();
-    replaceBrowserLocation('/search');
+    replaceBrowserLocation('/trade');
   }
 
   async function handleDeleteAccount() {
-    await deleteAccount();
-    replaceBrowserLocation('/search');
+    try {
+      await deleteAccount();
+      captureAnalyticsEvent('account_deletion_completed', {
+        outcome: 'success',
+      });
+      replaceBrowserLocation('/trade');
+    } catch (error) {
+      captureAnalyticsEvent('account_deletion_completed', {
+        outcome: 'failure',
+      });
+      throw error;
+    }
+  }
+
+  function openProfileDialog() {
+    captureAnalyticsEvent('profile_edit_started', {});
+    setIsProfileDialogOpen(true);
   }
 
   return (
@@ -163,10 +177,25 @@ export function MyPageRoute() {
 
       <Main>
         <PageHeader>
-          <Heading>마이페이지</Heading>
-          <Subheading>
-            내 교환 활동과 관심 가챠·매장을 한곳에서 확인해요.
-          </Subheading>
+          <div>
+            <Heading>마이페이지</Heading>
+            <Subheading>
+              내 교환 활동과 관심 가챠·매장을 한곳에서 확인해요.
+            </Subheading>
+          </div>
+          {eventApplicationOpen && (
+            <EventApplicationLink
+              to="/events/popular-goods"
+              onClick={() =>
+                captureAnalyticsEvent('event_application_started', {
+                  source: 'mypage',
+                })
+              }
+            >
+              <span>기간 한정</span>
+              이벤트 응모
+            </EventApplicationLink>
+          )}
         </PageHeader>
 
         {profileNotice && (
@@ -202,19 +231,13 @@ export function MyPageRoute() {
                 </ProfileNameCopy>
               </ProfileIdentity>
 
-              <ProfileEditButton
-                type="button"
-                onClick={() => setIsProfileDialogOpen(true)}
-              >
+              <ProfileEditButton type="button" onClick={openProfileDialog}>
                 <MyPageIcon name="edit" size={18} />
                 프로필 수정
               </ProfileEditButton>
 
               <ProfileDetails>
-                <ProfileDetailButton
-                  type="button"
-                  onClick={() => setIsProfileDialogOpen(true)}
-                >
+                <ProfileDetailButton type="button" onClick={openProfileDialog}>
                   <ProfileDetailIcon>
                     <MyPageIcon name="location" size={20} />
                   </ProfileDetailIcon>
@@ -226,7 +249,16 @@ export function MyPageRoute() {
                   </ProfileDetailCopy>
                   <MyPageIcon name="chevron" size={18} />
                 </ProfileDetailButton>
-                <ProfileDetail href="/notifications">
+                <ProfileDetail
+                  href="/notifications"
+                  onClick={() =>
+                    captureAnalyticsEvent('navigation_selected', {
+                      destination: 'notifications',
+                      source: 'mypage',
+                      is_authenticated: true,
+                    })
+                  }
+                >
                   <ProfileDetailIcon>
                     <MyPageIcon name="bell" size={20} />
                   </ProfileDetailIcon>
@@ -272,7 +304,7 @@ export function MyPageRoute() {
                   </SummaryIcon>
                 </SummaryTop>
                 <SummaryValue>—</SummaryValue>
-                <SummaryDescription>관심 API 연결 준비 중</SummaryDescription>
+                <SummaryDescription>관심 기능 준비 중</SummaryDescription>
               </SummaryCard>
               <SummaryCard>
                 <SummaryTop>
@@ -282,7 +314,7 @@ export function MyPageRoute() {
                   </SummaryIcon>
                 </SummaryTop>
                 <SummaryValue>—</SummaryValue>
-                <SummaryDescription>관심 API 연결 준비 중</SummaryDescription>
+                <SummaryDescription>관심 기능 준비 중</SummaryDescription>
               </SummaryCard>
             </SummaryGrid>
 
@@ -300,7 +332,15 @@ export function MyPageRoute() {
                 <StatePanel role="alert">
                   <StateTitle>내 교환글을 불러오지 못했어요</StateTitle>
                   <StateDescription>{errorMessage}</StateDescription>
-                  <RetryButton type="button" onClick={retry}>
+                  <RetryButton
+                    type="button"
+                    onClick={() => {
+                      captureAnalyticsEvent('recovery_action_selected', {
+                        feature: 'mypage_trades',
+                      });
+                      retry();
+                    }}
+                  >
                     다시 시도
                   </RetryButton>
                 </StatePanel>
@@ -324,19 +364,29 @@ export function MyPageRoute() {
                         <TradeMeta>{getTradeMeta(trade)}</TradeMeta>
                       </TradeCopy>
                       <TradeSide>
-                        <StatusBadge>
-                          {TRADE_STATUS_LABELS[trade.status]}
-                        </StatusBadge>
+                        <TradeStatusBadge status={trade.status} />
                         <TradeEditLink
                           to={`/trade/${trade.tradeId}/edit`}
                           aria-label={`${trade.title} 수정`}
+                          onClick={() =>
+                            captureAnalyticsEvent('trade_edit_started', {
+                              trade_id: trade.tradeId,
+                              source: 'mypage',
+                            })
+                          }
                         >
                           수정
                         </TradeEditLink>
                         <TradeDeleteButton
                           type="button"
                           aria-label={`${trade.title} 삭제`}
-                          onClick={() => setDeleteTarget(trade)}
+                          onClick={() => {
+                            captureAnalyticsEvent('trade_delete_started', {
+                              trade_id: trade.tradeId,
+                              source: 'mypage',
+                            });
+                            setDeleteTarget(trade);
+                          }}
                         >
                           삭제
                         </TradeDeleteButton>
@@ -351,7 +401,7 @@ export function MyPageRoute() {
               <Card>
                 <CardHeader>
                   <CardTitle>관심 가챠</CardTitle>
-                  <PreparationBadge>API 준비 중</PreparationBadge>
+                  <PreparationBadge>기능 준비 중</PreparationBadge>
                 </CardHeader>
                 <InterestBody>
                   <EmptyIcon>
@@ -366,7 +416,7 @@ export function MyPageRoute() {
               <Card>
                 <CardHeader>
                   <CardTitle>관심 매장</CardTitle>
-                  <PreparationBadge>API 준비 중</PreparationBadge>
+                  <PreparationBadge>기능 준비 중</PreparationBadge>
                 </CardHeader>
                 <InterestBody>
                   <EmptyIcon>
@@ -387,6 +437,12 @@ export function MyPageRoute() {
                   href="/privacy"
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() =>
+                    captureAnalyticsEvent('account_menu_selected', {
+                      target: 'privacy',
+                      source: 'mypage',
+                    })
+                  }
                 >
                   <AccountMenuIcon>
                     <MyPageIcon name="privacy" />
@@ -403,6 +459,12 @@ export function MyPageRoute() {
                   href={SUPPORT_INSTAGRAM_URL}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() =>
+                    captureAnalyticsEvent('account_menu_selected', {
+                      target: 'support',
+                      source: 'mypage',
+                    })
+                  }
                 >
                   <AccountMenuIcon>
                     <MyPageIcon name="support" />
@@ -429,7 +491,13 @@ export function MyPageRoute() {
                 </LogoutMenuButton>
                 <DeleteAccountMenuButton
                   type="button"
-                  onClick={() => setIsDeletionDialogOpen(true)}
+                  onClick={() => {
+                    captureAnalyticsEvent('account_menu_selected', {
+                      target: 'delete_account',
+                      source: 'mypage',
+                    });
+                    setIsDeletionDialogOpen(true);
+                  }}
                 >
                   <AccountMenuIcon>
                     <MyPageIcon name="delete" />

@@ -1,4 +1,5 @@
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
 import {
@@ -27,11 +28,32 @@ export function PrivacyRoute() {
     <Page>
       <Header>
         <HeaderContent>
-          <Brand href="/search" aria-label="GachiGacha 지도 검색으로 이동">
+          <Brand
+            href="/trade"
+            aria-label="GachiGacha 거래/교환으로 이동"
+            onClick={() =>
+              captureAnalyticsEvent('navigation_selected', {
+                destination: 'brand',
+                source: 'privacy',
+                is_authenticated: null,
+              })
+            }
+          >
             <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
             <span>GachiGacha</span>
           </Brand>
-          <SearchLink href="/search">지도 검색으로 이동</SearchLink>
+          <SearchLink
+            href="/map"
+            onClick={() =>
+              captureAnalyticsEvent('navigation_selected', {
+                destination: 'map',
+                source: 'privacy',
+                is_authenticated: null,
+              })
+            }
+          >
+            지도 검색으로 이동
+          </SearchLink>
         </HeaderContent>
       </Header>
 
@@ -43,7 +65,9 @@ export function PrivacyRoute() {
             생각하며, 개인정보 보호법 등 관계 법령을 준수하기 위해 다음과 같이
             개인정보처리방침을 공개합니다.
           </Introduction>
-          <EffectiveDate>최초 제정일 및 시행일: 2026년 9월 25일</EffectiveDate>
+          <EffectiveDate>
+            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 9일
+          </EffectiveDate>
 
           {__APP_ENV__ !== 'production' && (
             <DraftNotice>
@@ -94,6 +118,14 @@ export function PrivacyRoute() {
                     <td>이용자가 가치가챠 공식 Instagram DM으로 발송</td>
                   </tr>
                   <tr>
+                    <th>이벤트 응모</th>
+                    <td>
+                      회원 식별값, 희망 트랙, Instagram ID, 교환글 링크와
+                      식별값, 응모 시각, 개인정보 수집·이용 동의 여부
+                    </td>
+                    <td>회원이 이벤트 응모 폼을 통해 직접 제출</td>
+                  </tr>
+                  <tr>
                     <th>자동 생성 정보</th>
                     <td>
                       접속 기록, IP 주소, 브라우저·기기 정보, 페이지 방문·클릭,
@@ -125,6 +157,7 @@ export function PrivacyRoute() {
               <li>가챠 매장·상품 검색과 맞춤형 서비스 제공</li>
               <li>교환글, 이미지 업로드, 채팅 등 회원 기능 제공</li>
               <li>고객센터 문의 접수, 답변 및 서비스 개선</li>
+              <li>이벤트 응모 자격 확인, 추첨, 당첨 안내 및 경품 전달</li>
               <li>부정 이용 방지, 보안 유지, 오류 확인과 서비스 개선</li>
               <li>이용 현황 분석과 사용자 경험 개선</li>
               <li>개인정보 관련 문의 및 이용자 권리 요청 처리</li>
@@ -176,6 +209,10 @@ export function PrivacyRoute() {
                       목적 달성 시까지
                     </td>
                   </tr>
+                  <tr>
+                    <th>이벤트 응모정보</th>
+                    <td>이벤트 당첨자 경품 전달 완료 후 지체 없이 삭제</td>
+                  </tr>
                 </tbody>
               </Table>
             </TableScroll>
@@ -214,6 +251,10 @@ export function PrivacyRoute() {
                     <th>PostHog, Inc.</th>
                     <td>서비스 이용 분석, 오류 확인 및 세션 리플레이</td>
                   </tr>
+                  <tr>
+                    <th>Google LLC</th>
+                    <td>Google Sheets를 이용한 이벤트 응모정보 보관·관리</td>
+                  </tr>
                 </tbody>
               </Table>
             </TableScroll>
@@ -226,9 +267,48 @@ export function PrivacyRoute() {
           <Section>
             <SectionTitle>6. 개인정보의 국외 이전</SectionTitle>
             <p>
-              PostHog를 통한 서비스 분석 과정에서 정보가 국외로 이전될 수
-              있습니다.
+              Google Sheets를 통한 이벤트 운영과 PostHog를 통한 서비스 분석
+              과정에서 정보가 국외로 이전될 수 있습니다.
             </p>
+            <SubsectionTitle>Google Sheets</SubsectionTitle>
+            <TableScroll>
+              <Table>
+                <tbody>
+                  <tr>
+                    <th>이전받는 자</th>
+                    <td>Google LLC</td>
+                  </tr>
+                  <tr>
+                    <th>이전 항목</th>
+                    <td>
+                      회원 식별값, 희망 트랙, Instagram ID, 교환글 링크와
+                      식별값, 응모 시각, 동의 여부
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>목적</th>
+                    <td>이벤트 응모 자격 확인, 추첨 및 당첨자 관리</td>
+                  </tr>
+                  <tr>
+                    <th>국가·시기·방법</th>
+                    <td>
+                      미국 등 Google이 데이터 처리 시설을 운영하는 국가, 이벤트
+                      응모 시 암호화된 통신으로 전송
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>보유기간</th>
+                    <td>이벤트 당첨자 경품 전달 완료 후 지체 없이 삭제</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </TableScroll>
+            <p>
+              이벤트 응모정보의 국외 이전을 원하지 않으면 응모하지 않을 수
+              있으며, 이 경우 서비스의 다른 기능은 그대로 이용할 수 있지만
+              이벤트에는 참여할 수 없습니다.
+            </p>
+            <SubsectionTitle>PostHog</SubsectionTitle>
             <TableScroll>
               <Table>
                 <tbody>
@@ -405,6 +485,10 @@ export function PrivacyRoute() {
             <SubsectionTitle>변경 이력</SubsectionTitle>
             <ul>
               <li>2026년 9월 25일: 최초 제정</li>
+              <li>
+                2026년 10월 9일: 이벤트 응모정보 처리, Google Sheets 위탁 및
+                국외 이전 내용 추가
+              </li>
             </ul>
           </Section>
         </Document>

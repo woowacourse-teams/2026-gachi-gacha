@@ -90,23 +90,52 @@ const MyPageRoute = lazy(async () => {
   return { default: routeModule.MyPageRoute };
 });
 
-const HOME_PATH = '/';
+const EventApplicationRoute = lazy(async () => {
+  const routeModule = await import('@/routes/eventApplication/route');
+
+  return { default: routeModule.EventApplicationRoute };
+});
+
+const ROOT_PATH = '/';
+const ENTRY_PATH = '/trade';
+const CATEGORY_SEARCH_PATH = '/search';
+const MAP_PATH = '/map';
 const STORE_ID_PATTERN = /^[1-9]\d*$/;
 const TRADE_ID_PATTERN = /^[1-9]\d*$/;
 
-function RedirectToHome() {
+function RedirectToEntry() {
   const { search, hash } = useLocation();
 
   return (
     <Navigate
       replace
       to={{
-        pathname: HOME_PATH,
+        pathname: ENTRY_PATH,
         search,
         hash,
       }}
     />
   );
+}
+
+function CategorySearchRoute() {
+  const location = useLocation();
+  const legacyGachaId = new URLSearchParams(location.search).get('gachaId');
+
+  if (legacyGachaId && TRADE_ID_PATTERN.test(legacyGachaId)) {
+    return (
+      <Navigate
+        replace
+        to={{
+          pathname: MAP_PATH,
+          search: location.search,
+          hash: location.hash,
+        }}
+      />
+    );
+  }
+
+  return <HomePage />;
 }
 
 function CanonicalRoutes() {
@@ -129,8 +158,9 @@ function CanonicalRoutes() {
   return (
     <>
       <Routes location={backgroundLocation ?? location}>
-        <Route path={HOME_PATH} element={<HomePage />} />
-        <Route path="/search" element={<SearchRoute />} />
+        <Route path={ROOT_PATH} element={<RedirectToEntry />} />
+        <Route path={CATEGORY_SEARCH_PATH} element={<CategorySearchRoute />} />
+        <Route path={MAP_PATH} element={<SearchRoute />} />
         <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
         <Route path="/trade" element={<TradeRoute />} />
         <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
@@ -154,8 +184,12 @@ function CanonicalRoutes() {
           />
           <Route path="/notifications" element={<NotificationsRoute />} />
           <Route path="/mypage" element={<MyPageRoute />} />
+          <Route
+            path="/events/popular-goods"
+            element={<EventApplicationRoute />}
+          />
         </Route>
-        <Route path="*" element={<RedirectToHome />} />
+        <Route path="*" element={<RedirectToEntry />} />
       </Routes>
       {backgroundLocation && (
         <Routes>
@@ -205,7 +239,7 @@ function StoreDetailRouteElement() {
   const { storeId } = useParams<'storeId'>();
 
   if (!storeId || !STORE_ID_PATTERN.test(storeId)) {
-    return <RedirectToHome />;
+    return <RedirectToEntry />;
   }
 
   return <StoreDetailRoute pathname={`/stores/${storeId}`} />;
@@ -215,7 +249,7 @@ function TradeDetailRouteElement() {
   const { tradeId } = useParams<'tradeId'>();
 
   if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
-    return <RedirectToHome />;
+    return <RedirectToEntry />;
   }
 
   return <TradeDetailRoute tradeId={Number(tradeId)} />;
@@ -225,7 +259,7 @@ function TradeEditRouteElement() {
   const { tradeId } = useParams<'tradeId'>();
 
   if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
-    return <RedirectToHome />;
+    return <RedirectToEntry />;
   }
 
   return <TradeEditRoute tradeId={Number(tradeId)} />;
@@ -268,7 +302,7 @@ function AuthCallbackRouteElement() {
   const { provider } = useParams<'provider'>();
 
   if (!provider || !isOAuthProvider(provider)) {
-    return <RedirectToHome />;
+    return <RedirectToEntry />;
   }
 
   return <AuthCallbackRoute provider={provider} />;

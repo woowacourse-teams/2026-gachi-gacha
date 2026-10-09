@@ -3,12 +3,13 @@ import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import type {
   TradeDetail as TradeDetailData,
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
-import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -18,12 +19,6 @@ interface TradeDetailProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
 }
-
-const STATUS_LABELS: Record<TradeStatus, string> = {
-  AVAILABLE: '교환 가능',
-  IN_PROGRESS: '교환 진행 중',
-  COMPLETED: '교환 완료',
-};
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'medium',
@@ -84,7 +79,14 @@ export default function TradeDetail({
                   type="button"
                   data-selected={index === selectedImageIndex}
                   aria-label={`${index + 1}번 사진 보기`}
-                  onClick={() => setSelectedImageIndex(index)}
+                  onClick={() => {
+                    captureAnalyticsEvent('trade_detail_photo_selected', {
+                      trade_id: detail.tradeId,
+                      photo_index: index,
+                      photo_count: detail.imageUrls.length,
+                    });
+                    setSelectedImageIndex(index);
+                  }}
                 >
                   <ThumbnailPhoto src={imageUrl} alt="" />
                 </Thumbnail>
@@ -96,8 +98,8 @@ export default function TradeDetail({
         <Info>
           <Title>{detail.title}</Title>
           <Meta>
-            {formatRelativeTime(detail.createdAt)} ·{' '}
-            {STATUS_LABELS[detail.status]}
+            <span>{formatRelativeTime(detail.createdAt)}</span>
+            <TradeStatusBadge status={detail.status} />
           </Meta>
 
           <Divider />
@@ -143,24 +145,52 @@ export default function TradeDetail({
             <ActionGroup>
               {action === 'edit' ? (
                 <OwnerActions>
-                  <EditLink to={`/trade/${detail.tradeId}/edit`}>
+                  <EditLink
+                    to={`/trade/${detail.tradeId}/edit`}
+                    onClick={() =>
+                      captureAnalyticsEvent('trade_edit_started', {
+                        trade_id: detail.tradeId,
+                        source: 'trade_detail',
+                      })
+                    }
+                  >
                     수정하기
                   </EditLink>
                   <DeleteButton
                     type="button"
-                    onClick={() => setIsDeleteDialogOpen(true)}
+                    onClick={() => {
+                      captureAnalyticsEvent('trade_delete_started', {
+                        trade_id: detail.tradeId,
+                        source: 'trade_detail',
+                      });
+                      setIsDeleteDialogOpen(true);
+                    }}
                   >
                     삭제
                   </DeleteButton>
                 </OwnerActions>
               ) : action === 'login' ? (
-                <ChatLink to={createLoginUrl(`/trade/${detail.tradeId}`)}>
+                <ChatLink
+                  to={createLoginUrl(`/trade/${detail.tradeId}`)}
+                  onClick={() =>
+                    captureAnalyticsEvent('trade_chat_started', {
+                      trade_id: detail.tradeId,
+                      is_authenticated: false,
+                    })
+                  }
+                >
                   채팅하기
                 </ChatLink>
               ) : (
                 <ChatLink
                   to={`/chat/start/${detail.tradeId}`}
                   state={{ backgroundLocation: location }}
+                  onClick={() =>
+                    captureAnalyticsEvent('trade_chat_started', {
+                      trade_id: detail.tradeId,
+                      is_authenticated: true,
+                    })
+                  }
                 >
                   채팅하기
                 </ChatLink>
@@ -291,8 +321,12 @@ const Title = styled.h1`
   letter-spacing: -0.04em;
 `;
 
-const Meta = styled.p`
+const Meta = styled.div`
+  display: flex;
+  min-height: 32px;
   margin: 0;
+  align-items: center;
+  gap: 9px;
   color: #898b94;
   font-size: 14px;
 `;

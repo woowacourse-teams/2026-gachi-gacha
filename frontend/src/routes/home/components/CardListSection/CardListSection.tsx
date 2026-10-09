@@ -41,7 +41,7 @@ export default function CardListSection(props: Props) {
     return (
       <Wrapper>
         <Title>{props.title}</Title>
-        <EmptyMessage>이 카테고리에는 아직 상품이 없어요.</EmptyMessage>
+        <EmptyMessage>상품 조사 중이에요.</EmptyMessage>
       </Wrapper>
     );
   }
@@ -50,8 +50,13 @@ export default function CardListSection(props: Props) {
     <Wrapper>
       <Title>{props.title}</Title>
       <List>
-        {props.items.map((item) => (
-          <Card key={item.gachaId} product={item} />
+        {props.items.map((item, index) => (
+          <Card
+            key={item.gachaId}
+            product={item}
+            categoryName={props.title}
+            resultPosition={index}
+          />
         ))}
       </List>
 

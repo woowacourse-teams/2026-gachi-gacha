@@ -1,9 +1,9 @@
-import type { TradePlaceInput } from '@/domains/trade/tradeCreateType';
 import { loadKakaoMapsSdk } from '@/shared/map/loadKakaoMapsSdk';
 
-export interface KakaoPlaceSearchResult extends TradePlaceInput {
+import type { PlaceSearchSelection } from './placeSearchType';
+
+export interface KakaoPlaceSearchResult extends PlaceSearchSelection {
   id: string;
-  name: string;
 }
 
 function toPlaceSearchResult(

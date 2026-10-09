@@ -18,7 +18,7 @@ describe('로그인 후 복귀 주소', () => {
     '/oauth/login',
     '/oauth/login/kakao?code=authorization-code',
   ])('안전하지 않은 주소 %p는 기본 검색 화면으로 교체한다', (candidate) => {
-    expect(normalizeAuthReturnPath(candidate)).toBe('/search');
+    expect(normalizeAuthReturnPath(candidate)).toBe('/trade');
   });
 
   it('서비스 내부 경로의 쿼리와 해시를 그대로 유지한다', () => {
