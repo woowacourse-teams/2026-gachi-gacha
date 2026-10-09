@@ -23,5 +23,39 @@ export const Empty: Story = {};
 export const Selected: Story = {
   args: {
     selectedRoom: SELECTED_CHAT_ROOM,
+    onTradeAction: async () => undefined,
+  },
+};
+
+export const ReservedByOwner: Story = {
+  args: {
+    selectedRoom: {
+      ...SELECTED_CHAT_ROOM,
+      tradeStatus: 'IN_PROGRESS',
+      tradeAction: 'cancel_reservation',
+    },
+    onTradeAction: async () => undefined,
+  },
+};
+
+export const ReservedByRequester: Story = {
+  args: {
+    selectedRoom: {
+      ...SELECTED_CHAT_ROOM,
+      tradeStatus: 'IN_PROGRESS',
+      tradeAction: 'complete_trade',
+    },
+    onTradeAction: async () => undefined,
+  },
+};
+
+export const ReservedInAnotherRoom: Story = {
+  args: {
+    selectedRoom: {
+      ...SELECTED_CHAT_ROOM,
+      tradeStatus: 'IN_PROGRESS',
+      tradeAction: null,
+    },
+    onTradeAction: async () => undefined,
   },
 };

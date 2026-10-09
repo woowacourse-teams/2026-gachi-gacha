@@ -186,12 +186,6 @@ export interface AnalyticsEventPropertiesMap {
     place_context: PlaceSearchContext;
     trade_form_mode: TradeFormMode | null;
   };
-  trade_status_update_completed: {
-    trade_id: number;
-    previous_status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
-    next_status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
-    outcome: AnalyticsOutcome;
-  };
   trade_delete_completed: {
     trade_id: number;
     outcome: AnalyticsOutcome;
@@ -217,6 +211,14 @@ export interface AnalyticsEventPropertiesMap {
   };
   chat_history_load_completed: {
     room_id: number;
+    outcome: AnalyticsOutcome;
+  };
+  chat_trade_action_completed: {
+    action: 'confirm_reservation' | 'cancel_reservation' | 'complete_trade';
+    trade_id: number;
+    room_id: number;
+    previous_status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
+    next_status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
     outcome: AnalyticsOutcome;
   };
   profile_edit_started: Record<string, never>;

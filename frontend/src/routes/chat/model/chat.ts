@@ -1,6 +1,8 @@
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 
 export type ChatTradeStatus = TradeStatus;
+export type ChatTradeAction =
+  'confirm_reservation' | 'cancel_reservation' | 'complete_trade';
 
 export interface ChatConversation {
   id: number;
@@ -30,5 +32,6 @@ export interface ChatRoom {
   itemTitle: string;
   itemImageUrl: string | null;
   tradeStatus: ChatTradeStatus;
+  tradeAction: ChatTradeAction | null;
   messages: ChatMessage[];
 }

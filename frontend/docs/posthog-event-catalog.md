@@ -81,7 +81,7 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `place_search_completed`          | 장소 검색 완료             | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length` |
 | `place_search_result_selected`    | 장소 검색 결과 선택        | `place_context`, `trade_form_mode`, `result_position`                         |
 | `place_selection_cleared`         | 선택한 장소 해제           | `place_context`, `trade_form_mode`                                            |
-| `trade_status_update_completed`   | 거래 상태 변경 완료        | 이전·다음 상태, `outcome`                                                     |
+| `chat_trade_action_completed`     | 채팅 기반 예약·완료 처리   | 액션, 게시글·채팅방 ID, 이전·다음 상태, `outcome`                             |
 | `trade_delete_completed`          | 글 삭제 완료               | `trade_id`, `outcome`                                                         |
 | `trade_chat_started`              | 거래 상세에서 채팅 선택    | `trade_id`, `is_authenticated`                                                |
 

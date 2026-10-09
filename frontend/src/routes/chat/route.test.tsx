@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 
-import type { ChatMessage } from '@/domains/chat/chatType';
+import type { ChatMessage, ChatRoomUpdate } from '@/domains/chat/chatType';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -13,14 +13,18 @@ import { chatHandlers } from './mocks/chatHandlers';
 import { ChatRoute, ChatStartRoute } from './route';
 
 let mockOnMessage: ((message: ChatMessage) => void) | null = null;
+let mockOnRoomUpdated: ((update: ChatRoomUpdate) => void) | null = null;
 
 jest.mock('@/domains/chat/useChatSocket', () => ({
   useChatSocket: ({
     onMessage,
+    onRoomUpdated,
   }: {
     onMessage: (message: ChatMessage) => void;
+    onRoomUpdated?: (update: ChatRoomUpdate) => void;
   }) => {
     mockOnMessage = onMessage;
+    mockOnRoomUpdated = onRoomUpdated ?? null;
 
     return {
       status: 'connected',
@@ -148,6 +152,137 @@ describe('ChatRoute', () => {
         name: '이전 메시지 불러오기',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('글 작성자가 예약을 확정하면 현재 방만 예약된 진행 중 상태로 갱신한다', async () => {
+    const user = userEvent.setup();
+    let status = 'AVAILABLE' as 'AVAILABLE' | 'IN_PROGRESS';
+    let isReservedRoom = false;
+    let reservationRequestCount = 0;
+    const createRoom = () => ({
+      roomId: 1,
+      trade: {
+        tradeId: 1,
+        memberId: 3,
+        title: '쿠로미 미니 피규어 vol.2',
+        status,
+        thumbnailUrl: null,
+        isReservedRoom,
+      },
+      otherMember: {
+        memberId: 8,
+        nickname: '가챠좋아',
+        profileImageUrl: null,
+      },
+      lastMessage: null,
+      unreadCount: 0,
+      createdAt: '2026-10-01T09:00:00',
+    });
+
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { rooms: [createRoom()] },
+        }),
+      ),
+      http.get('/api/v1/chat/rooms/1', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: createRoom(),
+        }),
+      ),
+      http.post('/api/v1/chat/rooms/1/reservation', () => {
+        reservationRequestCount += 1;
+        status = 'IN_PROGRESS';
+        isReservedRoom = true;
+
+        return HttpResponse.json({
+          code: 'C002',
+          message: '정상 수정',
+          data: createRoom(),
+        });
+      }),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    await user.click(await screen.findByRole('button', { name: '예약확정' }));
+
+    expect(reservationRequestCount).toBe(1);
+    expect(
+      await screen.findByRole('button', { name: '예약취소' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('교환 진행 중').length).toBeGreaterThan(0);
+  });
+
+  it('예약 경합에 실패하면 서버 메시지를 표시한다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.post('/api/v1/chat/rooms/1/reservation', () =>
+        HttpResponse.json(
+          { code: 'T009', message: '다른 채팅방에서 이미 예약됐습니다.' },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    await user.click(await screen.findByRole('button', { name: '예약확정' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '다른 채팅방에서 이미 예약됐습니다.',
+    );
+  });
+
+  it('개인 채팅방 갱신 이벤트를 받으면 예약 액션과 상태를 즉시 바꾼다', async () => {
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    expect(
+      await screen.findByRole('button', { name: '예약확정' }),
+    ).toBeInTheDocument();
+
+    act(() => {
+      mockOnRoomUpdated?.({
+        room: {
+          roomId: 1,
+          trade: {
+            tradeId: 1,
+            memberId: 3,
+            title: '쿠로미 미니 피규어 vol.2',
+            status: 'IN_PROGRESS',
+            thumbnailUrl: null,
+            isReservedRoom: true,
+          },
+          otherMember: {
+            memberId: 8,
+            nickname: '가챠좋아',
+            profileImageUrl: null,
+          },
+          lastMessage: null,
+          unreadCount: 0,
+          createdAt: '2026-10-01T09:00:00',
+        },
+        totalUnreadCount: 0,
+      });
+    });
+
+    expect(
+      await screen.findByRole('button', { name: '예약취소' }),
+    ).toBeInTheDocument();
   });
 });
 

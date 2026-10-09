@@ -11,6 +11,7 @@ const rooms = [
       title: '쿠로미 미니 피규어 vol.2',
       status: 'AVAILABLE',
       thumbnailUrl: 'https://placehold.co/205x205/png?text=Kuromi',
+      isReservedRoom: false,
     },
     otherMember: {
       memberId: 8,
@@ -32,6 +33,7 @@ const rooms = [
       title: '마이멜로디 미니피규어',
       status: 'IN_PROGRESS',
       thumbnailUrl: null,
+      isReservedRoom: true,
     },
     otherMember: {
       memberId: 9,
@@ -131,6 +133,7 @@ export const chatHandlers = [
         title: `교환 게시글 ${body.tradeId ?? ''}`.trim(),
         status: 'AVAILABLE',
         thumbnailUrl: null,
+        isReservedRoom: false,
       },
       otherMember: {
         memberId: 4,

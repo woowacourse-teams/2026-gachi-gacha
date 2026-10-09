@@ -6,7 +6,7 @@ import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeade
 
 import ChatRoomPanel from './components/ChatRoomPanel';
 import ConversationList from './components/ConversationList';
-import type { ChatConversation, ChatRoom } from './model/chat';
+import type { ChatConversation, ChatRoom, ChatTradeAction } from './model/chat';
 
 interface ChatPageProps {
   conversations: ChatConversation[];
@@ -21,6 +21,9 @@ interface ChatPageProps {
   isLoadingPreviousMessages?: boolean;
   previousMessagesError?: string;
   onLoadPreviousMessages?: () => Promise<void>;
+  onTradeAction?: (action: ChatTradeAction) => Promise<void>;
+  isUpdatingTrade?: boolean;
+  tradeActionError?: string | null;
 }
 
 export default function ChatPage({
@@ -36,6 +39,9 @@ export default function ChatPage({
   isLoadingPreviousMessages = false,
   previousMessagesError = '',
   onLoadPreviousMessages,
+  onTradeAction,
+  isUpdatingTrade = false,
+  tradeActionError = null,
 }: ChatPageProps) {
   if (selectedRoom && presentation === 'modal') {
     return (
@@ -60,6 +66,9 @@ export default function ChatPage({
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
+            onTradeAction={onTradeAction}
+            isUpdatingTrade={isUpdatingTrade}
+            tradeActionError={tradeActionError}
           />
         </ChatDrawer>
       </ModalLayer>
@@ -101,6 +110,9 @@ export default function ChatPage({
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
+            onTradeAction={onTradeAction}
+            isUpdatingTrade={isUpdatingTrade}
+            tradeActionError={tradeActionError}
           />
         </ChatDrawer>
       </RoomPage>
@@ -130,6 +142,9 @@ export default function ChatPage({
           isLoadingPreviousMessages={isLoadingPreviousMessages}
           previousMessagesError={previousMessagesError}
           onLoadPreviousMessages={onLoadPreviousMessages}
+          onTradeAction={onTradeAction}
+          isUpdatingTrade={isUpdatingTrade}
+          tradeActionError={tradeActionError}
         />
       </Main>
     </Page>

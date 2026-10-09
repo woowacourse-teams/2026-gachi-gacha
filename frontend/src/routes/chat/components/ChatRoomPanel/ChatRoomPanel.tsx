@@ -7,7 +7,7 @@ import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
-import type { ChatRoom } from '../../model/chat';
+import type { ChatRoom, ChatTradeAction } from '../../model/chat';
 import { formatChatDateLabel } from '../../model/chatDate';
 
 interface ChatRoomPanelProps {
@@ -21,6 +21,9 @@ interface ChatRoomPanelProps {
   isLoadingPreviousMessages?: boolean;
   previousMessagesError?: string;
   onLoadPreviousMessages?: (() => Promise<void>) | undefined;
+  onTradeAction?: ((action: ChatTradeAction) => Promise<void>) | undefined;
+  isUpdatingTrade?: boolean;
+  tradeActionError?: string | null;
 }
 
 export default function ChatRoomPanel({
@@ -34,6 +37,9 @@ export default function ChatRoomPanel({
   isLoadingPreviousMessages = false,
   previousMessagesError = '',
   onLoadPreviousMessages,
+  onTradeAction,
+  isUpdatingTrade = false,
+  tradeActionError = null,
 }: ChatRoomPanelProps) {
   const messagesRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState('');
@@ -120,6 +126,8 @@ export default function ChatRoomPanel({
     );
   }
 
+  const tradeAction = room.tradeAction;
+
   return (
     <Panel>
       <RoomHeader>
@@ -141,19 +149,34 @@ export default function ChatRoomPanel({
         <TradeStatusBadge status={room.tradeStatus} />
       </RoomHeader>
 
-      <ProductSummary>
-        <ProductImage>
-          {room.itemImageUrl ? (
-            <ProductPhoto src={room.itemImageUrl} alt="" />
-          ) : (
-            '이미지 없음'
+      <ProductContext>
+        <ProductSummary>
+          <ProductImage>
+            {room.itemImageUrl ? (
+              <ProductPhoto src={room.itemImageUrl} alt="" />
+            ) : (
+              '이미지 없음'
+            )}
+          </ProductImage>
+          <ProductInfo>
+            <ProductLabel>교환 상품</ProductLabel>
+            <ProductTitle>{room.itemTitle}</ProductTitle>
+          </ProductInfo>
+          {tradeAction && onTradeAction && (
+            <TradeActionButton
+              type="button"
+              data-action={tradeAction}
+              disabled={isUpdatingTrade}
+              onClick={() => void onTradeAction(tradeAction)}
+            >
+              {isUpdatingTrade ? '처리 중' : getTradeActionLabel(tradeAction)}
+            </TradeActionButton>
           )}
-        </ProductImage>
-        <ProductInfo>
-          <ProductLabel>교환 상품</ProductLabel>
-          <ProductTitle>{room.itemTitle}</ProductTitle>
-        </ProductInfo>
-      </ProductSummary>
+        </ProductSummary>
+        {tradeActionError && (
+          <TradeActionError role="alert">{tradeActionError}</TradeActionError>
+        )}
+      </ProductContext>
 
       <Messages ref={messagesRef}>
         {hasPreviousMessages && (
@@ -221,6 +244,18 @@ export default function ChatRoomPanel({
       </ComposerArea>
     </Panel>
   );
+}
+
+function getTradeActionLabel(action: ChatTradeAction): string {
+  if (action === 'confirm_reservation') {
+    return '예약확정';
+  }
+
+  if (action === 'cancel_reservation') {
+    return '예약취소';
+  }
+
+  return '거래/교환 완료';
 }
 
 function getMessagePlaceholder(status: ChatSocketStatus): string {
@@ -336,12 +371,15 @@ const PartnerName = styled.h2`
   font-weight: 700;
 `;
 
+const ProductContext = styled.div`
+  border-bottom: 1px solid #eeeaec;
+`;
+
 const ProductSummary = styled.div`
   display: flex;
   padding: 14px 24px;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #eeeaec;
 `;
 
 const ProductImage = styled.div`
@@ -389,6 +427,46 @@ const ProductTitle = styled.p`
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+`;
+
+const TradeActionButton = styled.button`
+  min-height: 36px;
+  padding: 8px 13px;
+  flex: 0 0 auto;
+  border: 1px solid #d93b54;
+  border-radius: 10px;
+  background: #d93b54;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &[data-action='cancel_reservation'] {
+    background: #ffffff;
+    color: #b82f47;
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.55;
+  }
+
+  @media (max-width: 420px) {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+`;
+
+const TradeActionError = styled.p`
+  padding: 0 24px 12px 88px;
+  margin: 0;
+  color: #d9304f;
+  font-size: 12px;
+
+  @media (max-width: 420px) {
+    padding-left: 24px;
+  }
 `;
 
 const Messages = styled.div`
