@@ -3,7 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import { parseTradeReference } from './parseTradeReference';
 
 describe('parseTradeReference', () => {
-  it('가치가챠 교환글 링크에서 글 식별자를 추출한다', () => {
+  it('가치가챠 거래글 링크에서 글 식별자를 추출한다', () => {
     expect(
       parseTradeReference(
         'https://gachigacha.kro.kr/trade/153?from=event#detail',
@@ -28,7 +28,7 @@ describe('parseTradeReference', () => {
     'https://gachigacha.kro.kr/trade/not-number',
     'https://gachigacha.kro.kr/map',
     '',
-  ])('가치가챠 교환글이 아닌 %p를 거부한다', (value) => {
+  ])('가치가챠 거래글이 아닌 %p를 거부한다', (value) => {
     expect(parseTradeReference(value)).toBeNull();
   });
 });

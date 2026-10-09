@@ -41,6 +41,34 @@ function useAuthenticatedMember() {
 }
 
 describe('EventApplicationRoute', () => {
+  it('확정된 일정과 A·B 두 개의 응모 트랙만 안내한다', async () => {
+    useAuthenticatedMember();
+
+    renderWithProviders(
+      <RequireAuth>
+        <EventApplicationRoute
+          config={OPEN_CONFIG}
+          now={new Date('2026-10-10T12:00:00+09:00')}
+        />
+      </RequireAuth>,
+      { initialAccessToken: ACCESS_TOKEN },
+    );
+
+    expect(await screen.findByText('10/10 (토)')).toBeInTheDocument();
+    expect(screen.getByText('10/16 (금) 오후 11:59분')).toBeInTheDocument();
+    expect(screen.getByText('10/31 (토)')).toBeInTheDocument();
+    expect(screen.getAllByRole('radio')).toHaveLength(2);
+    expect(
+      screen.getByRole('radio', { name: /이벤트 A 트랙/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('radio', { name: /이벤트 B 트랙/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('radio', { name: /두 트랙 모두/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it('로그인한 회원 ID와 입력한 응모 정보를 함께 제출한다', async () => {
     useAuthenticatedMember();
     const user = userEvent.setup();
@@ -63,11 +91,11 @@ describe('EventApplicationRoute', () => {
     );
 
     await user.click(
-      await screen.findByRole('radio', { name: /두 트랙 모두/ }),
+      await screen.findByRole('radio', { name: /이벤트 B 트랙/ }),
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), '@gachi__.gacha');
     await user.type(
-      screen.getByLabelText('교환글 링크'),
+      screen.getByLabelText('거래글 링크'),
       'https://gachigacha.kro.kr/trade/153',
     );
     await user.click(
@@ -79,7 +107,7 @@ describe('EventApplicationRoute', () => {
       expect(submitApplication).toHaveBeenCalledWith({
         eventId: 'popular-goods-giveaway-2026',
         memberId: '37',
-        desiredTrack: 'BOTH',
+        desiredTrack: 'COMPLETED',
         instagramId: 'gachi__.gacha',
         tradeId: 153,
         tradeUrl: 'https://gachigacha.kro.kr/trade/153',
@@ -91,7 +119,7 @@ describe('EventApplicationRoute', () => {
     ).toBeInTheDocument();
   });
 
-  it('가치가챠 교환글이 아닌 링크는 제출하지 않는다', async () => {
+  it('가치가챠 거래글이 아닌 링크는 제출하지 않는다', async () => {
     useAuthenticatedMember();
     const user = userEvent.setup();
     const submitApplication = jest.fn<() => Promise<void>>();
@@ -107,10 +135,12 @@ describe('EventApplicationRoute', () => {
       { initialAccessToken: ACCESS_TOKEN },
     );
 
-    await user.click(await screen.findByRole('radio', { name: /기본 트랙/ }));
+    await user.click(
+      await screen.findByRole('radio', { name: /이벤트 A 트랙/ }),
+    );
     await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
     await user.type(
-      screen.getByLabelText('교환글 링크'),
+      screen.getByLabelText('거래글 링크'),
       'https://example.com/trade/153',
     );
     await user.click(
@@ -119,7 +149,7 @@ describe('EventApplicationRoute', () => {
     await user.click(screen.getByRole('button', { name: '응모 제출하기' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      '본인이 작성한 가치가챠 교환글 링크',
+      '본인이 작성한 가치가챠 거래글 링크',
     );
     expect(submitApplication).not.toHaveBeenCalled();
   });

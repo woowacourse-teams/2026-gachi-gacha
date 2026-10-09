@@ -7,7 +7,7 @@ export type PlaceSearchContext =
   'trade_purchase_store' | 'trade_exchange_place' | 'profile_preferred_area';
 export type ProfileTradeLocationChange =
   'unchanged' | 'set' | 'changed' | 'cleared';
-export type EventApplicationTrack = 'BASIC' | 'COMPLETED' | 'BOTH';
+export type EventApplicationTrack = 'BASIC' | 'COMPLETED';
 export type NavigationDestination =
   | 'brand'
   | 'trade'

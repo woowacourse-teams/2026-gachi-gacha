@@ -12,8 +12,8 @@ const meta = {
     config: {
       enabled: true,
       endpoint: 'https://script.google.com/macros/s/storybook/exec',
-      startAt: '2026-10-01T00:00:00+09:00',
-      endAt: '2026-11-01T00:00:00+09:00',
+      startAt: '2026-10-10T00:00:00+09:00',
+      endAt: '2026-10-17T00:00:00+09:00',
     },
     now: new Date('2026-10-10T12:00:00+09:00'),
     submitApplication: async () => undefined,
@@ -27,6 +27,6 @@ export const Open: Story = {};
 
 export const Closed: Story = {
   args: {
-    now: new Date('2026-11-02T00:00:00+09:00'),
+    now: new Date('2026-10-17T00:00:00+09:00'),
   },
 };

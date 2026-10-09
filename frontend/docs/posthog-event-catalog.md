@@ -104,7 +104,7 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 `trade_location_change`는 `unchanged`, `set`, `changed`, `cleared` 중 하나다. 위치명과 주소 자체는 전송하지 않는다.
 
-이벤트 분석에는 Instagram ID, 교환글 링크, memberId를 이벤트 속성으로 보내지 않는다. 로그인 회원 식별은 기존 PostHog identify 문맥을 사용하며 `track`은 `BASIC`, `COMPLETED`, `BOTH` 중 하나다.
+이벤트 분석에는 Instagram ID, 거래글 링크, memberId를 이벤트 속성으로 보내지 않는다. 로그인 회원 식별은 기존 PostHog identify 문맥을 사용하며 `track`은 이벤트 A/B 트랙에 대응하는 `BASIC`, `COMPLETED` 중 하나다.
 
 ## 핵심 지표와 해석
 
