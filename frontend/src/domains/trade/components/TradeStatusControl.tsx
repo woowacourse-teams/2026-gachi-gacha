@@ -4,17 +4,8 @@ import styled from '@emotion/styled';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { updateTradeStatus } from '../api/updateTradeStatus';
-import type { TradeStatus } from '../tradeSummaryType';
-
-const STATUS_OPTIONS: { value: TradeStatus; label: string }[] = [
-  { value: 'AVAILABLE', label: '교환 가능' },
-  { value: 'IN_PROGRESS', label: '교환 진행 중' },
-  { value: 'COMPLETED', label: '교환 완료' },
-];
-
-const STATUS_LABELS = Object.fromEntries(
-  STATUS_OPTIONS.map(({ value, label }) => [value, label]),
-) as Record<TradeStatus, string>;
+import { getTradeStatusPresentation } from '../tradeStatusPresentation';
+import { TRADE_STATUSES, type TradeStatus } from '../tradeSummaryType';
 
 export interface TradeStatusControlProps {
   tradeId: number;
@@ -113,7 +104,7 @@ export function TradeStatusControl({
         type="button"
         $status={selectedStatus}
         disabled={isUpdating}
-        aria-label={`${contextLabel ? `${contextLabel} ` : ''}교환 상태: ${STATUS_LABELS[selectedStatus]}`}
+        aria-label={`${contextLabel ? `${contextLabel} ` : ''}교환 상태: ${getTradeStatusPresentation(selectedStatus).label}`}
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={`trade-status-menu-${tradeId}`}
@@ -124,7 +115,9 @@ export function TradeStatusControl({
         }}
       >
         <StatusDot $status={selectedStatus} />
-        {isUpdating ? '변경 중' : STATUS_LABELS[selectedStatus]}
+        {isUpdating
+          ? '변경 중'
+          : getTradeStatusPresentation(selectedStatus).label}
         {isUpdating ? (
           <Spinner aria-hidden="true" />
         ) : (
@@ -135,20 +128,22 @@ export function TradeStatusControl({
       {isOpen && (
         <StatusMenu id={`trade-status-menu-${tradeId}`} role="menu">
           <MenuHeading>교환 상태 변경</MenuHeading>
-          {STATUS_OPTIONS.map((option) => {
-            const isSelected = option.value === selectedStatus;
+          {TRADE_STATUSES.map((statusOption) => {
+            const isSelected = statusOption === selectedStatus;
 
             return (
               <StatusOption
-                key={option.value}
+                key={statusOption}
                 type="button"
                 role="menuitemradio"
                 aria-checked={isSelected}
                 $selected={isSelected}
-                onClick={() => void handleChange(option.value)}
+                onClick={() => void handleChange(statusOption)}
               >
-                <StatusDot $status={option.value} />
-                <OptionLabel>{option.label}</OptionLabel>
+                <StatusDot $status={statusOption} />
+                <OptionLabel>
+                  {getTradeStatusPresentation(statusOption).label}
+                </OptionLabel>
                 {isSelected && <Check aria-hidden="true">✓</Check>}
               </StatusOption>
             );
@@ -159,18 +154,6 @@ export function TradeStatusControl({
       {errorMessage && <ErrorMessage role="alert">{errorMessage}</ErrorMessage>}
     </Container>
   );
-}
-
-function statusColor(status: TradeStatus) {
-  if (status === 'AVAILABLE') {
-    return { background: '#fff0f4', border: '#ffc8d6', text: '#c51645' };
-  }
-
-  if (status === 'IN_PROGRESS') {
-    return { background: '#fff7df', border: '#f2dc91', text: '#8a6400' };
-  }
-
-  return { background: '#f2f2f4', border: '#dedee3', text: '#62636b' };
 }
 
 const Container = styled.div`
@@ -185,10 +168,12 @@ const StatusButton = styled.button<{ $status: TradeStatus }>`
   padding: 6px 10px;
   align-items: center;
   gap: 7px;
-  border: 1px solid ${({ $status }) => statusColor($status).border};
+  border: 1px solid
+    ${({ $status }) => getTradeStatusPresentation($status).border};
   border-radius: 999px;
-  background: ${({ $status }) => statusColor($status).background};
-  color: ${({ $status }) => statusColor($status).text};
+  background: ${({ $status }) =>
+    getTradeStatusPresentation($status).background};
+  color: ${({ $status }) => getTradeStatusPresentation($status).text};
   font-size: 13px;
   font-weight: 800;
   line-height: 1;
@@ -213,7 +198,7 @@ const StatusDot = styled.span<{ $status: TradeStatus }>`
   height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: ${({ $status }) => statusColor($status).text};
+  background: ${({ $status }) => getTradeStatusPresentation($status).text};
 `;
 
 const Chevron = styled.span`

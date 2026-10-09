@@ -15,7 +15,6 @@ import type {
   ChatRoomSummary,
 } from '@/domains/chat/chatType';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
-import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
@@ -23,12 +22,7 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import ChatPage from './ChatPage';
-import type {
-  ChatConversation,
-  ChatMessage,
-  ChatRoom,
-  ChatTradeStatus,
-} from './model/chat';
+import type { ChatConversation, ChatMessage, ChatRoom } from './model/chat';
 import { toChatDateKey } from './model/chatDate';
 import { useChatReadMarker } from './useChatReadMarker';
 
@@ -48,12 +42,6 @@ interface ChatRouteState {
   nextLastSequence: number | null;
   previousMessagesError: string;
 }
-
-const STATUS_LABELS: Record<TradeStatus, ChatTradeStatus> = {
-  AVAILABLE: '교환 가능',
-  IN_PROGRESS: '교환 진행 중',
-  COMPLETED: '교환 완료',
-};
 
 export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const { memberId } = useAuthSession();
@@ -490,7 +478,7 @@ function toConversation(room: ChatRoomSummary): ChatConversation {
       ? formatRelativeTime(room.lastMessage.sentAt)
       : '',
     unreadCount: room.unreadCount,
-    status: STATUS_LABELS[room.trade.status],
+    status: room.trade.status,
   };
 }
 
@@ -506,7 +494,7 @@ function toChatRoom(
     partnerProfileImageUrl: room.otherMember.profileImageUrl,
     itemTitle: room.trade.title,
     itemImageUrl: room.trade.thumbnailUrl,
-    tradeStatus: STATUS_LABELS[room.trade.status],
+    tradeStatus: room.trade.status,
     messages: messages.map((message) => toMessage(message, memberId)),
   };
 }

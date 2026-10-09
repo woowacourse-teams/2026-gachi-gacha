@@ -61,11 +61,43 @@ describe('analyticsClient', () => {
     expect(mockPosthogClient.capture).toHaveBeenCalledWith(
       'trade_search_submitted',
       {
+        analytics_schema_version: 1,
         app_version: 'test',
         environment: 'test',
         is_internal_user: false,
         query_length: 4,
       },
+    );
+  });
+
+  it('OAuth 인증 정보가 포함된 URL은 전송 전에 민감 파라미터를 제거한다', async () => {
+    const { initializeAnalytics } = await import('./analyticsClient');
+
+    initializeAnalytics();
+    await flushAnalyticsClient();
+
+    const config = mockPosthogClient.init.mock.calls.at(-1)?.[1] as
+      | {
+          before_send?: (captureResult: {
+            uuid: string;
+            event: string;
+            properties: Record<string, unknown>;
+          }) => {
+            properties: Record<string, unknown>;
+          } | null;
+        }
+      | undefined;
+    const sanitizedCapture = config?.before_send?.({
+      uuid: 'event-id',
+      event: '$pageview',
+      properties: {
+        $current_url:
+          'https://gachigacha.kro.kr/oauth/login/kakao?code=secret&state=csrf&campaign=launch',
+      },
+    });
+
+    expect(sanitizedCapture?.properties.$current_url).toBe(
+      'https://gachigacha.kro.kr/oauth/login/kakao?campaign=launch',
     );
   });
 

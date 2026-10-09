@@ -9,12 +9,12 @@ import type {
   CreateTradeRequest,
   TradePlaceInput,
 } from '@/domains/trade/tradeCreateType';
+import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
 import StickyActionBar from '../StickyActionBar';
-import TradePlaceSearchDialog from '../TradePlaceSearchDialog';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
 
@@ -359,13 +359,7 @@ export default function TradeForm(props: TradeFormProps) {
           <PlaceSelectButton
             id="purchase-store"
             type="button"
-            onClick={() => {
-              captureAnalyticsEvent('trade_place_dialog_opened', {
-                mode: isEditMode ? 'edit' : 'create',
-                place_type: 'purchase_store',
-              });
-              setIsPurchaseStoreDialogOpen(true);
-            }}
+            onClick={() => setIsPurchaseStoreDialogOpen(true)}
           >
             <LocationIcon aria-hidden="true" />
             <PlaceText>
@@ -384,7 +378,13 @@ export default function TradeForm(props: TradeFormProps) {
               <ClearPlaceButton
                 type="button"
                 aria-label="구매 매장 선택 해제"
-                onClick={() => setPurchaseStore(null)}
+                onClick={() => {
+                  captureAnalyticsEvent('place_selection_cleared', {
+                    place_context: 'trade_purchase_store',
+                    trade_form_mode: isEditMode ? 'edit' : 'create',
+                  });
+                  setPurchaseStore(null);
+                }}
               >
                 선택 해제
               </ClearPlaceButton>
@@ -419,13 +419,7 @@ export default function TradeForm(props: TradeFormProps) {
           <PlaceSelectButton
             id="trade-place"
             type="button"
-            onClick={() => {
-              captureAnalyticsEvent('trade_place_dialog_opened', {
-                mode: isEditMode ? 'edit' : 'create',
-                place_type: 'trade_place',
-              });
-              setIsPlaceDialogOpen(true);
-            }}
+            onClick={() => setIsPlaceDialogOpen(true)}
           >
             <LocationIcon aria-hidden="true" />
             <PlaceText>
@@ -444,7 +438,13 @@ export default function TradeForm(props: TradeFormProps) {
               <ClearPlaceButton
                 type="button"
                 aria-label="교환 장소 선택 해제"
-                onClick={() => setTradePlace(null)}
+                onClick={() => {
+                  captureAnalyticsEvent('place_selection_cleared', {
+                    place_context: 'trade_exchange_place',
+                    trade_form_mode: isEditMode ? 'edit' : 'create',
+                  });
+                  setTradePlace(null);
+                }}
               >
                 선택 해제
               </ClearPlaceButton>
@@ -499,17 +499,19 @@ export default function TradeForm(props: TradeFormProps) {
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
       />
 
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open={isPurchaseStoreDialogOpen}
-        placeType="purchase_store"
+        analyticsContext="trade_purchase_store"
+        analyticsTradeFormMode={isEditMode ? 'edit' : 'create'}
         title="구매 매장 선택"
         description="가챠를 구매한 매장이나 지점명을 검색해주세요."
         onClose={() => setIsPurchaseStoreDialogOpen(false)}
         onSelect={setPurchaseStore}
       />
-      <TradePlaceSearchDialog
+      <KakaoPlaceSearchDialog
         open={isPlaceDialogOpen}
-        placeType="trade_place"
+        analyticsContext="trade_exchange_place"
+        analyticsTradeFormMode={isEditMode ? 'edit' : 'create'}
         onClose={() => setIsPlaceDialogOpen(false)}
         onSelect={setTradePlace}
       />

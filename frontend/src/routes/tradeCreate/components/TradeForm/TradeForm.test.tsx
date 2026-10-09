@@ -15,9 +15,8 @@ import { server } from '@/test/server';
 
 import TradeForm from './TradeForm';
 
-jest.mock('../TradePlaceSearchDialog', () => ({
-  __esModule: true,
-  default: ({
+jest.mock('@/features/placeSearch/KakaoPlaceSearchDialog', () => ({
+  KakaoPlaceSearchDialog: ({
     open,
     title = '교환 장소 선택',
     onClose,

@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
-import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
@@ -12,12 +12,6 @@ export interface ProductCardProps {
   item: TradeItem;
   source?: 'trade_list' | 'related_list' | 'mypage';
 }
-
-const STATUS_LABELS: Record<TradeStatus, string> = {
-  AVAILABLE: '교환 가능',
-  IN_PROGRESS: '교환 진행 중',
-  COMPLETED: '교환 완료',
-};
 
 export default function ProductCard({
   item,
@@ -50,16 +44,20 @@ export default function ProductCard({
       <Categories>{categories}</Categories>
       <Meta>{place}</Meta>
       <Meta>{formatRelativeTime(item.createdAt)}</Meta>
-      <Badge $status={item.status}>{STATUS_LABELS[item.status]}</Badge>
+      <BadgeRow>
+        <TradeStatusBadge status={item.status} />
+      </BadgeRow>
     </Card>
   );
 }
 
 const Card = styled(Link)`
-  display: block;
+  display: flex;
   width: 100%;
   max-width: 205px;
+  height: 100%;
   min-width: 0;
+  flex-direction: column;
   color: inherit;
   text-decoration: none;
 
@@ -90,7 +88,7 @@ const Image = styled.img`
 `;
 
 const Title = styled.h3`
-  min-height: 48px;
+  height: 2.9em;
   margin: 0 0 4px;
   overflow: hidden;
   color: #25252a;
@@ -103,26 +101,31 @@ const Title = styled.h3`
 `;
 
 const Categories = styled.p`
+  display: -webkit-box;
+  height: 2.8em;
   margin: 0 0 6px;
+  overflow: hidden;
   color: #4e5058;
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 `;
 
 const Meta = styled.p`
+  min-height: 1.45em;
   margin: 2px 0 0;
+  overflow: hidden;
   color: #777b86;
   font-size: 14px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const Badge = styled.span<{ $status: TradeStatus }>`
+const BadgeRow = styled.div`
   display: inline-flex;
+  align-self: flex-start;
   margin-top: 8px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: ${({ $status }) =>
-    $status === 'AVAILABLE' ? '#fff1f3' : '#f1f1f3'};
-  color: ${({ $status }) => ($status === 'AVAILABLE' ? '#d93b54' : '#696466')};
-  font-size: 12px;
-  font-weight: 700;
 `;

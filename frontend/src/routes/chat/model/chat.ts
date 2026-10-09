@@ -1,4 +1,6 @@
-export type ChatTradeStatus = '교환 가능' | '교환 진행 중' | '교환 완료';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+
+export type ChatTradeStatus = TradeStatus;
 
 export interface ChatConversation {
   id: number;

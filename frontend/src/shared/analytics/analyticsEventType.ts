@@ -3,6 +3,10 @@ export type StoreSearchTrigger =
 export type StoreSelectionSource = 'list' | 'map_marker';
 export type AnalyticsOutcome = 'success' | 'failure';
 export type TradeFormMode = 'create' | 'edit';
+export type PlaceSearchContext =
+  'trade_purchase_store' | 'trade_exchange_place' | 'profile_preferred_area';
+export type ProfileTradeLocationChange =
+  'unchanged' | 'set' | 'changed' | 'cleared';
 export type NavigationDestination =
   | 'brand'
   | 'trade'
@@ -162,19 +166,25 @@ export interface AnalyticsEventPropertiesMap {
     rejected_count: number;
     total_count: number;
   };
-  trade_place_dialog_opened: {
-    mode: TradeFormMode;
-    place_type: 'purchase_store' | 'trade_place';
+  place_search_opened: {
+    place_context: PlaceSearchContext;
+    trade_form_mode: TradeFormMode | null;
   };
-  trade_place_search_completed: {
-    place_type: 'purchase_store' | 'trade_place';
+  place_search_completed: {
+    place_context: PlaceSearchContext;
+    trade_form_mode: TradeFormMode | null;
     outcome: AnalyticsOutcome;
     result_count: number;
     query_length: number;
   };
-  trade_place_selected: {
-    place_type: 'purchase_store' | 'trade_place';
+  place_search_result_selected: {
+    place_context: PlaceSearchContext;
+    trade_form_mode: TradeFormMode | null;
     result_position: number;
+  };
+  place_selection_cleared: {
+    place_context: PlaceSearchContext;
+    trade_form_mode: TradeFormMode | null;
   };
   trade_status_update_completed: {
     trade_id: number;
@@ -213,6 +223,7 @@ export interface AnalyticsEventPropertiesMap {
   profile_update_completed: {
     outcome: AnalyticsOutcome;
     has_trade_location: boolean;
+    trade_location_change: ProfileTradeLocationChange;
   };
   account_menu_selected: {
     target: 'privacy' | 'support' | 'logout' | 'delete_account';
