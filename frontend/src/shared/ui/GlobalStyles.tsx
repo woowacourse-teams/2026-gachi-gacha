@@ -28,6 +28,10 @@ const globalStyles = css`
     min-height: 100%;
   }
 
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     margin: 0;
     background: var(--color-surface);

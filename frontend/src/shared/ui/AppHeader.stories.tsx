@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import {
@@ -26,6 +27,13 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
+  decorators: [
+    (Story) => (
+      <MemoryRouter initialEntries={['/map']}>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     currentPath: '/map',
     search: <GachaSearchBar onSelect={() => undefined} />,

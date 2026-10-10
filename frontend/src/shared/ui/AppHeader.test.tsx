@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -26,6 +27,19 @@ describe('AppHeader', () => {
       screen.queryByRole('link', { name: '알림' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '로그인' })).toBeInTheDocument();
+  });
+
+  it('주요 메뉴는 문서 새로고침 없이 React Router 경로를 전환한다', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<AppHeader currentPath="/trade" />, {
+      initialAccessToken: null,
+      route: '/trade',
+    });
+
+    await user.click(screen.getByRole('link', { name: '지도' }));
+
+    expect(window.location.pathname).toBe('/map');
   });
 
   it('로그인 상태에서는 채팅과 알림을 함께 노출한다', async () => {

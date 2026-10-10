@@ -9,9 +9,7 @@ describe('교환 검색 히어로', () => {
     const onSearch = jest.fn();
     const user = userEvent.setup();
 
-    render(
-      <SearchHero title="어떤 가챠를 교환해볼까요?" onSearch={onSearch} />,
-    );
+    render(<SearchHero title="어떤 가챠를 찾아볼까요?" onSearch={onSearch} />);
 
     await user.type(
       screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
@@ -20,5 +18,8 @@ describe('교환 검색 히어로', () => {
     await user.click(screen.getByRole('button', { name: '검색' }));
 
     expect(onSearch).toHaveBeenCalledWith('쿠로미 키링');
+    expect(
+      screen.getByPlaceholderText('찾고 싶은 게시글을 검색'),
+    ).toBeInTheDocument();
   });
 });
