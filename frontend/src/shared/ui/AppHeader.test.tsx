@@ -42,6 +42,32 @@ describe('AppHeader', () => {
     expect(window.location.pathname).toBe('/map');
   });
 
+  it('검색창 유무와 무관하게 동일한 헤더 그리드 슬롯을 유지한다', () => {
+    renderWithProviders(
+      <>
+        <AppHeader currentPath="/trade" />
+        <AppHeader
+          currentPath="/map"
+          search={<form aria-label="가챠 검색" />}
+        />
+      </>,
+      {
+        initialAccessToken: null,
+      },
+    );
+    const navigations = screen.getAllByRole('navigation', {
+      name: '주요 메뉴',
+    });
+    const searchSlots = document.querySelectorAll('[data-header-search-slot]');
+
+    expect(searchSlots).toHaveLength(2);
+    expect(searchSlots[0]?.nextElementSibling).toBe(navigations[0]);
+    expect(searchSlots[1]).toContainElement(
+      screen.getByRole('form', { name: '가챠 검색' }),
+    );
+    expect(searchSlots[1]?.nextElementSibling).toBe(navigations[1]);
+  });
+
   it('로그인 상태에서는 채팅과 알림을 함께 노출한다', async () => {
     server.use(
       http.get('/api/v1/members/me', () =>

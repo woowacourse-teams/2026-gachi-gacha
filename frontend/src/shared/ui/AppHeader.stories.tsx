@@ -89,6 +89,18 @@ export const SearchActive: Story = {
   },
 };
 
+export const StableNavigationWithSearchSlot: Story = {
+  render: () => (
+    <div style={{ display: 'grid', gap: 24 }}>
+      <AppHeader currentPath="/trade" />
+      <AppHeader
+        currentPath="/map"
+        search={<GachaSearchBar onSelect={() => undefined} />}
+      />
+    </div>
+  ),
+};
+
 export const Authenticated: Story = {
   render: (args) => (
     <MockWorkerBoundary handlers={[authenticatedMemberHandler]}>
