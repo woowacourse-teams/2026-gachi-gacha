@@ -33,21 +33,23 @@ export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
   column-gap: 20px;
 
   @media (max-width: 1180px) {
+    min-height: 0;
     padding: 10px 20px;
-    align-content: start;
     grid-template-columns: auto minmax(0, 1fr) auto;
     grid-template-rows: ${({ $hasSearch }) =>
-      $hasSearch ? 'auto auto' : 'auto 0'};
+      $hasSearch ? '42px auto' : '42px 0'};
     grid-template-areas:
       'brand navigation actions'
       'search search search';
     column-gap: 18px;
-    row-gap: ${({ $hasSearch }) => ($hasSearch ? '10px' : '0')};
+    row-gap: ${({ $hasSearch }) => ($hasSearch ? '8px' : '0')};
   }
 
   @media (max-width: 520px) {
     padding: 10px 12px;
     grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: ${({ $hasSearch }) =>
+      $hasSearch ? '38px auto' : '38px 0'};
     column-gap: 6px;
   }
 `;
