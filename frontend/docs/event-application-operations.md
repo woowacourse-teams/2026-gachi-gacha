@@ -12,6 +12,8 @@
   "instagramId": "gachi__.gacha",
   "tradeId": 153,
   "tradeUrl": "https://gachigacha.kro.kr/trade/153",
+  "completedTradeId": 207,
+  "completedTradeUrl": "https://gachigacha.kro.kr/trade/207",
   "privacyConsent": true
 }
 ```
@@ -22,6 +24,10 @@
 Google Apps Script의 CORS 사전 요청을 피하기 위해 `Content-Type:
 text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
 
+`completedTradeId`와 `completedTradeUrl`은 이벤트 B 트랙 또는 두 트랙 모두
+응모할 때 필수입니다. A 트랙에서 완료 거래글을 입력하지 않으면 두 값은 `null`로
+전송합니다. 완료 거래글은 응모자 본인이 작성한 글이 아니어도 됩니다.
+
 ## 스프레드시트 준비
 
 시트 탭 이름은 `응모`로 지정하고 첫 번째 행에 다음 열을 순서대로 만듭니다.
@@ -29,8 +35,12 @@ text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
 한국어 이름을 그대로 사용할 수 있습니다.
 
 ```text
-제출시기 | eventId | memberId | 지원트랙 | 인스타Id | 거래Id | 거래글Url | 개인정보사용동의
+제출시기 | eventId | memberId | 지원트랙 | 인스타Id | 거래Id | 거래글Url | 완료거래Id | 완료거래글Url | 개인정보사용동의
 ```
+
+기존 시트에는 현재 H열인 `개인정보사용동의` 앞에 열 2개를 삽입한 뒤, 새 H열을
+`완료거래Id`, 새 I열을 `완료거래글Url`로 지정합니다. 열을 삽입하면 기존 동의
+데이터는 J열로 함께 이동하므로 기존 응모 데이터가 어긋나지 않습니다.
 
 스프레드시트의 `확장 프로그램 > Apps Script`에서 아래 예시를 사용할 수
 있습니다. 같은 이벤트와 회원의 재제출은 새 행을 만들지 않고 기존 행을 최신
@@ -60,12 +70,33 @@ function doPost(event) {
       'privacyConsent',
     ];
 
-    if (required.some((key) => input[key] === undefined || input[key] === '')) {
+    const isMissing = (value) =>
+      value === undefined || value === null || value === '';
+
+    if (required.some((key) => isMissing(input[key]))) {
       return json({ ok: false, message: '필수 응모 정보가 없습니다.' });
     }
 
     if (!['BASIC', 'COMPLETED', 'BOTH'].includes(input.desiredTrack)) {
       return json({ ok: false, message: '희망 트랙이 올바르지 않습니다.' });
+    }
+
+    const requiresCompletedTrade = ['COMPLETED', 'BOTH'].includes(
+      input.desiredTrack,
+    );
+
+    if (
+      requiresCompletedTrade &&
+      [input.completedTradeId, input.completedTradeUrl].some(isMissing)
+    ) {
+      return json({
+        ok: false,
+        message: '완료 트랙에 필요한 거래 완료글 정보가 없습니다.',
+      });
+    }
+
+    if (input.privacyConsent !== true) {
+      return json({ ok: false, message: '개인정보 수집 동의가 필요합니다.' });
     }
 
     lock.waitLock(10000);
@@ -85,6 +116,8 @@ function doPost(event) {
       input.instagramId,
       Number(input.tradeId),
       input.tradeUrl,
+      isMissing(input.completedTradeId) ? '' : Number(input.completedTradeId),
+      isMissing(input.completedTradeUrl) ? '' : input.completedTradeUrl,
       input.privacyConsent === true,
     ];
     const values = sheet.getDataRange().getValues();
@@ -139,15 +172,16 @@ EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSH
 - 이벤트 A 트랙은 회원가입, 공식 Instagram 팔로우, 본인 거래글 1건을
   요구한다.
 - 이벤트 B 트랙은 A 트랙 조건을 포함하고 실제 거래 완료 1건을 추가로
-  요구한다. 운영진이 당첨 후보의 회원 ID, 거래글 및 채팅 기록을 서버
-  데이터와 대조해 실제 거래 대화와 완료 여부를 확인한다.
+  요구한다. 완료 거래글은 응모자가 작성한 글이 아니어도 인정한다. 운영진이
+  당첨 후보의 회원 ID, 작성 거래글, 완료 거래글 및 채팅 기록을 서버 데이터와
+  대조해 실제 거래 참여와 완료 여부를 확인한다.
 - 두 트랙 모두를 선택한 응모는 `BOTH`로 저장하며 A 트랙과 B 트랙 추첨 대상에
   각각 한 번씩 포함한다. 동일 회원의 당첨은 최대 1개로 제한한다. B 트랙 당첨자
   2명을 먼저 추첨하고 해당 회원을 제외한 뒤 A 트랙 당첨자 3명을 추첨한다.
 
 ## 운영 전 필수 확인
 
-- 개인정보처리방침에 `memberId`, Instagram ID, 거래글 링크, 희망 트랙,
+- 개인정보처리방침에 `memberId`, Instagram ID, 작성·완료 거래글 링크, 희망 트랙,
   Google Sheets 사용 목적과 경품 전달 완료 후 파기 기준이 반영되었는지
   확인합니다.
 - 스프레드시트 열람 권한은 이벤트 담당자에게만 부여합니다.

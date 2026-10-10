@@ -7,5 +7,7 @@ export interface EventApplicationInput {
   instagramId: string;
   tradeId: number;
   tradeUrl: string;
+  completedTradeId: number | null;
+  completedTradeUrl: string | null;
   privacyConsent: true;
 }
