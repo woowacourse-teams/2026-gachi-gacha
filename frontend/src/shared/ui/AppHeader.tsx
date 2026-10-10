@@ -106,7 +106,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
           <span>GachiGacha</span>
         </Brand>
 
-        {search && <SearchArea>{search}</SearchArea>}
+        <SearchArea data-header-search-slot>{search}</SearchArea>
 
         <Navigation aria-label="주요 메뉴">
           {NAVIGATION_ITEMS.map(({ href, label, destination }) => {

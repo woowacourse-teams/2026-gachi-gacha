@@ -28,34 +28,32 @@ export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
   min-height: 76px;
   padding: 12px 32px;
   align-items: center;
-  grid-template-columns: ${({ $hasSearch }) =>
-    $hasSearch
-      ? 'minmax(210px, 0.8fr) minmax(280px, 720px) auto auto'
-      : 'minmax(210px, 1fr) auto auto'};
-  gap: 20px;
+  grid-template-columns: minmax(210px, 1fr) minmax(280px, 720px) 258px auto;
+  grid-template-areas: 'brand search navigation actions';
+  column-gap: 20px;
 
   @media (max-width: 1180px) {
     padding: 10px 20px;
+    align-content: start;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: ${({ $hasSearch }) =>
-      $hasSearch
-        ? "'brand navigation actions' 'search search search'"
-        : "'brand navigation actions'"};
-    gap: 10px 18px;
+    grid-template-rows: ${({ $hasSearch }) =>
+      $hasSearch ? 'auto auto' : 'auto 0'};
+    grid-template-areas:
+      'brand navigation actions'
+      'search search search';
+    column-gap: 18px;
+    row-gap: ${({ $hasSearch }) => ($hasSearch ? '10px' : '0')};
   }
 
   @media (max-width: 520px) {
     padding: 10px 12px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: ${({ $hasSearch }) =>
-      $hasSearch
-        ? "'brand navigation actions' 'search search search'"
-        : "'brand navigation actions'"};
-    gap: 10px 6px;
+    column-gap: 6px;
   }
 `;
 
 export const Brand = styled(Link)`
+  grid-area: brand;
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -70,10 +68,6 @@ export const Brand = styled(Link)`
     border-radius: 8px;
     outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: 4px;
-  }
-
-  @media (max-width: 1180px) {
-    grid-area: brand;
   }
 
   @media (max-width: 767px) {
@@ -94,15 +88,13 @@ export const BrandLogo = styled.img`
 `;
 
 export const SearchArea = styled.div`
+  grid-area: search;
   width: 100%;
   min-width: 0;
-
-  @media (max-width: 1180px) {
-    grid-area: search;
-  }
 `;
 
 export const Navigation = styled.nav`
+  grid-area: navigation;
   display: grid;
   width: 258px;
   align-items: center;
@@ -112,7 +104,6 @@ export const Navigation = styled.nav`
 
   @media (max-width: 1180px) {
     width: 228px;
-    grid-area: navigation;
   }
 
   @media (max-width: 520px) {
@@ -173,14 +164,11 @@ export const NavigationLink = styled(Link, {
 `;
 
 export const Actions = styled.nav`
+  grid-area: actions;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-
-  @media (max-width: 1180px) {
-    grid-area: actions;
-  }
 
   @media (max-width: 520px) {
     gap: 2px;
