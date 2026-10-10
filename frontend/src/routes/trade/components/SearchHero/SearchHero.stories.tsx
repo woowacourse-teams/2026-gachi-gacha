@@ -6,7 +6,7 @@ const meta = {
   title: 'routes/trade/SearchHero',
   component: SearchHero,
   args: {
-    title: '어떤 가챠를 교환해볼까요?',
+    title: '어떤 가챠를 찾아볼까요?',
     onSearch: () => undefined,
   },
   parameters: {

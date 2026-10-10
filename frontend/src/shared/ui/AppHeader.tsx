@@ -98,7 +98,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
     <Header>
       <HeaderContent $hasSearch={Boolean(search)}>
         <Brand
-          href="/trade"
+          to="/trade"
           aria-label="GachiGacha 거래/교환으로 이동"
           onClick={() => captureHeaderNavigation('brand', isAuthenticated)}
         >
@@ -115,7 +115,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
             return (
               <NavigationLink
                 key={href}
-                href={href}
+                to={href}
                 $isActive={isActive}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={() =>
@@ -132,7 +132,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
           {isAuthenticated && (
             <>
               <ActionLink
-                href="/chat"
+                to="/chat"
                 $isActive={currentPath === '/chat'}
                 aria-label="채팅"
                 title="채팅"
@@ -141,7 +141,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
                 <ChatIcon />
               </ActionLink>
               <ActionLink
-                href="/notifications"
+                to="/notifications"
                 $isActive={currentPath === '/notifications'}
                 aria-label="알림"
                 title="알림"
@@ -154,7 +154,7 @@ export function AppHeader({ currentPath, search }: AppHeaderProps) {
             </>
           )}
           <ActionLink
-            href={accountHref}
+            to={accountHref}
             $isActive={currentPath === '/mypage'}
             $isAccount
             aria-label={isAuthenticated ? '마이페이지' : '로그인'}
