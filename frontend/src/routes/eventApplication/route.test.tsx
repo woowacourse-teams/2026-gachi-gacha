@@ -105,8 +105,12 @@ describe('EventApplicationRoute', () => {
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), '@gachi__.gacha');
     await user.type(
-      screen.getByLabelText('거래글 링크'),
+      screen.getByLabelText('본인이 작성한 거래글 링크'),
       'https://gachigacha.kro.kr/trade/153',
+    );
+    await user.type(
+      screen.getByLabelText(/거래 완료글 링크/),
+      'https://gachigacha.kro.kr/trade/207?from=event',
     );
     await user.click(
       screen.getByRole('checkbox', { name: /개인정보처리방침/ }),
@@ -121,12 +125,91 @@ describe('EventApplicationRoute', () => {
         instagramId: 'gachi__.gacha',
         tradeId: 153,
         tradeUrl: 'https://gachigacha.kro.kr/trade/153',
+        completedTradeId: 207,
+        completedTradeUrl: 'https://gachigacha.kro.kr/trade/207',
         privacyConsent: true,
       });
     });
     expect(
       screen.getByRole('heading', { name: '이벤트 응모를 접수했어요!' }),
     ).toBeInTheDocument();
+  });
+
+  it('B 트랙은 거래 완료글 링크가 없으면 제출하지 않는다', async () => {
+    useAuthenticatedMember();
+    const user = userEvent.setup();
+    const submitApplication = jest.fn<() => Promise<void>>();
+
+    renderWithProviders(
+      <RequireAuth>
+        <EventApplicationRoute
+          config={OPEN_CONFIG}
+          now={new Date('2026-10-10T12:00:00+09:00')}
+          submitApplication={submitApplication}
+        />
+      </RequireAuth>,
+      { initialAccessToken: ACCESS_TOKEN },
+    );
+
+    await user.click(
+      await screen.findByRole('radio', { name: /이벤트 B 트랙/ }),
+    );
+    await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
+    await user.type(
+      screen.getByLabelText('본인이 작성한 거래글 링크'),
+      'https://gachigacha.kro.kr/trade/153',
+    );
+    await user.click(
+      screen.getByRole('checkbox', { name: /개인정보처리방침/ }),
+    );
+    await user.click(screen.getByRole('button', { name: '응모 제출하기' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'B 트랙 응모를 위한 거래 완료글 링크',
+    );
+    expect(submitApplication).not.toHaveBeenCalled();
+  });
+
+  it('A 트랙은 거래 완료글 링크 없이 제출할 수 있다', async () => {
+    useAuthenticatedMember();
+    const user = userEvent.setup();
+    const submitApplication = jest
+      .fn<(input: EventApplicationInput) => Promise<void>>()
+      .mockResolvedValue(undefined);
+
+    renderWithProviders(
+      <RequireAuth>
+        <EventApplicationRoute
+          config={OPEN_CONFIG}
+          now={new Date('2026-10-10T12:00:00+09:00')}
+          submitApplication={submitApplication}
+        />
+      </RequireAuth>,
+      { initialAccessToken: ACCESS_TOKEN },
+    );
+
+    await user.click(
+      await screen.findByRole('radio', { name: /이벤트 A 트랙/ }),
+    );
+    await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
+    await user.type(
+      screen.getByLabelText('본인이 작성한 거래글 링크'),
+      'https://gachigacha.kro.kr/trade/153',
+    );
+    await user.click(
+      screen.getByRole('checkbox', { name: /개인정보처리방침/ }),
+    );
+    await user.click(screen.getByRole('button', { name: '응모 제출하기' }));
+
+    await waitFor(() => {
+      expect(submitApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          desiredTrack: 'BASIC',
+          completedTradeId: null,
+          completedTradeUrl: null,
+        }),
+      );
+    });
   });
 
   it('가치가챠 거래글이 아닌 링크는 제출하지 않는다', async () => {
@@ -150,7 +233,7 @@ describe('EventApplicationRoute', () => {
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
     await user.type(
-      screen.getByLabelText('거래글 링크'),
+      screen.getByLabelText('본인이 작성한 거래글 링크'),
       'https://example.com/trade/153',
     );
     await user.click(

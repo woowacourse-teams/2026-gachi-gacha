@@ -66,7 +66,7 @@ export function PrivacyRoute() {
             개인정보처리방침을 공개합니다.
           </Introduction>
           <EffectiveDate>
-            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 9일
+            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 10일
           </EffectiveDate>
 
           {__APP_ENV__ !== 'production' && (
@@ -120,8 +120,8 @@ export function PrivacyRoute() {
                   <tr>
                     <th>이벤트 응모</th>
                     <td>
-                      회원 식별값, 희망 트랙, Instagram ID, 교환글 링크와
-                      식별값, 응모 시각, 개인정보 수집·이용 동의 여부
+                      회원 식별값, 희망 트랙, Instagram ID, 작성·완료 교환글
+                      링크와 식별값, 응모 시각, 개인정보 수집·이용 동의 여부
                     </td>
                     <td>회원이 이벤트 응모 폼을 통해 직접 제출</td>
                   </tr>
@@ -281,8 +281,8 @@ export function PrivacyRoute() {
                   <tr>
                     <th>이전 항목</th>
                     <td>
-                      회원 식별값, 희망 트랙, Instagram ID, 교환글 링크와
-                      식별값, 응모 시각, 동의 여부
+                      회원 식별값, 희망 트랙, Instagram ID, 작성·완료 교환글
+                      링크와 식별값, 응모 시각, 동의 여부
                     </td>
                   </tr>
                   <tr>
@@ -488,6 +488,10 @@ export function PrivacyRoute() {
               <li>
                 2026년 10월 9일: 이벤트 응모정보 처리, Google Sheets 위탁 및
                 국외 이전 내용 추가
+              </li>
+              <li>
+                2026년 10월 10일: 완료 거래글 링크와 식별값을 이벤트 응모정보에
+                추가
               </li>
             </ul>
           </Section>

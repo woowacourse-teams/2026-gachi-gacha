@@ -60,6 +60,10 @@ import {
 const EVENT_ID = 'popular-goods-giveaway-2026' as const;
 const INSTAGRAM_ID_PATTERN = /^[A-Za-z0-9._]{1,30}$/;
 
+function requiresCompletedTrade(track: EventApplicationTrack): boolean {
+  return track === 'COMPLETED' || track === 'BOTH';
+}
+
 const TRACK_OPTIONS = [
   {
     value: 'BASIC',
@@ -118,6 +122,7 @@ export function EventApplicationRoute({
     useState<EventApplicationTrack | null>(null);
   const [instagramId, setInstagramId] = useState('');
   const [tradeLink, setTradeLink] = useState('');
+  const [completedTradeLink, setCompletedTradeLink] = useState('');
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -151,6 +156,21 @@ export function EventApplicationRoute({
       return;
     }
 
+    const normalizedCompletedTradeLink = completedTradeLink.trim();
+    const completedTradeReference = normalizedCompletedTradeLink
+      ? parseTradeReference(normalizedCompletedTradeLink)
+      : null;
+
+    if (normalizedCompletedTradeLink && !completedTradeReference) {
+      setErrorMessage('올바른 가치가챠 거래 완료글 링크를 입력해 주세요.');
+      return;
+    }
+
+    if (requiresCompletedTrade(desiredTrack) && !completedTradeReference) {
+      setErrorMessage('B 트랙 응모를 위한 거래 완료글 링크를 입력해 주세요.');
+      return;
+    }
+
     if (!privacyConsent) {
       setErrorMessage('개인정보처리방침에 동의해야 응모할 수 있어요.');
       return;
@@ -163,6 +183,8 @@ export function EventApplicationRoute({
       instagramId: normalizedInstagramId,
       tradeId: tradeReference.tradeId,
       tradeUrl: tradeReference.tradeUrl,
+      completedTradeId: completedTradeReference?.tradeId ?? null,
+      completedTradeUrl: completedTradeReference?.tradeUrl ?? null,
       privacyConsent: true,
     };
     const submitApplication =
@@ -287,9 +309,10 @@ export function EventApplicationRoute({
           <FormCard>
             <SectionTitle>응모 정보</SectionTitle>
             <SectionDescription>
-              모든 항목은 필수입니다. 기존에 작성한 거래글도 사용할 수 있어요.
+              기존에 작성한 거래글도 사용할 수 있어요. 거래 완료글 링크는 B 트랙
+              응모 시 필수입니다.
             </SectionDescription>
-            <Form onSubmit={handleSubmit} data-private>
+            <Form onSubmit={handleSubmit} data-private noValidate>
               <fieldset>
                 <FieldLabel as="legend">희망 트랙</FieldLabel>
                 <TrackGrid>
@@ -330,7 +353,9 @@ export function EventApplicationRoute({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="event-trade-link">거래글 링크</FieldLabel>
+                <FieldLabel htmlFor="event-trade-link">
+                  본인이 작성한 거래글 링크
+                </FieldLabel>
                 <Input
                   id="event-trade-link"
                   type="url"
@@ -344,13 +369,40 @@ export function EventApplicationRoute({
                 </FieldDescription>
               </Field>
 
+              <Field>
+                <FieldLabel htmlFor="event-completed-trade-link">
+                  거래 완료글 링크{' '}
+                  {desiredTrack && requiresCompletedTrade(desiredTrack)
+                    ? '(B 트랙 필수)'
+                    : '(선택)'}
+                </FieldLabel>
+                <Input
+                  id="event-completed-trade-link"
+                  type="url"
+                  value={completedTradeLink}
+                  placeholder="https://gachigacha.kro.kr/trade/456"
+                  onChange={(event) =>
+                    setCompletedTradeLink(event.target.value)
+                  }
+                  required={
+                    desiredTrack !== null &&
+                    requiresCompletedTrade(desiredTrack)
+                  }
+                />
+                <FieldDescription>
+                  본인이 작성한 글이 아니어도 괜찮아요. 실제 교환에 참여해
+                  완료된 가치가챠 거래글 주소를 입력해 주세요.
+                </FieldDescription>
+              </Field>
+
               <ConsentNotice>
                 <strong>이벤트 응모 개인정보 수집·이용 안내</strong>
                 <dl>
                   <div>
                     <dt>수집 항목</dt>
                     <dd>
-                      회원 ID, 희망 트랙, 인스타그램 ID, 거래글 링크, 응모 시각
+                      회원 ID, 희망 트랙, 인스타그램 ID, 작성 거래글·완료 거래글
+                      링크와 식별값, 응모 시각
                     </dd>
                   </div>
                   <div>
