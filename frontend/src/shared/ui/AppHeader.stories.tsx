@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import {
@@ -26,6 +27,13 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
   },
+  decorators: [
+    (Story) => (
+      <MemoryRouter initialEntries={['/map']}>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     currentPath: '/map',
     search: <GachaSearchBar onSelect={() => undefined} />,
@@ -79,6 +87,23 @@ export const SearchActive: Story = {
     currentPath: '/search',
     search: undefined,
   },
+};
+
+export const StableNavigationWithSearchSlot: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+  render: () => (
+    <div style={{ display: 'grid', gap: 24 }}>
+      <AppHeader currentPath="/trade" />
+      <AppHeader
+        currentPath="/map"
+        search={<GachaSearchBar onSelect={() => undefined} />}
+      />
+    </div>
+  ),
 };
 
 export const Authenticated: Story = {

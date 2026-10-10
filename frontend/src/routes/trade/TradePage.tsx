@@ -46,7 +46,7 @@ export default function TradePage({
 
       <Main>
         <SearchHero
-          title="어떤 가챠를 교환해볼까요?"
+          title="어떤 가챠를 찾아볼까요?"
           initialQuery={query}
           onSearch={onSearch}
         />

@@ -1,4 +1,13 @@
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
+
+function shouldForwardActiveLinkProp(propertyName: string) {
+  return propertyName !== '$isActive';
+}
+
+function shouldForwardActionLinkProp(propertyName: string) {
+  return propertyName !== '$isActive' && propertyName !== '$isAccount';
+}
 
 export const Header = styled.header`
   position: sticky;
@@ -19,34 +28,34 @@ export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
   min-height: 76px;
   padding: 12px 32px;
   align-items: center;
-  grid-template-columns: ${({ $hasSearch }) =>
-    $hasSearch
-      ? 'minmax(210px, 0.8fr) minmax(280px, 720px) auto auto'
-      : 'minmax(210px, 1fr) auto auto'};
-  gap: 20px;
+  grid-template-columns: minmax(210px, 1fr) minmax(280px, 720px) 258px auto;
+  grid-template-areas: 'brand search navigation actions';
+  column-gap: 20px;
 
   @media (max-width: 1180px) {
+    min-height: 0;
     padding: 10px 20px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: ${({ $hasSearch }) =>
-      $hasSearch
-        ? "'brand navigation actions' 'search search search'"
-        : "'brand navigation actions'"};
-    gap: 10px 18px;
+    grid-template-rows: ${({ $hasSearch }) =>
+      $hasSearch ? '42px auto' : '42px 0'};
+    grid-template-areas:
+      'brand navigation actions'
+      'search search search';
+    column-gap: 18px;
+    row-gap: ${({ $hasSearch }) => ($hasSearch ? '8px' : '0')};
   }
 
   @media (max-width: 520px) {
     padding: 10px 12px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: ${({ $hasSearch }) =>
-      $hasSearch
-        ? "'brand navigation actions' 'search search search'"
-        : "'brand navigation actions'"};
-    gap: 10px 6px;
+    grid-template-rows: ${({ $hasSearch }) =>
+      $hasSearch ? '38px auto' : '38px 0'};
+    column-gap: 6px;
   }
 `;
 
-export const Brand = styled.a`
+export const Brand = styled(Link)`
+  grid-area: brand;
   display: inline-flex;
   width: fit-content;
   align-items: center;
@@ -61,10 +70,6 @@ export const Brand = styled.a`
     border-radius: 8px;
     outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: 4px;
-  }
-
-  @media (max-width: 1180px) {
-    grid-area: brand;
   }
 
   @media (max-width: 767px) {
@@ -85,34 +90,41 @@ export const BrandLogo = styled.img`
 `;
 
 export const SearchArea = styled.div`
+  grid-area: search;
   width: 100%;
   min-width: 0;
-
-  @media (max-width: 1180px) {
-    grid-area: search;
-  }
 `;
 
 export const Navigation = styled.nav`
-  display: flex;
+  grid-area: navigation;
+  display: grid;
+  width: 258px;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
 
   @media (max-width: 1180px) {
-    grid-area: navigation;
+    width: 228px;
   }
 
   @media (max-width: 520px) {
-    justify-content: flex-start;
-    gap: 0;
+    width: 184px;
+    gap: 2px;
+  }
+
+  @media (max-width: 360px) {
+    width: 164px;
   }
 `;
 
-export const NavigationLink = styled.a<{ $isActive: boolean }>`
+export const NavigationLink = styled(Link, {
+  shouldForwardProp: shouldForwardActiveLinkProp,
+})<{ $isActive: boolean }>`
   display: inline-flex;
-  min-height: 42px;
-  padding: 0 18px;
+  width: 100%;
+  height: 42px;
+  padding: 0 8px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
@@ -122,6 +134,7 @@ export const NavigationLink = styled.a<{ $isActive: boolean }>`
     $isActive ? '#ffffff' : 'var(--color-text-muted, #696466)'};
   font-size: 15px;
   font-weight: 750;
+  line-height: 1;
   text-decoration: none;
   white-space: nowrap;
 
@@ -140,33 +153,33 @@ export const NavigationLink = styled.a<{ $isActive: boolean }>`
   }
 
   @media (max-width: 520px) {
-    min-height: 38px;
-    padding: 0 6px;
+    height: 38px;
+    padding: 0 3px;
     font-size: 13px;
   }
 
   @media (max-width: 360px) {
-    padding: 0 4px;
+    padding: 0 2px;
     font-size: 12px;
+    letter-spacing: -0.04em;
   }
 `;
 
 export const Actions = styled.nav`
+  grid-area: actions;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
-
-  @media (max-width: 1180px) {
-    grid-area: actions;
-  }
 
   @media (max-width: 520px) {
     gap: 2px;
   }
 `;
 
-export const ActionLink = styled.a<{
+export const ActionLink = styled(Link, {
+  shouldForwardProp: shouldForwardActionLinkProp,
+})<{
   $isActive: boolean;
   $isAccount?: boolean;
 }>`

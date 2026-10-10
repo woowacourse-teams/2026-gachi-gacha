@@ -192,7 +192,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '어떤 가챠를 교환해볼까요?',
+        name: '어떤 가챠를 찾아볼까요?',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -222,7 +222,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '어떤 가챠를 교환해볼까요?',
+        name: '어떤 가챠를 찾아볼까요?',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -283,7 +283,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '어떤 가챠를 교환해볼까요?',
+        name: '어떤 가챠를 찾아볼까요?',
       }),
     ).toBeInTheDocument();
     expect(

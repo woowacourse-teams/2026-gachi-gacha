@@ -10,6 +10,8 @@ const INPUT = {
   instagramId: 'gachi__.gacha',
   tradeId: 153,
   tradeUrl: 'https://gachigacha.kro.kr/trade/153',
+  completedTradeId: 207,
+  completedTradeUrl: 'https://gachigacha.kro.kr/trade/207',
   privacyConsent: true,
 } satisfies EventApplicationInput;
 
