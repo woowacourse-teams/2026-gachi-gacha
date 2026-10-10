@@ -90,6 +90,11 @@ export const SearchActive: Story = {
 };
 
 export const StableNavigationWithSearchSlot: Story = {
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
   render: () => (
     <div style={{ display: 'grid', gap: 24 }}>
       <AppHeader currentPath="/trade" />
