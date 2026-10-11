@@ -10,9 +10,7 @@ export interface TradeComment {
   author: TradeCommentAuthor;
   content: string;
   createdAt: string;
-  likeCount: number;
-  isLiked?: boolean;
   isMine?: boolean;
 }
 
-export type TradeCommentAction = 'like' | 'report' | 'edit' | 'delete';
+export type TradeCommentAction = 'edit' | 'delete';

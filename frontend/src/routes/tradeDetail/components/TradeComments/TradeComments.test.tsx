@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { TradeComments } from './TradeComments';
@@ -17,19 +17,14 @@ describe('TradeComments', () => {
     expect(screen.queryByRole('button', { name: '답글' })).toBeNull();
   });
 
-  it('등록순을 선택하면 오래된 댓글부터 표시한다', async () => {
-    const user = userEvent.setup();
-
+  it('정렬, 좋아요, 신고 기능은 제공하지 않는다', () => {
     render(<TradeComments comments={TRADE_COMMENTS} />);
 
-    await user.selectOptions(screen.getByRole('combobox'), 'oldest');
-
-    const commentList = screen.getByRole('region', { name: '댓글 목록' });
-    const threads = within(commentList).getAllByRole('article');
-
-    expect(threads[0]).toHaveTextContent(
-      '상품 상태를 조금 더 자세히 볼 수 있을까요?',
-    );
+    expect(screen.queryByRole('combobox')).toBeNull();
+    expect(screen.queryByRole('button', { name: /좋아요/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: '신고' })).toBeNull();
+    expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
   });
 
   it('댓글을 입력하면 공백을 제거해 등록 콜백으로 전달한다', async () => {
