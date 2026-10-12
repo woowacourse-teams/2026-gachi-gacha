@@ -49,6 +49,7 @@ export const Header = styled.header`
   gap: 24px;
   padding: 24px 28px 20px;
   border-bottom: 1px solid var(--color-border-subtle, #f0eeec);
+  text-align: left;
 
   & > div:first-of-type {
     min-width: 0;

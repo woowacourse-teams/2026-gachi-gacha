@@ -1,6 +1,8 @@
 import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
 
+import { GachaImageFrame } from '@/domains/product/components/GachaSummaryCard.styles';
 import {
   breakpoint,
   color,
@@ -66,6 +68,24 @@ export const GachaList = styled.ul`
 
 export const GachaItem = styled.li`
   min-width: 0;
+`;
+
+export const GachaLink = styled(Link)`
+  display: block;
+  border-radius: ${radius.card};
+  color: inherit;
+  text-decoration: none;
+
+  &:hover ${GachaImageFrame} {
+    border-color: ${color.primary};
+    transform: translateY(-2px);
+    box-shadow: 0 9px 20px rgb(35 31 32 / 12%);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${focusRing};
+  }
 `;
 
 export const LoadingGrid = styled.div`

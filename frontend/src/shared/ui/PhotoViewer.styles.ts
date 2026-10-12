@@ -164,7 +164,8 @@ export const DirectionButton = styled.button<{
   position: absolute;
   z-index: 2;
   top: 50%;
-  ${({ $direction }) => ($direction === 'previous' ? 'left: 16px;' : 'right: 16px;')}
+  ${({ $direction }) =>
+    $direction === 'previous' ? 'left: 16px;' : 'right: 16px;'}
   display: grid;
   width: 44px;
   height: 44px;

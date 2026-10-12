@@ -1,6 +1,7 @@
 import { useId } from 'react';
 
 import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
+import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -8,6 +9,7 @@ import {
   CatalogHeader,
   EmptyState,
   ErrorMessage,
+  GachaLink,
   GachaItem,
   GachaList,
   LoadMoreArea,
@@ -30,17 +32,30 @@ const LOADING_CARD_COUNT = 4;
 
 interface StoreGachaCardProps {
   gacha: StoreGachaSummary;
+  resultPosition: number;
 }
 
-function StoreGachaCard({ gacha }: StoreGachaCardProps) {
+function StoreGachaCard({ gacha, resultPosition }: StoreGachaCardProps) {
   return (
-    <GachaSummaryCard
-      product={{
-        name: gacha.gachaName,
-        thumbnailUrl: gacha.thumbnailUrl,
-      }}
-      imageAlt={`${gacha.gachaName} 섬네일`}
-    />
+    <GachaLink
+      to={createGachaSearchResultsUrl(gacha.gachaId)}
+      aria-label={`${gacha.gachaName} 보유 매장 지도에서 보기`}
+      onClick={() =>
+        captureAnalyticsEvent('gacha_selected', {
+          gacha_id: gacha.gachaId,
+          result_position: resultPosition,
+          source: 'store_catalog',
+        })
+      }
+    >
+      <GachaSummaryCard
+        product={{
+          name: gacha.gachaName,
+          thumbnailUrl: gacha.thumbnailUrl,
+        }}
+        imageAlt={`${gacha.gachaName} 섬네일`}
+      />
+    </GachaLink>
   );
 }
 
@@ -114,9 +129,9 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
         storeGachaState.data.gachas.length > 0 && (
           <>
             <GachaList>
-              {storeGachaState.data.gachas.map((gacha) => (
+              {storeGachaState.data.gachas.map((gacha, index) => (
                 <GachaItem key={gacha.gachaId}>
-                  <StoreGachaCard gacha={gacha} />
+                  <StoreGachaCard gacha={gacha} resultPosition={index + 1} />
                 </GachaItem>
               ))}
             </GachaList>
