@@ -27,6 +27,7 @@ import {
   EventBadge,
   EventSchedule,
   EventScheduleLabel,
+  EventUpdateNotice,
   Field,
   FieldDescription,
   FieldLabel,
@@ -60,10 +61,6 @@ import {
 const EVENT_ID = 'popular-goods-giveaway-2026' as const;
 const INSTAGRAM_ID_PATTERN = /^[A-Za-z0-9._]{1,30}$/;
 
-function requiresCompletedTrade(track: EventApplicationTrack): boolean {
-  return track === 'COMPLETED' || track === 'BOTH';
-}
-
 const TRACK_OPTIONS = [
   {
     value: 'BASIC',
@@ -73,12 +70,14 @@ const TRACK_OPTIONS = [
   {
     value: 'COMPLETED',
     title: '이벤트 B 트랙',
-    description: 'A 트랙 조건에 실제 거래 완료 1건을 더해 응모해요.',
+    description:
+      'A 트랙 조건과 거래 완료 1건 또는 본인 거래글 10건 이상으로 응모해요.',
   },
   {
     value: 'BOTH',
     title: '두 트랙 모두',
-    description: 'A·B 트랙에 모두 응모해요. 실제 거래 완료 1건이 필요해요.',
+    description:
+      'A·B 트랙에 모두 응모해요. B 트랙 인정 조건 중 하나를 충족해 주세요.',
   },
 ] satisfies Array<{
   value: EventApplicationTrack;
@@ -166,11 +165,6 @@ export function EventApplicationRoute({
       return;
     }
 
-    if (requiresCompletedTrade(desiredTrack) && !completedTradeReference) {
-      setErrorMessage('B 트랙 응모를 위한 거래 완료글 링크를 입력해 주세요.');
-      return;
-    }
-
     if (!privacyConsent) {
       setErrorMessage('개인정보처리방침에 동의해야 응모할 수 있어요.');
       return;
@@ -238,13 +232,17 @@ export function EventApplicationRoute({
             </li>
             <li>
               <EventScheduleLabel>이벤트 마감</EventScheduleLabel>
-              <strong>10/16 (금) 오후 11:59분</strong>
+              <strong>10/25 (일) 오후 11:59분</strong>
             </li>
             <li>
-              <EventScheduleLabel>당첨자 라이브 발표</EventScheduleLabel>
-              <strong>10/31 (토)</strong>
+              <EventScheduleLabel>당첨자 발표</EventScheduleLabel>
+              <strong>10/26 (월)</strong>
             </li>
           </EventSchedule>
+          <EventUpdateNotice>
+            사용자 피드백을 반영해 더 여유롭게 참여할 수 있도록 응모 기간을
+            늘리고 B 트랙 인정 조건을 확대했어요.
+          </EventUpdateNotice>
         </Hero>
 
         <section aria-labelledby="event-guide-title">
@@ -309,8 +307,8 @@ export function EventApplicationRoute({
           <FormCard>
             <SectionTitle>응모 정보</SectionTitle>
             <SectionDescription>
-              기존에 작성한 거래글도 사용할 수 있어요. 거래 완료글 링크는 B 트랙
-              응모 시 필수입니다.
+              기존에 작성한 거래글도 사용할 수 있어요. 본인 거래글이 10건 이상인
+              경우 대표 주소 1개만 제출하면 됩니다.
             </SectionDescription>
             <Form onSubmit={handleSubmit} data-private noValidate>
               <fieldset>
@@ -354,7 +352,7 @@ export function EventApplicationRoute({
 
               <Field>
                 <FieldLabel htmlFor="event-trade-link">
-                  본인이 작성한 거래글 링크
+                  본인이 작성한 거래글 대표 링크
                 </FieldLabel>
                 <Input
                   id="event-trade-link"
@@ -365,16 +363,14 @@ export function EventApplicationRoute({
                   required
                 />
                 <FieldDescription>
-                  본인이 작성한 가치가챠 거래글 주소를 입력해 주세요.
+                  본인이 작성한 가치가챠 거래글 중 대표 주소 1개만 입력해
+                  주세요.
                 </FieldDescription>
               </Field>
 
               <Field>
                 <FieldLabel htmlFor="event-completed-trade-link">
-                  거래 완료글 링크{' '}
-                  {desiredTrack && requiresCompletedTrade(desiredTrack)
-                    ? '(B 트랙 필수)'
-                    : '(선택)'}
+                  거래 완료글 링크 (선택)
                 </FieldLabel>
                 <Input
                   id="event-completed-trade-link"
@@ -384,14 +380,10 @@ export function EventApplicationRoute({
                   onChange={(event) =>
                     setCompletedTradeLink(event.target.value)
                   }
-                  required={
-                    desiredTrack !== null &&
-                    requiresCompletedTrade(desiredTrack)
-                  }
                 />
                 <FieldDescription>
-                  본인이 작성한 글이 아니어도 괜찮아요. 실제 교환에 참여해
-                  완료된 가치가챠 거래글 주소를 입력해 주세요.
+                  거래 완료 1건으로 B 트랙에 참여한다면 입력해 주세요. 본인
+                  거래글 10건 이상으로 참여한다면 비워도 됩니다.
                 </FieldDescription>
               </Field>
 
