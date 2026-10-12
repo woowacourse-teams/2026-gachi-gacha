@@ -220,6 +220,11 @@ export interface AnalyticsEventPropertiesMap {
     room_id: number;
     outcome: AnalyticsOutcome;
   };
+  chat_trade_context_selected: {
+    room_id: number;
+    trade_id: number;
+    action: 'trade_detail' | 'report';
+  };
   profile_edit_started: Record<string, never>;
   profile_update_completed: {
     outcome: AnalyticsOutcome;

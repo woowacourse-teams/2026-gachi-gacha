@@ -5,10 +5,13 @@ import { Link } from 'react-router';
 
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
 import type { ChatRoom } from '../../model/chat';
 import { formatChatDateLabel } from '../../model/chatDate';
+import { getChatTradeStatusAction } from '../../model/chatTradeStatusAction';
 
 interface ChatRoomPanelProps {
   room: ChatRoom | undefined;
@@ -21,6 +24,7 @@ interface ChatRoomPanelProps {
   isLoadingPreviousMessages?: boolean;
   previousMessagesError?: string;
   onLoadPreviousMessages?: (() => Promise<void>) | undefined;
+  onChangeTradeStatus?: ((status: TradeStatus) => Promise<void>) | undefined;
 }
 
 export default function ChatRoomPanel({
@@ -34,12 +38,18 @@ export default function ChatRoomPanel({
   isLoadingPreviousMessages = false,
   previousMessagesError = '',
   onLoadPreviousMessages,
+  onChangeTradeStatus,
 }: ChatRoomPanelProps) {
   const messagesRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [sendErrorMessage, setSendErrorMessage] = useState<string | null>(null);
+  const [isUpdatingTradeStatus, setIsUpdatingTradeStatus] = useState(false);
+  const [tradeStatusError, setTradeStatusError] = useState<string | null>(null);
   const lastMessageId = room?.messages.at(-1)?.id;
+  const tradeStatusAction = room
+    ? getChatTradeStatusAction(room.tradeStatus, room.isTradeOwner)
+    : null;
 
   useEffect(() => {
     const messagesElement = messagesRef.current;
@@ -48,6 +58,11 @@ export default function ChatRoomPanel({
       messagesElement.scrollTop = messagesElement.scrollHeight;
     }
   }, [lastMessageId, room?.conversationId]);
+
+  useEffect(() => {
+    setTradeStatusError(null);
+    setIsUpdatingTradeStatus(false);
+  }, [room?.conversationId, room?.tradeStatus]);
 
   async function handleLoadPreviousMessages() {
     if (!onLoadPreviousMessages || isLoadingPreviousMessages) {
@@ -108,6 +123,27 @@ export default function ChatRoomPanel({
     }
   }
 
+  async function handleTradeStatusChange() {
+    if (!tradeStatusAction || !onChangeTradeStatus || isUpdatingTradeStatus) {
+      return;
+    }
+
+    setIsUpdatingTradeStatus(true);
+    setTradeStatusError(null);
+
+    try {
+      await onChangeTradeStatus(tradeStatusAction.nextStatus);
+    } catch (error) {
+      setTradeStatusError(
+        error instanceof Error
+          ? error.message
+          : '교환 상태를 변경하지 못했습니다.',
+      );
+    } finally {
+      setIsUpdatingTradeStatus(false);
+    }
+  }
+
   if (!room) {
     return (
       <EmptyPanel>
@@ -152,7 +188,53 @@ export default function ChatRoomPanel({
         <ProductInfo>
           <ProductLabel>교환 상품</ProductLabel>
           <ProductTitle>{room.itemTitle}</ProductTitle>
+          <ProductLinks>
+            <TradeDetailLink
+              to={`/trade/${room.tradeId}`}
+              onClick={() =>
+                captureAnalyticsEvent('chat_trade_context_selected', {
+                  room_id: room.conversationId,
+                  trade_id: room.tradeId,
+                  action: 'trade_detail',
+                })
+              }
+            >
+              거래글로 이동
+            </TradeDetailLink>
+            <ReportLink
+              href={SUPPORT_INSTAGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="신고하기 (인스타그램 DM, 새 창)"
+              onClick={() =>
+                captureAnalyticsEvent('chat_trade_context_selected', {
+                  room_id: room.conversationId,
+                  trade_id: room.tradeId,
+                  action: 'report',
+                })
+              }
+            >
+              신고하기
+            </ReportLink>
+          </ProductLinks>
         </ProductInfo>
+        {tradeStatusAction && onChangeTradeStatus && (
+          <TradeActionArea>
+            <TradeActionButton
+              type="button"
+              disabled={isUpdatingTradeStatus}
+              aria-busy={isUpdatingTradeStatus}
+              onClick={() => void handleTradeStatusChange()}
+            >
+              {isUpdatingTradeStatus ? '변경 중...' : tradeStatusAction.label}
+            </TradeActionButton>
+            {tradeStatusError && (
+              <TradeStatusError role="alert">
+                {tradeStatusError}
+              </TradeStatusError>
+            )}
+          </TradeActionArea>
+        )}
       </ProductSummary>
 
       <Messages ref={messagesRef}>
@@ -337,11 +419,17 @@ const PartnerName = styled.h2`
 `;
 
 const ProductSummary = styled.div`
-  display: flex;
+  display: grid;
   padding: 14px 24px;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid #eeeaec;
+
+  @media (max-width: 440px) {
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: start;
+  }
 `;
 
 const ProductImage = styled.div`
@@ -380,7 +468,6 @@ const ProductLabel = styled.p`
 
 const ProductTitle = styled.p`
   display: -webkit-box;
-  height: 2.9em;
   margin: 0;
   overflow: hidden;
   color: #2b2528;
@@ -389,6 +476,76 @@ const ProductTitle = styled.p`
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+`;
+
+const ProductLinks = styled.div`
+  display: flex;
+  margin-top: 5px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 11px;
+`;
+
+const TradeDetailLink = styled(Link)`
+  color: #9a9095;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const ReportLink = styled.a`
+  color: #d9304f;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const TradeActionArea = styled.div`
+  display: grid;
+  max-width: 116px;
+  justify-items: end;
+  gap: 6px;
+
+  @media (max-width: 440px) {
+    grid-column: 2;
+    max-width: none;
+    justify-items: start;
+  }
+`;
+
+const TradeActionButton = styled.button`
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #ed174c;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+`;
+
+const TradeStatusError = styled.p`
+  margin: 0;
+  color: #d9304f;
+  font-size: 10px;
+  line-height: 1.35;
+  text-align: right;
+
+  @media (max-width: 440px) {
+    text-align: left;
+  }
 `;
 
 const Messages = styled.div`

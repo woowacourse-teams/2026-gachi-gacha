@@ -15,6 +15,9 @@ import type {
   ChatRoomSummary,
 } from '@/domains/chat/chatType';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
+import { getTradeDetail } from '@/domains/trade/api/getTradeDetail';
+import { updateTradeStatus } from '@/domains/trade/api/updateTradeStatus';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
@@ -41,6 +44,7 @@ interface ChatRouteState {
   isLoadingPreviousMessages: boolean;
   nextLastSequence: number | null;
   previousMessagesError: string;
+  selectedTradeOwnerId: number | null;
 }
 
 export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
@@ -60,6 +64,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     isLoadingPreviousMessages: false,
     nextLastSequence: null,
     previousMessagesError: '',
+    selectedTradeOwnerId: null,
   });
 
   const markRead = useChatReadMarker(activeRoomId);
@@ -130,6 +135,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
               isLoadingPreviousMessages: false,
               nextLastSequence: null,
               previousMessagesError: '',
+              selectedTradeOwnerId: null,
             },
       );
 
@@ -151,23 +157,51 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         const messages = [...(messagePage?.messages ?? [])].sort(
           (first, second) => first.sequence - second.sequence,
         );
+        const selectedTradeDetail = selectedRoom
+          ? await getTradeDetail(
+              selectedRoom.trade.tradeId,
+              controller.signal,
+            ).catch(() => null)
+          : null;
+
+        if (controller.signal.aborted) {
+          return;
+        }
 
         setState({
           status: 'success',
           rooms: activeRoomId
             ? rooms.map((room) =>
-                room.roomId === activeRoomId
-                  ? { ...room, unreadCount: 0 }
+                room.roomId === activeRoomId ||
+                room.trade.tradeId === selectedTradeDetail?.tradeId
+                  ? {
+                      ...room,
+                      unreadCount:
+                        room.roomId === activeRoomId ? 0 : room.unreadCount,
+                      trade: selectedTradeDetail
+                        ? { ...room.trade, status: selectedTradeDetail.status }
+                        : room.trade,
+                    }
                   : room,
               )
             : rooms,
-          selectedRoom,
+          selectedRoom:
+            selectedRoom && selectedTradeDetail
+              ? {
+                  ...selectedRoom,
+                  trade: {
+                    ...selectedRoom.trade,
+                    status: selectedTradeDetail.status,
+                  },
+                }
+              : selectedRoom,
           messages,
           errorMessage: '',
           hasPreviousMessages: messagePage?.hasNext === true,
           isLoadingPreviousMessages: false,
           nextLastSequence: messagePage?.nextLastSequence ?? null,
           previousMessagesError: '',
+          selectedTradeOwnerId: selectedTradeDetail?.memberId ?? null,
         });
 
         const lastMessage = messages.at(-1);
@@ -209,9 +243,75 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const selectedRoom = useMemo(
     () =>
       state.selectedRoom
-        ? toChatRoom(state.selectedRoom, state.messages, memberId)
+        ? toChatRoom(
+            state.selectedRoom,
+            state.messages,
+            memberId,
+            state.selectedTradeOwnerId,
+          )
         : undefined,
-    [memberId, state.messages, state.selectedRoom],
+    [memberId, state.messages, state.selectedRoom, state.selectedTradeOwnerId],
+  );
+
+  const changeTradeStatus = useCallback(
+    async (nextStatus: TradeStatus) => {
+      const selectedTrade = state.selectedRoom?.trade;
+
+      if (
+        !selectedTrade ||
+        state.selectedTradeOwnerId === null ||
+        String(state.selectedTradeOwnerId) !== memberId
+      ) {
+        throw new Error('게시글 작성자만 교환 상태를 변경할 수 있습니다.');
+      }
+
+      const previousStatus = selectedTrade.status;
+
+      try {
+        const updatedTrade = await updateTradeStatus({
+          tradeId: selectedTrade.tradeId,
+          status: nextStatus,
+        });
+
+        captureAnalyticsEvent('trade_status_update_completed', {
+          trade_id: selectedTrade.tradeId,
+          previous_status: previousStatus,
+          next_status: updatedTrade.status,
+          outcome: 'success',
+        });
+
+        setState((current) => ({
+          ...current,
+          rooms: current.rooms.map((room) =>
+            room.trade.tradeId === updatedTrade.tradeId
+              ? {
+                  ...room,
+                  trade: { ...room.trade, status: updatedTrade.status },
+                }
+              : room,
+          ),
+          selectedRoom:
+            current.selectedRoom?.trade.tradeId === updatedTrade.tradeId
+              ? {
+                  ...current.selectedRoom,
+                  trade: {
+                    ...current.selectedRoom.trade,
+                    status: updatedTrade.status,
+                  },
+                }
+              : current.selectedRoom,
+        }));
+      } catch (error) {
+        captureAnalyticsEvent('trade_status_update_completed', {
+          trade_id: selectedTrade.tradeId,
+          previous_status: previousStatus,
+          next_status: nextStatus,
+          outcome: 'failure',
+        });
+        throw error;
+      }
+    },
+    [memberId, state.selectedRoom, state.selectedTradeOwnerId],
   );
 
   const loadPreviousMessages = useCallback(async () => {
@@ -340,6 +440,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       isLoadingPreviousMessages={state.isLoadingPreviousMessages}
       previousMessagesError={state.previousMessagesError}
       onLoadPreviousMessages={loadPreviousMessages}
+      onChangeTradeStatus={changeTradeStatus}
       presentation={roomId ? (presentation ?? 'drawer') : 'split'}
       {...(presentation === 'modal'
         ? {
@@ -486,6 +587,7 @@ function toChatRoom(
   room: ChatRoomSummary,
   messages: ChatMessageData[],
   memberId: string | null,
+  tradeOwnerId: number | null,
 ): ChatRoom {
   return {
     conversationId: room.roomId,
@@ -495,6 +597,7 @@ function toChatRoom(
     itemTitle: room.trade.title,
     itemImageUrl: room.trade.thumbnailUrl,
     tradeStatus: room.trade.status,
+    isTradeOwner: tradeOwnerId !== null && String(tradeOwnerId) === memberId,
     messages: messages.map((message) => toMessage(message, memberId)),
   };
 }
