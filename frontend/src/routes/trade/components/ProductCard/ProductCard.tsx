@@ -40,13 +40,15 @@ export default function ProductCard({
         )}
       </Thumbnail>
 
-      <Title>{item.title}</Title>
-      <Categories>{categories}</Categories>
-      <Meta>{place}</Meta>
-      <Meta>{formatRelativeTime(item.createdAt)}</Meta>
-      <BadgeRow>
-        <TradeStatusBadge status={item.status} />
-      </BadgeRow>
+      <CardContent>
+        <Title>{item.title}</Title>
+        <Categories>{categories}</Categories>
+        <Meta>{place}</Meta>
+        <Meta>{formatRelativeTime(item.createdAt)}</Meta>
+        <BadgeRow>
+          <TradeStatusBadge status={item.status} />
+        </BadgeRow>
+      </CardContent>
     </Card>
   );
 }
@@ -54,12 +56,26 @@ export default function ProductCard({
 const Card = styled(Link)`
   display: flex;
   width: 100%;
-  max-width: 205px;
-  height: 100%;
+  max-width: 240px;
   min-width: 0;
+  overflow: hidden;
   flex-direction: column;
+  border: 1px solid #ece9e8;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgb(36 33 34 / 7%);
   color: inherit;
   text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
+  &:hover {
+    border-color: rgb(217 59 84 / 28%);
+    box-shadow: 0 9px 24px rgb(36 33 34 / 11%);
+    transform: translateY(-2px);
+  }
 
   &:focus-visible {
     outline: 3px solid rgb(217 59 84 / 24%);
@@ -70,14 +86,10 @@ const Card = styled(Link)`
 const Thumbnail = styled.div`
   display: grid;
   width: 100%;
-  max-width: 205px;
-  height: auto;
-  aspect-ratio: 205 / 205;
-  margin-bottom: 14px;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   place-items: center;
-  border: 1px solid #ececef;
-  border-radius: 16px;
+  border-bottom: 1px solid #ece9e8;
   background: #f3f3f5;
 `;
 
@@ -87,23 +99,29 @@ const Image = styled.img`
   object-fit: cover;
 `;
 
+const CardContent = styled.div`
+  display: flex;
+  min-width: 0;
+  padding: 10px 14px 14px;
+  flex-direction: column;
+  gap: 10px;
+`;
+
 const Title = styled.h3`
-  height: 2.9em;
-  margin: 0 0 4px;
+  display: -webkit-box;
+  margin: 0;
   overflow: hidden;
   color: #25252a;
   font-size: 17px;
   font-weight: 500;
   line-height: 1.45;
-  display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 `;
 
 const Categories = styled.p`
   display: -webkit-box;
-  height: 2.8em;
-  margin: 0 0 6px;
+  margin: 0;
   overflow: hidden;
   color: #4e5058;
   font-size: 14px;
@@ -114,8 +132,7 @@ const Categories = styled.p`
 `;
 
 const Meta = styled.p`
-  min-height: 1.45em;
-  margin: 2px 0 0;
+  margin: 0;
   overflow: hidden;
   color: #777b86;
   font-size: 14px;
@@ -127,5 +144,4 @@ const Meta = styled.p`
 const BadgeRow = styled.div`
   display: inline-flex;
   align-self: flex-start;
-  margin-top: 8px;
 `;

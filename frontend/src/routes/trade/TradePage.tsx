@@ -126,16 +126,32 @@ const Main = styled.main`
 `;
 
 const ResultsPanel = styled.section`
+  --trade-grid-max-width: 1280px;
+
   box-sizing: border-box;
   width: 100%;
   max-width: 1328px;
   margin: 0 auto;
   padding: ${space.md} ${space.xl} 0;
   background: ${color.surface};
+
+  @media (max-width: 1327px) {
+    --trade-grid-max-width: 1020px;
+  }
+
+  @media (max-width: ${breakpoint.wide}) {
+    --trade-grid-max-width: 760px;
+  }
+
+  @media (max-width: ${breakpoint.tablet}) {
+    --trade-grid-max-width: 500px;
+  }
 `;
 
 const ResultsTitle = styled.h2`
-  margin: 0;
+  width: 100%;
+  max-width: var(--trade-grid-max-width);
+  margin: 0 auto;
   color: ${color.text};
   font-size: ${fontSize.subheading};
   font-weight: ${fontWeight.bold};
@@ -143,22 +159,24 @@ const ResultsTitle = styled.h2`
 
 const ProductGrid = styled.div`
   display: grid;
-  margin-top: ${space.xl};
-  grid-template-columns: repeat(5, minmax(0, 205px));
+  width: 100%;
+  max-width: var(--trade-grid-max-width);
+  margin: ${space.xl} auto 0;
+  grid-template-columns: repeat(5, minmax(0, 240px));
   justify-content: center;
-  gap: 44px 24px;
+  align-items: start;
+  gap: ${space.lg};
 
-  @media (max-width: 1216px) {
-    grid-template-columns: repeat(4, minmax(0, 205px));
+  @media (max-width: 1327px) {
+    grid-template-columns: repeat(4, minmax(0, 240px));
   }
 
   @media (max-width: ${breakpoint.wide}) {
-    grid-template-columns: repeat(3, minmax(0, 205px));
+    grid-template-columns: repeat(3, minmax(0, 240px));
   }
 
-  @media (max-width: ${breakpoint.mobile}) {
-    grid-template-columns: repeat(2, minmax(0, 205px));
-    gap: 32px 14px;
+  @media (max-width: ${breakpoint.tablet}) {
+    grid-template-columns: repeat(2, minmax(0, 240px));
   }
 `;
 

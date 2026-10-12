@@ -37,6 +37,7 @@ export const SelectedGachaArea = styled.div`
 `;
 
 export const ServiceAreaNotice = styled.aside`
+  box-sizing: border-box;
   padding: 18px 20px;
   margin-top: 20px;
   border: 1px solid var(--color-primary-soft, #fff1f3);
@@ -45,10 +46,13 @@ export const ServiceAreaNotice = styled.aside`
   box-shadow: 0 8px 24px rgb(64 40 46 / 6%);
 
   @media (max-width: 767px) {
-    padding: 12px 14px;
+    min-height: 72px;
+    padding: 9px 12px;
     margin-top: 0;
     border-color: rgb(217 59 84 / 18%);
+    border-radius: 14px;
     background: rgb(255 255 255 / 94%);
+    box-shadow: 0 8px 24px rgb(36 33 34 / 14%);
     backdrop-filter: blur(10px);
   }
 `;
@@ -58,6 +62,12 @@ export const ServiceAreaEyebrow = styled.p`
   color: var(--color-primary, #d93b54);
   font-size: 12px;
   font-weight: 800;
+  line-height: 1.4;
+
+  @media (max-width: 767px) {
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
 `;
 
 export const ServiceAreaTitle = styled.strong`
@@ -68,6 +78,7 @@ export const ServiceAreaTitle = styled.strong`
 
   @media (max-width: 767px) {
     font-size: 15px;
+    line-height: 1.4;
   }
 `;
 
@@ -78,6 +89,11 @@ export const ServiceAreaDescription = styled.p`
   line-height: 1.5;
 
   @media (max-width: 767px) {
-    font-size: 12px;
+    margin-top: 2px;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.4;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;

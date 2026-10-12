@@ -26,5 +26,9 @@ describe('StoreListPanel', () => {
     expect(screen.getByText('홍대 가챠 매장')).toBeInTheDocument();
     expect(screen.getByText('홍대 매장')).toBeInTheDocument();
     expect(screen.getByText('3곳')).toBeInTheDocument();
+    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
+      '3개 매장 중 1번째 매장',
+    );
   });
 });
