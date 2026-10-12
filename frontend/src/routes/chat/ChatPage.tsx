@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
 
 import ChatRoomPanel from './components/ChatRoomPanel';
@@ -21,6 +22,7 @@ interface ChatPageProps {
   isLoadingPreviousMessages?: boolean;
   previousMessagesError?: string;
   onLoadPreviousMessages?: () => Promise<void>;
+  onChangeTradeStatus?: (status: TradeStatus) => Promise<void>;
 }
 
 export default function ChatPage({
@@ -36,6 +38,7 @@ export default function ChatPage({
   isLoadingPreviousMessages = false,
   previousMessagesError = '',
   onLoadPreviousMessages,
+  onChangeTradeStatus,
 }: ChatPageProps) {
   if (selectedRoom && presentation === 'modal') {
     return (
@@ -60,6 +63,7 @@ export default function ChatPage({
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
+            onChangeTradeStatus={onChangeTradeStatus}
           />
         </ChatDrawer>
       </ModalLayer>
@@ -101,6 +105,7 @@ export default function ChatPage({
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
+            onChangeTradeStatus={onChangeTradeStatus}
           />
         </ChatDrawer>
       </RoomPage>
@@ -130,6 +135,7 @@ export default function ChatPage({
           isLoadingPreviousMessages={isLoadingPreviousMessages}
           previousMessagesError={previousMessagesError}
           onLoadPreviousMessages={onLoadPreviousMessages}
+          onChangeTradeStatus={onChangeTradeStatus}
         />
       </Main>
     </Page>

@@ -95,6 +95,7 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `chat_room_selected`          | 채팅 목록에서 방 선택            | `room_id`, `source`                                      |
 | `chat_message_send_completed` | 텍스트 메시지 전송 완료          | `room_id`, `outcome`, `message_length`                   |
 | `chat_history_load_completed` | 이전 메시지 조회 완료            | `room_id`, `outcome`                                     |
+| `chat_trade_context_selected` | 채팅방에서 거래글·신고 동선 선택 | `room_id`, `trade_id`, `action`                          |
 | `profile_edit_started`        | 프로필 수정창 열기               | 없음                                                     |
 | `profile_update_completed`    | 프로필 저장 완료                 | `outcome`, `has_trade_location`, `trade_location_change` |
 | `account_menu_selected`       | 방침·고객센터·로그아웃·탈퇴 선택 | `target`, `source`                                       |

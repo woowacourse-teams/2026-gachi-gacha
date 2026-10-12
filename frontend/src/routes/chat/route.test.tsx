@@ -44,6 +44,27 @@ function createSocketMessage(sequence: number, senderId: number): ChatMessage {
 
 const ACCESS_TOKEN = 'header.eyJtZW1iZXJJZCI6M30.signature';
 
+function createTradeDetail(
+  status: 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED' = 'AVAILABLE',
+  memberId = 3,
+) {
+  return {
+    tradeId: 1,
+    memberId,
+    title: '쿠로미 미니 피규어 vol.2',
+    description: '교환할 가챠를 찾고 있어요.',
+    desiredProduction: null,
+    categories: [],
+    status,
+    purchaseStore: null,
+    tradePlace: null,
+    availableTime: null,
+    imageUrls: [],
+    createdAt: '2026-10-01T09:00:00',
+    updatedAt: '2026-10-01T09:00:00',
+  };
+}
+
 describe('ChatRoute', () => {
   beforeEach(() => {
     storeAuthTokens({
@@ -61,6 +82,13 @@ describe('ChatRoute', () => {
             profileImageUrl: null,
             desireTradeLocation: null,
           },
+        }),
+      ),
+      http.get('/api/v1/trades/:tradeId', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: createTradeDetail(),
         }),
       ),
       ...chatHandlers,
@@ -149,6 +177,69 @@ describe('ChatRoute', () => {
       }),
     ).not.toBeInTheDocument();
   });
+
+  it('작성자가 채팅방에서 예약 확정 후 거래 완료로 상태를 변경한다', async () => {
+    const user = userEvent.setup();
+    const requestedStatuses: string[] = [];
+
+    server.use(
+      http.patch('/api/v1/trades/1/status', async ({ request }) => {
+        const body = (await request.json()) as { status: string };
+
+        requestedStatuses.push(body.status);
+
+        return HttpResponse.json({
+          code: 'C002',
+          message: '정상 수정',
+          data: createTradeDetail(body.status as 'IN_PROGRESS' | 'COMPLETED'),
+        });
+      }),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    await user.click(await screen.findByRole('button', { name: '예약 확정' }));
+    expect(
+      await screen.findByRole('button', { name: '거래 완료' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '거래 완료' }));
+
+    await waitFor(() => {
+      expect(requestedStatuses).toEqual(['IN_PROGRESS', 'COMPLETED']);
+    });
+    expect(
+      screen.queryByRole('button', { name: '거래 완료' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText('교환 완료').length).toBeGreaterThan(0);
+  });
+
+  it('구매자에게는 상태 변경 버튼을 보여주지 않는다', async () => {
+    server.use(
+      http.get('/api/v1/trades/1', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: createTradeDetail('AVAILABLE', 8),
+        }),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: '가챠좋아' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '예약 확정' }),
+    ).not.toBeInTheDocument();
+  });
 });
 
 describe('ChatStartRoute', () => {
@@ -195,6 +286,20 @@ describe('ChatStartRoute', () => {
       accessToken: ACCESS_TOKEN,
       refreshToken: 'refresh-token',
     });
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            oauthUsername: 'msw-user',
+            nickname: 'MSW 가챠러',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
   });
 
   it('입장에 실패하면 다시 시도로 기존 채팅방 조회부터 다시 실행한다', async () => {
