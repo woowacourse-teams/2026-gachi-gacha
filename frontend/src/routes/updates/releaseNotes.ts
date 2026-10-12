@@ -10,6 +10,22 @@ export interface ServiceReleaseNote {
 
 export const SERVICE_RELEASE_NOTES = [
   {
+    version: 'v1.4.0',
+    releasedAt: '2026-10-13',
+    releasedAtLabel: '2026년 10월 13일',
+    title: '사진은 더 자세히, 탐색은 더 편안하게',
+    summary:
+      '거래글 사진을 더 자세히 확인하고 가챠와 매장을 자연스럽게 이어서 찾을 수 있도록 탐색 화면을 다듬었어요.',
+    highlights: [
+      '거래글 사진을 원본 비율로 보고, 이전·다음 이동과 확대 보기로 자세히 확인할 수 있어요.',
+      '매장 상세에서 가챠를 누르면 해당 가챠를 보유한 매장을 지도에서 바로 확인할 수 있어요.',
+      '거래·검색 카드의 여백과 정보 간격을 정돈해 게시글과 가챠를 더 쉽게 구분할 수 있어요.',
+      '모바일 지도에서 매장 수와 현재 위치 표시, GPS 버튼이 겹치지 않도록 개선했어요.',
+    ],
+    releaseUrl:
+      'https://github.com/woowacourse-teams/2026-gachi-gacha/releases/tag/v1.4.0',
+  },
+  {
     version: 'v1.3.0',
     releasedAt: '2026-10-12',
     releasedAtLabel: '2026년 10월 12일',
