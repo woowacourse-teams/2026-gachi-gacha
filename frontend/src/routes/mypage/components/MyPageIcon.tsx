@@ -9,7 +9,8 @@ export type MyPageIconName =
   | 'logout'
   | 'privacy'
   | 'store'
-  | 'support';
+  | 'support'
+  | 'updates';
 
 export interface MyPageIconProps {
   name: MyPageIconName;
@@ -113,6 +114,27 @@ export function MyPageIcon({ name, size = 22 }: MyPageIconProps) {
           strokeLinejoin="round"
         />
         <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  if (name === 'updates') {
+    return (
+      <svg {...commonProps}>
+        <path
+          d="M6 3h9l3 3v15H6V3Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M14 3v4h4M9 11h6M9 15h6"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     );
   }
