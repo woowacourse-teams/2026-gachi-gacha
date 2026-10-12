@@ -92,7 +92,7 @@ const Thumbnail = styled.div`
   max-width: 205px;
   height: auto;
   aspect-ratio: 205 / 205;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   overflow: hidden;
   place-items: center;
   border: 1px solid #ececef;
@@ -112,12 +112,12 @@ const CardContent = styled.div`
   padding: 0 4px;
   flex: 1;
   flex-direction: column;
+  gap: 12px;
 `;
 
 const Title = styled.h3`
   display: -webkit-box;
-  height: 2.9em;
-  margin: 0 0 4px;
+  margin: 0;
   overflow: hidden;
   color: #25252a;
   font-size: 17px;
@@ -129,8 +129,7 @@ const Title = styled.h3`
 
 const Categories = styled.p`
   display: -webkit-box;
-  height: 2.8em;
-  margin: 0 0 6px;
+  margin: 0;
   overflow: hidden;
   color: #4e5058;
   font-size: 14px;
@@ -141,8 +140,7 @@ const Categories = styled.p`
 `;
 
 const Meta = styled.p`
-  min-height: 1.45em;
-  margin: 2px 0 0;
+  margin: 0;
   overflow: hidden;
   color: #777b86;
   font-size: 14px;
@@ -154,5 +152,4 @@ const Meta = styled.p`
 const BadgeRow = styled.div`
   display: inline-flex;
   align-self: flex-start;
-  margin-top: 8px;
 `;
