@@ -2,8 +2,8 @@ import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { StoreCard } from './StoreCard';
 import {
-  CarouselIndicatorDot,
-  CarouselIndicators,
+  CarouselPosition,
+  CarouselPositionAnnouncement,
   Count,
   DesktopTitle,
   Header,
@@ -81,18 +81,15 @@ export function StoreListPanel({
 
       {storesState.status === 'success' &&
         storesState.data.stores.length > 1 && (
-          <CarouselIndicators
-            role="status"
-            aria-label={`${storesState.data.stores.length}개 매장 중 ${activeStoreIndex + 1}번째 매장`}
-          >
-            {storesState.data.stores.map((store, index) => (
-              <CarouselIndicatorDot
-                key={store.storeId}
-                $isActive={index === activeStoreIndex}
-                aria-hidden="true"
-              />
-            ))}
-          </CarouselIndicators>
+          <CarouselPosition role="status" aria-live="polite">
+            <CarouselPositionAnnouncement>
+              {storesState.data.stores.length}개 매장 중 {activeStoreIndex + 1}
+              번째 매장
+            </CarouselPositionAnnouncement>
+            <span aria-hidden="true">
+              {activeStoreIndex + 1} / {storesState.data.stores.length}
+            </span>
+          </CarouselPosition>
         )}
 
       {storesState.status === 'loading' && <StoreListLoading />}
