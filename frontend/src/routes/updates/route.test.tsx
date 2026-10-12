@@ -15,12 +15,18 @@ describe('UpdatesRoute', () => {
     expect(screen.getByText('최신 공개 버전')).toBeInTheDocument();
 
     const versionLabels = screen
-      .getAllByText(/^v1\.[0-3]\.0$/)
+      .getAllByText(/^v1\.[0-4]\.0$/)
       .map((element) => element.textContent);
 
-    expect(versionLabels).toEqual(['v1.3.0', 'v1.2.0', 'v1.1.0', 'v1.0.0']);
+    expect(versionLabels).toEqual([
+      'v1.4.0',
+      'v1.3.0',
+      'v1.2.0',
+      'v1.1.0',
+      'v1.0.0',
+    ]);
     expect(
       screen.getAllByRole('link', { name: '전체 변경 기록 보기' }),
-    ).toHaveLength(4);
+    ).toHaveLength(5);
   });
 });
