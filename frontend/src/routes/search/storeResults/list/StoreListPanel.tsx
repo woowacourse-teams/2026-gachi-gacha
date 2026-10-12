@@ -11,6 +11,7 @@ import {
   ListItem,
   LoadingCard,
   LoadingList,
+  MobileStatusRow,
   MobileTitle,
   Panel,
   RetryButton,
@@ -67,30 +68,33 @@ export function StoreListPanel({
 
   return (
     <Panel aria-labelledby="search-store-list-title">
-      <Header $showOnMobile={storeCount !== null}>
-        <Title id="search-store-list-title">
-          <DesktopTitle>
-            {isGachaSelected ? '가챠 보유 매장' : '홍대 가챠 매장'}
-          </DesktopTitle>
-          <MobileTitle>
-            {isGachaSelected ? '검색 결과' : '홍대 매장'}
-          </MobileTitle>
-        </Title>
-        {storeCount !== null && <Count>{storeCount}곳</Count>}
-      </Header>
+      <MobileStatusRow $showOnMobile={storeCount !== null}>
+        {storesState.status === 'success' &&
+          storesState.data.stores.length > 1 && (
+            <CarouselPosition role="status" aria-live="polite">
+              <CarouselPositionAnnouncement>
+                {storesState.data.stores.length}개 매장 중{' '}
+                {activeStoreIndex + 1}
+                번째 매장
+              </CarouselPositionAnnouncement>
+              <span aria-hidden="true">
+                {activeStoreIndex + 1} / {storesState.data.stores.length}
+              </span>
+            </CarouselPosition>
+          )}
 
-      {storesState.status === 'success' &&
-        storesState.data.stores.length > 1 && (
-          <CarouselPosition role="status" aria-live="polite">
-            <CarouselPositionAnnouncement>
-              {storesState.data.stores.length}개 매장 중 {activeStoreIndex + 1}
-              번째 매장
-            </CarouselPositionAnnouncement>
-            <span aria-hidden="true">
-              {activeStoreIndex + 1} / {storesState.data.stores.length}
-            </span>
-          </CarouselPosition>
-        )}
+        <Header $showOnMobile={storeCount !== null}>
+          <Title id="search-store-list-title">
+            <DesktopTitle>
+              {isGachaSelected ? '가챠 보유 매장' : '홍대 가챠 매장'}
+            </DesktopTitle>
+            <MobileTitle>
+              {isGachaSelected ? '검색 결과' : '홍대 매장'}
+            </MobileTitle>
+          </Title>
+          {storeCount !== null && <Count>{storeCount}곳</Count>}
+        </Header>
+      </MobileStatusRow>
 
       {storesState.status === 'loading' && <StoreListLoading />}
 

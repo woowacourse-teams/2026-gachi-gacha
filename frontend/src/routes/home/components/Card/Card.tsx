@@ -41,7 +41,7 @@ export default function Card({
 
 const Wrapper = styled.a`
   width: 100%;
-  max-width: 240px;
+  max-width: 208px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -57,13 +57,16 @@ const Wrapper = styled.a`
 
 const Thumbnail = styled.div`
   position: relative;
+  box-sizing: border-box;
   display: grid;
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   place-items: center;
-  border-radius: 12px;
+  border: 1px solid #ece8e9;
+  border-radius: 16px;
   background: #faf7f8;
+  box-shadow: 0 5px 16px rgb(36 33 34 / 8%);
 `;
 
 const ThumbnailImage = styled(ImageWithFallback)`

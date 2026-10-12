@@ -126,7 +126,7 @@ const Main = styled.main`
 `;
 
 const ResultsPanel = styled.section`
-  --trade-grid-max-width: 1280px;
+  --trade-grid-max-width: 1201px;
 
   box-sizing: border-box;
   width: 100%;
@@ -136,15 +136,15 @@ const ResultsPanel = styled.section`
   background: ${color.surface};
 
   @media (max-width: 1327px) {
-    --trade-grid-max-width: 1020px;
+    --trade-grid-max-width: 956px;
   }
 
-  @media (max-width: ${breakpoint.wide}) {
-    --trade-grid-max-width: 760px;
+  @media (max-width: 1003px) {
+    --trade-grid-max-width: 711px;
   }
 
-  @media (max-width: ${breakpoint.tablet}) {
-    --trade-grid-max-width: 500px;
+  @media (max-width: ${breakpoint.mobile}) {
+    --trade-grid-max-width: 466px;
   }
 `;
 
@@ -162,21 +162,21 @@ const ProductGrid = styled.div`
   width: 100%;
   max-width: var(--trade-grid-max-width);
   margin: ${space.xl} auto 0;
-  grid-template-columns: repeat(5, minmax(0, 240px));
+  grid-template-columns: repeat(5, minmax(0, 221px));
   justify-content: center;
-  align-items: start;
-  gap: ${space.lg};
+  gap: 44px ${space.xl};
 
   @media (max-width: 1327px) {
-    grid-template-columns: repeat(4, minmax(0, 240px));
+    grid-template-columns: repeat(4, minmax(0, 221px));
   }
 
-  @media (max-width: ${breakpoint.wide}) {
-    grid-template-columns: repeat(3, minmax(0, 240px));
+  @media (max-width: 1003px) {
+    grid-template-columns: repeat(3, minmax(0, 221px));
   }
 
-  @media (max-width: ${breakpoint.tablet}) {
-    grid-template-columns: repeat(2, minmax(0, 240px));
+  @media (max-width: ${breakpoint.mobile}) {
+    grid-template-columns: repeat(2, minmax(0, 221px));
+    gap: 32px 14px;
   }
 `;
 
