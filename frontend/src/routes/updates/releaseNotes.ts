@@ -10,6 +10,22 @@ export interface ServiceReleaseNote {
 
 export const SERVICE_RELEASE_NOTES = [
   {
+    version: 'v1.3.0',
+    releasedAt: '2026-10-12',
+    releasedAtLabel: '2026년 10월 12일',
+    title: '채팅에서 이어지는 거래와 더 편한 탐색',
+    summary:
+      '거래 상태와 거래글을 채팅·마이페이지에서 더 쉽게 확인하고, 거래글과 가챠를 찾는 화면도 편안하게 다듬었어요.',
+    highlights: [
+      '판매자는 채팅방에서 예약 확정과 거래 완료 상태를 변경할 수 있어요.',
+      '채팅방과 마이페이지에서 관련 거래글로 바로 이동할 수 있어요.',
+      '이벤트 기간을 늘리고 B 트랙을 거래 완료 1건 또는 거래글 10건 이상으로 확대했어요.',
+      '업데이트 소식 페이지를 추가하고 거래·검색 화면의 배치를 일관되게 맞췄어요.',
+    ],
+    releaseUrl:
+      'https://github.com/woowacourse-teams/2026-gachi-gacha/releases/tag/v1.3.0',
+  },
+  {
     version: 'v1.2.0',
     releasedAt: '2026-10-10',
     releasedAtLabel: '2026년 10월 10일',
