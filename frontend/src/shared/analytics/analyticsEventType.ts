@@ -232,7 +232,7 @@ export interface AnalyticsEventPropertiesMap {
     trade_location_change: ProfileTradeLocationChange;
   };
   account_menu_selected: {
-    target: 'privacy' | 'support' | 'logout' | 'delete_account';
+    target: 'updates' | 'privacy' | 'support' | 'logout' | 'delete_account';
     source: 'login' | 'mypage';
   };
   account_deletion_completed: {

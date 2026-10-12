@@ -24,6 +24,21 @@ const accessToken = 'test-access-token';
 const refreshToken = 'test-refresh-token';
 
 describe('앱의 P0 인증과 라우팅 흐름', () => {
+  it('비로그인 사용자도 업데이트 소식을 확인할 수 있다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/updates',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '조금씩 더 좋아지고 있어요',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/updates');
+    expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
+  });
+
   it('비로그인 사용자가 마이페이지에 접근하면 복귀 주소를 포함한 로그인 화면으로 이동한다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,

@@ -75,6 +75,19 @@ describe('MyPageRoute 내 교환글 수정', () => {
     ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
   });
 
+  it('마이페이지 하단에서 업데이트 소식으로 이동할 수 있다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', { name: /업데이트 소식/ }),
+    ).toHaveAttribute('href', '/updates');
+  });
+
   it('이벤트 기간에는 응모 페이지 링크를 보여준다', async () => {
     server.use(authenticatedMemberHandler, myTradesHandler);
 

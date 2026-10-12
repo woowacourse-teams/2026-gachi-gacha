@@ -674,6 +674,10 @@ export const AccountMenuLink = styled.a`
   ${accountMenuItemStyles}
 `;
 
+export const AccountMenuRouterLink = styled(Link)`
+  ${accountMenuItemStyles}
+`;
+
 export const AccountMenuButton = styled.button`
   ${accountMenuItemStyles}
 `;
