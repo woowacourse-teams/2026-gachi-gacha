@@ -41,7 +41,8 @@ export const CardButton = styled.button<{ $isSelected: boolean }>`
   }
 
   @media (max-width: 767px) {
-    min-height: 124px;
+    box-sizing: border-box;
+    height: 124px;
     padding: 10px;
     grid-template-columns: 96px minmax(0, 1fr);
     gap: 12px;

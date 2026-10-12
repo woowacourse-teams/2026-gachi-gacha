@@ -54,16 +54,18 @@ export default function ProductCard({
 }
 
 const Card = styled(Link)`
+  box-sizing: border-box;
   display: flex;
   width: 100%;
-  max-width: 240px;
+  max-width: 221px;
+  height: 100%;
   min-width: 0;
-  overflow: hidden;
+  padding: 8px 8px 12px;
   flex-direction: column;
-  border: 1px solid #ece9e8;
-  border-radius: 18px;
+  border: 1px solid rgb(36 33 34 / 10%);
+  border-radius: 20px;
   background: #ffffff;
-  box-shadow: 0 4px 16px rgb(36 33 34 / 7%);
+  box-shadow: 0 8px 22px rgb(36 33 34 / 10%);
   color: inherit;
   text-decoration: none;
   transition:
@@ -72,8 +74,8 @@ const Card = styled(Link)`
     transform 160ms ease;
 
   &:hover {
-    border-color: rgb(217 59 84 / 28%);
-    box-shadow: 0 9px 24px rgb(36 33 34 / 11%);
+    border-color: rgb(217 59 84 / 30%);
+    box-shadow: 0 12px 28px rgb(36 33 34 / 14%);
     transform: translateY(-2px);
   }
 
@@ -84,12 +86,17 @@ const Card = styled(Link)`
 `;
 
 const Thumbnail = styled.div`
+  box-sizing: border-box;
   display: grid;
   width: 100%;
-  aspect-ratio: 1 / 1;
+  max-width: 205px;
+  height: auto;
+  aspect-ratio: 205 / 205;
+  margin-bottom: 14px;
   overflow: hidden;
   place-items: center;
-  border-bottom: 1px solid #ece9e8;
+  border: 1px solid #ececef;
+  border-radius: 16px;
   background: #f3f3f5;
 `;
 
@@ -102,14 +109,15 @@ const Image = styled.img`
 const CardContent = styled.div`
   display: flex;
   min-width: 0;
-  padding: 10px 14px 14px;
+  padding: 0 4px;
+  flex: 1;
   flex-direction: column;
-  gap: 10px;
 `;
 
 const Title = styled.h3`
   display: -webkit-box;
-  margin: 0;
+  height: 2.9em;
+  margin: 0 0 4px;
   overflow: hidden;
   color: #25252a;
   font-size: 17px;
@@ -121,7 +129,8 @@ const Title = styled.h3`
 
 const Categories = styled.p`
   display: -webkit-box;
-  margin: 0;
+  height: 2.8em;
+  margin: 0 0 6px;
   overflow: hidden;
   color: #4e5058;
   font-size: 14px;
@@ -132,7 +141,8 @@ const Categories = styled.p`
 `;
 
 const Meta = styled.p`
-  margin: 0;
+  min-height: 1.45em;
+  margin: 2px 0 0;
   overflow: hidden;
   color: #777b86;
   font-size: 14px;
@@ -144,4 +154,5 @@ const Meta = styled.p`
 const BadgeRow = styled.div`
   display: inline-flex;
   align-self: flex-start;
+  margin-top: 8px;
 `;

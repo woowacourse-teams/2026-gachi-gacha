@@ -17,20 +17,34 @@ export const Panel = styled.section`
   }
 `;
 
+export const MobileStatusRow = styled.div<{ $showOnMobile: boolean }>`
+  display: contents;
+
+  @media (max-width: 767px) {
+    box-sizing: border-box;
+    display: ${({ $showOnMobile }) => ($showOnMobile ? 'flex' : 'none')};
+    width: 100%;
+    min-height: 28px;
+    padding: 0 14px;
+    margin-bottom: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+`;
+
 export const CarouselPosition = styled.div`
   display: none;
 
   @media (max-width: 767px) {
-    position: absolute;
-    z-index: 2;
-    top: 0;
-    left: 50%;
+    box-sizing: border-box;
     display: inline-flex;
     min-width: 54px;
     min-height: 28px;
     padding: 0 10px;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
     border: 1px solid rgb(36 33 34 / 6%);
     border-radius: 999px;
     background: rgb(255 255 255 / 92%);
@@ -39,7 +53,6 @@ export const CarouselPosition = styled.div`
     font-size: 12px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    transform: translateX(-50%);
     backdrop-filter: blur(8px);
   }
 `;
@@ -66,9 +79,11 @@ export const Header = styled.div<{ $showOnMobile: boolean }>`
 
   @media (max-width: 767px) {
     width: fit-content;
+    max-width: calc(100% - 62px);
     min-height: 28px;
     padding: 0 10px;
-    margin: 0 14px 7px auto;
+    margin: 0 0 0 auto;
+    flex: 0 1 auto;
     border: 1px solid rgb(36 33 34 / 9%);
     border-radius: 999px;
     background: rgb(255 255 255 / 94%);
@@ -87,6 +102,7 @@ export const Title = styled.h2`
 
   @media (max-width: 767px) {
     font-size: 12px;
+    white-space: nowrap;
   }
 `;
 
@@ -111,6 +127,7 @@ export const Count = styled.span`
 
   @media (max-width: 767px) {
     font-size: 12px;
+    white-space: nowrap;
   }
 `;
 
