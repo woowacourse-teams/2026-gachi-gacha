@@ -76,6 +76,7 @@ import {
   SummaryValue,
   TradeCopy,
   TradeDeleteButton,
+  TradeDetailLink,
   TradeEditLink,
   TradeItem,
   TradeList,
@@ -83,6 +84,7 @@ import {
   TradeSide,
   TradeThumbnail,
   TradeTitle,
+  TradeViewHint,
 } from './route.styles';
 import { useMyPageTrades } from './useMyPageTrades';
 
@@ -355,14 +357,29 @@ export function MyPageRoute() {
                 <TradeList>
                   {recentTrades.map((trade) => (
                     <TradeItem key={trade.tradeId}>
-                      <TradeThumbnail
-                        src={trade.thumbnailUrl || gachiGachaLogo}
-                        alt=""
-                      />
-                      <TradeCopy>
-                        <TradeTitle>{trade.title}</TradeTitle>
-                        <TradeMeta>{getTradeMeta(trade)}</TradeMeta>
-                      </TradeCopy>
+                      <TradeDetailLink
+                        to={`/trade/${trade.tradeId}`}
+                        aria-label={`${trade.title} 거래글 보기`}
+                        onClick={() =>
+                          captureAnalyticsEvent('trade_selected', {
+                            trade_id: trade.tradeId,
+                            status: trade.status,
+                            source: 'mypage',
+                          })
+                        }
+                      >
+                        <TradeThumbnail
+                          src={trade.thumbnailUrl || gachiGachaLogo}
+                          alt=""
+                        />
+                        <TradeCopy>
+                          <TradeTitle>{trade.title}</TradeTitle>
+                          <TradeMeta>{getTradeMeta(trade)}</TradeMeta>
+                          <TradeViewHint aria-hidden="true">
+                            거래글 보기 →
+                          </TradeViewHint>
+                        </TradeCopy>
+                      </TradeDetailLink>
                       <TradeSide>
                         <TradeStatusBadge status={trade.status} />
                         <TradeEditLink
