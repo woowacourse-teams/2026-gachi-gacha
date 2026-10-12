@@ -56,8 +56,11 @@ describe('EventApplicationRoute', () => {
     );
 
     expect(await screen.findByText('10/10 (토)')).toBeInTheDocument();
-    expect(screen.getByText('10/16 (금) 오후 11:59분')).toBeInTheDocument();
-    expect(screen.getByText('10/31 (토)')).toBeInTheDocument();
+    expect(screen.getByText('10/25 (일) 오후 11:59분')).toBeInTheDocument();
+    expect(screen.getByText('10/26 (월)')).toBeInTheDocument();
+    expect(
+      screen.getByText(/사용자 피드백을 반영해.*응모 기간을/),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('radio')).toHaveLength(3);
     expect(
       screen.getByRole('radio', { name: /이벤트 A 트랙/ }),
@@ -105,7 +108,7 @@ describe('EventApplicationRoute', () => {
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), '@gachi__.gacha');
     await user.type(
-      screen.getByLabelText('본인이 작성한 거래글 링크'),
+      screen.getByLabelText('본인이 작성한 거래글 대표 링크'),
       'https://gachigacha.kro.kr/trade/153',
     );
     await user.type(
@@ -135,10 +138,12 @@ describe('EventApplicationRoute', () => {
     ).toBeInTheDocument();
   });
 
-  it('B 트랙은 거래 완료글 링크가 없으면 제출하지 않는다', async () => {
+  it('B 트랙은 거래글 10건 이상 자격을 위해 완료글 링크 없이 제출할 수 있다', async () => {
     useAuthenticatedMember();
     const user = userEvent.setup();
-    const submitApplication = jest.fn<() => Promise<void>>();
+    const submitApplication = jest
+      .fn<(input: EventApplicationInput) => Promise<void>>()
+      .mockResolvedValue(undefined);
 
     renderWithProviders(
       <RequireAuth>
@@ -156,7 +161,7 @@ describe('EventApplicationRoute', () => {
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
     await user.type(
-      screen.getByLabelText('본인이 작성한 거래글 링크'),
+      screen.getByLabelText('본인이 작성한 거래글 대표 링크'),
       'https://gachigacha.kro.kr/trade/153',
     );
     await user.click(
@@ -164,10 +169,15 @@ describe('EventApplicationRoute', () => {
     );
     await user.click(screen.getByRole('button', { name: '응모 제출하기' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'B 트랙 응모를 위한 거래 완료글 링크',
-    );
-    expect(submitApplication).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(submitApplication).toHaveBeenCalledWith(
+        expect.objectContaining({
+          desiredTrack: 'COMPLETED',
+          completedTradeId: null,
+          completedTradeUrl: null,
+        }),
+      );
+    });
   });
 
   it('A 트랙은 거래 완료글 링크 없이 제출할 수 있다', async () => {
@@ -193,7 +203,7 @@ describe('EventApplicationRoute', () => {
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
     await user.type(
-      screen.getByLabelText('본인이 작성한 거래글 링크'),
+      screen.getByLabelText('본인이 작성한 거래글 대표 링크'),
       'https://gachigacha.kro.kr/trade/153',
     );
     await user.click(
@@ -233,7 +243,7 @@ describe('EventApplicationRoute', () => {
     );
     await user.type(screen.getByLabelText('인스타그램 ID'), 'tester');
     await user.type(
-      screen.getByLabelText('본인이 작성한 거래글 링크'),
+      screen.getByLabelText('본인이 작성한 거래글 대표 링크'),
       'https://example.com/trade/153',
     );
     await user.click(

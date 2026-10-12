@@ -30,5 +30,6 @@ export interface ChatRoom {
   itemTitle: string;
   itemImageUrl: string | null;
   tradeStatus: ChatTradeStatus;
+  isTradeOwner: boolean;
   messages: ChatMessage[];
 }

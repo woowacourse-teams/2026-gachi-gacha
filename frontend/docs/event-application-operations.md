@@ -24,9 +24,10 @@
 Google Apps Script의 CORS 사전 요청을 피하기 위해 `Content-Type:
 text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
 
-`completedTradeId`와 `completedTradeUrl`은 이벤트 B 트랙 또는 두 트랙 모두
-응모할 때 필수입니다. A 트랙에서 완료 거래글을 입력하지 않으면 두 값은 `null`로
-전송합니다. 완료 거래글은 응모자 본인이 작성한 글이 아니어도 됩니다.
+`completedTradeId`와 `completedTradeUrl`은 모든 트랙에서 선택입니다. 거래 완료
+1건으로 B 트랙 자격을 증빙할 때 입력하며, 본인 거래글 10건 이상으로 참여하거나
+A 트랙에만 응모할 때는 두 값을 `null`로 전송할 수 있습니다. 완료 거래글은
+응모자 본인이 작성한 글이 아니어도 됩니다.
 
 ## 스프레드시트 준비
 
@@ -79,20 +80,6 @@ function doPost(event) {
 
     if (!['BASIC', 'COMPLETED', 'BOTH'].includes(input.desiredTrack)) {
       return json({ ok: false, message: '희망 트랙이 올바르지 않습니다.' });
-    }
-
-    const requiresCompletedTrade = ['COMPLETED', 'BOTH'].includes(
-      input.desiredTrack,
-    );
-
-    if (
-      requiresCompletedTrade &&
-      [input.completedTradeId, input.completedTradeUrl].some(isMissing)
-    ) {
-      return json({
-        ok: false,
-        message: '완료 트랙에 필요한 거래 완료글 정보가 없습니다.',
-      });
     }
 
     if (input.privacyConsent !== true) {
@@ -151,12 +138,17 @@ Apps Script에서 `배포 > 새 배포 > 웹 앱`을 선택하고 실행 계정�
 추가한 뒤 반드시 새 버전으로 다시 배포해야 합니다. 코드를 저장하기만 하면 현재
 `/exec` 배포에는 반영되지 않습니다.
 
+기존 스크립트에 B 트랙과 `BOTH`의 완료 거래글을 필수로 검사하는
+`requiresCompletedTrade` 블록이 있다면 위 예시처럼 제거해야 합니다. 완료 거래글
+열은 그대로 유지하고, 입력이 없을 때 빈 셀로 기록합니다. 수정 후에는 반드시
+웹 앱을 새 버전으로 다시 배포합니다.
+
 ## 프론트 배포 환경변수
 
 ```dotenv
 EVENT_APPLICATION_ENABLED=true
 EVENT_APPLICATION_START_AT=2026-10-10T00:00:00+09:00
-EVENT_APPLICATION_END_AT=2026-10-17T00:00:00+09:00
+EVENT_APPLICATION_END_AT=2026-10-26T00:00:00+09:00
 EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSHC9ecFZLFLX3xgDVApke_PyhbEj0SqHnETYxVPMC0qJsbv-4bj1Uqc/exec
 ```
 
@@ -165,16 +157,18 @@ EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSH
 
 ## 확정된 운영 정책
 
-- 응모 기간은 2026년 10월 10일 00:00부터 10월 16일 23:59:59까지다.
-- 당첨자는 2026년 10월 31일 라이브 방송에서 발표한다.
+- 응모 기간은 2026년 10월 10일 00:00부터 10월 25일 23:59:59까지다.
+- 당첨자는 2026년 10월 26일 발표한다.
 - 같은 이벤트에 같은 회원이 다시 제출하면 마지막 제출 내용으로 덮어쓴다.
 - 응모정보는 당첨자 경품 전달 완료 후 삭제한다.
 - 이벤트 A 트랙은 회원가입, 공식 Instagram 팔로우, 본인 거래글 1건을
   요구한다.
-- 이벤트 B 트랙은 A 트랙 조건을 포함하고 실제 거래 완료 1건을 추가로
-  요구한다. 완료 거래글은 응모자가 작성한 글이 아니어도 인정한다. 운영진이
-  당첨 후보의 회원 ID, 작성 거래글, 완료 거래글 및 채팅 기록을 서버 데이터와
-  대조해 실제 거래 참여와 완료 여부를 확인한다.
+- 이벤트 B 트랙은 A 트랙 조건을 포함하고 실제 거래 완료 1건 또는 본인이 작성한
+  거래 게시글 10건 이상을 요구한다. 본인 거래글은 대표 링크 1개만 제출하고
+  운영진이 회원 ID로 전체 작성 수를 확인한다. 완료 거래글은 응모자가 작성한
+  글이 아니어도 인정하며, 완료 실적으로 응모할 때만 완료 거래글 링크를
+  제출한다. 운영진이 당첨 후보의 회원 ID, 작성 거래글, 완료 거래글 및 채팅
+  기록을 서버 데이터와 대조해 자격을 확인한다.
 - 두 트랙 모두를 선택한 응모는 `BOTH`로 저장하며 A 트랙과 B 트랙 추첨 대상에
   각각 한 번씩 포함한다. 동일 회원의 당첨은 최대 1개로 제한한다. B 트랙 당첨자
   2명을 먼저 추첨하고 해당 회원을 제외한 뒤 A 트랙 당첨자 3명을 추첨한다.
@@ -185,8 +179,8 @@ EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSH
   Google Sheets 사용 목적과 경품 전달 완료 후 파기 기준이 반영되었는지
   확인합니다.
 - 스프레드시트 열람 권한은 이벤트 담당자에게만 부여합니다.
-- 추첨 전 당첨 후보의 응모 회원·거래글 소유권·B 트랙 자격을 서버 데이터로
-  재검증합니다.
+- 추첨 전 당첨 후보의 응모 회원·대표 거래글 소유권·B 트랙의 완료 거래 또는
+  본인 거래글 10건 이상 충족 여부를 서버 데이터로 재검증합니다.
 - 운영 Apps Script가 `BASIC`, `COMPLETED`, `BOTH`를 모두 허용하도록 새 버전으로
   배포되었는지 확인합니다.
 

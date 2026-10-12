@@ -421,8 +421,34 @@ export const TradeItem = styled.article`
   align-items: center;
   border-radius: ${radius.control};
   background: ${color.surfaceMuted};
-  grid-template-columns: 68px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: ${space.md};
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const TradeDetailLink = styled(Link)`
+  display: grid;
+  min-width: 0;
+  align-items: center;
+  border-radius: ${radius.control};
+  color: ${color.text};
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: ${space.md};
+  text-decoration: none;
+
+  &:hover h3 {
+    color: ${color.primary};
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    box-shadow: ${focusRing};
+    outline: none;
+  }
 
   @media (max-width: 520px) {
     grid-template-columns: 56px minmax(0, 1fr);
@@ -466,14 +492,21 @@ export const TradeMeta = styled.p`
   white-space: nowrap;
 `;
 
+export const TradeViewHint = styled.span`
+  display: inline-block;
+  margin-top: ${space.xxs};
+  color: ${color.primary};
+  font-size: ${fontSize.caption};
+  font-weight: ${fontWeight.bold};
+`;
+
 export const TradeSide = styled.div`
   display: flex;
   align-items: center;
   gap: ${space.xs};
 
   @media (max-width: 520px) {
-    margin-top: ${space.xs};
-    grid-column: 2;
+    justify-content: flex-end;
   }
 `;
 
@@ -638,6 +671,10 @@ const accountMenuItemStyles = `
 `;
 
 export const AccountMenuLink = styled.a`
+  ${accountMenuItemStyles}
+`;
+
+export const AccountMenuRouterLink = styled(Link)`
   ${accountMenuItemStyles}
 `;
 

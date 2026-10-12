@@ -117,6 +117,16 @@ export const EventScheduleLabel = styled.span`
   font-weight: ${fontWeight.bold};
 `;
 
+export const EventUpdateNotice = styled.p`
+  padding: ${space.sm} ${space.md};
+  border-left: 3px solid ${color.primary};
+  margin: ${space.md} 0 0;
+  background: rgb(255 255 255 / 58%);
+  color: ${color.textMuted};
+  font-size: ${fontSize.bodySmall};
+  line-height: ${lineHeight.relaxed};
+`;
+
 export const GuideGrid = styled.ol`
   display: grid;
   padding: 0;

@@ -46,7 +46,7 @@ export default function TradePage({
 
       <Main>
         <SearchHero
-          title="어떤 가챠를 찾아볼까요?"
+          title="어떤 거래글을 찾아볼까요?"
           initialQuery={query}
           onSearch={onSearch}
         />
@@ -114,49 +114,36 @@ const Page = styled.div`
 const Main = styled.main`
   display: flex;
   box-sizing: border-box;
-  width: min(100%, 1240px);
+  width: 100%;
   margin: 0 auto;
   /* 하단 여백은 우측 하단 등록 버튼이 마지막 콘텐츠를 가리지 않도록 버튼 높이만큼 더 둔다. */
-  padding: 40px 48px 120px;
+  padding: 0 0 120px;
   flex-direction: column;
-  gap: ${space.xxl};
 
   @media (max-width: ${breakpoint.mobile}) {
-    padding: 28px 16px 96px;
-    gap: ${space.xl};
+    padding-bottom: 96px;
   }
 `;
 
 const ResultsPanel = styled.section`
+  box-sizing: border-box;
   width: 100%;
-  max-width: 1121px;
+  max-width: 1328px;
   margin: 0 auto;
-  padding: ${space.xxl} 0;
+  padding: ${space.md} ${space.xl} 0;
   background: ${color.surface};
-
-  @media (max-width: 1216px) {
-    max-width: 892px;
-  }
-
-  @media (max-width: ${breakpoint.wide}) {
-    max-width: 663px;
-  }
-
-  @media (max-width: ${breakpoint.mobile}) {
-    max-width: 424px;
-    padding: ${space.md} 0;
-  }
 `;
 
 const ResultsTitle = styled.h2`
-  margin: 0 0 ${space.xl};
+  margin: 0;
   color: ${color.text};
-  font-size: 28px;
+  font-size: ${fontSize.subheading};
   font-weight: ${fontWeight.bold};
 `;
 
 const ProductGrid = styled.div`
   display: grid;
+  margin-top: ${space.xl};
   grid-template-columns: repeat(5, minmax(0, 205px));
   justify-content: center;
   gap: 44px 24px;

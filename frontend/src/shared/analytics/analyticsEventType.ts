@@ -220,6 +220,11 @@ export interface AnalyticsEventPropertiesMap {
     room_id: number;
     outcome: AnalyticsOutcome;
   };
+  chat_trade_context_selected: {
+    room_id: number;
+    trade_id: number;
+    action: 'trade_detail' | 'report';
+  };
   profile_edit_started: Record<string, never>;
   profile_update_completed: {
     outcome: AnalyticsOutcome;
@@ -227,7 +232,7 @@ export interface AnalyticsEventPropertiesMap {
     trade_location_change: ProfileTradeLocationChange;
   };
   account_menu_selected: {
-    target: 'privacy' | 'support' | 'logout' | 'delete_account';
+    target: 'updates' | 'privacy' | 'support' | 'logout' | 'delete_account';
     source: 'login' | 'mypage';
   };
   account_deletion_completed: {

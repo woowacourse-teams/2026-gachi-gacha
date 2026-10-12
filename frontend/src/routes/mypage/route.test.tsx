@@ -47,6 +47,21 @@ describe('MyPageRoute 내 교환글 수정', () => {
     expect(editLink.parentElement).toBe(deleteButton.parentElement);
   });
 
+  it('섬네일과 제목 영역에서 내 거래글 상세로 이동할 수 있다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', {
+        name: '쿠로미 미니 피규어 vol.2 교환해요 거래글 보기',
+      }),
+    ).toHaveAttribute('href', '/trade/17');
+  });
+
   it('고객센터를 공식 인스타그램 문의로 연결한다', async () => {
     server.use(authenticatedMemberHandler, myTradesHandler);
 
@@ -58,6 +73,19 @@ describe('MyPageRoute 내 교환글 수정', () => {
     expect(
       await screen.findByRole('link', { name: /고객센터/ }),
     ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
+  });
+
+  it('마이페이지 하단에서 업데이트 소식으로 이동할 수 있다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', { name: /업데이트 소식/ }),
+    ).toHaveAttribute('href', '/updates');
   });
 
   it('이벤트 기간에는 응모 페이지 링크를 보여준다', async () => {
