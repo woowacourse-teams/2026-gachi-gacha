@@ -1,13 +1,14 @@
 import { describe, expect, it } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
+import { MemoryRouter } from 'react-router';
 
 import { server } from '@/test/server';
 
 import { StoreGachaCatalog } from './StoreGachaCatalog';
 
 describe('StoreGachaCatalog', () => {
-  it('매장 보유 가챠의 섬네일과 이름만 표시한다', async () => {
+  it('매장 보유 가챠의 섬네일과 이름을 지도 검색 링크로 표시한다', async () => {
     server.use(
       http.get('/api/v1/stores/1/gachas', () =>
         HttpResponse.json({
@@ -29,7 +30,11 @@ describe('StoreGachaCatalog', () => {
       ),
     );
 
-    render(<StoreGachaCatalog storeId={1} />);
+    render(
+      <MemoryRouter>
+        <StoreGachaCatalog storeId={1} />
+      </MemoryRouter>,
+    );
 
     expect(
       await screen.findByText('산리오 캐릭터즈 피규어'),
@@ -39,6 +44,11 @@ describe('StoreGachaCatalog', () => {
         name: '산리오 캐릭터즈 피규어 섬네일',
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: '산리오 캐릭터즈 피규어 보유 매장 지도에서 보기',
+      }),
+    ).toHaveAttribute('href', '/map?gachaId=10');
     expect(screen.queryByText('카테고리 미등록')).not.toBeInTheDocument();
   });
 
@@ -64,7 +74,11 @@ describe('StoreGachaCatalog', () => {
       ),
     );
 
-    render(<StoreGachaCatalog storeId={17} />);
+    render(
+      <MemoryRouter>
+        <StoreGachaCatalog storeId={17} />
+      </MemoryRouter>,
+    );
 
     expect(await screen.findByText('이름 미등록')).toBeInTheDocument();
     expect(

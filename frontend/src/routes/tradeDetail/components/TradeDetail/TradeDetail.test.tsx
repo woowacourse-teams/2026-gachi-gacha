@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 
@@ -7,6 +7,55 @@ import TradeDetail from './TradeDetail';
 import { TRADE_DETAIL } from '../../storybook/tradeDetailMocks';
 
 describe('TradeDetail', () => {
+  it('상품 사진을 좌우로 넘기고 선택한 사진을 크게 본다', async () => {
+    const user = userEvent.setup();
+    const detail = {
+      ...TRADE_DETAIL,
+      imageUrls: [
+        'https://example.com/trade-first.jpg',
+        'https://example.com/trade-second.jpg',
+      ],
+    };
+
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={detail} />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole('img', { name: `${detail.title} 상품 사진 1` }),
+    ).toHaveAttribute('src', detail.imageUrls[0]);
+
+    await user.click(screen.getByRole('button', { name: '다음 상품 사진' }));
+
+    expect(
+      screen.getByRole('img', { name: `${detail.title} 상품 사진 2` }),
+    ).toHaveAttribute('src', detail.imageUrls[1]);
+
+    await user.click(
+      screen.getByRole('button', { name: '2번째 상품 사진 크게 보기' }),
+    );
+
+    const dialog = screen.getByRole('dialog', {
+      name: `${detail.title} 상품 사진 크게 보기`,
+    });
+
+    expect(
+      within(dialog).getByRole('img', {
+        name: `${detail.title} 상품 사진 2`,
+      }),
+    ).toHaveAttribute('src', detail.imageUrls[1]);
+
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: '상품 사진 크게 보기 닫기',
+      }),
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('게시글의 채팅하기 링크만 보여준다', () => {
     render(
       <MemoryRouter>
