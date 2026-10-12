@@ -21,5 +21,14 @@ describe('ProductCard', () => {
       screen.getByRole('heading', { name: item.title }),
     ).toBeInTheDocument();
     expect(screen.getByText('교환 진행 중')).toBeInTheDocument();
+
+    const card = screen.getByRole('link');
+    const thumbnail = card.querySelector('img')?.parentElement;
+    const content = screen.getByRole('heading', {
+      name: item.title,
+    }).parentElement;
+
+    expect(thumbnail).toHaveStyle({ marginBottom: '12px' });
+    expect(content).toHaveStyle({ gap: '12px' });
   });
 });
