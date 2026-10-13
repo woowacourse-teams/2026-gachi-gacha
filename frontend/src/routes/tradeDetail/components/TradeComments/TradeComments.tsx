@@ -17,14 +17,16 @@ import type {
   TradeComment,
   TradeCommentAction,
   TradeCommentAuthor,
+  TradeCommentSubmission,
 } from '../../model/tradeComment';
 
 const MAX_COMMENT_LENGTH = 500;
+const MAX_GUEST_NICKNAME_LENGTH = 20;
 
 interface TradeCommentsProps {
   comments?: TradeComment[];
   viewer?: TradeCommentAuthor | null;
-  onSubmit?: ((content: string) => void) | undefined;
+  onSubmit?: ((submission: TradeCommentSubmission) => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }
@@ -36,8 +38,9 @@ export function TradeComments({
   onCommentAction,
 }: TradeCommentsProps) {
   const [draft, setDraft] = useState('');
+  const [guestNickname, setGuestNickname] = useState('');
   const commentCount = comments.length;
-  const isReady = Boolean(viewer && onSubmit);
+  const isReady = Boolean(onSubmit);
   const canSubmit = isReady && draft.trim().length > 0;
 
   function submitComment() {
@@ -45,7 +48,10 @@ export function TradeComments({
       return;
     }
 
-    onSubmit?.(draft.trim());
+    onSubmit?.({
+      nickname: viewer ? null : guestNickname.trim() || null,
+      content: draft.trim(),
+    });
     setDraft('');
   }
 
@@ -60,6 +66,21 @@ export function TradeComments({
       <Composer data-ready={isReady}>
         <Avatar author={viewer} />
         <ComposerBody>
+          {!viewer && (
+            <GuestIdentity>
+              <GuestNicknameInput
+                aria-label="비회원 닉네임"
+                value={guestNickname}
+                maxLength={MAX_GUEST_NICKNAME_LENGTH}
+                disabled={!isReady}
+                placeholder="이름 (선택, 미입력 시 루챠)"
+                onChange={(event) => setGuestNickname(event.target.value)}
+              />
+              <GuestPrivacyNotice>
+                비회원 댓글에는 접속 IP 일부가 표시돼요.
+              </GuestPrivacyNotice>
+            </GuestIdentity>
+          )}
           <CommentInput
             aria-label="댓글 내용"
             value={draft}
@@ -68,9 +89,7 @@ export function TradeComments({
             placeholder={
               isReady
                 ? '댓글을 입력해주세요.'
-                : viewer
-                  ? '댓글 API 연동 후 작성할 수 있어요.'
-                  : '로그인 후 댓글을 작성할 수 있어요.'
+                : '댓글 API 연동 후 작성할 수 있어요.'
             }
             onChange={(event) => setDraft(event.target.value)}
           />
@@ -227,6 +246,42 @@ const Composer = styled.div`
 
 const ComposerBody = styled.div`
   min-width: 0;
+`;
+
+const GuestIdentity = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: ${space.xs} ${space.sm};
+  margin-bottom: ${space.xs};
+`;
+
+const GuestNicknameInput = styled.input`
+  width: min(100%, 240px);
+  padding: ${space.xs} 4px;
+  border: 0;
+  border-bottom: 1px solid ${color.border};
+  outline: 0;
+  background: transparent;
+  color: ${color.text};
+  font-size: ${fontSize.bodySmall};
+
+  &::placeholder {
+    color: ${color.textSubtle};
+  }
+
+  &:focus-visible {
+    border-color: ${color.primary};
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+`;
+
+const GuestPrivacyNotice = styled.span`
+  color: ${color.textSubtle};
+  font-size: ${fontSize.caption};
 `;
 
 const CommentInput = styled.textarea`

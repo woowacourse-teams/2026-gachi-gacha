@@ -32,8 +32,8 @@ export const TRADE_COMMENTS: TradeComment[] = [
   {
     commentId: 'comment-3',
     author: {
-      memberId: '33',
-      nickname: '지니',
+      memberId: null,
+      nickname: '루챠-118.44',
       profileImageUrl: null,
     },
     content: '상품 상태를 조금 더 자세히 볼 수 있을까요?',

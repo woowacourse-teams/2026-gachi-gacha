@@ -1,8 +1,13 @@
 export interface TradeCommentAuthor {
-  memberId: string;
+  memberId: string | null;
   nickname: string;
   profileImageUrl: string | null;
   isPostAuthor?: boolean;
+}
+
+export interface TradeCommentSubmission {
+  nickname: string | null;
+  content: string;
 }
 
 export interface TradeComment {

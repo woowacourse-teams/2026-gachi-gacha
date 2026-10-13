@@ -35,6 +35,12 @@ type Story = StoryObj<typeof TradeDetailPage>;
 
 export const Default: Story = {};
 
+export const Guest: Story = {
+  args: {
+    commentViewer: null,
+  },
+};
+
 export const EmptyComments: Story = {
   args: {
     comments: [],

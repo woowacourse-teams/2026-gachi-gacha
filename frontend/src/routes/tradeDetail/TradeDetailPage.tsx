@@ -10,6 +10,7 @@ import type {
   TradeComment,
   TradeCommentAction,
   TradeCommentAuthor,
+  TradeCommentSubmission,
 } from './model/tradeComment';
 import ProductCard from '../trade/components/ProductCard';
 import type { TradeItem } from '../trade/model/tradeItem';
@@ -26,7 +27,7 @@ interface TradeDetailPageProps {
   onLoadMoreRelatedItems?: () => void;
   comments?: TradeComment[];
   commentViewer?: TradeCommentAuthor | null;
-  onSubmitComment?: ((content: string) => void) | undefined;
+  onSubmitComment?: ((submission: TradeCommentSubmission) => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }
