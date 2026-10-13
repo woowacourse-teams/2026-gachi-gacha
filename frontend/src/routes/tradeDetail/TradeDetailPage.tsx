@@ -27,7 +27,8 @@ interface TradeDetailPageProps {
   onLoadMoreRelatedItems?: () => void;
   comments?: TradeComment[];
   commentViewer?: TradeCommentAuthor | null;
-  onSubmitComment?: ((submission: TradeCommentSubmission) => void) | undefined;
+  onSubmitComment?:
+    ((submission: TradeCommentSubmission) => Promise<void> | void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }

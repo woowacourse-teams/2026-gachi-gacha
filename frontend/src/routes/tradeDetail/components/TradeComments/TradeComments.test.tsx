@@ -1,8 +1,9 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { TradeComments } from './TradeComments';
+import type { TradeCommentSubmission } from '../../model/tradeComment';
 import {
   COMMENT_VIEWER,
   TRADE_COMMENTS,
@@ -29,7 +30,7 @@ describe('TradeComments', () => {
 
   it('댓글을 입력하면 공백을 제거해 등록 콜백으로 전달한다', async () => {
     const user = userEvent.setup();
-    const onSubmit = jest.fn();
+    const onSubmit = jest.fn<(submission: TradeCommentSubmission) => void>();
 
     render(<TradeComments viewer={COMMENT_VIEWER} onSubmit={onSubmit} />);
 
@@ -48,7 +49,7 @@ describe('TradeComments', () => {
 
   it('비회원은 선택한 이름으로 댓글을 등록할 수 있다', async () => {
     const user = userEvent.setup();
-    const onSubmit = jest.fn();
+    const onSubmit = jest.fn<(submission: TradeCommentSubmission) => void>();
 
     render(<TradeComments onSubmit={onSubmit} />);
 
@@ -75,6 +76,49 @@ describe('TradeComments', () => {
     render(<TradeComments comments={TRADE_COMMENTS} />);
 
     expect(screen.getByText('루챠-118.44')).toBeInTheDocument();
+  });
+
+  it('등록 중에는 중복 제출을 막고 성공한 뒤 입력값을 비운다', async () => {
+    const user = userEvent.setup();
+    let finishSubmit: (() => void) | undefined;
+    const onSubmit = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSubmit = resolve;
+        }),
+    );
+
+    render(<TradeComments viewer={COMMENT_VIEWER} onSubmit={onSubmit} />);
+
+    const input = screen.getByRole('textbox', { name: '댓글 내용' });
+    await user.type(input, '교환 가능할까요?');
+    await user.click(screen.getByRole('button', { name: '등록' }));
+
+    expect(screen.getByRole('button', { name: '등록 중...' })).toBeDisabled();
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(input).toHaveValue('교환 가능할까요?');
+
+    finishSubmit?.();
+
+    await waitFor(() => expect(input).toHaveValue(''));
+  });
+
+  it('등록에 실패하면 입력값을 보존하고 오류를 안내한다', async () => {
+    const user = userEvent.setup();
+    const onSubmit = jest.fn(async () => {
+      throw new Error('댓글 등록 실패');
+    });
+
+    render(<TradeComments viewer={COMMENT_VIEWER} onSubmit={onSubmit} />);
+
+    const input = screen.getByRole('textbox', { name: '댓글 내용' });
+    await user.type(input, '지우지 말아주세요.');
+    await user.click(screen.getByRole('button', { name: '등록' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '댓글을 등록하지 못했어요. 다시 시도해주세요.',
+    );
+    expect(input).toHaveValue('지우지 말아주세요.');
   });
 
   it('API 콜백이 없으면 입력과 등록을 비활성화한다', () => {

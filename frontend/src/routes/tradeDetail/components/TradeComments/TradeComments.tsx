@@ -26,7 +26,8 @@ const MAX_GUEST_NICKNAME_LENGTH = 20;
 interface TradeCommentsProps {
   comments?: TradeComment[];
   viewer?: TradeCommentAuthor | null;
-  onSubmit?: ((submission: TradeCommentSubmission) => void) | undefined;
+  onSubmit?:
+    ((submission: TradeCommentSubmission) => Promise<void> | void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }
@@ -39,20 +40,31 @@ export function TradeComments({
 }: TradeCommentsProps) {
   const [draft, setDraft] = useState('');
   const [guestNickname, setGuestNickname] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const commentCount = comments.length;
   const isReady = Boolean(onSubmit);
-  const canSubmit = isReady && draft.trim().length > 0;
+  const canSubmit = isReady && !isSubmitting && draft.trim().length > 0;
 
-  function submitComment() {
+  async function submitComment() {
     if (!canSubmit) {
       return;
     }
 
-    onSubmit?.({
-      nickname: viewer ? null : guestNickname.trim() || null,
-      content: draft.trim(),
-    });
-    setDraft('');
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await onSubmit?.({
+        nickname: viewer ? null : guestNickname.trim() || null,
+        content: draft.trim(),
+      });
+      setDraft('');
+    } catch {
+      setSubmitError('댓글을 등록하지 못했어요. 다시 시도해주세요.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -94,16 +106,20 @@ export function TradeComments({
             onChange={(event) => setDraft(event.target.value)}
           />
           <ComposerFooter>
-            {!isReady && <PreparationNote>댓글 기능 준비 중</PreparationNote>}
+            {submitError ? (
+              <SubmissionError role="alert">{submitError}</SubmissionError>
+            ) : (
+              !isReady && <PreparationNote>댓글 기능 준비 중</PreparationNote>
+            )}
             <CharacterCount aria-live="polite">
               {draft.length}/{MAX_COMMENT_LENGTH}
             </CharacterCount>
             <SubmitButton
               type="button"
               disabled={!canSubmit}
-              onClick={submitComment}
+              onClick={() => void submitComment()}
             >
-              등록
+              {isSubmitting ? '등록 중...' : '등록'}
             </SubmitButton>
           </ComposerFooter>
         </ComposerBody>
@@ -186,10 +202,8 @@ function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
 }
 
 function Avatar({ author }: { author?: TradeCommentAuthor | null }) {
-  const label = author?.nickname ?? '게스트';
-
   return (
-    <AvatarFrame aria-label={`${label} 프로필`}>
+    <AvatarFrame aria-hidden="true">
       {author?.profileImageUrl ? (
         <AvatarImage src={author.profileImageUrl} alt="" data-private-media />
       ) : (
@@ -316,6 +330,12 @@ const ComposerFooter = styled.div`
 const PreparationNote = styled.span`
   margin-right: auto;
   color: ${color.textSubtle};
+  font-size: ${fontSize.caption};
+`;
+
+const SubmissionError = styled.span`
+  margin-right: auto;
+  color: ${color.primary};
   font-size: ${fontSize.caption};
 `;
 
