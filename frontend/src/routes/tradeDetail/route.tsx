@@ -21,7 +21,7 @@ export interface TradeDetailRouteProps {
 }
 
 export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
-  const { status: authStatus, memberId } = useAuthSession();
+  const { status: authStatus, member, memberId } = useAuthSession();
   const { state, retry } = useTradeDetail(tradeId);
   const {
     items: relatedItems,
@@ -68,6 +68,15 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
         : memberId !== null && memberId === String(state.data.memberId)
           ? 'edit'
           : 'chat';
+  const commentViewer =
+    authStatus === 'authenticated' && member && memberId
+      ? {
+          memberId,
+          nickname: member.nickname || member.name || '나',
+          profileImageUrl: member.profileImageUrl,
+          isPostAuthor: memberId === String(state.data.memberId),
+        }
+      : null;
 
   return (
     <TradeDetailPage
@@ -77,6 +86,7 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
       hasMoreRelatedItems={hasMoreRelatedItems}
       isLoadingRelatedItems={isLoadingRelatedItems}
       onLoadMoreRelatedItems={loadMoreRelatedItems}
+      commentViewer={commentViewer}
     />
   );
 }
