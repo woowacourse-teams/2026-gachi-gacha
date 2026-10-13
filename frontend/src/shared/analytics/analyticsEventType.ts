@@ -71,7 +71,7 @@ export interface AnalyticsEventPropertiesMap {
   gacha_selected: {
     gacha_id: number;
     result_position: number;
-    source: 'search_popover';
+    source: 'search_popover' | 'store_catalog';
   };
   store_results_loaded: StoreResultsContext;
   store_discovery_succeeded: StoreResultsContext;

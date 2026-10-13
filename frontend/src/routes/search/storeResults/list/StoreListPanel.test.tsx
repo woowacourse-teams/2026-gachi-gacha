@@ -26,5 +26,33 @@ describe('StoreListPanel', () => {
     expect(screen.getByText('홍대 가챠 매장')).toBeInTheDocument();
     expect(screen.getByText('홍대 매장')).toBeInTheDocument();
     expect(screen.getByText('3곳')).toBeInTheDocument();
+    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    expect(screen.getByRole('status', { hidden: true })).toHaveTextContent(
+      '3개 매장 중 1번째 매장',
+    );
+  });
+
+  it('가챠 검색 결과가 한 곳이면 매장 수만 안내한다', () => {
+    render(
+      <StoreListPanel
+        storesState={{
+          status: 'success',
+          data: {
+            ...nearbyStoresMockResponse.data,
+            stores: nearbyStoresMockResponse.data.stores.slice(0, 1),
+          },
+          errorMessage: null,
+        }}
+        isGachaSelected
+        selectedStoreId={null}
+        onOpenStore={noop}
+        onSelectStore={noop}
+        onRetry={noop}
+      />,
+    );
+
+    expect(screen.getByText('검색 결과')).toBeInTheDocument();
+    expect(screen.getByText('1곳')).toBeInTheDocument();
+    expect(screen.queryByText(/1 \/ 1/)).not.toBeInTheDocument();
   });
 });

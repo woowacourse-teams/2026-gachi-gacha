@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
@@ -12,6 +12,7 @@ import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
+import { PhotoViewer } from '@/shared/ui/PhotoViewer';
 
 import type { TradeDetailAction } from '../../TradeDetailPage';
 
@@ -48,9 +49,20 @@ export default function TradeDetail({
   const location = useLocation();
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPhotoViewerOpen, setIsPhotoViewerOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
+  const closePhotoViewer = useCallback(() => setIsPhotoViewerOpen(false), []);
+
+  function selectImage(index: number) {
+    captureAnalyticsEvent('trade_detail_photo_selected', {
+      trade_id: detail.tradeId,
+      photo_index: index,
+      photo_count: detail.imageUrls.length,
+    });
+    setSelectedImageIndex(index);
+  }
 
   return (
     <Wrapper>
@@ -60,9 +72,44 @@ export default function TradeDetail({
         <Gallery>
           <MainImage>
             {selectedImageUrl ? (
-              <MainPhoto src={selectedImageUrl} alt={`${detail.title} 사진`} />
+              <MainPhotoButton
+                type="button"
+                aria-label={`${selectedImageIndex + 1}번째 상품 사진 크게 보기`}
+                onClick={() => setIsPhotoViewerOpen(true)}
+              >
+                <MainPhoto
+                  src={selectedImageUrl}
+                  alt={`${detail.title} 상품 사진 ${selectedImageIndex + 1}`}
+                />
+              </MainPhotoButton>
             ) : (
               <LogoImagePlaceholder />
+            )}
+            {detail.imageUrls.length > 1 && (
+              <>
+                <GalleryDirectionButton
+                  $direction="previous"
+                  type="button"
+                  aria-label="이전 상품 사진"
+                  disabled={selectedImageIndex === 0}
+                  onClick={() => selectImage(selectedImageIndex - 1)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m12 5-5 5 5 5" />
+                  </svg>
+                </GalleryDirectionButton>
+                <GalleryDirectionButton
+                  $direction="next"
+                  type="button"
+                  aria-label="다음 상품 사진"
+                  disabled={selectedImageIndex === detail.imageUrls.length - 1}
+                  onClick={() => selectImage(selectedImageIndex + 1)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <path d="m8 5 5 5-5 5" />
+                  </svg>
+                </GalleryDirectionButton>
+              </>
             )}
             {detail.imageUrls.length > 0 && (
               <ImageCount>
@@ -79,14 +126,10 @@ export default function TradeDetail({
                   type="button"
                   data-selected={index === selectedImageIndex}
                   aria-label={`${index + 1}번 사진 보기`}
-                  onClick={() => {
-                    captureAnalyticsEvent('trade_detail_photo_selected', {
-                      trade_id: detail.tradeId,
-                      photo_index: index,
-                      photo_count: detail.imageUrls.length,
-                    });
-                    setSelectedImageIndex(index);
-                  }}
+                  aria-current={
+                    index === selectedImageIndex ? 'true' : undefined
+                  }
+                  onClick={() => selectImage(index)}
                 >
                   <ThumbnailPhoto src={imageUrl} alt="" />
                 </Thumbnail>
@@ -209,6 +252,20 @@ export default function TradeDetail({
           onDeleted={() => navigate('/trade', { replace: true })}
         />
       )}
+
+      {isPhotoViewerOpen && selectedImageUrl && (
+        <PhotoViewer
+          imageUrls={detail.imageUrls}
+          initialIndex={selectedImageIndex}
+          title={detail.title}
+          dialogLabel={`${detail.title} 상품 사진 크게 보기`}
+          imageAltPrefix={`${detail.title} 상품 사진`}
+          thumbnailListLabel="상품 사진 목록"
+          closeLabel="상품 사진 크게 보기 닫기"
+          onClose={closePhotoViewer}
+          onActiveIndexChange={setSelectedImageIndex}
+        />
+      )}
     </Wrapper>
   );
 }
@@ -250,10 +307,76 @@ const MainImage = styled.div`
   background: #f3f3f5;
 `;
 
+const MainPhotoButton = styled.button`
+  position: absolute;
+  display: grid;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  inset: 0;
+  place-items: center;
+
+  &:focus-visible {
+    z-index: 1;
+    outline: 3px solid rgb(237 23 76 / 28%);
+    outline-offset: -4px;
+  }
+`;
+
 const MainPhoto = styled.img`
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+`;
+
+const GalleryDirectionButton = styled.button<{
+  $direction: 'previous' | 'next';
+}>`
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  ${({ $direction }) =>
+    $direction === 'previous' ? 'left: 14px;' : 'right: 14px;'}
+  display: grid;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 4px 14px rgb(29 30 34 / 16%);
+  color: #242122;
+  cursor: pointer;
+  place-items: center;
+  transform: translateY(-50%);
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(237 23 76 / 28%);
+    outline-offset: 2px;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentcolor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+
+  @media (max-width: 520px) {
+    ${({ $direction }) =>
+      $direction === 'previous' ? 'left: 8px;' : 'right: 8px;'}
+    width: 38px;
+    height: 38px;
+  }
 `;
 
 const ImageCount = styled.span`

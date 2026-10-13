@@ -245,7 +245,7 @@ export function PrivacyRoute() {
                 <tbody>
                   <tr>
                     <th>Amazon Web Services, Inc.</th>
-                    <td>교환글 및 채팅 파일·이미지 저장(S3)</td>
+                    <td>프로필·교환글·채팅 파일 및 이미지 저장(S3)</td>
                   </tr>
                   <tr>
                     <th>PostHog, Inc.</th>

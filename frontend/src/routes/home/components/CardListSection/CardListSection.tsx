@@ -78,28 +78,45 @@ export default function CardListSection(props: Props) {
 }
 
 const Wrapper = styled.section`
+  box-sizing: border-box;
   display: flex;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
   flex-direction: column;
   gap: 12px;
   padding: 0 24px;
 `;
 
 const Title = styled.h2`
-  margin: 0;
+  width: 100%;
+  max-width: 1136px;
+  margin: 0 auto;
   font-size: 17px;
   font-weight: 700;
   color: #2b2528;
 `;
 
 const List = styled.div`
-  margin-top: 24px;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 240px));
+  width: 100%;
+  max-width: 1136px;
+  margin: 24px auto 0;
+  grid-template-columns: repeat(5, minmax(0, 208px));
   justify-content: center;
-  gap: 20px;
+  gap: 28px 24px;
+
+  @media (max-width: 1160px) {
+    grid-template-columns: repeat(4, minmax(0, 208px));
+  }
+
+  @media (max-width: 920px) {
+    grid-template-columns: repeat(3, minmax(0, 208px));
+  }
 
   @media (max-width: 720px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 16px;
   }
 `;
 
