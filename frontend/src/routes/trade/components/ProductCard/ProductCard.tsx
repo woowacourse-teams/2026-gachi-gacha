@@ -41,13 +41,18 @@ export default function ProductCard({
       </Thumbnail>
 
       <CardContent>
-        <Title>{item.title}</Title>
-        <Categories>{categories}</Categories>
-        <Meta>{place}</Meta>
-        <Meta>{formatRelativeTime(item.createdAt)}</Meta>
-        <BadgeRow>
-          <TradeStatusBadge status={item.status} />
-        </BadgeRow>
+        <PrimaryInfo>
+          <Title>{item.title}</Title>
+          <Categories>{categories}</Categories>
+        </PrimaryInfo>
+
+        <TradeInfo>
+          <Meta>{place}</Meta>
+          <Meta>{formatRelativeTime(item.createdAt)}</Meta>
+          <BadgeRow>
+            <TradeStatusBadge status={item.status} />
+          </BadgeRow>
+        </TradeInfo>
       </CardContent>
     </Card>
   );
@@ -111,6 +116,21 @@ const CardContent = styled.div`
   min-width: 0;
   padding: 0 4px;
   flex: 1;
+  flex-direction: column;
+`;
+
+const PrimaryInfo = styled.div`
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const TradeInfo = styled.div`
+  display: flex;
+  min-width: 0;
+  margin-top: auto;
+  padding-top: 12px;
   flex-direction: column;
   gap: 12px;
 `;
