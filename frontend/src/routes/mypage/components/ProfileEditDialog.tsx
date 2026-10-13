@@ -1,7 +1,14 @@
 import { type FormEvent, useEffect, useRef, useState } from 'react';
 
 import type { UpdateCurrentMemberInput } from '@/features/auth/api/updateCurrentMember';
+import { uploadProfileImage } from '@/features/auth/api/uploadProfileImage';
 import type { AuthMember } from '@/features/auth/authMemberType';
+import {
+  PROFILE_IMAGE_ACCEPT,
+  PROFILE_IMAGE_TOO_LARGE_MESSAGE,
+  PROFILE_IMAGE_UNSUPPORTED_TYPE_MESSAGE,
+  validateProfileImage,
+} from '@/features/auth/profileImagePolicy';
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import type { PlaceSearchSelection } from '@/features/placeSearch/placeSearchType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
@@ -19,6 +26,7 @@ import {
   FieldLabel,
   Form,
   Header,
+  HiddenFileInput,
   Input,
   InteractiveField,
   Panel,
@@ -28,6 +36,12 @@ import {
   PlaceSelectionAddress,
   PlaceSelectionName,
   PrimaryButton,
+  ProfilePhotoActions,
+  ProfilePhotoEditor,
+  ProfilePhotoFallback,
+  ProfilePhotoFileName,
+  ProfilePhotoPreview,
+  ProfilePhotoSelectButton,
   SecondaryButton,
   Title,
 } from './AccountDialog.styles';
@@ -78,6 +92,13 @@ export function ProfileEditDialog({
     string | null
   >(null);
   const [isPlaceSearchOpen, setIsPlaceSearchOpen] = useState(false);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<
+    string | null
+  >(null);
+  const [profileImageErrorMessage, setProfileImageErrorMessage] = useState<
+    string | null
+  >(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -93,6 +114,8 @@ export function ProfileEditDialog({
       setDesireTradeLocation(member.desireTradeLocation ?? '');
       setSelectedPlaceAddress(null);
       setIsPlaceSearchOpen(false);
+      setProfileImageFile(null);
+      setProfileImageErrorMessage(null);
       setErrorMessage(null);
       dialog.showModal();
       return;
@@ -102,6 +125,20 @@ export function ProfileEditDialog({
       dialog.close();
     }
   }, [member.desireTradeLocation, member.nickname, open]);
+
+  useEffect(() => {
+    if (!profileImageFile) {
+      setProfileImagePreviewUrl(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(profileImageFile);
+    setProfileImagePreviewUrl(previewUrl);
+
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [profileImageFile]);
 
   function closeDialog() {
     if (!isSubmitting) {
@@ -123,6 +160,31 @@ export function ProfileEditDialog({
     setSelectedPlaceAddress(null);
   }
 
+  function selectProfileImage(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    event.target.value = '';
+
+    if (!file) {
+      return;
+    }
+
+    const rejection = validateProfileImage(file);
+
+    if (rejection) {
+      setProfileImageFile(null);
+      setProfileImageErrorMessage(
+        rejection === 'too-large'
+          ? PROFILE_IMAGE_TOO_LARGE_MESSAGE
+          : PROFILE_IMAGE_UNSUPPORTED_TYPE_MESSAGE,
+      );
+      return;
+    }
+
+    setProfileImageFile(file);
+    setProfileImageErrorMessage(null);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedNickname = nickname.trim();
@@ -137,13 +199,21 @@ export function ProfileEditDialog({
       return;
     }
 
+    if (profileImageErrorMessage) {
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
+      const profileImageUrl = profileImageFile
+        ? await uploadProfileImage(profileImageFile)
+        : member.profileImageUrl;
+
       await onSave({
         nickname: normalizedNickname,
-        profileImageUrl: member.profileImageUrl,
+        profileImageUrl,
         desireTradeLocation: normalizedLocation || null,
       });
       captureAnalyticsEvent('profile_update_completed', {
@@ -203,6 +273,50 @@ export function ProfileEditDialog({
         </Header>
 
         <Form onSubmit={handleSubmit}>
+          <InteractiveField>
+            <FieldLabel>프로필 사진</FieldLabel>
+            <ProfilePhotoEditor>
+              {profileImagePreviewUrl || member.profileImageUrl ? (
+                <ProfilePhotoPreview
+                  src={profileImagePreviewUrl ?? member.profileImageUrl ?? ''}
+                  alt={
+                    profileImagePreviewUrl
+                      ? '새 프로필 사진 미리보기'
+                      : '현재 프로필 사진'
+                  }
+                  data-private-media
+                />
+              ) : (
+                <ProfilePhotoFallback aria-hidden="true">
+                  {member.nickname?.trim().slice(0, 1) || 'G'}
+                </ProfilePhotoFallback>
+              )}
+              <ProfilePhotoActions>
+                <ProfilePhotoSelectButton>
+                  사진 변경
+                  <HiddenFileInput
+                    type="file"
+                    accept={PROFILE_IMAGE_ACCEPT}
+                    aria-label="프로필 사진 선택"
+                    disabled={isSubmitting}
+                    onChange={selectProfileImage}
+                  />
+                </ProfilePhotoSelectButton>
+                {profileImageFile && (
+                  <ProfilePhotoFileName title={profileImageFile.name}>
+                    {profileImageFile.name}
+                  </ProfilePhotoFileName>
+                )}
+                <FieldHint>JPG, PNG, WebP · 최대 10MB</FieldHint>
+              </ProfilePhotoActions>
+            </ProfilePhotoEditor>
+            {profileImageErrorMessage && (
+              <ErrorMessage role="alert">
+                {profileImageErrorMessage}
+              </ErrorMessage>
+            )}
+          </InteractiveField>
+
           <Field>
             <FieldLabel>닉네임</FieldLabel>
             <Input

@@ -202,6 +202,82 @@ export const FieldHint = styled.span`
   line-height: ${lineHeight.body};
 `;
 
+export const ProfilePhotoEditor = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${space.md};
+`;
+
+export const ProfilePhotoPreview = styled.img`
+  width: 80px;
+  height: 80px;
+  flex: 0 0 80px;
+  border: 1px solid ${color.border};
+  border-radius: ${radius.circle};
+  background: ${color.surfaceMuted};
+  object-fit: cover;
+`;
+
+export const ProfilePhotoFallback = styled.div`
+  display: grid;
+  width: 80px;
+  height: 80px;
+  flex: 0 0 80px;
+  border-radius: ${radius.circle};
+  background: ${color.primary};
+  color: #ffffff;
+  font-size: ${fontSize.detailTitle};
+  font-weight: ${fontWeight.extraBold};
+  place-items: center;
+`;
+
+export const ProfilePhotoActions = styled.div`
+  display: grid;
+  min-width: 0;
+  gap: ${space.xs};
+`;
+
+export const ProfilePhotoSelectButton = styled.label`
+  width: fit-content;
+  min-height: 40px;
+  padding: 0 ${space.md};
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid ${color.border};
+  border-radius: ${radius.control};
+  background: ${color.surface};
+  color: ${color.text};
+  cursor: pointer;
+  font-size: ${fontSize.bodySmall};
+  font-weight: ${fontWeight.bold};
+
+  &:focus-within {
+    border-color: ${color.primary};
+    box-shadow: ${focusRing};
+  }
+`;
+
+export const ProfilePhotoFileName = styled.span`
+  overflow: hidden;
+  color: ${color.textMuted};
+  font-size: ${fontSize.caption};
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+export const HiddenFileInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+`;
+
 export const Warning = styled.div`
   padding: ${space.md};
   border-radius: ${radius.control};
