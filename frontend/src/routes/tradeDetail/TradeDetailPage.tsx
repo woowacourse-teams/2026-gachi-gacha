@@ -4,7 +4,14 @@ import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetail
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
+import { TradeComments } from './components/TradeComments';
 import TradeDetail from './components/TradeDetail';
+import type {
+  TradeComment,
+  TradeCommentAction,
+  TradeCommentAuthor,
+  TradeCommentSubmission,
+} from './model/tradeComment';
 import ProductCard from '../trade/components/ProductCard';
 import type { TradeItem } from '../trade/model/tradeItem';
 
@@ -18,6 +25,12 @@ interface TradeDetailPageProps {
   hasMoreRelatedItems?: boolean;
   isLoadingRelatedItems?: boolean;
   onLoadMoreRelatedItems?: () => void;
+  comments?: TradeComment[];
+  commentViewer?: TradeCommentAuthor | null;
+  onSubmitComment?:
+    ((submission: TradeCommentSubmission) => Promise<void> | void) | undefined;
+  onCommentAction?:
+    ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }
 
 export default function TradeDetailPage({
@@ -27,6 +40,10 @@ export default function TradeDetailPage({
   hasMoreRelatedItems = false,
   isLoadingRelatedItems = false,
   onLoadMoreRelatedItems,
+  comments = [],
+  commentViewer = null,
+  onSubmitComment,
+  onCommentAction,
 }: TradeDetailPageProps) {
   return (
     <Page>
@@ -34,6 +51,13 @@ export default function TradeDetailPage({
 
       <Main>
         <TradeDetail detail={detail} action={action} />
+
+        <TradeComments
+          comments={comments}
+          viewer={commentViewer}
+          onSubmit={onSubmitComment}
+          onCommentAction={onCommentAction}
+        />
 
         {relatedItems.length > 0 && (
           <RelatedSection>
