@@ -121,11 +121,19 @@ describe('TradeComments', () => {
     expect(input).toHaveValue('지우지 말아주세요.');
   });
 
-  it('API 콜백이 없으면 입력과 등록을 비활성화한다', () => {
+  it('등록 기능이 준비 중이면 입력을 막고 사용자에게 안내한다', () => {
     render(<TradeComments viewer={COMMENT_VIEWER} />);
 
     expect(screen.getByRole('textbox', { name: '댓글 내용' })).toBeDisabled();
+    expect(screen.getByRole('textbox', { name: '댓글 내용' })).toHaveAttribute(
+      'placeholder',
+      '댓글 기능을 준비하고 있어요.',
+    );
     expect(screen.getByRole('button', { name: '등록' })).toBeDisabled();
     expect(screen.getByText('댓글 기능 준비 중')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '댓글 기능을 준비하고 있어요' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('아직 댓글이 없어요')).not.toBeInTheDocument();
   });
 });

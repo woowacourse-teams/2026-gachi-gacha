@@ -99,9 +99,7 @@ export function TradeComments({
             maxLength={MAX_COMMENT_LENGTH}
             disabled={!isReady}
             placeholder={
-              isReady
-                ? '댓글을 입력해주세요.'
-                : '댓글 API 연동 후 작성할 수 있어요.'
+              isReady ? '댓글을 입력해주세요.' : '댓글 기능을 준비하고 있어요.'
             }
             onChange={(event) => setDraft(event.target.value)}
           />
@@ -137,9 +135,13 @@ export function TradeComments({
         </CommentList>
       ) : (
         <EmptyState>
-          <EmptyTitle>아직 댓글이 없어요</EmptyTitle>
+          <EmptyTitle>
+            {isReady ? '아직 댓글이 없어요' : '댓글 기능을 준비하고 있어요'}
+          </EmptyTitle>
           <EmptyDescription>
-            첫 댓글로 교환 이야기를 시작해 보세요.
+            {isReady
+              ? '첫 댓글로 교환 이야기를 시작해 보세요.'
+              : '더 편하게 이야기를 나눌 수 있도록 준비 중이에요. 조금만 기다려 주세요.'}
           </EmptyDescription>
         </EmptyState>
       )}
@@ -500,8 +502,8 @@ const EmptyState = styled.div`
   text-align: center;
 `;
 
-const EmptyTitle = styled.strong`
-  display: block;
+const EmptyTitle = styled.h3`
+  margin: 0;
   color: ${color.text};
   font-size: ${fontSize.subheading};
 `;
