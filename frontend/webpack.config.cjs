@@ -112,6 +112,10 @@ module.exports = (_env, argv) => {
             from: path.resolve(__dirname, 'public/sitemap.xml'),
             to: 'sitemap.xml',
           },
+          {
+            from: path.resolve(__dirname, 'public/og-image.png'),
+            to: 'og-image.png',
+          },
         ],
       }),
 
