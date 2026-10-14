@@ -4,10 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
+      name="description"
+      content="원하는 가챠와 가까운 매장을 지도에서 찾고, 중복 가챠 교환 게시물을 확인해 보세요."
+    />
+    <meta
+      name="robots"
+      content="<%= htmlWebpackPlugin.options.searchEngineRobots %>"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="가치가챠" />
+    <meta property="og:title" content="가치가챠 | 가챠 매장 탐색과 교환" />
+    <meta
+      property="og:description"
+      content="원하는 가챠와 가까운 매장을 지도에서 찾고, 중복 가챠 교환 게시물을 확인해 보세요."
+    />
+    <meta
+      property="og:image"
+      content="https://gachigacha.kro.kr/og-image.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="가치가챠 로고" />
+    <% if (htmlWebpackPlugin.options.exposeNaverSiteVerification) { %>
+    <meta
       name="naver-site-verification"
       content="9a66400b630c84c29a8e05a77a2d90b16d1d0c90"
     />
-    <title>가치가챠</title>
+    <% } %>
+    <title>가치가챠 | 가챠 매장 탐색과 교환</title>
   </head>
   <body>
     <div id="root"></div>
