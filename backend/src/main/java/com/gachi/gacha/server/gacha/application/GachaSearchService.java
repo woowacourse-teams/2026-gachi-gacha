@@ -74,7 +74,7 @@ public class GachaSearchService {
         b.minimumShouldMatch("1");
     }
 
-    private void applyCategoryFilter(GachaSearchCondition c, Builder b) {
+    private void applyCategoryFilter(final GachaSearchCondition c, final Builder b) {
         if (c.categoryIds() == null || c.categoryIds().isEmpty()) {
             return;
         }
@@ -84,7 +84,7 @@ public class GachaSearchService {
                         .map(FieldValue::of).toList()))));
     }
 
-    private void applyGeoFilter(GachaSearchCondition c, Builder b) {
+    private void applyGeoFilter(final GachaSearchCondition c, final Builder b) {
         if (c.lat() == null || c.lon() == null) {
             return;
         }
