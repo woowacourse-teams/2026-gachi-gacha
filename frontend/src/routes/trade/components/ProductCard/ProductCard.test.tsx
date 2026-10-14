@@ -55,12 +55,12 @@ describe('ProductCard', () => {
       thumbnailUrl: 'https://example.com/trade-thumbnail.jpg',
     };
 
-    renderWithProviders(<ProductCard item={item} prioritizeImage />);
+    renderWithProviders(<ProductCard item={item} eagerImage />);
 
     const thumbnailImage = screen.getByRole('link').querySelector('img');
 
     expect(thumbnailImage).toHaveAttribute('loading', 'eager');
     expect(thumbnailImage).toHaveAttribute('decoding', 'async');
-    expect(thumbnailImage).toHaveAttribute('fetchpriority', 'high');
+    expect(thumbnailImage).not.toHaveAttribute('fetchpriority');
   });
 });

@@ -82,7 +82,6 @@ export default function TradeDetail({
                   alt={`${detail.title} 상품 사진 ${selectedImageIndex + 1}`}
                   loading="eager"
                   decoding="async"
-                  fetchPriority="high"
                 />
               </MainPhotoButton>
             ) : (

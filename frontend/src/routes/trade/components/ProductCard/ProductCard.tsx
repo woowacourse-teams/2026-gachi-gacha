@@ -11,13 +11,13 @@ import type { TradeItem } from '../../model/tradeItem';
 export interface ProductCardProps {
   item: TradeItem;
   source?: 'trade_list' | 'related_list' | 'mypage';
-  prioritizeImage?: boolean;
+  eagerImage?: boolean;
 }
 
 export default function ProductCard({
   item,
   source = 'trade_list',
-  prioritizeImage = false,
+  eagerImage = false,
 }: ProductCardProps) {
   const place =
     item.tradePlace?.name || item.tradePlace?.address || '교환 장소 협의';
@@ -39,9 +39,8 @@ export default function ProductCard({
           <Image
             src={item.thumbnailUrl}
             alt=""
-            loading={prioritizeImage ? 'eager' : 'lazy'}
+            loading={eagerImage ? 'eager' : 'lazy'}
             decoding="async"
-            fetchPriority={prioritizeImage ? 'high' : undefined}
           />
         ) : (
           <LogoImagePlaceholder />

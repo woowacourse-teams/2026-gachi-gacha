@@ -30,7 +30,7 @@ describe('TradeDetail', () => {
     expect(mainImage).toHaveAttribute('src', detail.imageUrls[0]);
     expect(mainImage).toHaveAttribute('loading', 'eager');
     expect(mainImage).toHaveAttribute('decoding', 'async');
-    expect(mainImage).toHaveAttribute('fetchpriority', 'high');
+    expect(mainImage).not.toHaveAttribute('fetchpriority');
 
     const thumbnailImages = [1, 2].map((index) =>
       screen

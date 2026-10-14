@@ -78,7 +78,7 @@ export default function TradePage({
                   <ProductCard
                     key={item.tradeId}
                     item={item}
-                    prioritizeImage={index < 5}
+                    eagerImage={index < 5}
                   />
                 ))}
               </ProductGrid>
