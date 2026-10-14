@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.common.web;
 
+import static java.util.regex.Pattern.quote;
+
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -28,7 +30,7 @@ public final class ClientIpMasker {
         }
 
         String delimiter = ip.contains(".") ? "." : ":";
-        String[] segments = ip.split(java.util.regex.Pattern.quote(delimiter));
+        String[] segments = ip.split(quote(delimiter));
         if (segments.length < VISIBLE_SEGMENTS) {
             return ip;
         }
