@@ -80,6 +80,9 @@ export default function TradeDetail({
                 <MainPhoto
                   src={selectedImageUrl}
                   alt={`${detail.title} 상품 사진 ${selectedImageIndex + 1}`}
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
                 />
               </MainPhotoButton>
             ) : (
@@ -131,7 +134,12 @@ export default function TradeDetail({
                   }
                   onClick={() => selectImage(index)}
                 >
-                  <ThumbnailPhoto src={imageUrl} alt="" />
+                  <ThumbnailPhoto
+                    src={imageUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </Thumbnail>
               ))}
             </ThumbnailList>
