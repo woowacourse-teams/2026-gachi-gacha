@@ -3,7 +3,7 @@ CREATE TABLE comment
     id                BIGSERIAL PRIMARY KEY,
     trade_id          BIGINT       NOT NULL REFERENCES trade (id) ON DELETE CASCADE,
     member_id         BIGINT       REFERENCES member (id),
-    nickname          VARCHAR(50)  NOT NULL,
+    nickname          VARCHAR(255) NOT NULL,
     ip                VARCHAR(20),
     profile_image_url VARCHAR(500),
     content           VARCHAR(500) NOT NULL,

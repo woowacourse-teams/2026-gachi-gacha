@@ -88,6 +88,25 @@ class CommentTest {
         }
 
         @Test
+        @DisplayName("회원 닉네임이 길어도(255자) 댓글을 만들 수 있다.")
+        void allowsLongMemberNickname() {
+            // member.nickname 이 VARCHAR(255) 라 긴 닉네임을 가진 회원이 실제로 존재할 수 있다.
+            // 댓글 쪽 상한이 더 작으면 그 회원은 댓글을 쓸 수 없게 된다.
+            String longNickname = "가".repeat(255);
+
+            Comment comment = Comment.ofMember(TRADE_ID, MEMBER_ID, longNickname, null, CONTENT);
+
+            assertThat(comment.getNickname()).isEqualTo(longNickname);
+        }
+
+        @Test
+        @DisplayName("닉네임이 255자를 넘으면 거부한다.")
+        void rejectsTooLongNickname() {
+            assertThatThrownBy(() -> Comment.ofMember(TRADE_ID, MEMBER_ID, "가".repeat(256), null, CONTENT))
+                    .isInstanceOf(InvalidCommentException.class);
+        }
+
+        @Test
         @DisplayName("회원 ID 가 없으면 거부한다.")
         void rejectsMissingMemberId() {
             assertThatThrownBy(() -> Comment.ofMember(TRADE_ID, null, "가챠러버", null, CONTENT))

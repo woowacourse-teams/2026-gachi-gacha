@@ -26,7 +26,7 @@ public class Comment extends BaseTimeEntity {
 
     public static final String DEFAULT_ANONYMOUS_NICKNAME = "루챠";
 
-    private static final int MAX_NICKNAME_LENGTH = 50;
+    private static final int MAX_NICKNAME_LENGTH = 255;
     private static final int MAX_CONTENT_LENGTH = 500;
 
     @Id
