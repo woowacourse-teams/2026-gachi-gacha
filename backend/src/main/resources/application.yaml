@@ -2,6 +2,11 @@ server:
   servlet:
     context-path: /api/v1
   forward-headers-strategy: framework
+  tomcat:
+    threads:
+      max: 200
+    max-connections: 8192
+    accept-count: 100
 spring:
   application:
     name: backend
@@ -14,10 +19,14 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 30000 # ms
   flyway:
     enabled: true
     locations: classpath:db/migration
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO}
     show-sql: true
