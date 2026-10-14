@@ -9,6 +9,7 @@ import com.gachi.gacha.server.gacha.application.dto.GachaSearchCondition;
 import com.gachi.gacha.server.gacha.application.dto.GachaWithStoreCountInfo;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaWithStoreCountResponse;
+import com.gachi.gacha.server.gacha.presentation.dto.SearchResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -73,7 +74,7 @@ public class GachaController {
     }
 
     @GetMapping("/search")
-    public List<GachaDocument> search(
+    public SearchResult<GachaDocument> search(
             @RequestParam(required = false) final String keyword,
             @RequestParam(required = false) final List<Long> categoryIds,
             @RequestParam(required = false) final Double lat,
