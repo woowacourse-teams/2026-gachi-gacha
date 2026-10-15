@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router';
 
 import { createTrade } from '@/domains/trade/api/createTrade';
 import { updateTrade } from '@/domains/trade/api/updateTrade';
+import {
+  compressTradeImages,
+  type TradeImageCompressionProgress,
+} from '@/domains/trade/compressTradeImages';
 import type { TradeCategory } from '@/domains/trade/tradeCategoryType';
 import type {
   CreateTradeRequest,
@@ -15,8 +19,14 @@ import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
 import StickyActionBar from '../StickyActionBar';
+import TradeSubmissionOverlay from '../TradeSubmissionOverlay';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
+
+type SubmissionState =
+  | { stage: 'idle' }
+  | ({ stage: 'compressing' } & TradeImageCompressionProgress)
+  | { stage: 'uploading' };
 
 export interface TradeFormInitialValues {
   title: string;
@@ -53,7 +63,10 @@ export default function TradeForm(props: TradeFormProps) {
   const [isPurchaseStoreDialogOpen, setIsPurchaseStoreDialogOpen] =
     useState(false);
   const [isPlaceDialogOpen, setIsPlaceDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionState, setSubmissionState] = useState<SubmissionState>({
+    stage: 'idle',
+  });
+  const isSubmitting = submissionState.stage !== 'idle';
   const [titleErrorMessage, setTitleErrorMessage] = useState<string | null>(
     null,
   );
@@ -183,7 +196,16 @@ export default function TradeForm(props: TradeFormProps) {
     setTitleErrorMessage(null);
     setSubmissionError(null);
     submittingRef.current = true;
-    setIsSubmitting(true);
+    setSubmissionState(
+      images.length > 0
+        ? {
+            stage: 'compressing',
+            percentage: 0,
+            completedCount: 0,
+            totalCount: images.length,
+          }
+        : { stage: 'uploading' },
+    );
 
     const analyticsMode = isEditMode ? 'edit' : 'create';
     const editingTradeId = props.mode === 'edit' ? props.tradeId : null;
@@ -199,10 +221,20 @@ export default function TradeForm(props: TradeFormProps) {
     });
 
     try {
+      const compressedImages = await compressTradeImages(images, (progress) => {
+        setSubmissionState({ stage: 'compressing', ...progress });
+      });
+
+      setSubmissionState({ stage: 'uploading' });
+
       const savedTrade =
         props.mode === 'edit'
-          ? await updateTrade({ tradeId: props.tradeId, request, images })
-          : await createTrade({ request, images });
+          ? await updateTrade({
+              tradeId: props.tradeId,
+              request,
+              images: compressedImages,
+            })
+          : await createTrade({ request, images: compressedImages });
 
       captureAnalyticsEvent('trade_form_completed', {
         mode: analyticsMode,
@@ -224,7 +256,7 @@ export default function TradeForm(props: TradeFormProps) {
       );
     } finally {
       submittingRef.current = false;
-      setIsSubmitting(false);
+      setSubmissionState({ stage: 'idle' });
     }
   }
 
@@ -506,6 +538,13 @@ export default function TradeForm(props: TradeFormProps) {
         submitLabel={isEditMode ? '수정하기' : '등록하기'}
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
       />
+
+      {submissionState.stage !== 'idle' && (
+        <TradeSubmissionOverlay
+          {...submissionState}
+          action={isEditMode ? 'edit' : 'create'}
+        />
+      )}
 
       <KakaoPlaceSearchDialog
         open={isPurchaseStoreDialogOpen}

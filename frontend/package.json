@@ -26,6 +26,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@stomp/stompjs": "7.3.0",
+    "browser-image-compression": "2.0.2",
     "posthog-js": "1.434.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",

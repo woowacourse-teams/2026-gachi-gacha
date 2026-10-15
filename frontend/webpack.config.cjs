@@ -116,6 +116,10 @@ module.exports = (_env, argv) => {
             from: path.resolve(__dirname, 'public/og-image.png'),
             to: 'og-image.png',
           },
+          {
+            from: require.resolve('browser-image-compression/dist/browser-image-compression.js'),
+            to: 'assets/workers/browser-image-compression.js',
+          },
         ],
       }),
 

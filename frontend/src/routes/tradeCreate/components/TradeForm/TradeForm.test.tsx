@@ -10,10 +10,45 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
+import {
+  compressTradeImages,
+  TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE,
+} from '@/domains/trade/compressTradeImages';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { server } from '@/test/server';
 
 import TradeForm from './TradeForm';
+
+jest.mock('@/domains/trade/compressTradeImages', () => ({
+  TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE:
+    '이미지를 최적화하지 못했습니다. 다시 시도해주세요.',
+  compressTradeImages: jest.fn(
+    async (
+      files: File[],
+      onProgress?: (progress: {
+        percentage: number;
+        completedCount: number;
+        totalCount: number;
+      }) => void,
+    ) => {
+      onProgress?.({
+        percentage: 100,
+        completedCount: files.length,
+        totalCount: files.length,
+      });
+
+      return files.map(
+        (file) =>
+          new File([file], file.name.replace(/\.[^.]+$/, '.webp'), {
+            type: 'image/webp',
+            lastModified: file.lastModified,
+          }),
+      );
+    },
+  ),
+}));
+
+const mockedCompressTradeImages = jest.mocked(compressTradeImages);
 
 jest.mock('@/features/placeSearch/KakaoPlaceSearchDialog', () => ({
   KakaoPlaceSearchDialog: ({
@@ -366,6 +401,104 @@ describe('TradeForm', () => {
     expect(
       await screen.findByText('등록된 거래 게시글 상세'),
     ).toBeInTheDocument();
+  });
+
+  it('등록 버튼을 누르면 압축 진행률을 보여준 뒤 등록 상태로 전환한다', async () => {
+    let finishCompression: () => void = () => undefined;
+    let finishRequest: () => void = () => undefined;
+    const requestDelay = new Promise<void>((resolve) => {
+      finishRequest = resolve;
+    });
+
+    mockedCompressTradeImages.mockImplementationOnce(
+      (files, onProgress) =>
+        new Promise<File[]>((resolve) => {
+          onProgress?.({
+            percentage: 42,
+            completedCount: 0,
+            totalCount: files.length,
+          });
+          finishCompression = () => {
+            resolve(
+              files.map(
+                (file) =>
+                  new File([file], 'kuromi.webp', { type: 'image/webp' }),
+              ),
+            );
+          };
+        }),
+    );
+    storeAuthTokens({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    server.use(
+      http.post('/api/v1/trades', async () => {
+        await requestDelay;
+
+        return HttpResponse.json(createTradeResponse(), { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    const { container } = renderTradeFormWithDetailRoute();
+
+    await completeRequiredFields(user, container);
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+
+    expect(
+      await screen.findByRole('dialog', { name: '이미지 최적화 중' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('progressbar', { name: '이미지 최적화 진행률' }),
+    ).toHaveAttribute('aria-valuenow', '42');
+    expect(screen.getByText('0/1개 처리 중')).toBeInTheDocument();
+
+    finishCompression();
+
+    expect(
+      await screen.findByRole('dialog', { name: '게시글 등록 중' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+
+    finishRequest();
+
+    expect(
+      await screen.findByText('등록된 거래 게시글 상세'),
+    ).toBeInTheDocument();
+  });
+
+  it('이미지 압축에 실패하면 요청하지 않고 작성 내용을 보존한다', async () => {
+    let requestCount = 0;
+
+    mockedCompressTradeImages.mockRejectedValueOnce(
+      new Error(TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE),
+    );
+    storeAuthTokens({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    server.use(
+      http.post('/api/v1/trades', () => {
+        requestCount += 1;
+
+        return HttpResponse.json(createTradeResponse(), { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    const { container } = renderTradeForm();
+
+    await completeRequiredFields(user, container);
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE,
+    );
+    expect(requestCount).toBe(0);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(
+      '쿠로미 피규어 교환해요',
+    );
+    expect(screen.getByRole('button', { name: '등록하기' })).toBeEnabled();
   });
 
   it('등록에 실패하면 오류를 보여주고 다시 제출할 수 있다', async () => {
