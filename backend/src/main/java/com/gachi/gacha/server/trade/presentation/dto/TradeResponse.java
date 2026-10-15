@@ -20,9 +20,10 @@ public record TradeResponse(
         LocalDateTime availableTime,
         List<String> imageUrls,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        long commentCount
 ) {
-    public static TradeResponse from(final TradeInfo tradeInfo) {
+    public static TradeResponse of(final TradeInfo tradeInfo, final long commentCount) {
         return TradeResponse.builder()
                 .tradeId(tradeInfo.tradeId())
                 .memberId(tradeInfo.memberId())
@@ -37,6 +38,7 @@ public record TradeResponse(
                 .imageUrls(tradeInfo.imageUrls())
                 .createdAt(tradeInfo.createdAt())
                 .updatedAt(tradeInfo.updatedAt())
+                .commentCount(commentCount)
                 .build();
     }
 }
