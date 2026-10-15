@@ -186,7 +186,7 @@ function CommentThread({ comment, onCommentAction }: CommentThreadProps) {
 
 function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
   const actions: Array<{ action: TradeCommentAction; label: string }> =
-    comment.isMine
+    comment.isMine && onCommentAction
       ? [
           { action: 'edit', label: '수정' },
           { action: 'delete', label: '삭제' },
@@ -211,7 +211,6 @@ function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
               <ActionButton
                 key={action}
                 type="button"
-                disabled={!onCommentAction}
                 onClick={() => onCommentAction?.(action, comment)}
               >
                 {label}
