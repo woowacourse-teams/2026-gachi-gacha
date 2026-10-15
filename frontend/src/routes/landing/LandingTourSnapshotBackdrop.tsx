@@ -9,6 +9,15 @@ import mobileMap from './assets/mobile-map.png';
 import mobileSearch from './assets/mobile-search.png';
 import mobileTrade from './assets/mobile-trade.png';
 import type { LandingTourStepIndex } from './LandingTour';
+import {
+  DESKTOP_SNAPSHOT_SIZE,
+  DESKTOP_TARGET_RECTS,
+  LANDING_TOUR_TARGETS,
+  MOBILE_SNAPSHOT_SIZE,
+  MOBILE_TARGET_RECTS,
+  type SnapshotSize,
+  type SnapshotTargetRect,
+} from './landingTourGeometry';
 
 const DESKTOP_SNAPSHOTS = [
   desktopTrade,
@@ -31,33 +40,94 @@ interface LandingTourSnapshotBackdropProps {
 export default function LandingTourSnapshotBackdrop({
   stepIndex,
 }: LandingTourSnapshotBackdropProps) {
-  const objectPosition = stepIndex === 0 ? 'center bottom' : 'center top';
+  const target = LANDING_TOUR_TARGETS[stepIndex];
 
   return (
-    <SnapshotPicture aria-hidden="true">
-      <source media="(max-width: 767px)" srcSet={MOBILE_SNAPSHOTS[stepIndex]} />
-      <SnapshotImage
-        src={DESKTOP_SNAPSHOTS[stepIndex]}
-        alt=""
-        draggable={false}
-        $objectPosition={objectPosition}
-      />
-    </SnapshotPicture>
+    <SnapshotViewport aria-hidden="true">
+      <SnapshotCanvas $alignBottom={stepIndex === 0}>
+        <picture>
+          <source
+            media="(max-width: 767px)"
+            srcSet={MOBILE_SNAPSHOTS[stepIndex]}
+          />
+          <SnapshotImage
+            src={DESKTOP_SNAPSHOTS[stepIndex]}
+            alt=""
+            draggable={false}
+          />
+        </picture>
+
+        <SnapshotTargetMarker
+          data-landing-tour-snapshot-target={target}
+          data-snapshot-layout="desktop"
+          $rect={DESKTOP_TARGET_RECTS[target]}
+          $snapshotSize={DESKTOP_SNAPSHOT_SIZE}
+        />
+        <SnapshotTargetMarker
+          data-landing-tour-snapshot-target={target}
+          data-snapshot-layout="mobile"
+          $isMobile
+          $rect={MOBILE_TARGET_RECTS[target]}
+          $snapshotSize={MOBILE_SNAPSHOT_SIZE}
+        />
+      </SnapshotCanvas>
+    </SnapshotViewport>
   );
 }
 
-const SnapshotPicture = styled.picture`
+const SnapshotViewport = styled.div`
   position: fixed;
   overflow: hidden;
   background: #ffffff;
   inset: 0;
 `;
 
-const SnapshotImage = styled.img<{ $objectPosition: string }>`
+const SnapshotCanvas = styled.div<{ $alignBottom: boolean }>`
+  position: absolute;
+  top: ${({ $alignBottom }) => ($alignBottom ? 'auto' : '0')};
+  bottom: ${({ $alignBottom }) => ($alignBottom ? '0' : 'auto')};
+  left: 50%;
+  width: max(100vw, 160vh);
+  height: max(100vh, 62.5vw);
+  transform: translateX(-50%);
+
+  picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 767px) {
+    width: max(100vw, 54.1667vh);
+    height: max(100vh, 184.6154vw);
+  }
+`;
+
+const SnapshotImage = styled.img`
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: ${({ $objectPosition }) => $objectPosition};
   user-select: none;
+`;
+
+const SnapshotTargetMarker = styled.span<{
+  $isMobile?: boolean;
+  $rect: SnapshotTargetRect;
+  $snapshotSize: SnapshotSize;
+}>`
+  position: absolute;
+  top: ${({ $rect, $snapshotSize }) =>
+    `${($rect.y / $snapshotSize.height) * 100}%`};
+  left: ${({ $rect, $snapshotSize }) =>
+    `${($rect.x / $snapshotSize.width) * 100}%`};
+  display: ${({ $isMobile }) => ($isMobile ? 'none' : 'block')};
+  width: ${({ $rect, $snapshotSize }) =>
+    `${($rect.width / $snapshotSize.width) * 100}%`};
+  height: ${({ $rect, $snapshotSize }) =>
+    `${($rect.height / $snapshotSize.height) * 100}%`};
+  pointer-events: none;
+
+  @media (max-width: 767px) {
+    display: ${({ $isMobile }) => ($isMobile ? 'block' : 'none')};
+  }
 `;

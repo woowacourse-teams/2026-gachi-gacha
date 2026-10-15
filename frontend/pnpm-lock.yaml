@@ -14,6 +14,9 @@ importers:
       '@emotion/styled':
         specifier: ^11.14.1
         version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8)
+      '@fontsource/gaegu':
+        specifier: 5.3.0
+        version: 5.3.0
       '@stomp/stompjs':
         specifier: 7.3.0
         version: 7.3.0
@@ -1082,6 +1085,9 @@ packages:
   '@eslint/plugin-kit@0.7.2':
     resolution: {integrity: sha512-+CNAzxglkrpNf/kKywqQfk74QjtceuOE7Qm+AF8miRvPF/wmmK5+OJOgVh3AVTT3RP2mH3+FOaxlE5v72owk0A==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@fontsource/gaegu@5.3.0':
+    resolution: {integrity: sha512-eSVEXay02/DAB5BtH/gpsujvpT78EjO6XVuNA1ap1G+xvr3zokU2HoLoaW+CfzykRuVgDQ2oZ1oe7VAlmGZt/A==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -6050,6 +6056,8 @@ snapshots:
     dependencies:
       '@eslint/core': 1.2.1
       levn: 0.4.1
+
+  '@fontsource/gaegu@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

@@ -165,4 +165,35 @@ describe('LandingTour', () => {
       );
     }
   });
+
+  it('브라우저가 렌더링한 스냅샷 기준점의 실제 위치를 우선 사용한다', () => {
+    setViewport(1440, 900, 17);
+    const marker = document.createElement('span');
+    marker.dataset.landingTourSnapshotTarget = 'create';
+    marker.getBoundingClientRect = () =>
+      ({
+        bottom: 785,
+        height: 90,
+        left: 1250,
+        right: 1340,
+        top: 695,
+        width: 90,
+        x: 1250,
+        y: 695,
+        toJSON: () => undefined,
+      }) satisfies DOMRect;
+    document.body.appendChild(marker);
+
+    const { container } = render(<LandingTour stepIndex={0} />);
+    const focusSpot = container.querySelector<HTMLElement>(
+      '[data-landing-tour-focus="create"]',
+    );
+
+    expect(focusSpot?.style.left).toBe('1250px');
+    expect(focusSpot?.style.top).toBe('695px');
+    expect(focusSpot?.style.width).toBe('90px');
+    expect(focusSpot?.style.height).toBe('90px');
+
+    marker.remove();
+  });
 });

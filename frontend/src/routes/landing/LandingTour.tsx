@@ -1,30 +1,38 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Global, css } from '@emotion/react';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import styled from '@emotion/styled';
 
 import { breakpoint, color, shadow } from '@/shared/styles/tokens';
 
+import {
+  DESKTOP_SNAPSHOT_SIZE,
+  DESKTOP_TARGET_RECTS,
+  LANDING_TOUR_TARGETS,
+  type LandingTourTarget,
+  MOBILE_SNAPSHOT_SIZE,
+  MOBILE_TARGET_RECTS,
+} from './landingTourGeometry';
+
 export const LANDING_TOUR_STEPS = [
   {
-    target: 'create',
+    target: LANDING_TOUR_TARGETS[0],
     label: '첫 번째 · 교환글 작성',
     instruction: '여기서 교환글을 작성해 봐요!',
     description: '사진과 원하는 교환 조건을 올리면 가까운 사람과 연결돼요.',
   },
   {
-    target: 'map',
+    target: LANDING_TOUR_TARGETS[1],
     label: '두 번째 · 지도 탐색',
     instruction: '원하는 가챠를 지도에서 찾아보세요!',
     description: '내 주변 매장과 원하는 가챠를 보유한 매장을 한눈에 살펴봐요.',
   },
   {
-    target: 'search',
+    target: LANDING_TOUR_TARGETS[2],
     label: '세 번째 · 키워드 검색',
     instruction: '원하는 가챠를 키워드로 검색해 보세요!',
     description: '가챠를 고르면 어느 매장이 보유 중인지 바로 확인할 수 있어요.',
   },
   {
-    target: 'chat',
+    target: LANDING_TOUR_TARGETS[3],
     label: '네 번째 · 채팅 확인',
     instruction: '교환글 작성자와 나눈 채팅을 한눈에 확인해 보세요!',
     description:
@@ -33,7 +41,6 @@ export const LANDING_TOUR_STEPS = [
 ] as const;
 
 export type LandingTourStepIndex = 0 | 1 | 2 | 3;
-type LandingTourTarget = (typeof LANDING_TOUR_STEPS)[number]['target'];
 
 interface ViewportSize {
   width: number;
@@ -47,49 +54,10 @@ interface HighlightRect {
   height: number;
 }
 
-interface SnapshotTargetRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 interface ArrowGeometry {
   curve: string;
   head: string;
 }
-
-const DESKTOP_SNAPSHOT_SIZE = { width: 1440, height: 900 } as const;
-const MOBILE_SNAPSHOT_SIZE = { width: 390, height: 720 } as const;
-
-function createCenteredTargetRect(
-  centerX: number,
-  centerY: number,
-  width: number,
-  height: number,
-): SnapshotTargetRect {
-  return {
-    x: centerX - width / 2,
-    y: centerY - height / 2,
-    width,
-    height,
-  };
-}
-
-// 스냅샷에서 측정한 실제 버튼 중심을 기준으로 여백을 대칭 적용합니다.
-const DESKTOP_TARGET_RECTS: Record<LandingTourTarget, SnapshotTargetRect> = {
-  create: createCenteredTargetRect(1371, 846, 84, 84),
-  map: createCenteredTargetRect(1153, 38, 98, 60),
-  search: createCenteredTargetRect(1241, 38, 100, 60),
-  chat: createCenteredTargetRect(1276, 37, 58, 58),
-};
-
-const MOBILE_TARGET_RECTS: Record<LandingTourTarget, SnapshotTargetRect> = {
-  create: createCenteredTargetRect(331, 676, 78, 78),
-  map: createCenteredTargetRect(141, 29, 72, 52),
-  search: createCenteredTargetRect(203, 29, 72, 52),
-  chat: createCenteredTargetRect(269, 29, 56, 56),
-};
 
 function readViewportSize(): ViewportSize {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -101,6 +69,70 @@ function readViewportSize(): ViewportSize {
     // 스크롤바 폭만큼 하이라이트가 오른쪽으로 밀리지 않습니다.
     width: document.documentElement.clientWidth || window.innerWidth,
     height: document.documentElement.clientHeight || window.innerHeight,
+  };
+}
+
+function calculateFallbackHighlight(
+  target: LandingTourTarget,
+  viewport: ViewportSize,
+): HighlightRect {
+  const isMobile = viewport.width <= 767;
+  const snapshotSize = isMobile ? MOBILE_SNAPSHOT_SIZE : DESKTOP_SNAPSHOT_SIZE;
+  const sourceRect = isMobile
+    ? MOBILE_TARGET_RECTS[target]
+    : DESKTOP_TARGET_RECTS[target];
+  const scale = Math.max(
+    viewport.width / snapshotSize.width,
+    viewport.height / snapshotSize.height,
+  );
+  const renderedWidth = snapshotSize.width * scale;
+  const renderedHeight = snapshotSize.height * scale;
+  const offsetX = (viewport.width - renderedWidth) / 2;
+  const offsetY = target === 'create' ? viewport.height - renderedHeight : 0;
+
+  return {
+    left: offsetX + sourceRect.x * scale,
+    top: offsetY + sourceRect.y * scale,
+    width: sourceRect.width * scale,
+    height: sourceRect.height * scale,
+  };
+}
+
+function readRenderedTargetRect(
+  target: LandingTourTarget,
+): HighlightRect | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const markers = document.querySelectorAll<HTMLElement>(
+    `[data-landing-tour-snapshot-target="${target}"]`,
+  );
+
+  for (const marker of markers) {
+    const rect = marker.getBoundingClientRect();
+
+    if (rect.width > 0 && rect.height > 0) {
+      return {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+    }
+  }
+
+  return null;
+}
+
+function readOverlayLayout(target: LandingTourTarget) {
+  const viewport = readViewportSize();
+
+  return {
+    viewport,
+    highlight:
+      readRenderedTargetRect(target) ??
+      calculateFallbackHighlight(target, viewport),
   };
 }
 
@@ -192,44 +224,36 @@ function useSnapshotOverlayLayout(target: LandingTourTarget): {
   highlight: HighlightRect;
   arrow: ArrowGeometry;
 } {
-  const [viewport, setViewport] = useState(readViewportSize);
+  const [layout, setLayout] = useState(() => readOverlayLayout(target));
 
-  useEffect(() => {
-    const handleResize = () => setViewport(readViewportSize());
+  useLayoutEffect(() => {
+    const updateLayout = () => setLayout(readOverlayLayout(target));
+    const markers = document.querySelectorAll<HTMLElement>(
+      `[data-landing-tour-snapshot-target="${target}"]`,
+    );
+    const resizeObserver =
+      typeof ResizeObserver === 'undefined'
+        ? null
+        : new ResizeObserver(updateLayout);
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    window.visualViewport?.addEventListener('resize', updateLayout);
+    markers.forEach((marker) => resizeObserver?.observe(marker));
+
+    return () => {
+      window.removeEventListener('resize', updateLayout);
+      window.visualViewport?.removeEventListener('resize', updateLayout);
+      resizeObserver?.disconnect();
+    };
+  }, [target]);
 
   return useMemo(() => {
-    const isMobile = viewport.width <= 767;
-    const snapshotSize = isMobile
-      ? MOBILE_SNAPSHOT_SIZE
-      : DESKTOP_SNAPSHOT_SIZE;
-    const sourceRect = isMobile
-      ? MOBILE_TARGET_RECTS[target]
-      : DESKTOP_TARGET_RECTS[target];
-    const scale = Math.max(
-      viewport.width / snapshotSize.width,
-      viewport.height / snapshotSize.height,
-    );
-    const renderedWidth = snapshotSize.width * scale;
-    const renderedHeight = snapshotSize.height * scale;
-    const offsetX = (viewport.width - renderedWidth) / 2;
-    const offsetY = target === 'create' ? viewport.height - renderedHeight : 0;
-    const highlight = {
-      left: offsetX + sourceRect.x * scale,
-      top: offsetY + sourceRect.y * scale,
-      width: sourceRect.width * scale,
-      height: sourceRect.height * scale,
-    };
-
     return {
-      viewport,
-      highlight,
-      arrow: createArrowGeometry(highlight, target, viewport),
+      ...layout,
+      arrow: createArrowGeometry(layout.highlight, target, layout.viewport),
     };
-  }, [target, viewport]);
+  }, [layout, target]);
 }
 
 interface LandingTourProps {
@@ -269,12 +293,6 @@ export default function LandingTour({
 
   return (
     <>
-      <Global
-        styles={css`
-          @import url('https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap');
-        `}
-      />
-
       <TourLayer
         role="dialog"
         aria-modal="true"
