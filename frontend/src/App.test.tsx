@@ -529,6 +529,13 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
           },
         }),
       ),
+      http.get('/api/v1/trades/15/comments', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { comments: [], totalCount: 0 },
+        }),
+      ),
     );
     const user = userEvent.setup();
 

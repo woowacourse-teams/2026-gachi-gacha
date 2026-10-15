@@ -201,6 +201,16 @@ export interface AnalyticsEventPropertiesMap {
     trade_id: number;
     is_authenticated: boolean;
   };
+  trade_comments_load_completed: {
+    trade_id: number;
+    outcome: AnalyticsOutcome;
+    comment_count: number;
+  };
+  trade_comment_submission_completed: {
+    trade_id: number;
+    author_type: 'member' | 'guest';
+    outcome: AnalyticsOutcome;
+  };
   chat_room_entry_completed: {
     trade_id: number;
     room_id: number | null;
