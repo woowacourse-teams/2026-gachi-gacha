@@ -4,9 +4,11 @@ import com.gachi.gacha.server.comment.application.dto.CommentCreateCommand;
 import com.gachi.gacha.server.comment.application.dto.CommentInfo;
 import com.gachi.gacha.server.comment.domain.Comment;
 import com.gachi.gacha.server.comment.domain.CommentJpaRepository;
+import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
+import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -33,7 +35,9 @@ public class CommentService {
             final String maskedIp,
             final CommentCreateCommand command
     ) {
-        tradeJpaRepository.getById(tradeId);
+        if (!tradeJpaRepository.existsById(tradeId)) {
+            throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
+        }
 
         Comment comment = (memberId == null)
                 ? Comment.ofAnonymous(tradeId, command.nickname(), maskedIp, command.content())
