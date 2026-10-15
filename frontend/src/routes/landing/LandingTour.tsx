@@ -62,28 +62,45 @@ interface ArrowGeometry {
 const DESKTOP_SNAPSHOT_SIZE = { width: 1440, height: 900 } as const;
 const MOBILE_SNAPSHOT_SIZE = { width: 390, height: 720 } as const;
 
+function createCenteredTargetRect(
+  centerX: number,
+  centerY: number,
+  width: number,
+  height: number,
+): SnapshotTargetRect {
+  return {
+    x: centerX - width / 2,
+    y: centerY - height / 2,
+    width,
+    height,
+  };
+}
+
+// 스냅샷에서 측정한 실제 버튼 중심을 기준으로 여백을 대칭 적용합니다.
 const DESKTOP_TARGET_RECTS: Record<LandingTourTarget, SnapshotTargetRect> = {
-  create: { x: 1328, y: 804, width: 84, height: 84 },
-  map: { x: 1104, y: 8, width: 96, height: 60 },
-  search: { x: 1188, y: 8, width: 100, height: 60 },
-  chat: { x: 1248, y: 10, width: 58, height: 58 },
+  create: createCenteredTargetRect(1371, 846, 84, 84),
+  map: createCenteredTargetRect(1153, 38, 98, 60),
+  search: createCenteredTargetRect(1241, 38, 100, 60),
+  chat: createCenteredTargetRect(1276, 37, 58, 58),
 };
 
 const MOBILE_TARGET_RECTS: Record<LandingTourTarget, SnapshotTargetRect> = {
-  create: { x: 292, y: 638, width: 78, height: 78 },
-  map: { x: 105, y: 3, width: 72, height: 54 },
-  search: { x: 168, y: 3, width: 72, height: 54 },
-  chat: { x: 242, y: 2, width: 56, height: 56 },
+  create: createCenteredTargetRect(331, 676, 78, 78),
+  map: createCenteredTargetRect(141, 29, 72, 52),
+  search: createCenteredTargetRect(203, 29, 72, 52),
+  chat: createCenteredTargetRect(269, 29, 56, 56),
 };
 
 function readViewportSize(): ViewportSize {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return DESKTOP_SNAPSHOT_SIZE;
   }
 
   return {
-    width: window.innerWidth,
-    height: window.innerHeight,
+    // fixed 요소가 실제로 차지하는 레이아웃 뷰포트를 사용해야
+    // 스크롤바 폭만큼 하이라이트가 오른쪽으로 밀리지 않습니다.
+    width: document.documentElement.clientWidth || window.innerWidth,
+    height: document.documentElement.clientHeight || window.innerHeight,
   };
 }
 
@@ -266,6 +283,7 @@ export default function LandingTour({
       >
         <FocusSpot
           aria-hidden="true"
+          data-landing-tour-focus={step.target}
           $isCircle={step.target === 'create' || step.target === 'chat'}
           style={{
             left: overlayLayout.highlight.left,
