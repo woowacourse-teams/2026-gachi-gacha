@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -12,7 +11,6 @@ import com.gachi.gacha.server.comment.application.dto.CommentCreateCommand;
 import com.gachi.gacha.server.comment.application.dto.CommentInfo;
 import com.gachi.gacha.server.comment.domain.Comment;
 import com.gachi.gacha.server.comment.domain.CommentJpaRepository;
-import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
@@ -47,12 +45,6 @@ class CommentServiceTest {
     @InjectMocks
     private CommentService commentService;
 
-    private ArgumentCaptor<Comment> captureSavedComment() {
-        ArgumentCaptor<Comment> captor = ArgumentCaptor.forClass(Comment.class);
-        given(commentJpaRepository.save(captor.capture())).willAnswer(it -> it.getArgument(0));
-        return captor;
-    }
-
     @Nested
     @DisplayName("댓글 작성")
     class Create {
@@ -60,6 +52,7 @@ class CommentServiceTest {
         @Test
         @DisplayName("비회원이면 마스킹된 IP 를 남기고 회원 정보는 조회하지 않는다.")
         void savesAnonymousComment() {
+            givenTradeExists();
             ArgumentCaptor<Comment> captor = captureSavedComment();
 
             CommentInfo info = commentService.createComment(
@@ -75,6 +68,7 @@ class CommentServiceTest {
         @Test
         @DisplayName("비회원이 이름을 지정하면 그 이름에 IP 를 붙인다.")
         void usesGivenNickname() {
+            givenTradeExists();
             captureSavedComment();
 
             CommentInfo info = commentService.createComment(
@@ -91,6 +85,7 @@ class CommentServiceTest {
                     .nickname("가챠러버")
                     .profileImageUrl("https://img/profile.jpg")
                     .build();
+            givenTradeExists();
             given(memberJpaRepository.getMemberById(MEMBER_ID)).willReturn(member);
             ArgumentCaptor<Comment> captor = captureSavedComment();
 
@@ -107,8 +102,7 @@ class CommentServiceTest {
         @Test
         @DisplayName("없는 게시글이면 저장하지 않는다.")
         void rejectsMissingTrade() {
-            willThrow(new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND))
-                    .given(tradeJpaRepository).getById(TRADE_ID);
+            given(tradeJpaRepository.existsById(TRADE_ID)).willReturn(false);
 
             assertThatThrownBy(() -> commentService.createComment(
                     TRADE_ID, null, MASKED_IP, new CommentCreateCommand(null, CONTENT)))
@@ -125,6 +119,7 @@ class CommentServiceTest {
         @Test
         @DisplayName("등록순으로 반환하며 회원·비회원 표시 이름이 각각 적용된다.")
         void returnsCommentsInOrder() {
+            givenTradeExists();
             given(commentJpaRepository.findAllByTradeIdOrderByIdAsc(TRADE_ID)).willReturn(List.of(
                     Comment.ofAnonymous(TRADE_ID, null, MASKED_IP, "첫 댓글"),
                     Comment.ofMember(TRADE_ID, MEMBER_ID, "가챠러버", null, "둘째 댓글")
@@ -139,11 +134,20 @@ class CommentServiceTest {
         @Test
         @DisplayName("없는 게시글이면 조회하지 않는다.")
         void rejectsMissingTrade() {
-            willThrow(new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND))
-                    .given(tradeJpaRepository).getById(TRADE_ID);
+            given(tradeJpaRepository.existsById(TRADE_ID)).willReturn(false);
 
             assertThatThrownBy(() -> commentService.findComments(TRADE_ID))
                     .isInstanceOf(TradeNotFoundException.class);
         }
+    }
+
+    private void givenTradeExists() {
+        given(tradeJpaRepository.existsById(TRADE_ID)).willReturn(true);
+    }
+
+    private ArgumentCaptor<Comment> captureSavedComment() {
+        ArgumentCaptor<Comment> captor = ArgumentCaptor.forClass(Comment.class);
+        given(commentJpaRepository.save(captor.capture())).willAnswer(it -> it.getArgument(0));
+        return captor;
     }
 }

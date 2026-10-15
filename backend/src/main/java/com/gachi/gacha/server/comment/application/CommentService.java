@@ -35,9 +35,7 @@ public class CommentService {
             final String maskedIp,
             final CommentCreateCommand command
     ) {
-        if (!tradeJpaRepository.existsById(tradeId)) {
-            throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
-        }
+        validateTradeExists(tradeId);
 
         Comment comment = (memberId == null)
                 ? Comment.ofAnonymous(tradeId, command.nickname(), maskedIp, command.content())
@@ -47,11 +45,17 @@ public class CommentService {
     }
 
     public List<CommentInfo> findComments(final Long tradeId) {
-        tradeJpaRepository.getById(tradeId);
+        validateTradeExists(tradeId);
 
         return commentJpaRepository.findAllByTradeIdOrderByIdAsc(tradeId).stream()
                 .map(CommentInfo::from)
                 .toList();
+    }
+
+    private void validateTradeExists(final Long tradeId) {
+        if (!tradeJpaRepository.existsById(tradeId)) {
+            throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
+        }
     }
 
     private Comment toMemberComment(final Long tradeId, final Long memberId, final CommentCreateCommand command) {
