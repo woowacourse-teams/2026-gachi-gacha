@@ -49,7 +49,7 @@ describe('compressTradeImages', () => {
         fileType: 'image/webp',
         initialQuality: 0.8,
         maxSizeMB: 1,
-        maxWidthOrHeight: 1600,
+        maxWidthOrHeight: 800,
         useWebWorker: true,
       }),
     );

@@ -2,7 +2,7 @@ import imageCompression from 'browser-image-compression';
 
 const WEBP_MIME_TYPE = 'image/webp';
 const MAX_COMPRESSED_SIZE_MB = 1;
-const MAX_WIDTH_OR_HEIGHT = 1600;
+const MAX_WIDTH_OR_HEIGHT = 800;
 const INITIAL_QUALITY = 0.8;
 const MAX_CONCURRENT_COMPRESSION_COUNT = 2;
 const WORKER_LIBRARY_URL = '/assets/workers/browser-image-compression.js';
