@@ -254,9 +254,9 @@ export default function TradeForm(props: TradeFormProps) {
           ? error.message
           : `거래 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
       );
+      setSubmissionState({ stage: 'idle' });
     } finally {
       submittingRef.current = false;
-      setSubmissionState({ stage: 'idle' });
     }
   }
 
