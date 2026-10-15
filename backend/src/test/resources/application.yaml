@@ -22,6 +22,8 @@ spring:
     mongodb:
       auto-index-creation: true
   jpa:
+    # 운영과 같이 OSIV를 끈 상태로 테스트한다. 컨트롤러·응답 변환 단계의 지연 로딩이 있으면 테스트가 실패한다.
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     show-sql: true
