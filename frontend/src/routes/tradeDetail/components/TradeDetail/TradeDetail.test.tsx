@@ -23,9 +23,25 @@ describe('TradeDetail', () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole('img', { name: `${detail.title} 상품 사진 1` }),
-    ).toHaveAttribute('src', detail.imageUrls[0]);
+    const mainImage = screen.getByRole('img', {
+      name: `${detail.title} 상품 사진 1`,
+    });
+
+    expect(mainImage).toHaveAttribute('src', detail.imageUrls[0]);
+    expect(mainImage).toHaveAttribute('loading', 'eager');
+    expect(mainImage).toHaveAttribute('decoding', 'async');
+    expect(mainImage).not.toHaveAttribute('fetchpriority');
+
+    const thumbnailImages = [1, 2].map((index) =>
+      screen
+        .getByRole('button', { name: `${index}번 사진 보기` })
+        .querySelector('img'),
+    );
+
+    thumbnailImages.forEach((thumbnailImage) => {
+      expect(thumbnailImage).toHaveAttribute('loading', 'lazy');
+      expect(thumbnailImage).toHaveAttribute('decoding', 'async');
+    });
 
     await user.click(screen.getByRole('button', { name: '다음 상품 사진' }));
 

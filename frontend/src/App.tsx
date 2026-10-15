@@ -22,6 +22,12 @@ const SearchRoute = lazy(async () => {
   return { default: routeModule.SearchRoute };
 });
 
+const LandingRoute = lazy(async () => {
+  const routeModule = await import('@/routes/landing/route');
+
+  return { default: routeModule.LandingRoute };
+});
+
 const StoreDetailRoute = lazy(async () => {
   const routeModule = await import('@/routes/stores.$storeId/route');
 
@@ -164,7 +170,7 @@ function CanonicalRoutes() {
   return (
     <>
       <Routes location={backgroundLocation ?? location}>
-        <Route path={ROOT_PATH} element={<RedirectToEntry />} />
+        <Route path={ROOT_PATH} element={<LandingRoute />} />
         <Route path={CATEGORY_SEARCH_PATH} element={<CategorySearchRoute />} />
         <Route path={MAP_PATH} element={<SearchRoute />} />
         <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
