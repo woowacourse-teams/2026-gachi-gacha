@@ -65,12 +65,12 @@ public class OauthController {
             final HttpSession session
     ) {
         String nonce = oauthNonceSessionManager.consume(session);
-        if (provider.equals(OauthProviderType.NAVER) && !nonce.equals(state)) {
-            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
-        }
         if (error != null) {
             log.warn("네이버 로그인 인증 실패: {} - {}", error, error_description);
             throw new OauthAuthenticationDeniedException(ErrorCode.OAUTH_AUTHENTICATION_DENIED);
+        }
+        if (provider.equals(OauthProviderType.NAVER) && (nonce == null || !nonce.equals(state))) {
+            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
         }
         LoginInfo info = oauthService.login(provider, code, nonce);
         TokenInfo tokens = tokenService.issue(info.memberId());
