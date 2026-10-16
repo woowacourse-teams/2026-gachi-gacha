@@ -14,7 +14,6 @@ import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import TradeDetailPage from './TradeDetailPage';
 import { useRelatedTrades } from './useRelatedTrades';
-import { useTradeComments } from './useTradeComments';
 import { useTradeDetail } from './useTradeDetail';
 
 export interface TradeDetailRouteProps {
@@ -24,17 +23,6 @@ export interface TradeDetailRouteProps {
 export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
   const { status: authStatus, member, memberId } = useAuthSession();
   const { state, retry } = useTradeDetail(tradeId);
-  const {
-    comments,
-    state: commentsState,
-    submit: submitComment,
-    retry: retryComments,
-  } = useTradeComments({
-    tradeId,
-    postAuthorId: state.status === 'success' ? state.data.memberId : null,
-    viewerMemberId: memberId,
-    isAuthenticated: authStatus === 'authenticated',
-  });
   const {
     items: relatedItems,
     hasMore: hasMoreRelatedItems,
@@ -98,18 +86,7 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
       hasMoreRelatedItems={hasMoreRelatedItems}
       isLoadingRelatedItems={isLoadingRelatedItems}
       onLoadMoreRelatedItems={loadMoreRelatedItems}
-      comments={comments}
-      commentsStatus={
-        commentsState.status === 'idle' ? 'loading' : commentsState.status
-      }
-      commentsErrorMessage={commentsState.errorMessage}
       commentViewer={commentViewer}
-      onSubmitComment={
-        authStatus === 'authenticated' || authStatus === 'guest'
-          ? submitComment
-          : undefined
-      }
-      onRetryComments={retryComments}
     />
   );
 }

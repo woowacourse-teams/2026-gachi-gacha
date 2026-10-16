@@ -1,7 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
@@ -41,7 +40,6 @@ module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
   const appEnvironment =
     process.env.APP_ENV ?? (isProduction ? 'production' : 'development');
-  const isSearchIndexable = appEnvironment === 'production';
 
   return {
     entry: path.resolve(__dirname, 'src/main.tsx'),
@@ -91,44 +89,6 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'public/index.html'),
-        searchEngineRobots: isSearchIndexable
-          ? 'index,follow'
-          : 'noindex,nofollow',
-        exposeNaverSiteVerification: isSearchIndexable,
-      }),
-
-      new CopyWebpackPlugin({
-        patterns: [
-          {
-            from: path.resolve(
-              __dirname,
-              isSearchIndexable
-                ? 'public/robots.production.txt'
-                : 'public/robots.non-production.txt',
-            ),
-            to: 'robots.txt',
-          },
-          {
-            from: path.resolve(__dirname, 'public/sitemap.xml'),
-            to: 'sitemap.xml',
-          },
-          {
-            from: path.resolve(__dirname, 'public/og-image.png'),
-            to: 'og-image.png',
-          },
-          {
-            from: require.resolve('browser-image-compression/dist/browser-image-compression.js'),
-            to: 'assets/workers/browser-image-compression.js',
-          },
-          {
-            from: require.resolve('@fontsource/gaegu/files/gaegu-korean-400-normal.woff2'),
-            to: 'assets/fonts/gaegu-korean-400-normal.woff2',
-          },
-          {
-            from: require.resolve('@fontsource/gaegu/files/gaegu-korean-700-normal.woff2'),
-            to: 'assets/fonts/gaegu-korean-700-normal.woff2',
-          },
-        ],
       }),
 
       new webpack.DefinePlugin({

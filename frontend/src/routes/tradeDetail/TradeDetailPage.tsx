@@ -26,12 +26,9 @@ interface TradeDetailPageProps {
   isLoadingRelatedItems?: boolean;
   onLoadMoreRelatedItems?: () => void;
   comments?: TradeComment[];
-  commentsStatus?: 'loading' | 'success' | 'error';
-  commentsErrorMessage?: string | null;
   commentViewer?: TradeCommentAuthor | null;
   onSubmitComment?:
     ((submission: TradeCommentSubmission) => Promise<void> | void) | undefined;
-  onRetryComments?: (() => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }
@@ -44,11 +41,8 @@ export default function TradeDetailPage({
   isLoadingRelatedItems = false,
   onLoadMoreRelatedItems,
   comments = [],
-  commentsStatus = 'success',
-  commentsErrorMessage = null,
   commentViewer = null,
   onSubmitComment,
-  onRetryComments,
   onCommentAction,
 }: TradeDetailPageProps) {
   return (
@@ -60,11 +54,8 @@ export default function TradeDetailPage({
 
         <TradeComments
           comments={comments}
-          commentsStatus={commentsStatus}
-          commentsErrorMessage={commentsErrorMessage}
           viewer={commentViewer}
           onSubmit={onSubmitComment}
-          onRetryComments={onRetryComments}
           onCommentAction={onCommentAction}
         />
 

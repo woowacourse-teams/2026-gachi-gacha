@@ -10,24 +10,6 @@ export interface ServiceReleaseNote {
 
 export const SERVICE_RELEASE_NOTES = [
   {
-    version: 'v1.5.0',
-    releasedAt: '2026-10-16',
-    releasedAtLabel: '2026년 10월 16일',
-    title: '처음 만나는 순간부터 거래까지 더 가볍게',
-    summary:
-      '처음 방문한 사용자도 가치가챠의 주요 기능을 쉽게 둘러보고, 더 빠르게 사진을 올리며 거래글에서 댓글로 소통할 수 있도록 개선했어요.',
-    highlights: [
-      '처음 방문하면 거래글 작성·지도·검색·채팅 기능을 차례로 소개하는 랜딩 투어를 확인할 수 있어요.',
-      '거래글 상세에서 회원과 비회원 모두 댓글을 등록순으로 읽고 작성할 수 있어요.',
-      '거래글 사진을 업로드 전에 WebP로 압축하고 진행 상태를 표시해 등록 과정을 더 편안하게 만들었어요.',
-      '목록과 상세 화면의 중요한 사진을 먼저 불러와 초기 화면을 더 빠르게 확인할 수 있어요.',
-      'iPhone Safari에서 거래 카드 썸네일 위에 빈 공간이 생기던 문제를 수정했어요.',
-      '검색 결과와 링크 공유에서 가치가챠를 더 잘 알아볼 수 있도록 검색·미리보기 정보를 보완했어요.',
-    ],
-    releaseUrl:
-      'https://github.com/woowacourse-teams/2026-gachi-gacha/releases/tag/v1.5.0',
-  },
-  {
     version: 'v1.4.0',
     releasedAt: '2026-10-13',
     releasedAtLabel: '2026년 10월 13일',
