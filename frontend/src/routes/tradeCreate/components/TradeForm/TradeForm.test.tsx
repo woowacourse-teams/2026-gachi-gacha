@@ -10,10 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
-import {
-  compressTradeImages,
-  TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE,
-} from '@/domains/trade/compressTradeImages';
+import { compressTradeImages } from '@/domains/trade/compressTradeImages';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { server } from '@/test/server';
 
@@ -49,6 +46,8 @@ jest.mock('@/domains/trade/compressTradeImages', () => ({
 }));
 
 const mockedCompressTradeImages = jest.mocked(compressTradeImages);
+const TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE =
+  '이미지를 최적화하지 못했습니다. 다시 시도해주세요.';
 
 jest.mock('@/features/placeSearch/KakaoPlaceSearchDialog', () => ({
   KakaoPlaceSearchDialog: ({

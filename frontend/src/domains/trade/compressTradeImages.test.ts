@@ -3,7 +3,6 @@ import imageCompression from 'browser-image-compression';
 
 import {
   compressTradeImages,
-  TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE,
   type TradeImageCompressionProgress,
 } from './compressTradeImages';
 
@@ -90,15 +89,89 @@ describe('compressTradeImages', () => {
     ).toBe(true);
   });
 
-  it('변환 결과가 WebP가 아니면 사용자용 오류로 실패한다', async () => {
+  it('Safari가 WebP 대신 PNG를 반환해도 실제 형식에 맞춰 압축 결과를 사용한다', async () => {
     mockedImageCompression.mockResolvedValueOnce(
       new File(['fallback'], 'kuromi.png', { type: 'image/png' }),
     );
 
-    await expect(
-      compressTradeImages([
-        new File(['image'], 'kuromi.png', { type: 'image/png' }),
-      ]),
-    ).rejects.toThrow(TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE);
+    const [compressedFile] = await compressTradeImages([
+      new File(['image'], 'kuromi.jpeg', {
+        type: 'image/jpeg',
+        lastModified: 10,
+      }),
+    ]);
+
+    expect(mockedImageCompression).toHaveBeenCalledTimes(1);
+    expect(compressedFile).toEqual(
+      expect.objectContaining({
+        name: 'kuromi.png',
+        type: 'image/png',
+        lastModified: 10,
+      }),
+    );
+  });
+
+  it('Worker 압축이 실패하면 원본 형식으로 메인 스레드에서 재시도한다', async () => {
+    const file = new File(['image'], 'kuromi.jpeg', {
+      type: 'image/jpeg',
+    });
+
+    mockedImageCompression
+      .mockRejectedValueOnce(new Error('Worker 압축 실패'))
+      .mockResolvedValueOnce(
+        new File(['compressed'], 'kuromi.jpeg', { type: 'image/jpeg' }),
+      );
+
+    const [compressedFile] = await compressTradeImages([file]);
+
+    expect(mockedImageCompression).toHaveBeenCalledTimes(2);
+    expect(mockedImageCompression).toHaveBeenNthCalledWith(
+      2,
+      file,
+      expect.objectContaining({
+        fileType: 'image/jpeg',
+        useWebWorker: false,
+      }),
+    );
+    expect(compressedFile).toEqual(
+      expect.objectContaining({ name: 'kuromi.jpg', type: 'image/jpeg' }),
+    );
+  });
+
+  it('Worker와 메인 스레드 압축이 모두 실패하면 검증된 원본을 사용한다', async () => {
+    const file = new File(['image'], 'kuromi.png', { type: 'image/png' });
+
+    mockedImageCompression.mockRejectedValue(new Error('압축 실패'));
+
+    const [compressedFile] = await compressTradeImages([file]);
+
+    expect(mockedImageCompression).toHaveBeenCalledTimes(2);
+    expect(compressedFile).toBe(file);
+  });
+
+  it('iOS의 캔버스 메모리를 보호하기 위해 여러 이미지를 순차 압축한다', async () => {
+    let activeCompressionCount = 0;
+    let maximumActiveCompressionCount = 0;
+
+    mockedImageCompression.mockImplementation((async (file: File) => {
+      activeCompressionCount += 1;
+      maximumActiveCompressionCount = Math.max(
+        maximumActiveCompressionCount,
+        activeCompressionCount,
+      );
+
+      await Promise.resolve();
+      activeCompressionCount -= 1;
+
+      return new File([file], file.name, { type: 'image/webp' });
+    }) as unknown as typeof imageCompression);
+
+    await compressTradeImages([
+      new File(['first'], 'first.png', { type: 'image/png' }),
+      new File(['second'], 'second.png', { type: 'image/png' }),
+      new File(['third'], 'third.png', { type: 'image/png' }),
+    ]);
+
+    expect(maximumActiveCompressionCount).toBe(1);
   });
 });
