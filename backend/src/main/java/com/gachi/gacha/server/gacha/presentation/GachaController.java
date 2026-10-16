@@ -9,7 +9,7 @@ import com.gachi.gacha.server.gacha.application.dto.GachaSearchCondition;
 import com.gachi.gacha.server.gacha.application.dto.GachaWithStoreCountInfo;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaResponse;
 import com.gachi.gacha.server.gacha.presentation.dto.GachaWithStoreCountResponse;
-import com.gachi.gacha.server.gacha.presentation.dto.SearchResult;
+import com.gachi.gacha.server.common.infra.elastic.dto.SearchResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

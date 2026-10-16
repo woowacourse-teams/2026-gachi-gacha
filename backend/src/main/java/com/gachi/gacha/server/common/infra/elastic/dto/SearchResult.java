@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.gacha.presentation.dto;
+package com.gachi.gacha.server.common.infra.elastic.dto;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.common.config;
+package com.gachi.gacha.server.common.infra.elastic.config;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;

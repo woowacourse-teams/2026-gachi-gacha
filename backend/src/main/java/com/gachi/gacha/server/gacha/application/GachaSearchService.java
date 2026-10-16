@@ -10,7 +10,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.gachi.gacha.server.gacha.application.dto.GachaDocument;
 import com.gachi.gacha.server.gacha.application.dto.GachaSearchCondition;
-import com.gachi.gacha.server.gacha.presentation.dto.SearchResult;
+import com.gachi.gacha.server.common.infra.elastic.dto.SearchResult;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class GachaSearchService {
 
     private final ElasticsearchClient esClient;
 
-    @Value("${elasticsearch.index}")
+    @Value("${elasticsearch.index.gacha}")
     private String INDEX;
 
     public SearchResult<GachaDocument> search(final GachaSearchCondition c) throws IOException {
@@ -69,8 +69,8 @@ public class GachaSearchService {
                 .field("name.ngram")
                 .query(c.keyword())
                 .operator(Operator.And)
-                .boost(1.0f))
-        );
+                .boost(1.0f)));
+
         b.minimumShouldMatch("1");
     }
 
