@@ -3,7 +3,10 @@ package com.gachi.gacha.server.trade.presentation;
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.config.SwaggerConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
+import com.gachi.gacha.server.common.infra.elastic.dto.SearchResult;
+import com.gachi.gacha.server.trade.application.TradeSearchService;
 import com.gachi.gacha.server.trade.application.TradeService;
+import com.gachi.gacha.server.trade.application.dto.TradeDocument;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
@@ -24,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -57,6 +61,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class TradeController {
 
     private final TradeService tradeService;
+    private final TradeSearchService tradeSearchService;
     private final TradeCommentService tradeCommentService;
 
     @Operation(summary = "교환 게시글 등록")
@@ -184,5 +189,15 @@ public class TradeController {
         tradeService.removeTrade(memberId, tradeId);
 
         return BaseResponse.deleted(null);
+    }
+
+    @GetMapping("/search")
+    public SearchResult<TradeDocument> searchTrades(
+            @RequestParam(required = false) final String keyword,
+            @RequestParam(required = false) final List<Long> categoryIds,
+            @RequestParam(required = false) final TradeStatus status,
+            @RequestParam(defaultValue = "0") final int page,
+            @RequestParam(defaultValue = "20") final int size) throws IOException {
+        return tradeSearchService.search(new TradeSearchCondition(keyword, categoryIds, status, page, Math.min(size, 50)));
     }
 }
