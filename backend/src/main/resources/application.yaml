@@ -102,4 +102,7 @@ springdoc:
 elasticsearch:
   url: ${ELASTIC_SEARCH_URL}
   api-key: ${ELASTIC_SEARCH_API_KEY}
-  index: ${ELASTIC_INDEX}
+  index:
+    gacha: ${ELASTIC_GACHA_INDEX}
+    trade: ${ELASTIC_TRADE_INDEX}
+
