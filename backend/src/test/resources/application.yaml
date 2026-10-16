@@ -56,4 +56,8 @@ cors:
 elasticsearch:
   url: localhost:8080
   api-key: elastic-key
-  index: index
+  index:
+    gacha: index
+    trade: index
+  init:
+    enabled: false
