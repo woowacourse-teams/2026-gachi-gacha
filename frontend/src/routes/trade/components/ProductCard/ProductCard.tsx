@@ -102,7 +102,6 @@ const Thumbnail = styled.div`
   display: grid;
   width: 100%;
   max-width: 205px;
-  height: auto;
   aspect-ratio: 205 / 205;
   margin-bottom: 12px;
   overflow: hidden;
@@ -113,8 +112,12 @@ const Thumbnail = styled.div`
 `;
 
 const Image = styled.img`
+  display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
 `;
 
