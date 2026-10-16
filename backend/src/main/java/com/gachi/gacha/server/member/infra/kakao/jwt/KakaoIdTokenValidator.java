@@ -3,7 +3,7 @@ package com.gachi.gacha.server.member.infra.kakao.jwt;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
-import com.auth0.jwk.UrlJwkProvider;
+import com.auth0.jwk.JwkProviderBuilder;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
@@ -11,11 +11,12 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.infra.kakao.exception.UnAuthorizationKakaoTokenException;
 import com.gachi.gacha.server.member.infra.kakao.KakaoOauthConfig;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
+import java.time.Duration;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+@Slf4j
 @Component
 public class KakaoIdTokenValidator {
 
@@ -24,9 +25,11 @@ public class KakaoIdTokenValidator {
     private final JwkProvider jwkProvider;
     private final KakaoOauthConfig kakaoOauthConfig;
 
-    public KakaoIdTokenValidator(final KakaoOauthConfig kakaoOauthConfig) throws MalformedURLException {
+    public KakaoIdTokenValidator(final KakaoOauthConfig kakaoOauthConfig) {
         this.kakaoOauthConfig = kakaoOauthConfig;
-        this.jwkProvider = new UrlJwkProvider(new URL(ISSUER + "/.well-known/jwks.json"));
+        this.jwkProvider = new JwkProviderBuilder(ISSUER)
+                .cached(5, Duration.ofHours(10))
+                .build();
     }
 
     public KakaoIdTokenClaims validate(final String idToken, final String expectedNonce) {
@@ -45,6 +48,8 @@ public class KakaoIdTokenValidator {
 
             return KakaoIdTokenClaims.from(decoded);
         } catch (JwkException | JWTVerificationException e) {
+            log.warn("카카오 ID Token 검증 실패: {} - {}",
+                    e.getClass().getSimpleName(), e.getMessage());
             throw new UnAuthorizationKakaoTokenException(ErrorCode.UNAUTHORIZATION_TOKEN);
         }
     }

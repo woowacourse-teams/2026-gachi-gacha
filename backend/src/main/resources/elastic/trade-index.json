@@ -1,0 +1,63 @@
+{
+  "settings": {
+    "analysis": {
+      "char_filter": {
+        "remove_space": { "type": "pattern_replace", "pattern": "\\s+", "replacement": "" }
+      },
+      "tokenizer": {
+        "nori_discard": { "type": "nori_tokenizer", "decompound_mode": "discard" },
+        "ngram_tokenizer": {
+          "type": "ngram", "min_gram": 2, "max_gram": 3,
+          "token_chars": ["letter", "digit"]
+        }
+      },
+      "filter": {
+        "nori_pos": { "type": "nori_part_of_speech" },
+        "gacha_synonym": {
+          "type": "synonym_graph",
+          "synonyms_set": "gacha-synonyms",
+          "updateable": true
+        }
+      },
+      "analyzer": {
+        "korean": {
+          "type": "custom",
+          "tokenizer": "nori_discard",
+          "filter": ["nori_pos", "lowercase"]
+        },
+        "korean_synonym": {
+          "type": "custom",
+          "tokenizer": "nori_discard",
+          "filter": ["lowercase", "gacha_synonym", "nori_pos"]
+        },
+        "korean_ngram": {
+          "type": "custom",
+          "char_filter": ["remove_space"],
+          "tokenizer": "ngram_tokenizer",
+          "filter": ["lowercase"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "tradeId": { "type": "long" },
+      "memberId": { "type": "long" },
+      "title": {
+        "type": "text", "analyzer": "korean", "search_analyzer": "korean_synonym",
+        "fields": {
+          "ngram": { "type": "text", "analyzer": "korean_ngram", "search_analyzer": "korean_ngram" }
+        }
+      },
+      "status":       { "type": "keyword" },
+      "thumbnailUrl": { "type": "keyword", "index": false },
+      "categoryIds":  { "type": "long" },
+      "categories": {
+        "type": "text", "analyzer": "korean", "search_analyzer": "korean_synonym",
+        "fields": { "keyword": { "type": "keyword" } }
+      },
+      "createdAt":     { "type": "date" }
+    }
+  }
+}

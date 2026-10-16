@@ -52,6 +52,8 @@ public class KakaoMemberClient implements OauthMemberClient {
         try {
             return kakaoApiClient.fetchToken(tokenRequestParams(authCode));
         } catch (WebClientResponseException.BadRequest e) {
+            log.warn("카카오 token 교환 요청 거부: status={}, response={}",
+                    e.getStatusCode(), e.getResponseBodyAsString());
             throw new KakaoTokenRequestFailedException(ErrorCode.KAKAO_TOKEN_REQUEST_FAILED);
         } catch (WebClientResponseException.Unauthorized e) {
             log.error("카카오 client 인증 실패, 설정을 확인하세요: {}", e.getResponseBodyAsString());
