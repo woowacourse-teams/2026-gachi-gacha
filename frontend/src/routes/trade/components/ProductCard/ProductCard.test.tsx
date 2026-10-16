@@ -13,7 +13,6 @@ describe('ProductCard', () => {
       title: '두 줄 이상이 될 수 있는 긴 교환 게시글 제목입니다',
       categories: ['프로젝트 세카이 컬러풀 스테이지', '하츠네 미쿠'],
       status: 'IN_PROGRESS' as const,
-      thumbnailUrl: 'https://example.com/trade-thumbnail.jpg',
     };
 
     renderWithProviders(<ProductCard item={item} />);
@@ -24,10 +23,7 @@ describe('ProductCard', () => {
     expect(screen.getByText('교환 진행 중')).toBeInTheDocument();
 
     const card = screen.getByRole('link');
-    const thumbnailImage = card.querySelector(
-      `img[src="${item.thumbnailUrl}"]`,
-    );
-    const thumbnail = thumbnailImage?.parentElement;
+    const thumbnail = card.querySelector('img')?.parentElement;
     const title = screen.getByRole('heading', {
       name: item.title,
     });
@@ -35,8 +31,6 @@ describe('ProductCard', () => {
     const tradeInfo = screen.getByText('신당역').parentElement;
 
     expect(thumbnail).toHaveStyle({ marginBottom: '12px' });
-    expect(thumbnailImage).toHaveAttribute('loading', 'lazy');
-    expect(thumbnailImage).toHaveAttribute('decoding', 'async');
     expect(primaryInfo).toContainElement(
       screen.getByText(item.categories.join(' · ')),
     );
@@ -47,20 +41,5 @@ describe('ProductCard', () => {
       paddingTop: '12px',
       gap: '12px',
     });
-  });
-
-  it('우선 로딩 대상 이미지를 즉시 로딩한다', () => {
-    const item = {
-      ...TRADE_ITEMS[0]!,
-      thumbnailUrl: 'https://example.com/trade-thumbnail.jpg',
-    };
-
-    renderWithProviders(<ProductCard item={item} eagerImage />);
-
-    const thumbnailImage = screen.getByRole('link').querySelector('img');
-
-    expect(thumbnailImage).toHaveAttribute('loading', 'eager');
-    expect(thumbnailImage).toHaveAttribute('decoding', 'async');
-    expect(thumbnailImage).not.toHaveAttribute('fetchpriority');
   });
 });

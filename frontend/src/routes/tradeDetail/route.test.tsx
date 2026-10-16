@@ -37,13 +37,6 @@ function useTradeDetailHandlers() {
         data: TRADE_DETAIL,
       }),
     ),
-    http.get(`/api/v1/trades/${TRADE_DETAIL.tradeId}/comments`, () =>
-      HttpResponse.json({
-        code: 'C000',
-        message: '정상',
-        data: { comments: [], totalCount: 0 },
-      }),
-    ),
     http.get('/api/v1/trades', () =>
       HttpResponse.json({
         code: 'C000',
@@ -104,109 +97,6 @@ describe('TradeDetailRoute', () => {
     expect(
       screen.queryByRole('link', { name: '수정하기' }),
     ).not.toBeInTheDocument();
-  });
-
-  it('서버가 제공한 등록순으로 회원·비회원 댓글을 표시한다', async () => {
-    useTradeDetailHandlers();
-    server.use(
-      http.get(`/api/v1/trades/${TRADE_DETAIL.tradeId}/comments`, () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            comments: [
-              {
-                commentId: 1,
-                memberId: null,
-                nickname: '루챠-118.44',
-                profileImageUrl: null,
-                content: '먼저 작성한 댓글',
-                createdAt: '2026-10-15T10:00:00',
-              },
-              {
-                commentId: 2,
-                memberId: TRADE_DETAIL.memberId,
-                nickname: '가챠러 민지',
-                profileImageUrl: null,
-                content: '나중에 작성한 댓글',
-                createdAt: '2026-10-15T10:01:00',
-              },
-            ],
-            totalCount: 2,
-          },
-        }),
-      ),
-    );
-
-    renderWithProviders(<TradeDetailRoute tradeId={TRADE_DETAIL.tradeId} />, {
-      initialAccessToken: null,
-    });
-
-    const commentList = await screen.findByRole('region', {
-      name: '댓글 목록',
-    });
-    const commentArticles = within(commentList).getAllByRole('article');
-
-    expect(
-      within(commentArticles[0]!).getByText('먼저 작성한 댓글'),
-    ).toBeInTheDocument();
-    expect(
-      within(commentArticles[1]!).getByText('나중에 작성한 댓글'),
-    ).toBeInTheDocument();
-    expect(within(commentArticles[1]!).getByText('작성자')).toBeInTheDocument();
-  });
-
-  it('비회원 댓글을 등록하고 서버가 만든 IP 포함 표시명을 바로 보여준다', async () => {
-    const user = userEvent.setup();
-    let requestBody: unknown;
-
-    useTradeDetailHandlers();
-    server.use(
-      http.post(
-        `/api/v1/trades/${TRADE_DETAIL.tradeId}/comments`,
-        async ({ request }) => {
-          requestBody = await request.json();
-
-          return HttpResponse.json(
-            {
-              code: 'C001',
-              message: '생성',
-              data: {
-                commentId: 1,
-                memberId: null,
-                nickname: '홍길동-118.44',
-                profileImageUrl: null,
-                content: '교환하고 싶어요.',
-                createdAt: '2026-10-15T10:00:00',
-              },
-            },
-            { status: 201 },
-          );
-        },
-      ),
-    );
-
-    renderWithProviders(<TradeDetailRoute tradeId={TRADE_DETAIL.tradeId} />, {
-      initialAccessToken: null,
-    });
-
-    await screen.findByRole('heading', { name: '아직 댓글이 없어요' });
-    await user.type(
-      screen.getByRole('textbox', { name: '비회원 닉네임' }),
-      '홍길동',
-    );
-    await user.type(
-      screen.getByRole('textbox', { name: '댓글 내용' }),
-      '교환하고 싶어요.',
-    );
-    await user.click(screen.getByRole('button', { name: '등록' }));
-
-    expect(await screen.findByText('홍길동-118.44')).toBeInTheDocument();
-    expect(screen.getByText('교환하고 싶어요.')).toBeInTheDocument();
-    expect(requestBody).toEqual({
-      nickname: '홍길동',
-      content: '교환하고 싶어요.',
-    });
   });
 });
 

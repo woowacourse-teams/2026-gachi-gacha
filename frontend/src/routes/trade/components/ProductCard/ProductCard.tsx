@@ -11,13 +11,11 @@ import type { TradeItem } from '../../model/tradeItem';
 export interface ProductCardProps {
   item: TradeItem;
   source?: 'trade_list' | 'related_list' | 'mypage';
-  eagerImage?: boolean;
 }
 
 export default function ProductCard({
   item,
   source = 'trade_list',
-  eagerImage = false,
 }: ProductCardProps) {
   const place =
     item.tradePlace?.name || item.tradePlace?.address || '교환 장소 협의';
@@ -36,12 +34,7 @@ export default function ProductCard({
     >
       <Thumbnail>
         {item.thumbnailUrl ? (
-          <Image
-            src={item.thumbnailUrl}
-            alt=""
-            loading={eagerImage ? 'eager' : 'lazy'}
-            decoding="async"
-          />
+          <Image src={item.thumbnailUrl} alt="" />
         ) : (
           <LogoImagePlaceholder />
         )}
@@ -102,6 +95,7 @@ const Thumbnail = styled.div`
   display: grid;
   width: 100%;
   max-width: 205px;
+  height: auto;
   aspect-ratio: 205 / 205;
   margin-bottom: 12px;
   overflow: hidden;
@@ -112,12 +106,8 @@ const Thumbnail = styled.div`
 `;
 
 const Image = styled.img`
-  display: block;
   width: 100%;
-  height: auto;
-  min-width: 0;
-  min-height: 0;
-  aspect-ratio: 1 / 1;
+  height: 100%;
   object-fit: cover;
 `;
 

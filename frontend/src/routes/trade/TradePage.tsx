@@ -74,12 +74,8 @@ export default function TradePage({
           ) : items.length > 0 ? (
             <>
               <ProductGrid>
-                {items.map((item, index) => (
-                  <ProductCard
-                    key={item.tradeId}
-                    item={item}
-                    eagerImage={index < 5}
-                  />
+                {items.map((item) => (
+                  <ProductCard key={item.tradeId} item={item} />
                 ))}
               </ProductGrid>
               {loadMoreError && (

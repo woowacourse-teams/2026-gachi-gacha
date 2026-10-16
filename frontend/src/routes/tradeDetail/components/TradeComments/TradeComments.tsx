@@ -25,23 +25,17 @@ const MAX_GUEST_NICKNAME_LENGTH = 20;
 
 interface TradeCommentsProps {
   comments?: TradeComment[];
-  commentsStatus?: 'loading' | 'success' | 'error';
-  commentsErrorMessage?: string | null;
   viewer?: TradeCommentAuthor | null;
   onSubmit?:
     ((submission: TradeCommentSubmission) => Promise<void> | void) | undefined;
-  onRetryComments?: (() => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
 }
 
 export function TradeComments({
   comments = [],
-  commentsStatus = 'success',
-  commentsErrorMessage = null,
   viewer = null,
   onSubmit,
-  onRetryComments,
   onCommentAction,
 }: TradeCommentsProps) {
   const [draft, setDraft] = useState('');
@@ -129,22 +123,7 @@ export function TradeComments({
         </ComposerBody>
       </Composer>
 
-      {commentsStatus === 'loading' ? (
-        <EmptyState aria-live="polite">
-          <EmptyTitle>댓글을 불러오고 있어요</EmptyTitle>
-          <EmptyDescription>잠시만 기다려 주세요.</EmptyDescription>
-        </EmptyState>
-      ) : commentsStatus === 'error' ? (
-        <EmptyState role="alert">
-          <EmptyTitle>댓글을 불러오지 못했어요</EmptyTitle>
-          <EmptyDescription>
-            {commentsErrorMessage ?? '잠시 후 다시 시도해 주세요.'}
-          </EmptyDescription>
-          <RetryButton type="button" onClick={onRetryComments}>
-            다시 시도
-          </RetryButton>
-        </EmptyState>
-      ) : comments.length > 0 ? (
+      {comments.length > 0 ? (
         <CommentList role="region" aria-label="댓글 목록">
           {comments.map((comment) => (
             <CommentThread
@@ -186,7 +165,7 @@ function CommentThread({ comment, onCommentAction }: CommentThreadProps) {
 
 function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
   const actions: Array<{ action: TradeCommentAction; label: string }> =
-    comment.isMine && onCommentAction
+    comment.isMine
       ? [
           { action: 'edit', label: '수정' },
           { action: 'delete', label: '삭제' },
@@ -211,6 +190,7 @@ function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
               <ActionButton
                 key={action}
                 type="button"
+                disabled={!onCommentAction}
                 onClick={() => onCommentAction?.(action, comment)}
               >
                 {label}
@@ -532,26 +512,4 @@ const EmptyDescription = styled.p`
   margin: ${space.xs} 0 0;
   color: ${color.textMuted};
   font-size: ${fontSize.bodySmall};
-`;
-
-const RetryButton = styled.button`
-  min-height: 40px;
-  margin-top: ${space.md};
-  padding: 0 ${space.lg};
-  border: 1px solid ${color.border};
-  border-radius: ${radius.control};
-  background: ${color.surface};
-  color: ${color.text};
-  font-weight: ${fontWeight.bold};
-  cursor: pointer;
-
-  &:hover {
-    border-color: ${color.primary};
-    color: ${color.primary};
-  }
-
-  &:focus-visible {
-    outline: 0;
-    box-shadow: ${focusRing};
-  }
 `;
