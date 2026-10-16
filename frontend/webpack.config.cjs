@@ -117,10 +117,6 @@ module.exports = (_env, argv) => {
             to: 'og-image.png',
           },
           {
-            from: require.resolve('browser-image-compression/dist/browser-image-compression.js'),
-            to: 'assets/workers/browser-image-compression.js',
-          },
-          {
             from: require.resolve('@fontsource/gaegu/files/gaegu-korean-400-normal.woff2'),
             to: 'assets/fonts/gaegu-korean-400-normal.woff2',
           },

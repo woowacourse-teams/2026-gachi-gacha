@@ -1,11 +1,10 @@
 import imageCompression from 'browser-image-compression';
 
-const WEBP_MIME_TYPE = 'image/webp';
+const PNG_MIME_TYPE = 'image/png';
 const MAX_COMPRESSED_SIZE_MB = 1;
 const MAX_WIDTH_OR_HEIGHT = 800;
 const INITIAL_QUALITY = 0.8;
 const MAX_CONCURRENT_COMPRESSION_COUNT = 2;
-const WORKER_LIBRARY_URL = '/assets/workers/browser-image-compression.js';
 
 export const TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE =
   '이미지를 최적화하지 못했습니다. 다시 시도해주세요.';
@@ -18,12 +17,12 @@ export interface TradeImageCompressionProgress {
 
 type ProgressListener = (progress: TradeImageCompressionProgress) => void;
 
-function createWebpFileName(fileName: string): string {
+function createPngFileName(fileName: string): string {
   const extensionStartIndex = fileName.lastIndexOf('.');
   const baseName =
     extensionStartIndex > 0 ? fileName.slice(0, extensionStartIndex) : fileName;
 
-  return `${baseName}.webp`;
+  return `${baseName}.png`;
 }
 
 /** 선택 순서를 유지하면서 모바일 메모리를 보호하기 위해 최대 두 장씩 압축한다. */
@@ -62,14 +61,13 @@ export async function compressTradeImages(
       }
 
       const compressedBlob = await imageCompression(file, {
-        fileType: WEBP_MIME_TYPE,
+        fileType: PNG_MIME_TYPE,
         initialQuality: INITIAL_QUALITY,
-        libURL: WORKER_LIBRARY_URL,
         maxSizeMB: MAX_COMPRESSED_SIZE_MB,
         maxWidthOrHeight: MAX_WIDTH_OR_HEIGHT,
         preserveExif: false,
         signal: controller.signal,
-        useWebWorker: true,
+        useWebWorker: false,
         onProgress: (progress) => {
           // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
           imageProgresses[imageIndex] = Math.max(
@@ -80,15 +78,15 @@ export async function compressTradeImages(
         },
       });
 
-      if (compressedBlob.type !== WEBP_MIME_TYPE) {
-        throw new Error('이 브라우저에서는 WebP 변환을 지원하지 않습니다.');
+      if (compressedBlob.type !== PNG_MIME_TYPE) {
+        throw new Error('이 브라우저에서는 PNG 변환을 지원하지 않습니다.');
       }
 
       results[imageIndex] = new File(
         [compressedBlob],
-        createWebpFileName(file.name),
+        createPngFileName(file.name),
         {
-          type: WEBP_MIME_TYPE,
+          type: PNG_MIME_TYPE,
           lastModified: file.lastModified,
         },
       );
@@ -110,6 +108,14 @@ export async function compressTradeImages(
 
     return results;
   } catch (error: unknown) {
+    if (__APP_ENV__ === 'development') {
+      console.error(
+        '교환 글 이미지 압축 실패',
+        files.map((file) => ({ type: file.type, size: file.size })),
+        error,
+      );
+    }
+
     controller.abort(error);
     throw new Error(TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE, { cause: error });
   }
