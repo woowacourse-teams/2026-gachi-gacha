@@ -163,8 +163,15 @@ export interface AnalyticsEventPropertiesMap {
     action: 'selected' | 'removed';
   };
   trade_photo_selection_completed: {
+    source: 'file_picker' | 'drop' | 'paste';
     accepted_count: number;
     rejected_count: number;
+    total_count: number;
+  };
+  trade_photo_reordered: {
+    method: 'drag' | 'keyboard';
+    from_index: number;
+    to_index: number;
     total_count: number;
   };
   place_search_opened: {
