@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 
 import type { ChatMessage } from '@/domains/chat/chatType';
+import { compressChatImages } from '@/domains/chat/compressChatImages';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -13,6 +14,14 @@ import { chatHandlers } from './mocks/chatHandlers';
 import { ChatRoute, ChatStartRoute } from './route';
 
 let mockOnMessage: ((message: ChatMessage) => void) | null = null;
+const mockSendImageMessage =
+  jest.fn<(content: string, files: ChatMessage['files']) => Promise<void>>();
+
+jest.mock('@/domains/chat/compressChatImages', () => ({
+  compressChatImages: jest.fn(),
+}));
+
+const mockedCompressChatImages = jest.mocked(compressChatImages);
 
 jest.mock('@/domains/chat/useChatSocket', () => ({
   useChatSocket: ({
@@ -26,6 +35,7 @@ jest.mock('@/domains/chat/useChatSocket', () => ({
       status: 'connected',
       errorMessage: null,
       sendTextMessage: async () => undefined,
+      sendImageMessage: mockSendImageMessage,
     };
   },
 }));
@@ -38,6 +48,7 @@ function createSocketMessage(sequence: number, senderId: number): ChatMessage {
     senderId,
     type: 'TEXT',
     content: `실시간 메시지 ${sequence}`,
+    files: [],
     createdAt: '2026-10-01T10:00:00',
   };
 }
@@ -67,6 +78,10 @@ function createTradeDetail(
 
 describe('ChatRoute', () => {
   beforeEach(() => {
+    mockSendImageMessage.mockReset();
+    mockSendImageMessage.mockResolvedValue();
+    mockedCompressChatImages.mockReset();
+    mockedCompressChatImages.mockImplementation(async (files) => files);
     storeAuthTokens({
       accessToken: ACCESS_TOKEN,
       refreshToken: 'refresh-token',
@@ -93,6 +108,41 @@ describe('ChatRoute', () => {
       ),
       ...chatHandlers,
     );
+  });
+
+  it('선택한 사진을 업로드한 뒤 이미지 메시지 메타데이터를 전송한다', async () => {
+    const user = userEvent.setup();
+
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: jest.fn(() => 'blob:chat-preview'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: jest.fn(),
+    });
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    const image = new File(['image'], 'offer.jpg', { type: 'image/jpeg' });
+    await user.upload(await screen.findByLabelText('사진 추가'), image);
+    await user.type(
+      screen.getByRole('textbox', { name: '메시지' }),
+      '교환 사진',
+    );
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() => {
+      expect(mockSendImageMessage).toHaveBeenCalledWith('교환 사진', [
+        expect.objectContaining({
+          originalName: 'offer.jpg',
+          contentType: 'image/jpeg',
+        }),
+      ]);
+    });
   });
 
   it('열린 채팅방에서 상대 메시지를 받으면 마지막 sequence까지 서버에 읽음 처리한다', async () => {
