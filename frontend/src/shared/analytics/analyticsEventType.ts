@@ -225,6 +225,23 @@ export interface AnalyticsEventPropertiesMap {
     room_id: number;
     outcome: AnalyticsOutcome;
     message_length: number;
+    message_type: 'text' | 'image';
+    image_count: number;
+  };
+  chat_image_selection_completed: {
+    room_id: number;
+    accepted_count: number;
+    rejected_count: number;
+  };
+  chat_image_upload_completed: {
+    room_id: number;
+    outcome: AnalyticsOutcome;
+    image_count: number;
+  };
+  chat_image_viewer_opened: {
+    room_id: number;
+    image_index: number;
+    image_count: number;
   };
   chat_history_load_completed: {
     room_id: number;
