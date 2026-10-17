@@ -240,7 +240,7 @@ describe('TradeForm', () => {
     renderTradeForm();
     const singleLineInputs = [
       screen.getByRole('textbox', { name: /제목/ }),
-      screen.getByRole('textbox', { name: /거래 희망 상품/ }),
+      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
       screen.getByRole('searchbox', { name: /카테고리/ }),
     ];
 
@@ -262,7 +262,7 @@ describe('TradeForm', () => {
     expect(screen.getByRole('textbox', { name: /제목/ })).toBeRequired();
     expect(screen.getByRole('textbox', { name: /설명/ })).toBeRequired();
     expect(
-      screen.getByRole('textbox', { name: /거래 희망 상품/ }),
+      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
     ).not.toBeRequired();
     expect(
       screen.getByRole('searchbox', { name: /카테고리/ }),
@@ -277,12 +277,20 @@ describe('TradeForm', () => {
 
   it('필수 항목을 먼저 보여주고 선택 항목임을 일관되게 안내한다', () => {
     renderTradeForm();
+
+    expect(
+      screen.getByRole('heading', { name: '가지고 있는 것' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '얻고 싶은 것' }),
+    ).toBeInTheDocument();
+
     const fields = [
       screen.getByRole('group', { name: /사진/ }),
       screen.getByRole('textbox', { name: /제목/ }),
       screen.getByRole('textbox', { name: /설명/ }),
       screen.getByRole('searchbox', { name: /카테고리/ }),
-      screen.getByRole('textbox', { name: /거래 희망 상품/ }),
+      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
       screen.getByRole('button', { name: /구매 매장/ }),
       screen.getByRole('button', { name: /거래 장소/ }),
     ];
@@ -296,12 +304,12 @@ describe('TradeForm', () => {
     expect(screen.getAllByText('(선택)')).toHaveLength(4);
   });
 
-  it('제목과 거래 희망 상품을 255자로 제한하고 공백 제목을 안내한다', async () => {
+  it('제목과 얻고 싶은 상품을 255자로 제한하고 공백 제목을 안내한다', async () => {
     const user = userEvent.setup();
     const { container } = renderTradeForm();
     const titleInput = screen.getByRole('textbox', { name: /제목/ });
     const desiredProductionInput = screen.getByRole('textbox', {
-      name: /거래 희망 상품/,
+      name: /얻고 싶은 상품/,
     });
 
     expect(titleInput).toHaveAttribute('maxlength', '255');
