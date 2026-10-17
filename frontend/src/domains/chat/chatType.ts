@@ -28,6 +28,11 @@ export interface ChatRoomSummary {
   createdAt: string;
 }
 
+export interface ChatRoomUpdate {
+  room: ChatRoomSummary;
+  totalUnreadCount: number;
+}
+
 export type ChatMessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'ENTER' | 'LEAVE';
 
 export interface ChatMessage {

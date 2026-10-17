@@ -13,6 +13,7 @@ import {
 import type {
   ChatMessage as ChatMessageData,
   ChatRoomSummary,
+  ChatRoomUpdate,
 } from '@/domains/chat/chatType';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
 import { getTradeDetail } from '@/domains/trade/api/getTradeDetail';
@@ -110,6 +111,29 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     },
     [activeRoomId, markRead, memberId],
   );
+  const receiveRoomUpdate = useCallback(
+    ({ room }: ChatRoomUpdate) => {
+      setState((current) => {
+        const nextRoom =
+          room.roomId === activeRoomId ? { ...room, unreadCount: 0 } : room;
+
+        return {
+          ...current,
+          rooms: [
+            nextRoom,
+            ...current.rooms.filter(
+              (currentRoom) => currentRoom.roomId !== room.roomId,
+            ),
+          ],
+          selectedRoom:
+            current.selectedRoom?.roomId === room.roomId
+              ? nextRoom
+              : current.selectedRoom,
+        };
+      });
+    },
+    [activeRoomId],
+  );
   const {
     status: socketStatus,
     errorMessage: socketErrorMessage,
@@ -118,6 +142,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     roomId: activeRoomId,
     memberId,
     onMessage: receiveMessage,
+    onRoomUpdate: receiveRoomUpdate,
   });
 
   useEffect(() => {
