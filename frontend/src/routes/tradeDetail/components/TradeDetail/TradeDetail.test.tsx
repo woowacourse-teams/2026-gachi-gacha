@@ -7,6 +7,23 @@ import TradeDetail from './TradeDetail';
 import { TRADE_DETAIL } from '../../storybook/tradeDetailMocks';
 
 describe('TradeDetail', () => {
+  it('가지고 있는 상품과 얻고 싶은 상품을 명확히 구분한다', () => {
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={TRADE_DETAIL} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('가지고 있는 것')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '가지고 있는 상품 설명' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('얻고 싶은 것')).toBeInTheDocument();
+    expect(
+      screen.getByText('시나모롤 키링 또는 산리오 랜덤 피규어'),
+    ).toBeInTheDocument();
+  });
+
   it('상품 사진을 좌우로 넘기고 선택한 사진을 크게 본다', async () => {
     const user = userEvent.setup();
     const detail = {
