@@ -154,6 +154,51 @@ describe('ChatRoute', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('첫 메시지가 없는 채팅방은 대화 목록에 보여주지 않는다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            rooms: [
+              {
+                roomId: 3,
+                trade: {
+                  tradeId: 3,
+                  memberId: 4,
+                  title: '아직 대화하지 않은 교환글',
+                  status: 'AVAILABLE',
+                  thumbnailUrl: null,
+                },
+                otherMember: {
+                  memberId: 4,
+                  nickname: '빈방상대',
+                  profileImageUrl: null,
+                },
+                lastMessage: null,
+                unreadCount: 0,
+                createdAt: '2026-10-01T10:00:00',
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    expect(
+      await screen.findByText('아직 시작한 대화가 없어요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /빈방상대/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it('버튼을 누르면 이전 메시지를 기존 대화 앞에 추가한다', async () => {
     const user = userEvent.setup();
 

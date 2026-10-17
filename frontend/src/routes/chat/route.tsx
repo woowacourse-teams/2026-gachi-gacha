@@ -237,7 +237,10 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   }, [activeRoomId]);
 
   const conversations = useMemo(
-    () => state.rooms.map(toConversation),
+    () =>
+      state.rooms
+        .filter((room) => room.lastMessage !== null)
+        .map(toConversation),
     [state.rooms],
   );
   const selectedRoom = useMemo(
