@@ -76,7 +76,8 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `trade_form_submitted`             | 유효한 등록·수정 폼 제출   | `mode`, 이미지·카테고리 수, 선택 필드 존재 여부                               |
 | `trade_form_completed`             | 등록·수정 API 완료         | `mode`, `trade_id`, `outcome`                                                 |
 | `trade_category_toggled`           | 작성 폼 카테고리 선택·해제 | `mode`, `category_id`, `action`                                               |
-| `trade_photo_selection_completed`  | 사진 선택 검증 완료        | 허용·거절·전체 파일 수                                                        |
+| `trade_photo_selection_completed`  | 사진 선택 검증 완료        | `source`, 허용·거절·전체 파일 수                                              |
+| `trade_photo_reordered`            | 사진 순서 변경             | `method`, `from_index`, `to_index`, `total_count`                             |
 | `place_search_opened`              | 장소 검색창 열기           | `place_context`, `trade_form_mode`                                            |
 | `place_search_completed`           | 장소 검색 완료             | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length` |
 | `place_search_result_selected`     | 장소 검색 결과 선택        | `place_context`, `trade_form_mode`, `result_position`                         |

@@ -30,13 +30,21 @@ export interface ChatRoomSummary {
 
 export type ChatMessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'ENTER' | 'LEAVE';
 
+export interface ChatMessageFile {
+  url: string;
+  originalName: string;
+  contentType: string | null;
+  size: number;
+}
+
 export interface ChatMessage {
   messageId: string;
   sequence: number;
   roomId: number;
   senderId: number;
   type: ChatMessageType;
-  content: string;
+  content: string | null;
+  files: ChatMessageFile[];
   createdAt: string;
 }
 

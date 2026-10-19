@@ -10,6 +10,7 @@ import {
   getChatMessages,
   getChatRooms,
   markChatMessagesRead,
+  uploadChatImages,
 } from './chatApi';
 
 const room = {
@@ -155,5 +156,86 @@ describe('chatApi', () => {
     await getChatMessages(7, { lastSequence: 81, pageSize: 20 });
 
     expect(receivedSearch).toBe('?lastSequence=81&pageSize=20');
+  });
+
+  it('인증된 multipart 요청으로 채팅 사진을 업로드한다', async () => {
+    let authorizationHeader: string | null = null;
+    let uploadedFileNames: string[] = [];
+
+    server.use(
+      http.post('/api/v1/files', async ({ request }) => {
+        authorizationHeader = request.headers.get('Authorization');
+        const formData = await request.formData();
+        uploadedFileNames = formData
+          .getAll('files')
+          .filter((file): file is File => file instanceof File)
+          .map((file) => file.name);
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            files: [
+              {
+                url: 'https://cdn.example.com/chat/one.webp',
+                originalName: 'one.webp',
+                contentType: 'image/webp',
+                size: 5,
+              },
+            ],
+          },
+        });
+      }),
+    );
+
+    const result = await uploadChatImages([
+      new File(['image'], 'one.webp', { type: 'image/webp' }),
+    ]);
+
+    expect(authorizationHeader).toBe('Bearer access-token');
+    expect(uploadedFileNames).toEqual(['one.webp']);
+    expect(result[0]?.url).toBe('https://cdn.example.com/chat/one.webp');
+  });
+
+  it('이미지 메시지의 nullable 본문과 파일 목록을 정규화한다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/7/messages', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            messages: [
+              {
+                messageId: 42,
+                sequence: 42,
+                roomId: 7,
+                senderId: 8,
+                type: 'IMAGE',
+                content: null,
+                files: [
+                  {
+                    url: 'https://cdn.example.com/chat/photo.webp',
+                    originalName: 'photo.webp',
+                    contentType: 'image/webp',
+                    size: 5,
+                  },
+                ],
+                createdAt: '2026-10-01T09:20:00',
+              },
+            ],
+            nextLastSequence: null,
+            hasNext: false,
+          },
+        }),
+      ),
+    );
+
+    const page = await getChatMessages(7);
+
+    expect(page.messages[0]).toMatchObject({
+      messageId: '42',
+      content: null,
+      files: [expect.objectContaining({ originalName: 'photo.webp' })],
+    });
   });
 });

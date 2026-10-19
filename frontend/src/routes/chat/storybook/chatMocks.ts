@@ -56,6 +56,7 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       text: '안녕하세요! 올리신 쿠로미 피규어 아직 교환 가능할까요?',
       sentAt: '오전 9:12',
       sentDate: YESTERDAY,
+      images: [],
     },
     {
       id: '2',
@@ -63,6 +64,7 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       text: '네, 아직 가능해요. 어떤 가챠와 교환 원하시나요?',
       sentAt: '오전 9:15',
       sentDate: TODAY,
+      images: [],
     },
     {
       id: '3',
@@ -70,6 +72,12 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       text: '시나모롤 키링이 있어요. 사진 확인 부탁드려요.',
       sentAt: '오전 9:20',
       sentDate: TODAY,
+      images: [
+        {
+          url: 'https://placehold.co/600x600/png?text=Gacha+Photo',
+          name: '시나모롤 키링 사진',
+        },
+      ],
     },
   ],
 };
