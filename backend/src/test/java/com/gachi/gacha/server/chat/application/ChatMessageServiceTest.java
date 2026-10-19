@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,7 +21,9 @@ import com.gachi.gacha.server.chat.domain.MessageType;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
 import com.gachi.gacha.server.chat.domain.exception.InvalidChatMessageException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.member.domain.exception.BlockedChatNotAllowedException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +39,7 @@ class ChatMessageServiceTest {
 
     private static final Long ROOM_ID = 1L;
     private static final Long SENDER_ID = 2L;
+    private static final Long RECEIVER_ID = 3L;
 
     @Mock
     private ChatRoomJpaRepository chatRoomJpaRepository;
@@ -45,6 +49,9 @@ class ChatMessageServiceTest {
 
     @Mock
     private ChatMessageMongoRepository chatMessageMongoRepository;
+
+    @Mock
+    private MemberBlockService memberBlockService;
 
     @InjectMocks
     private ChatMessageService chatMessageService;
@@ -131,6 +138,24 @@ class ChatMessageServiceTest {
 
             verify(chatMessageMongoRepository, never()).save(any());
             assertThat(chatRoom.getLastMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("상대와 차단 관계면 메시지를 저장하지 않고 sequence도 증가하지 않는다")
+        void sendMessage_blockedReceiver() {
+            given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
+            given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
+                    .willReturn(List.of(SENDER_ID, RECEIVER_ID));
+            doThrow(new BlockedChatNotAllowedException(ErrorCode.BLOCKED_CHAT_NOT_ALLOWED))
+                    .when(memberBlockService).validateChatAllowed(SENDER_ID, RECEIVER_ID);
+
+            assertThatThrownBy(() -> chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요")))
+                    .isInstanceOf(BlockedChatNotAllowedException.class);
+
+            verify(chatMessageMongoRepository, never()).save(any());
+            assertThat(chatRoom.getLastMessageSequence()).isZero();
+            assertThat(sender.getLastReadMessageSequence()).isZero();
         }
 
         @Test

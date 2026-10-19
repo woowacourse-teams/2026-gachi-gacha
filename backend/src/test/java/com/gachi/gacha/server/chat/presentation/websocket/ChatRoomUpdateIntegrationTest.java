@@ -412,6 +412,28 @@ class ChatRoomUpdateIntegrationTest {
     }
 
     @Test
+    @DisplayName("차단 관계인 상대에게 메시지를 보내면 BLE002로 거절하고 sequence·Mongo·목록 갱신을 바꾸지 않는다")
+    void sendMessage_blockedRejectsBeforeSaveAndPublish() throws Exception {
+        memberBlockJpaRepository.save(MemberBlock.of(ownerId, requesterId));
+        StompSession requester = connect(requesterId);
+        BlockingQueue<String> requesterUpdates = subscribe(requester, requesterId, ROOMS_DESTINATION);
+        BlockingQueue<String> ownerUpdates = subscribe(connect(ownerId), ownerId, ROOMS_DESTINATION);
+        BlockingQueue<String> errors = subscribe(requester, requesterId, ERRORS_DESTINATION);
+
+        sendTextMessage(requester);
+
+        JsonNode error = awaitPayload(errors);
+        assertThat(error.path("code").asText()).isEqualTo("BLE002");
+        assertThat(error.path("message").asText()).isEqualTo("대화를 진행할 수 없습니다.");
+        assertNoUpdate(requesterUpdates);
+        assertNoUpdate(ownerUpdates);
+        assertThat(chatRoomJpaRepository.getById(roomId).getLastMessageSequence()).isZero();
+        assertThat(chatMessageMongoRepository.findByRoomIdOrderBySequenceDesc(roomId, PageRequest.of(0, 10)))
+                .isEmpty();
+        assertThat(requester.isConnected()).isTrue();
+    }
+
+    @Test
     @DisplayName("개인 목록 채널을 구독한 다른 사용자는 무관한 채팅방의 갱신 정보를 받지 않는다")
     void sendMessage_unrelatedUserDoesNotReceiveUpdate() throws Exception {
         StompSession requester = connect(requesterId);

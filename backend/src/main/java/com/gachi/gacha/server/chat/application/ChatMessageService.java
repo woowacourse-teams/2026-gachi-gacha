@@ -12,6 +12,7 @@ import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.InvalidReadSequenceException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class ChatMessageService {
     private final ChatRoomJpaRepository chatRoomJpaRepository;
     private final ChatRoomMemberJpaRepository chatRoomMemberJpaRepository;
     private final ChatMessageMongoRepository chatMessageMongoRepository;
+    private final MemberBlockService memberBlockService;
 
     public ChatMessagePageInfo getMessages(
             final Long memberId,
@@ -108,6 +110,7 @@ public class ChatMessageService {
 
         ChatRoom chatRoom = chatRoomJpaRepository.getByIdForUpdate(roomId);
         ChatRoomMember sender = chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, senderId);
+        validateNotBlockedWithReceivers(roomId, senderId);
 
         String preview = ChatMessage.preview(command.type(), command.content());
         long sequence = chatRoom.appendMessage(preview, LocalDateTime.now());
@@ -118,6 +121,16 @@ public class ChatMessageService {
         sender.read(sequence);
 
         return ChatMessageInfo.from(savedMessage);
+    }
+
+    /**
+     * sequence 증가·메시지 저장·브로드캐스트보다 먼저 거절해 차단 이후의 메시지가 남지 않게 한다.
+     */
+    private void validateNotBlockedWithReceivers(final Long roomId, final Long senderId) {
+        chatRoomMemberJpaRepository.findMemberIdsByRoomId(roomId)
+                .stream()
+                .filter(memberId -> !memberId.equals(senderId))
+                .forEach(receiverId -> memberBlockService.validateChatAllowed(senderId, receiverId));
     }
 
     /**
