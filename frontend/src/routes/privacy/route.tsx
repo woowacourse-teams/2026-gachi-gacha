@@ -66,7 +66,7 @@ export function PrivacyRoute() {
             개인정보처리방침을 공개합니다.
           </Introduction>
           <EffectiveDate>
-            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 10일
+            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 19일
           </EffectiveDate>
 
           {__APP_ENV__ !== 'production' && (
@@ -383,8 +383,13 @@ export function PrivacyRoute() {
             <SectionTitle>9. 이용자의 권리와 행사 방법</SectionTitle>
             <p>
               이용자는 개인정보의 열람·정정·삭제·처리정지 및 동의 철회를 요청할
-              수 있습니다. 요청은 가치가챠 공식 Instagram DM을 통해 접수하며,
-              운영팀은 본인 여부를 확인한 뒤 관계 법령에 따라 처리합니다.
+              수 있습니다. 회원 탈퇴는 앱의 마이페이지 또는{' '}
+              <ExternalLink href="/account-deletion">
+                외부 회원 탈퇴 페이지
+              </ExternalLink>
+              에서 본인 확인 후 직접 요청할 수 있습니다. 그 밖의 요청은 가치가챠
+              공식 Instagram DM을 통해 접수하며, 운영팀은 본인 여부를 확인한 뒤
+              관계 법령에 따라 처리합니다.
             </p>
             <p>
               문의 및 요청:{' '}
@@ -493,6 +498,7 @@ export function PrivacyRoute() {
                 2026년 10월 10일: 완료 거래글 링크와 식별값을 이벤트 응모정보에
                 추가
               </li>
+              <li>2026년 10월 19일: 외부 회원 탈퇴 요청 경로 안내 추가</li>
             </ul>
           </Section>
         </Document>

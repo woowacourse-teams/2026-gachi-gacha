@@ -13,6 +13,7 @@ interface FooterLink {
 const FOOTER_LINKS: readonly FooterLink[] = [
   { label: '이용약관', href: '/terms' },
   { label: '개인정보 처리방침', href: '/privacy' },
+  { label: '회원 탈퇴', href: '/account-deletion' },
   { label: '매장 입점 문의', href: SUPPORT_INSTAGRAM_URL, external: true },
   { label: '고객센터', href: SUPPORT_INSTAGRAM_URL, external: true },
 ];

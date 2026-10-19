@@ -118,7 +118,7 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `profile_image_upload_started`      | 프로필 사진 업로드 시작          | `format`, `size_bucket`                                                  |
 | `profile_image_upload_completed`    | 프로필 사진 업로드 완료          | `outcome`, `format`, `size_bucket`                                       |
 | `profile_update_completed`          | 프로필 저장 완료                 | `outcome`, `has_trade_location`, `trade_location_change`, `image_change` |
-| `account_menu_selected`             | 방침·고객센터·로그아웃·탈퇴 선택 | `target`, `source`                                                       |
+| `account_menu_selected`             | 방침·고객센터·로그아웃·탈퇴 선택 | `target`, `source` (`account_deletion` 포함)                             |
 | `account_deletion_completed`        | 회원 탈퇴 요청 완료              | `outcome`                                                                |
 | `event_application_started`         | 마이페이지에서 이벤트 응모 진입  | `source`                                                                 |
 | `event_application_completed`       | 이벤트 응모 제출 완료            | `track`, `outcome`, `has_completed_trade_evidence`                       |
