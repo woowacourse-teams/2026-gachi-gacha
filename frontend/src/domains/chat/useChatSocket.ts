@@ -3,7 +3,12 @@ import { Client, type IMessage } from '@stomp/stompjs';
 
 import { readAccessToken } from '@/features/auth/authTokenStorage';
 
-import type { ChatMessage, ChatMessageFile } from './chatType';
+import type {
+  ChatLastMessage,
+  ChatMessage,
+  ChatMessageFile,
+  ChatRoomUpdate,
+} from './chatType';
 
 export type ChatSocketStatus =
   'connecting' | 'connected' | 'disconnected' | 'error';
@@ -12,6 +17,7 @@ interface UseChatSocketOptions {
   roomId: number | undefined;
   memberId: string | null;
   onMessage: (message: ChatMessage) => void;
+  onRoomUpdate: (update: ChatRoomUpdate) => void;
 }
 
 interface UseChatSocketResult {
@@ -31,9 +37,11 @@ export function useChatSocket({
   roomId,
   memberId,
   onMessage,
+  onRoomUpdate,
 }: UseChatSocketOptions): UseChatSocketResult {
   const clientRef = useRef<Client | null>(null);
   const onMessageRef = useRef(onMessage);
+  const onRoomUpdateRef = useRef(onRoomUpdate);
   const [status, setStatus] = useState<ChatSocketStatus>('disconnected');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -42,7 +50,11 @@ export function useChatSocket({
   }, [onMessage]);
 
   useEffect(() => {
-    if (!roomId) {
+    onRoomUpdateRef.current = onRoomUpdate;
+  }, [onRoomUpdate]);
+
+  useEffect(() => {
+    if (!memberId) {
       setStatus('disconnected');
       return;
     }
@@ -74,8 +86,13 @@ export function useChatSocket({
       onConnect: () => {
         setStatus('connected');
         setErrorMessage(null);
-        client.subscribe(`/topic/chat/rooms/${roomId}/messages`, (frame) => {
-          handleMessageFrame(frame, onMessageRef.current);
+        if (roomId) {
+          client.subscribe(`/topic/chat/rooms/${roomId}/messages`, (frame) => {
+            handleMessageFrame(frame, onMessageRef.current);
+          });
+        }
+        client.subscribe('/user/queue/chat/rooms', (frame) => {
+          handleRoomUpdateFrame(frame, onRoomUpdateRef.current);
         });
         client.subscribe('/user/queue/chat/errors', (frame) => {
           setErrorMessage(readSocketError(frame));
@@ -102,7 +119,7 @@ export function useChatSocket({
       clientRef.current = null;
       void client.deactivate();
     };
-  }, [roomId]);
+  }, [memberId, roomId]);
 
   const sendTextMessage = useCallback(
     async (content: string) => {
@@ -215,6 +232,35 @@ function handleMessageFrame(
   } catch {
     // 형식이 올바르지 않은 프레임 하나가 이후 메시지 수신을 막지 않도록 무시합니다.
   }
+}
+
+function handleRoomUpdateFrame(
+  frame: IMessage,
+  onRoomUpdate: (update: ChatRoomUpdate) => void,
+): void {
+  try {
+    const update = JSON.parse(frame.body) as ChatRoomUpdate;
+    const lastMessage = update.room.lastMessage as ChatLastMessageWire | null;
+
+    onRoomUpdate({
+      ...update,
+      room: {
+        ...update.room,
+        lastMessage: lastMessage
+          ? {
+              ...lastMessage,
+              sentAt: lastMessage.sentAt ?? lastMessage.sendAt ?? '',
+            }
+          : null,
+      },
+    });
+  } catch {
+    // 형식이 올바르지 않은 개인 갱신 프레임도 연결 자체는 유지합니다.
+  }
+}
+
+interface ChatLastMessageWire extends ChatLastMessage {
+  sendAt?: string;
 }
 
 function readSocketError(frame: IMessage): string {

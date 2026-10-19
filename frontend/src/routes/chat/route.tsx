@@ -15,6 +15,7 @@ import type {
   ChatMessage as ChatMessageData,
   ChatMessageFile,
   ChatRoomSummary,
+  ChatRoomUpdate,
 } from '@/domains/chat/chatType';
 import { compressChatImages } from '@/domains/chat/compressChatImages';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
@@ -115,6 +116,29 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     },
     [activeRoomId, markRead, memberId],
   );
+  const receiveRoomUpdate = useCallback(
+    ({ room }: ChatRoomUpdate) => {
+      setState((current) => {
+        const nextRoom =
+          room.roomId === activeRoomId ? { ...room, unreadCount: 0 } : room;
+
+        return {
+          ...current,
+          rooms: [
+            nextRoom,
+            ...current.rooms.filter(
+              (currentRoom) => currentRoom.roomId !== room.roomId,
+            ),
+          ],
+          selectedRoom:
+            current.selectedRoom?.roomId === room.roomId
+              ? nextRoom
+              : current.selectedRoom,
+        };
+      });
+    },
+    [activeRoomId],
+  );
   const {
     status: socketStatus,
     errorMessage: socketErrorMessage,
@@ -124,6 +148,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     roomId: activeRoomId,
     memberId,
     onMessage: receiveMessage,
+    onRoomUpdate: receiveRoomUpdate,
   });
 
   const sendImageMessage = useCallback(
@@ -273,7 +298,10 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   }, [activeRoomId]);
 
   const conversations = useMemo(
-    () => state.rooms.map(toConversation),
+    () =>
+      state.rooms
+        .filter((room) => room.lastMessage !== null)
+        .map(toConversation),
     [state.rooms],
   );
   const selectedRoom = useMemo(

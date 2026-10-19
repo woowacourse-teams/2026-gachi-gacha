@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 
-import type { ChatMessage } from '@/domains/chat/chatType';
+import type { ChatMessage, ChatRoomUpdate } from '@/domains/chat/chatType';
 import { compressChatImages } from '@/domains/chat/compressChatImages';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -14,6 +14,7 @@ import { chatHandlers } from './mocks/chatHandlers';
 import { ChatRoute, ChatStartRoute } from './route';
 
 let mockOnMessage: ((message: ChatMessage) => void) | null = null;
+let mockOnRoomUpdate: ((update: ChatRoomUpdate) => void) | null = null;
 const mockSendImageMessage =
   jest.fn<(content: string, files: ChatMessage['files']) => Promise<void>>();
 
@@ -26,10 +27,13 @@ const mockedCompressChatImages = jest.mocked(compressChatImages);
 jest.mock('@/domains/chat/useChatSocket', () => ({
   useChatSocket: ({
     onMessage,
+    onRoomUpdate,
   }: {
     onMessage: (message: ChatMessage) => void;
+    onRoomUpdate: (update: ChatRoomUpdate) => void;
   }) => {
     mockOnMessage = onMessage;
+    mockOnRoomUpdate = onRoomUpdate;
 
     return {
       status: 'connected',
@@ -78,6 +82,8 @@ function createTradeDetail(
 
 describe('ChatRoute', () => {
   beforeEach(() => {
+    mockOnMessage = null;
+    mockOnRoomUpdate = null;
     mockSendImageMessage.mockReset();
     mockSendImageMessage.mockResolvedValue();
     mockedCompressChatImages.mockReset();
@@ -202,6 +208,69 @@ describe('ChatRoute', () => {
         name: '가챠좋아님과의 채팅 페이지',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('첫 메시지가 없는 방은 숨기고 첫 메시지 갱신 후 목록에 보여준다', async () => {
+    const emptyRoom = {
+      roomId: 3,
+      trade: {
+        tradeId: 3,
+        memberId: 4,
+        title: '아직 대화하지 않은 교환글',
+        status: 'AVAILABLE' as const,
+        thumbnailUrl: null,
+      },
+      otherMember: {
+        memberId: 4,
+        nickname: '빈방상대',
+        profileImageUrl: null,
+      },
+      lastMessage: null,
+      unreadCount: 0,
+      createdAt: '2026-10-01T10:00:00',
+    };
+
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            rooms: [emptyRoom],
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    expect(
+      await screen.findByText('아직 시작한 대화가 없어요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /빈방상대/ }),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      mockOnRoomUpdate?.({
+        room: {
+          ...emptyRoom,
+          lastMessage: {
+            preview: '첫 교환 문의예요.',
+            sentAt: '2026-10-01T10:01:00',
+          },
+          unreadCount: 1,
+        },
+        totalUnreadCount: 1,
+      });
+    });
+
+    expect(
+      await screen.findByRole('button', { name: /빈방상대/ }),
+    ).toHaveTextContent('첫 교환 문의예요.');
   });
 
   it('버튼을 누르면 이전 메시지를 기존 대화 앞에 추가한다', async () => {

@@ -1,8 +1,14 @@
 import { http, HttpResponse } from 'msw';
 
+import type { ChatRoomSummary } from '@/domains/chat/chatType';
+
 const CHAT_ROOMS_PATH = '/api/v1/chat/rooms';
 
-const rooms = [
+type ChatRoomWire = Omit<ChatRoomSummary, 'lastMessage'> & {
+  lastMessage: { preview: string; sendAt: string } | null;
+};
+
+const rooms: ChatRoomWire[] = [
   {
     roomId: 1,
     trade: {
@@ -93,7 +99,7 @@ const previousMessages = [
   },
 ];
 
-const createdRooms = new Map<number, (typeof rooms)[number]>();
+const createdRooms = new Map<number, ChatRoomWire>();
 
 function getRooms() {
   return [...rooms, ...createdRooms.values()];
@@ -156,10 +162,7 @@ export const chatHandlers = [
         nickname: '교환 상대',
         profileImageUrl: null,
       },
-      lastMessage: {
-        preview: '채팅방이 만들어졌어요.',
-        sendAt: new Date().toISOString(),
-      },
+      lastMessage: null,
       unreadCount: 0,
       createdAt: new Date().toISOString(),
     });
