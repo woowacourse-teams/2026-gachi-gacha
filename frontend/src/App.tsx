@@ -66,6 +66,12 @@ const PrivacyRoute = lazy(async () => {
   return { default: routeModule.PrivacyRoute };
 });
 
+const AccountDeletionRoute = lazy(async () => {
+  const routeModule = await import('@/routes/accountDeletion/route');
+
+  return { default: routeModule.AccountDeletionRoute };
+});
+
 const UpdatesRoute = lazy(async () => {
   const routeModule = await import('@/routes/updates/route');
 
@@ -184,6 +190,7 @@ function CanonicalRoutes() {
         <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/privacy" element={<PrivacyRoute />} />
+        <Route path="/account-deletion" element={<AccountDeletionRoute />} />
         <Route path="/updates" element={<UpdatesRoute />} />
         <Route
           path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}

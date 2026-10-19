@@ -327,7 +327,7 @@ export interface AnalyticsEventPropertiesMap {
   };
   account_menu_selected: {
     target: 'updates' | 'privacy' | 'support' | 'logout' | 'delete_account';
-    source: 'login' | 'mypage';
+    source: 'login' | 'mypage' | 'account_deletion';
   };
   account_deletion_completed: {
     outcome: AnalyticsOutcome;

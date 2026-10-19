@@ -66,6 +66,9 @@ export function LoginRoute() {
     () => readLoginReturnPath(window.location.search),
     [],
   );
+  const isAccountDeletionFlow =
+    new URL(returnPath, window.location.origin).pathname ===
+    '/account-deletion';
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -105,8 +108,18 @@ export function LoginRoute() {
           </Brand>
 
           <Title id="login-title">
-            원하는 <Accent>가챠</Accent>,<br />
-            <Accent>같이</Accent> 한번 찾아봐요!
+            {isAccountDeletionFlow ? (
+              <>
+                회원 탈퇴를 위한
+                <br />
+                <Accent>본인 확인</Accent>이 필요해요
+              </>
+            ) : (
+              <>
+                원하는 <Accent>가챠</Accent>,<br />
+                <Accent>같이</Accent> 한번 찾아봐요!
+              </>
+            )}
           </Title>
 
           {status === 'error' && errorMessage && (
@@ -132,32 +145,46 @@ export function LoginRoute() {
               <ProviderLink
                 key={provider}
                 href={`/api/v1/oauth/${provider}`}
-                aria-label={label}
+                aria-label={
+                  isAccountDeletionFlow
+                    ? `${provider === 'kakao' ? '카카오' : '네이버'}로 본인 확인`
+                    : label
+                }
                 $provider={provider}
                 onClick={() => prepareOAuthLogin(provider)}
               >
                 <ProviderBrandIcon provider={provider} />
-                <span>{label}</span>
+                <span>
+                  {isAccountDeletionFlow
+                    ? `${provider === 'kakao' ? '카카오' : '네이버'}로 본인 확인`
+                    : label}
+                </span>
               </ProviderLink>
             ))}
           </ProviderList>
 
           <PrivacyNote>
-            로그인하면{' '}
-            <PrivacyLink
-              href="/privacy"
-              target="_blank"
-              rel="noreferrer"
-              onClick={() =>
-                captureAnalyticsEvent('account_menu_selected', {
-                  target: 'privacy',
-                  source: 'login',
-                })
-              }
-            >
-              개인정보처리방침
-            </PrivacyLink>
-            에 동의한 것으로 간주합니다.
+            {isAccountDeletionFlow
+              ? '본인 확인 후 탈퇴 여부를 한 번 더 확인합니다.'
+              : '로그인하면 '}
+            {!isAccountDeletionFlow && (
+              <>
+                <PrivacyLink
+                  href="/privacy"
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() =>
+                    captureAnalyticsEvent('account_menu_selected', {
+                      target: 'privacy',
+                      source: 'login',
+                    })
+                  }
+                >
+                  개인정보처리방침
+                </PrivacyLink>
+                에 동의한 것으로 간주합니다.
+              </>
+            )}
           </PrivacyNote>
         </Card>
       </Main>
