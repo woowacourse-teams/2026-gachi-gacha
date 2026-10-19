@@ -53,6 +53,7 @@ public enum ErrorCode {
 
     // Member Block
     SELF_BLOCK_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "BLE001", "자기 자신은 차단할 수 없습니다."),
+    BLOCKED_CHAT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "BLE002", "대화를 진행할 수 없습니다."),
     
     // Chat
     CHAT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE001", "채팅 상대방 정보를 찾을 수 없습니다."),

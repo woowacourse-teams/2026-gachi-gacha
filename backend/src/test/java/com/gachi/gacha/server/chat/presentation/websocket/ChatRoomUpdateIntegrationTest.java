@@ -21,6 +21,8 @@ import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.MessageType;
 import com.gachi.gacha.server.common.auth.jwt.JwtProvider;
 import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.member.domain.MemberBlock;
+import com.gachi.gacha.server.member.domain.MemberBlockJpaRepository;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
@@ -112,6 +114,9 @@ class ChatRoomUpdateIntegrationTest {
     @Autowired
     private TradeJpaRepository tradeJpaRepository;
 
+    @Autowired
+    private MemberBlockJpaRepository memberBlockJpaRepository;
+
     @MockitoSpyBean
     private ChatMessageMongoRepository chatMessageMongoRepository;
 
@@ -185,6 +190,9 @@ class ChatRoomUpdateIntegrationTest {
                 chatRoomJpaRepository.deleteAllByIdInBatch(roomIds);
             }
             tradeJpaRepository.deleteAllByIdInBatch(tradeIds);
+            entityManager.createQuery("DELETE FROM MemberBlock b WHERE b.blockerId IN :memberIds")
+                    .setParameter("memberIds", memberIds)
+                    .executeUpdate();
             memberJpaRepository.deleteAllByIdInBatch(memberIds);
         });
     }
@@ -361,6 +369,46 @@ class ChatRoomUpdateIntegrationTest {
         assertNoUpdate(ownerUpdates);
         assertNoUpdate(requesterUpdates);
         assertThat(chatRoomService.getRooms(requesterId)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("차단 관계인 상대와는 채팅방을 만들 수 없고 어느 참여자에게도 갱신 정보를 보내지 않는다")
+    void createRoom_blockedDoesNotCreateOrPublish() throws Exception {
+        Long newTradeId = new TransactionTemplate(transactionManager).execute(status -> {
+            Member owner = memberJpaRepository.getMemberById(ownerId);
+            Trade trade = tradeJpaRepository.save(createTrade(owner));
+            tradeIds.add(trade.getId());
+            return trade.getId();
+        });
+        memberBlockJpaRepository.save(MemberBlock.of(ownerId, requesterId));
+        BlockingQueue<String> ownerUpdates = subscribe(connect(ownerId), ownerId, ROOMS_DESTINATION);
+        BlockingQueue<String> requesterUpdates = subscribe(connect(requesterId), requesterId, ROOMS_DESTINATION);
+
+        Response response = createRoom(newTradeId);
+
+        response.then().statusCode(403);
+        assertThat(response.jsonPath().getString("code")).isEqualTo("BLE002");
+        assertNoUpdate(ownerUpdates);
+        assertNoUpdate(requesterUpdates);
+        assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(newTradeId, requesterId)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("차단 후 열려 있던 방에서 읽음 처리해도 숨긴 채팅방을 갱신 정보로 다시 노출하지 않는다")
+    void readMessages_blockedRoomDoesNotPublish() throws Exception {
+        chatMessageService.sendMessage(requesterId, roomId, textCommand());
+        memberBlockJpaRepository.save(MemberBlock.of(ownerId, requesterId));
+        BlockingQueue<String> ownerUpdates = subscribe(connect(ownerId), ownerId, ROOMS_DESTINATION);
+
+        readMessages(ownerId, 1L).then().statusCode(200);
+
+        assertNoUpdate(ownerUpdates);
+        Response roomsResponse = RestAssured.given()
+                .port(port)
+                .header("Authorization", bearer(ownerId))
+                .get("/api/v1/chat/rooms/me");
+        roomsResponse.then().statusCode(200);
+        assertThat(roomsResponse.jsonPath().getList("data.rooms")).isEmpty();
     }
 
     @Test

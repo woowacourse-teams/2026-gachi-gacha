@@ -7,6 +7,7 @@ import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberBlock;
 import com.gachi.gacha.server.member.domain.MemberBlockJpaRepository;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
+import com.gachi.gacha.server.member.domain.exception.BlockedChatNotAllowedException;
 import com.gachi.gacha.server.member.domain.exception.MemberNotFoundException;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,16 @@ public class MemberBlockService {
                         blockedMembersById.get(memberBlock.getBlockedId())
                 ))
                 .toList();
+    }
+
+    public boolean isBlockedBetween(final Long memberId, final Long otherMemberId) {
+        return memberBlockJpaRepository.existsBetween(memberId, otherMemberId);
+    }
+
+    public void validateChatAllowed(final Long memberId, final Long otherMemberId) {
+        if (isBlockedBetween(memberId, otherMemberId)) {
+            throw new BlockedChatNotAllowedException(ErrorCode.BLOCKED_CHAT_NOT_ALLOWED);
+        }
     }
 
     private void validateMemberExists(final Long memberId) {
