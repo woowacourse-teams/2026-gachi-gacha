@@ -69,14 +69,6 @@ public class TradeIndexService {
         }
     }
 
-    private Map<Long, String> findThumbnails(final List<Long> tradeIds) {
-        return tradeImageJpaRepository.findFirstImagesByTradeIdIn(tradeIds).stream()
-                .collect(Collectors.toMap(
-                        image -> image.getTrade().getId(),
-                        TradeImage::getImageUrl
-                ));
-    }
-
     public void reindexAll() throws IOException {
         int page = 0;
         Slice<Long> ids;
@@ -84,6 +76,14 @@ public class TradeIndexService {
             ids = tradeJpaRepository.findTradeIds(PageRequest.of(page++, BATCH_SIZE, Sort.by("id")));
             indexAll(ids.getContent());
         } while (ids.hasNext());
+    }
+
+    private Map<Long, String> findThumbnails(final List<Long> tradeIds) {
+        return tradeImageJpaRepository.findFirstImagesByTradeIdIn(tradeIds).stream()
+                .collect(Collectors.toMap(
+                        image -> image.getTrade().getId(),
+                        TradeImage::getImageUrl
+                ));
     }
 
     private String abbreviate(final List<String> failed) {
