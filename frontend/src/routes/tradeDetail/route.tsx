@@ -29,6 +29,7 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     state: commentsState,
     submit: submitComment,
     retry: retryComments,
+    hasSubmittedComment,
   } = useTradeComments({
     tradeId,
     postAuthorId: state.status === 'success' ? state.data.memberId : null,
@@ -94,6 +95,7 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     <TradeDetailPage
       detail={state.data}
       action={action}
+      hasSubmittedComment={hasSubmittedComment}
       relatedItems={relatedItems}
       hasMoreRelatedItems={hasMoreRelatedItems}
       isLoadingRelatedItems={isLoadingRelatedItems}

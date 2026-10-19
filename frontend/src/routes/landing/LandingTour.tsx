@@ -260,7 +260,7 @@ interface LandingTourProps {
   stepIndex: LandingTourStepIndex;
   onStepChange?: (stepIndex: LandingTourStepIndex) => void;
   onComplete?: () => void;
-  onSkip?: () => void;
+  onSkip?: (source: 'skip_button' | 'close_button') => void;
 }
 
 /** 가치가챠의 핵심 기능을 고정 스냅샷으로 소개하는 4단계 랜딩 투어입니다. */
@@ -314,7 +314,7 @@ export default function LandingTour({
         <SkipIconButton
           type="button"
           aria-label="서비스 소개 건너뛰기"
-          onClick={onSkip}
+          onClick={() => onSkip('close_button')}
         >
           <CloseIcon viewBox="0 0 24 24" aria-hidden="true">
             <path d="M5 5l14 14M19 5 5 19" />
@@ -365,7 +365,7 @@ export default function LandingTour({
             </Progress>
 
             <ButtonGroup>
-              <SkipButton type="button" onClick={onSkip}>
+              <SkipButton type="button" onClick={() => onSkip('skip_button')}>
                 SKIP
               </SkipButton>
               {stepIndex > 0 && (

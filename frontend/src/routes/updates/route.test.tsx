@@ -1,9 +1,21 @@
-import { describe, expect, it } from '@jest/globals';
-import { screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { fireEvent, screen } from '@testing-library/react';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 import { UpdatesRoute } from './route';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
 
 describe('UpdatesRoute', () => {
   it('운영에 공개된 서비스 버전을 최신순으로 안내한다', () => {
@@ -29,5 +41,27 @@ describe('UpdatesRoute', () => {
     expect(
       screen.getAllByRole('link', { name: '전체 변경 기록 보기' }),
     ).toHaveLength(6);
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'updates_page_viewed',
+      {
+        latest_visible_version: 'v1.5.0',
+        release_count: 6,
+      },
+    );
+
+    const latestReleaseLink = screen.getAllByRole('link', {
+      name: '전체 변경 기록 보기',
+    })[0];
+
+    expect(latestReleaseLink).toBeDefined();
+    fireEvent.click(latestReleaseLink!);
+
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'release_notes_selected',
+      {
+        version: 'v1.5.0',
+        is_latest: true,
+      },
+    );
   });
 });

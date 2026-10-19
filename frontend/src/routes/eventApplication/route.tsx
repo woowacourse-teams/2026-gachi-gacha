@@ -193,12 +193,14 @@ export function EventApplicationRoute({
       captureAnalyticsEvent('event_application_completed', {
         track: desiredTrack,
         outcome: 'success',
+        has_completed_trade_evidence: Boolean(completedTradeReference),
       });
       setIsSubmitted(true);
     } catch (error) {
       captureAnalyticsEvent('event_application_completed', {
         track: desiredTrack,
         outcome: 'failure',
+        has_completed_trade_evidence: Boolean(completedTradeReference),
       });
       setErrorMessage(
         error instanceof Error

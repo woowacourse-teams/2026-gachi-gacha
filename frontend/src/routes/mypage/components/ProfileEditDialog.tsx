@@ -12,7 +12,11 @@ import {
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import type { PlaceSearchSelection } from '@/features/placeSearch/placeSearchType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import type { ProfileTradeLocationChange } from '@/shared/analytics/analyticsEventType';
+import type {
+  AnalyticsImageFormat,
+  AnalyticsImageSizeBucket,
+  ProfileTradeLocationChange,
+} from '@/shared/analytics/analyticsEventType';
 
 import {
   Actions,
@@ -47,6 +51,46 @@ import {
 } from './AccountDialog.styles';
 
 const MAX_FIELD_LENGTH = 255;
+
+function getImageFormat(file: File): AnalyticsImageFormat {
+  const normalizedType = file.type.toLowerCase();
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  if (
+    normalizedType === 'image/jpeg' ||
+    ['jpg', 'jpeg'].includes(extension ?? '')
+  ) {
+    return 'jpeg';
+  }
+
+  if (normalizedType === 'image/png' || extension === 'png') {
+    return 'png';
+  }
+
+  if (normalizedType === 'image/webp' || extension === 'webp') {
+    return 'webp';
+  }
+
+  return 'other';
+}
+
+function getImageSizeBucket(fileSize: number): AnalyticsImageSizeBucket {
+  const megabyte = 1024 * 1024;
+
+  if (fileSize < megabyte) {
+    return 'under_1mb';
+  }
+
+  if (fileSize < 5 * megabyte) {
+    return '1_to_5mb';
+  }
+
+  if (fileSize <= 10 * megabyte) {
+    return '5_to_10mb';
+  }
+
+  return 'over_10mb';
+}
 
 function getTradeLocationChange(
   previousLocation: string | null,
@@ -170,8 +214,18 @@ export function ProfileEditDialog({
     }
 
     const rejection = validateProfileImage(file);
+    const imageProperties = {
+      format: getImageFormat(file),
+      size_bucket: getImageSizeBucket(file.size),
+    };
 
     if (rejection) {
+      captureAnalyticsEvent('profile_image_selection_completed', {
+        outcome: 'failure',
+        rejection_reason:
+          rejection === 'too-large' ? 'too_large' : 'unsupported_type',
+        ...imageProperties,
+      });
       setProfileImageFile(null);
       setProfileImageErrorMessage(
         rejection === 'too-large'
@@ -181,6 +235,11 @@ export function ProfileEditDialog({
       return;
     }
 
+    captureAnalyticsEvent('profile_image_selection_completed', {
+      outcome: 'success',
+      rejection_reason: 'none',
+      ...imageProperties,
+    });
     setProfileImageFile(file);
     setProfileImageErrorMessage(null);
   }
@@ -207,9 +266,30 @@ export function ProfileEditDialog({
     setErrorMessage(null);
 
     try {
-      const profileImageUrl = profileImageFile
-        ? await uploadProfileImage(profileImageFile)
-        : member.profileImageUrl;
+      let profileImageUrl = member.profileImageUrl;
+
+      if (profileImageFile) {
+        const imageProperties = {
+          format: getImageFormat(profileImageFile),
+          size_bucket: getImageSizeBucket(profileImageFile.size),
+        };
+
+        captureAnalyticsEvent('profile_image_upload_started', imageProperties);
+
+        try {
+          profileImageUrl = await uploadProfileImage(profileImageFile);
+          captureAnalyticsEvent('profile_image_upload_completed', {
+            outcome: 'success',
+            ...imageProperties,
+          });
+        } catch (error) {
+          captureAnalyticsEvent('profile_image_upload_completed', {
+            outcome: 'failure',
+            ...imageProperties,
+          });
+          throw error;
+        }
+      }
 
       await onSave({
         nickname: normalizedNickname,
@@ -220,6 +300,7 @@ export function ProfileEditDialog({
         outcome: 'success',
         has_trade_location: Boolean(normalizedLocation),
         trade_location_change: tradeLocationChange,
+        image_change: profileImageFile ? 'replaced' : 'unchanged',
       });
       onSaved?.();
       dialogRef.current?.close();
@@ -228,6 +309,7 @@ export function ProfileEditDialog({
         outcome: 'failure',
         has_trade_location: Boolean(normalizedLocation),
         trade_location_change: tradeLocationChange,
+        image_change: profileImageFile ? 'replaced' : 'unchanged',
       });
       setErrorMessage(
         error instanceof Error

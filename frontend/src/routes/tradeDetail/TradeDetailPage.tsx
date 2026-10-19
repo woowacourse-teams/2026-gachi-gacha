@@ -21,6 +21,7 @@ export type TradeDetailAction = 'chat' | 'login' | 'edit' | null;
 interface TradeDetailPageProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
+  hasSubmittedComment?: boolean;
   relatedItems?: TradeItem[];
   hasMoreRelatedItems?: boolean;
   isLoadingRelatedItems?: boolean;
@@ -39,6 +40,7 @@ interface TradeDetailPageProps {
 export default function TradeDetailPage({
   detail,
   action = 'chat',
+  hasSubmittedComment = false,
   relatedItems = [],
   hasMoreRelatedItems = false,
   isLoadingRelatedItems = false,
@@ -56,7 +58,11 @@ export default function TradeDetailPage({
       <AppHeader currentPath="/trade" />
 
       <Main>
-        <TradeDetail detail={detail} action={action} />
+        <TradeDetail
+          detail={detail}
+          action={action}
+          hasSubmittedComment={hasSubmittedComment}
+        />
 
         <TradeComments
           comments={comments}

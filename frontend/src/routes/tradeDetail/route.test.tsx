@@ -1,14 +1,26 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
 import { TradeDetailRoute } from './route';
 import { TRADE_DETAIL } from './storybook/tradeDetailMocks';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
 
 function createAccessToken(memberId: number): string {
   const encodedPayload = btoa(JSON.stringify({ memberId }));
@@ -207,6 +219,27 @@ describe('TradeDetailRoute', () => {
       nickname: '홍길동',
       content: '교환하고 싶어요.',
     });
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_comment_submission_completed',
+      {
+        trade_id: TRADE_DETAIL.tradeId,
+        author_type: 'guest',
+        outcome: 'success',
+        comment_length: 9,
+        has_custom_guest_nickname: true,
+      },
+    );
+
+    await user.click(screen.getByRole('link', { name: '채팅하기' }));
+
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_chat_started',
+      {
+        trade_id: TRADE_DETAIL.tradeId,
+        is_authenticated: false,
+        comment_context: 'submitted_this_session',
+      },
+    );
   });
 });
 
