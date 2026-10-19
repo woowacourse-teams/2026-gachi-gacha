@@ -62,6 +62,19 @@ describe('MyPageRoute 내 교환글 수정', () => {
     ).toHaveAttribute('href', '/trade/17');
   });
 
+  it('전체 보기를 누르면 내 교환글 전용 화면으로 이동한다', async () => {
+    server.use(authenticatedMemberHandler, myTradesHandler);
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    expect(
+      await screen.findByRole('link', { name: '전체 보기' }),
+    ).toHaveAttribute('href', '/mypage/trades');
+  });
+
   it('고객센터를 공식 인스타그램 문의로 연결한다', async () => {
     server.use(authenticatedMemberHandler, myTradesHandler);
 

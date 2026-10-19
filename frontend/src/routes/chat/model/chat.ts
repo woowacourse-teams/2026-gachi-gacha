@@ -20,6 +20,12 @@ export interface ChatMessage {
   sentAt: string;
   /** 날짜 구분선용 날짜 키(YYYY-MM-DD). 시각을 알 수 없으면 빈 문자열 */
   sentDate: string;
+  images: ChatMessageImage[];
+}
+
+export interface ChatMessageImage {
+  url: string;
+  name: string;
 }
 
 export interface ChatRoom {

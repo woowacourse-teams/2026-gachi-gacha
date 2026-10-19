@@ -64,28 +64,34 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 거래·교환 이벤트
 
-| 이벤트                            | 발생 시점                  | 주요 속성                                                                     |
-| --------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
-| `trade_list_load_completed`       | 거래 목록 조회 완료        | `query_applied`, `outcome`, `result_count`, `total_count`                     |
-| `trade_search_submitted`          | 거래 검색 제출             | `query_length`                                                                |
-| `trade_selected`                  | 거래 카드 선택             | `trade_id`, `status`, `source`                                                |
-| `trade_create_started`            | 글 등록 진입               | `source`                                                                      |
-| `trade_edit_started`              | 글 수정 진입               | `trade_id`, `source`                                                          |
-| `trade_delete_started`            | 글 삭제 확인창 열기        | `trade_id`, `source`                                                          |
-| `trade_list_more_requested`       | 다음 거래 목록 요청        | `query_applied`, `loaded_item_count`, `source`                                |
-| `trade_form_submitted`            | 유효한 등록·수정 폼 제출   | `mode`, 이미지·카테고리 수, 선택 필드 존재 여부                               |
-| `trade_form_completed`            | 등록·수정 API 완료         | `mode`, `trade_id`, `outcome`                                                 |
-| `trade_category_toggled`          | 작성 폼 카테고리 선택·해제 | `mode`, `category_id`, `action`                                               |
-| `trade_photo_selection_completed` | 사진 선택 검증 완료        | 허용·거절·전체 파일 수                                                        |
-| `place_search_opened`             | 장소 검색창 열기           | `place_context`, `trade_form_mode`                                            |
-| `place_search_completed`          | 장소 검색 완료             | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length` |
-| `place_search_result_selected`    | 장소 검색 결과 선택        | `place_context`, `trade_form_mode`, `result_position`                         |
-| `place_selection_cleared`         | 선택한 장소 해제           | `place_context`, `trade_form_mode`                                            |
-| `trade_status_update_completed`   | 거래 상태 변경 완료        | 이전·다음 상태, `outcome`                                                     |
-| `trade_delete_completed`          | 글 삭제 완료               | `trade_id`, `outcome`                                                         |
-| `trade_chat_started`              | 거래 상세에서 채팅 선택    | `trade_id`, `is_authenticated`                                                |
+| 이벤트                             | 발생 시점                  | 주요 속성                                                                     |
+| ---------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| `trade_list_load_completed`        | 거래 목록 조회 완료        | `query_applied`, `outcome`, `result_count`, `total_count`                     |
+| `trade_search_submitted`           | 거래 검색 제출             | `query_length`                                                                |
+| `trade_selected`                   | 거래 카드 선택             | `trade_id`, `status`, `source`                                                |
+| `trade_create_started`             | 글 등록 진입               | `source`                                                                      |
+| `trade_edit_started`               | 글 수정 진입               | `trade_id`, `source`                                                          |
+| `trade_delete_started`             | 글 삭제 확인창 열기        | `trade_id`, `source`                                                          |
+| `trade_list_more_requested`        | 다음 거래 목록 요청        | `query_applied`, `loaded_item_count`, `source`                                |
+| `trade_form_submitted`             | 유효한 등록·수정 폼 제출   | `mode`, 이미지·카테고리 수, 선택 필드 존재 여부                               |
+| `trade_form_completed`             | 등록·수정 API 완료         | `mode`, `trade_id`, `outcome`                                                 |
+| `trade_category_toggled`           | 작성 폼 카테고리 선택·해제 | `mode`, `category_id`, `action`                                               |
+| `trade_photo_selection_completed`  | 사진 선택 검증 완료        | `source`, 허용·거절·전체 파일 수                                              |
+| `trade_photo_reordered`            | 사진 순서 변경             | `method`, `from_index`, `to_index`, `total_count`                             |
+| `place_search_opened`              | 장소 검색창 열기           | `place_context`, `trade_form_mode`                                            |
+| `place_search_completed`           | 장소 검색 완료             | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length` |
+| `place_search_result_selected`     | 장소 검색 결과 선택        | `place_context`, `trade_form_mode`, `result_position`                         |
+| `place_selection_cleared`          | 선택한 장소 해제           | `place_context`, `trade_form_mode`                                            |
+| `trade_status_update_completed`    | 거래 상태 변경 완료        | 이전·다음 상태, `outcome`                                                     |
+| `trade_delete_completed`           | 글 삭제 완료               | `trade_id`, `outcome`                                                         |
+| `trade_chat_started`               | 거래 상세에서 채팅 선택    | `trade_id`, `is_authenticated`                                                |
+| `mypage_trade_filter_selected`     | 내 교환글 상태 필터 선택   | `status`                                                                      |
+| `mypage_trade_list_load_completed` | 내 교환글 목록 조회 완료   | `status`, `outcome`, `result_count`, `total_count`                            |
+| `mypage_trade_list_more_requested` | 다음 내 교환글 목록 요청   | `status`, `loaded_item_count`                                                 |
 
 `place_context`는 `trade_purchase_store`, `trade_exchange_place`, `profile_preferred_area` 중 하나다. 프로필 흐름에는 `trade_form_mode = null`을 사용한다.
+
+내 교환글 이벤트의 `status`는 전체 조회일 때 `ALL`, 상태별 조회일 때 `AVAILABLE`, `IN_PROGRESS`, `COMPLETED`를 사용한다. 글 제목이나 장소명처럼 사용자가 입력한 원문은 수집하지 않는다.
 
 ## 채팅·계정 이벤트
 
