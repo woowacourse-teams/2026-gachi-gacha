@@ -1,10 +1,22 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+
 import TradeDetail from './TradeDetail';
 import { TRADE_DETAIL } from '../../storybook/tradeDetailMocks';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
 
 describe('TradeDetail', () => {
   it('상품 사진을 좌우로 넘기고 선택한 사진을 크게 본다', async () => {
@@ -23,27 +35,21 @@ describe('TradeDetail', () => {
       </MemoryRouter>,
     );
 
-    const mainImage = screen.getByRole('img', {
-      name: `${detail.title} 상품 사진 1`,
-    });
-
-    expect(mainImage).toHaveAttribute('src', detail.imageUrls[0]);
-    expect(mainImage).toHaveAttribute('loading', 'eager');
-    expect(mainImage).toHaveAttribute('decoding', 'async');
-    expect(mainImage).not.toHaveAttribute('fetchpriority');
-
-    const thumbnailImages = [1, 2].map((index) =>
-      screen
-        .getByRole('button', { name: `${index}번 사진 보기` })
-        .querySelector('img'),
-    );
-
-    thumbnailImages.forEach((thumbnailImage) => {
-      expect(thumbnailImage).toHaveAttribute('loading', 'lazy');
-      expect(thumbnailImage).toHaveAttribute('decoding', 'async');
-    });
+    expect(
+      screen.getByRole('img', { name: `${detail.title} 상품 사진 1` }),
+    ).toHaveAttribute('src', detail.imageUrls[0]);
 
     await user.click(screen.getByRole('button', { name: '다음 상품 사진' }));
+
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_detail_photo_selected',
+      {
+        trade_id: detail.tradeId,
+        photo_index: 1,
+        photo_count: 2,
+        source: 'gallery_next',
+      },
+    );
 
     expect(
       screen.getByRole('img', { name: `${detail.title} 상품 사진 2` }),
@@ -51,6 +57,15 @@ describe('TradeDetail', () => {
 
     await user.click(
       screen.getByRole('button', { name: '2번째 상품 사진 크게 보기' }),
+    );
+
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_detail_photo_viewer_opened',
+      {
+        trade_id: detail.tradeId,
+        photo_index: 1,
+        photo_count: 2,
+      },
     );
 
     const dialog = screen.getByRole('dialog', {

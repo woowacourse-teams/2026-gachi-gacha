@@ -67,8 +67,13 @@ export function useTradeComments({
   isAuthenticated,
 }: UseTradeCommentsOptions) {
   const [attempt, setAttempt] = useState(0);
+  const [hasSubmittedComment, setHasSubmittedComment] = useState(false);
   const [state, setState] =
     useState<AsyncState<TradeCommentResponse[]>>(LOADING_STATE);
+
+  useEffect(() => {
+    setHasSubmittedComment(false);
+  }, [tradeId]);
 
   const retry = useCallback(() => {
     setAttempt((currentAttempt) => currentAttempt + 1);
@@ -150,12 +155,19 @@ export function useTradeComments({
           trade_id: tradeId,
           author_type: isAuthenticated ? 'member' : 'guest',
           outcome: 'success',
+          comment_length: submission.content.length,
+          has_custom_guest_nickname:
+            !isAuthenticated && Boolean(submission.nickname),
         });
+        setHasSubmittedComment(true);
       } catch (error) {
         captureAnalyticsEvent('trade_comment_submission_completed', {
           trade_id: tradeId,
           author_type: isAuthenticated ? 'member' : 'guest',
           outcome: 'failure',
+          comment_length: submission.content.length,
+          has_custom_guest_nickname:
+            !isAuthenticated && Boolean(submission.nickname),
         });
         throw error;
       }
@@ -173,5 +185,5 @@ export function useTradeComments({
     [postAuthorId, state, viewerMemberId],
   );
 
-  return { comments, state, submit, retry };
+  return { comments, state, submit, retry, hasSubmittedComment };
 }
