@@ -50,6 +50,9 @@ public enum ErrorCode {
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE05", "유효하지 않은 refresh token입니다."),
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE06", "만료된 refresh token입니다."),
     REUSED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE07", "이미 사용된 refresh token입니다. 다시 로그인해 주세요."),
+
+    // Member Block
+    SELF_BLOCK_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "BLE001", "자기 자신은 차단할 수 없습니다."),
     
     // Chat
     CHAT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE001", "채팅 상대방 정보를 찾을 수 없습니다."),

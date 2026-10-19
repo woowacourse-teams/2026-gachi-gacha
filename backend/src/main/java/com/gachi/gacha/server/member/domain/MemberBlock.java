@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.member.domain;
 
+import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.member.domain.exception.SelfBlockNotAllowedException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -41,6 +43,13 @@ public class MemberBlock {
     }
 
     public static MemberBlock of(final Long blockerId, final Long blockedId) {
+        validateNotSelf(blockerId, blockedId);
         return new MemberBlock(blockerId, blockedId);
+    }
+
+    private static void validateNotSelf(final Long blockerId, final Long blockedId) {
+        if (blockerId.equals(blockedId)) {
+            throw new SelfBlockNotAllowedException(ErrorCode.SELF_BLOCK_NOT_ALLOWED);
+        }
     }
 }
