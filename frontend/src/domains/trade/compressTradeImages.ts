@@ -1,5 +1,6 @@
 import imageCompression from 'browser-image-compression';
 
+const WEBP_MIME_TYPE = 'image/webp';
 const PNG_MIME_TYPE = 'image/png';
 const MAX_COMPRESSED_SIZE_MB = 1;
 const MAX_WIDTH_OR_HEIGHT = 800;
@@ -17,12 +18,19 @@ export interface TradeImageCompressionProgress {
 
 type ProgressListener = (progress: TradeImageCompressionProgress) => void;
 
-function createPngFileName(fileName: string): string {
+type SupportedCompressionMimeType =
+  typeof WEBP_MIME_TYPE | typeof PNG_MIME_TYPE;
+
+function createCompressedFileName(
+  fileName: string,
+  mimeType: SupportedCompressionMimeType,
+): string {
   const extensionStartIndex = fileName.lastIndexOf('.');
   const baseName =
     extensionStartIndex > 0 ? fileName.slice(0, extensionStartIndex) : fileName;
+  const extension = mimeType === WEBP_MIME_TYPE ? 'webp' : 'png';
 
-  return `${baseName}.png`;
+  return `${baseName}.${extension}`;
 }
 
 /** 선택 순서를 유지하면서 모바일 메모리를 보호하기 위해 최대 두 장씩 압축한다. */
@@ -60,33 +68,65 @@ export async function compressTradeImages(
         continue;
       }
 
-      const compressedBlob = await imageCompression(file, {
-        fileType: PNG_MIME_TYPE,
+      const onImageProgress = (progress: number) => {
+        // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
+        imageProgresses[imageIndex] = Math.max(
+          imageProgresses[imageIndex] ?? 0,
+          Math.min(99, Math.round(progress)),
+        );
+        reportProgress();
+      };
+
+      const compressionOptions = {
         initialQuality: INITIAL_QUALITY,
         maxSizeMB: MAX_COMPRESSED_SIZE_MB,
         maxWidthOrHeight: MAX_WIDTH_OR_HEIGHT,
+        onProgress: onImageProgress,
         preserveExif: false,
         signal: controller.signal,
         useWebWorker: false,
-        onProgress: (progress) => {
-          // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
-          imageProgresses[imageIndex] = Math.max(
-            imageProgresses[imageIndex] ?? 0,
-            Math.min(99, Math.round(progress)),
-          );
-          reportProgress();
-        },
-      });
+      };
 
-      if (compressedBlob.type !== PNG_MIME_TYPE) {
-        throw new Error('이 브라우저에서는 PNG 변환을 지원하지 않습니다.');
+      let compressedBlob: File;
+
+      try {
+        compressedBlob = await imageCompression(file, {
+          ...compressionOptions,
+          fileType: WEBP_MIME_TYPE,
+        });
+      } catch {
+        compressedBlob = await imageCompression(file, {
+          ...compressionOptions,
+          fileType: PNG_MIME_TYPE,
+        });
       }
+
+      if (
+        compressedBlob.type !== WEBP_MIME_TYPE &&
+        compressedBlob.type !== PNG_MIME_TYPE
+      ) {
+        compressedBlob = await imageCompression(file, {
+          ...compressionOptions,
+          fileType: PNG_MIME_TYPE,
+        });
+      }
+
+      if (
+        compressedBlob.type !== WEBP_MIME_TYPE &&
+        compressedBlob.type !== PNG_MIME_TYPE
+      ) {
+        throw new Error(
+          '이 브라우저에서는 WebP와 PNG 변환을 지원하지 않습니다.',
+        );
+      }
+
+      const outputMimeType = compressedBlob.type;
 
       results[imageIndex] = new File(
         [compressedBlob],
-        createPngFileName(file.name),
+        createCompressedFileName(file.name, outputMimeType),
         {
-          type: PNG_MIME_TYPE,
+          type: outputMimeType,
           lastModified: file.lastModified,
         },
       );
