@@ -9,11 +9,15 @@ import {
   getChatRoom,
   getChatRooms,
   markChatMessagesRead,
+  uploadChatImages,
 } from '@/domains/chat/api/chatApi';
 import type {
   ChatMessage as ChatMessageData,
+  ChatMessageFile,
   ChatRoomSummary,
+  ChatRoomUpdate,
 } from '@/domains/chat/chatType';
+import { compressChatImages } from '@/domains/chat/compressChatImages';
 import { useChatSocket } from '@/domains/chat/useChatSocket';
 import { getTradeDetail } from '@/domains/trade/api/getTradeDetail';
 import { updateTradeStatus } from '@/domains/trade/api/updateTradeStatus';
@@ -98,7 +102,9 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
               ? {
                   ...room,
                   lastMessage: {
-                    preview: message.content,
+                    preview:
+                      message.content ||
+                      (message.files.length > 0 ? '사진을 보냈어요.' : ''),
                     sentAt: message.createdAt,
                   },
                   unreadCount: 0,
@@ -110,15 +116,70 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     },
     [activeRoomId, markRead, memberId],
   );
+  const receiveRoomUpdate = useCallback(
+    ({ room }: ChatRoomUpdate) => {
+      setState((current) => {
+        const nextRoom =
+          room.roomId === activeRoomId ? { ...room, unreadCount: 0 } : room;
+
+        return {
+          ...current,
+          rooms: [
+            nextRoom,
+            ...current.rooms.filter(
+              (currentRoom) => currentRoom.roomId !== room.roomId,
+            ),
+          ],
+          selectedRoom:
+            current.selectedRoom?.roomId === room.roomId
+              ? nextRoom
+              : current.selectedRoom,
+        };
+      });
+    },
+    [activeRoomId],
+  );
   const {
     status: socketStatus,
     errorMessage: socketErrorMessage,
     sendTextMessage,
+    sendImageMessage: sendImageSocketMessage,
   } = useChatSocket({
     roomId: activeRoomId,
     memberId,
     onMessage: receiveMessage,
+    onRoomUpdate: receiveRoomUpdate,
   });
+
+  const sendImageMessage = useCallback(
+    async (content: string, images: File[]) => {
+      if (!activeRoomId || images.length === 0) {
+        return;
+      }
+
+      let uploadedFiles: ChatMessageFile[];
+
+      try {
+        const compressedImages = await compressChatImages(images);
+        uploadedFiles = await uploadChatImages(compressedImages);
+        captureAnalyticsEvent('chat_image_upload_completed', {
+          room_id: activeRoomId,
+          outcome: 'success',
+          image_count: images.length,
+        });
+      } catch (error) {
+        captureAnalyticsEvent('chat_image_upload_completed', {
+          room_id: activeRoomId,
+          outcome: 'failure',
+          image_count: images.length,
+        });
+        throw error;
+      }
+
+      await sendImageSocketMessage(content, uploadedFiles);
+    },
+    [activeRoomId, sendImageSocketMessage],
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -237,7 +298,10 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   }, [activeRoomId]);
 
   const conversations = useMemo(
-    () => state.rooms.map(toConversation),
+    () =>
+      state.rooms
+        .filter((room) => room.lastMessage !== null)
+        .map(toConversation),
     [state.rooms],
   );
   const selectedRoom = useMemo(
@@ -436,6 +500,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       socketStatus={socketStatus}
       socketErrorMessage={socketErrorMessage}
       onSendMessage={sendTextMessage}
+      onSendImages={sendImageMessage}
       hasPreviousMessages={state.hasPreviousMessages}
       isLoadingPreviousMessages={state.isLoadingPreviousMessages}
       previousMessagesError={state.previousMessagesError}
@@ -609,9 +674,13 @@ function toMessage(
   return {
     id: message.messageId,
     sender: String(message.senderId) === memberId ? 'me' : 'other',
-    text: message.content,
+    text: message.content ?? '',
     sentAt: formatMessageTime(message.createdAt),
     sentDate: toChatDateKey(message.createdAt),
+    images: message.files.map((file) => ({
+      url: file.url,
+      name: file.originalName,
+    })),
   };
 }
 

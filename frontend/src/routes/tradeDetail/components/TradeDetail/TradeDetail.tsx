@@ -195,6 +195,7 @@ export default function TradeDetail({
         </Gallery>
 
         <Info>
+          <ItemRole>가지고 있는 것</ItemRole>
           <Title>{detail.title}</Title>
           <Meta>
             <span>{formatRelativeTime(detail.createdAt)}</span>
@@ -205,7 +206,7 @@ export default function TradeDetail({
 
           <InfoList>
             <InfoRow>
-              <InfoLabel>원하는 교환</InfoLabel>
+              <InfoLabel>얻고 싶은 것</InfoLabel>
               <InfoValue>{detail.desiredProduction || '제안 받아요'}</InfoValue>
             </InfoRow>
             <InfoRow>
@@ -227,7 +228,7 @@ export default function TradeDetail({
           </InfoList>
 
           <DescriptionSection>
-            <SectionTitle>상품 설명</SectionTitle>
+            <SectionTitle>가지고 있는 상품 설명</SectionTitle>
             <Description>
               {detail.description || '등록된 설명이 없어요.'}
             </Description>
@@ -483,6 +484,13 @@ const ThumbnailPhoto = styled.img`
 
 const Info = styled.div`
   padding-top: 8px;
+`;
+
+const ItemRole = styled.p`
+  margin: 0 0 8px;
+  color: #ed174c;
+  font-size: 14px;
+  font-weight: 800;
 `;
 
 const CategoryList = styled.div`

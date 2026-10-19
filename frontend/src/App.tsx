@@ -102,6 +102,12 @@ const MyPageRoute = lazy(async () => {
   return { default: routeModule.MyPageRoute };
 });
 
+const MyTradesRoute = lazy(async () => {
+  const routeModule = await import('@/routes/mypage/trades/route');
+
+  return { default: routeModule.MyTradesRoute };
+});
+
 const EventApplicationRoute = lazy(async () => {
   const routeModule = await import('@/routes/eventApplication/route');
 
@@ -197,6 +203,7 @@ function CanonicalRoutes() {
           />
           <Route path="/notifications" element={<NotificationsRoute />} />
           <Route path="/mypage" element={<MyPageRoute />} />
+          <Route path="/mypage/trades" element={<MyTradesRoute />} />
           <Route
             path="/events/popular-goods"
             element={<EventApplicationRoute />}

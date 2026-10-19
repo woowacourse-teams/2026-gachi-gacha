@@ -82,7 +82,8 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `trade_form_submitted`               | 유효한 등록·수정 폼 제출   | `mode`, 이미지·카테고리 수, 선택 필드 존재 여부                                     |
 | `trade_form_completed`               | 등록·수정 API 완료         | `mode`, `trade_id`, `outcome`                                                       |
 | `trade_category_toggled`             | 작성 폼 카테고리 선택·해제 | `mode`, `category_id`, `action`                                                     |
-| `trade_photo_selection_completed`    | 사진 선택 검증 완료        | 허용·거절·전체 파일 수                                                              |
+| `trade_photo_selection_completed`    | 사진 선택 검증 완료        | `source`, 허용·거절·전체 파일 수                                                    |
+| `trade_photo_reordered`              | 사진 순서 변경             | `method`, `from_index`, `to_index`, `total_count`                                   |
 | `place_search_opened`                | 장소 검색창 열기           | `place_context`, `trade_form_mode`                                                  |
 | `place_search_completed`             | 장소 검색 완료             | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length`       |
 | `place_search_result_selected`       | 장소 검색 결과 선택        | `place_context`, `trade_form_mode`, `result_position`                               |
@@ -92,10 +93,15 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `trade_chat_started`                 | 거래 상세에서 채팅 선택    | `trade_id`, `is_authenticated`, `comment_context`                                   |
 | `trade_comments_load_completed`      | 댓글 목록 조회 완료        | `trade_id`, `outcome`, `comment_count`                                              |
 | `trade_comment_submission_completed` | 댓글 등록 API 완료         | `trade_id`, `author_type`, `outcome`, `comment_length`, `has_custom_guest_nickname` |
+| `mypage_trade_filter_selected`       | 내 교환글 상태 필터 선택   | `status`                                                                            |
+| `mypage_trade_list_load_completed`   | 내 교환글 목록 조회 완료   | `status`, `outcome`, `result_count`, `total_count`                                  |
+| `mypage_trade_list_more_requested`   | 다음 내 교환글 목록 요청   | `status`, `loaded_item_count`                                                       |
 
 `place_context`는 `trade_purchase_store`, `trade_exchange_place`, `profile_preferred_area` 중 하나다. 프로필 흐름에는 `trade_form_mode = null`을 사용한다.
 
 `comment_context = submitted_this_session`은 현재 거래 상세 화면에서 댓글 등록에 성공한 뒤 채팅을 선택했다는 뜻이다. 과거 댓글 작성 여부나 실제 메시지 전송 여부를 뜻하지 않으며, 실제 대화 시작은 `chat_message_send_completed`와 함께 본다. 댓글 본문·닉네임·IP 원문은 수집하지 않는다.
+
+내 교환글 이벤트의 `status`는 전체 조회일 때 `ALL`, 상태별 조회일 때 `AVAILABLE`, `IN_PROGRESS`, `COMPLETED`를 사용한다. 글 제목이나 장소명처럼 사용자가 입력한 원문은 수집하지 않는다.
 
 ## 채팅·계정 이벤트
 

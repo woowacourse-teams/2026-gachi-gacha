@@ -1,6 +1,13 @@
 import type { ReactElement } from 'react';
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
@@ -12,6 +19,17 @@ function renderPanel(panel: ReactElement) {
 }
 
 describe('ChatRoomPanel', () => {
+  beforeEach(() => {
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: jest.fn((file: File) => `blob:${file.name}`),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: jest.fn(),
+    });
+  });
+
   afterEach(() => {
     jest.useRealTimers();
   });
@@ -31,6 +49,7 @@ describe('ChatRoomPanel', () => {
       text: text ?? '',
       sentAt: '오후 2:00',
       sentDate: sentDate ?? '',
+      images: [],
     }));
 
     renderPanel(
@@ -77,6 +96,151 @@ describe('ChatRoomPanel', () => {
     expect(
       screen.getByPlaceholderText('채팅 서버에 연결하고 있어요'),
     ).toBeInTheDocument();
+  });
+
+  it('사진을 선택하면 미리보기를 제공하고 취소할 수 있다', async () => {
+    const user = userEvent.setup();
+
+    renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        socketStatus="connected"
+        onSendImages={async () => undefined}
+      />,
+    );
+
+    const image = new File(['image'], 'offer.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText('사진 추가'), image);
+
+    expect(
+      screen.getByRole('img', { name: 'offer.jpg 미리보기' }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'offer.jpg 사진 취소' }),
+    );
+    expect(
+      screen.queryByRole('img', { name: 'offer.jpg 미리보기' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('사진과 선택적인 설명을 함께 전송하고 성공 후 입력을 비운다', async () => {
+    const user = userEvent.setup();
+    const handleSendImages =
+      jest.fn<(content: string, files: File[]) => Promise<void>>();
+    handleSendImages.mockResolvedValue();
+
+    renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        socketStatus="connected"
+        onSendImages={handleSendImages}
+      />,
+    );
+
+    const image = new File(['image'], 'offer.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText('사진 추가'), image);
+    await user.type(
+      screen.getByRole('textbox', { name: '메시지' }),
+      '이 사진이에요',
+    );
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    expect(handleSendImages).toHaveBeenCalledWith('이 사진이에요', [image]);
+    expect(screen.getByRole('textbox', { name: '메시지' })).toHaveValue('');
+    expect(screen.queryByLabelText('전송할 사진')).not.toBeInTheDocument();
+  });
+
+  it('채팅 입력 영역에 놓은 사진을 미리보기에 추가한다', () => {
+    renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        socketStatus="connected"
+        onSendImages={async () => undefined}
+      />,
+    );
+
+    const image = new File(['image'], 'dropped.png', { type: 'image/png' });
+    const composerArea = screen.getByRole('form', {
+      name: '메시지 입력 영역',
+    }).parentElement;
+
+    fireEvent.drop(composerArea as HTMLElement, {
+      dataTransfer: { files: [image] },
+    });
+
+    expect(
+      screen.getByRole('img', { name: 'dropped.png 미리보기' }),
+    ).toBeInTheDocument();
+  });
+
+  it('사진 전송이 실패하면 작성 내용과 선택 사진을 유지한다', async () => {
+    const user = userEvent.setup();
+
+    renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        socketStatus="connected"
+        onSendImages={async () => {
+          throw new Error('사진을 전송하지 못했습니다.');
+        }}
+      />,
+    );
+
+    const image = new File(['image'], 'offer.jpg', { type: 'image/jpeg' });
+    await user.upload(screen.getByLabelText('사진 추가'), image);
+    await user.type(
+      screen.getByRole('textbox', { name: '메시지' }),
+      '다시 보낼 내용',
+    );
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '사진을 전송하지 못했습니다.',
+    );
+    expect(screen.getByRole('textbox', { name: '메시지' })).toHaveValue(
+      '다시 보낼 내용',
+    );
+    expect(
+      screen.getByRole('img', { name: 'offer.jpg 미리보기' }),
+    ).toBeInTheDocument();
+  });
+
+  it('수신한 사진을 기존 사진 뷰어로 확대한다', async () => {
+    const user = userEvent.setup();
+    const room = {
+      ...SELECTED_CHAT_ROOM,
+      messages: [
+        {
+          id: 'image-message',
+          sender: 'other' as const,
+          text: '',
+          sentAt: '오후 2:00',
+          sentDate: '2026-10-01',
+          images: [
+            {
+              url: 'https://cdn.example.com/chat/photo.webp',
+              name: '교환 사진',
+            },
+          ],
+        },
+      ],
+    };
+
+    renderPanel(<ChatRoomPanel room={room} />);
+    await user.click(
+      screen.getByRole('button', { name: '1번째 사진 크게 보기' }),
+    );
+
+    expect(
+      await screen.findByRole('dialog', { name: '채팅 사진 크게 보기' }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '채팅 사진 닫기' }));
+    await waitFor(() => {
+      expect(
+        screen.queryByRole('dialog', { name: '채팅 사진 크게 보기' }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('이전 메시지가 있을 때 버튼으로 추가 조회한다', async () => {
