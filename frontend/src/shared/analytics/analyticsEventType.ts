@@ -143,6 +143,19 @@ export interface AnalyticsEventPropertiesMap {
     loaded_item_count: number;
     source: 'trade_list' | 'related_list';
   };
+  mypage_trade_filter_selected: {
+    status: 'ALL' | 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
+  };
+  mypage_trade_list_load_completed: {
+    status: 'ALL' | 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
+    outcome: AnalyticsOutcome;
+    result_count: number;
+    total_count: number;
+  };
+  mypage_trade_list_more_requested: {
+    status: 'ALL' | 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
+    loaded_item_count: number;
+  };
   trade_form_submitted: {
     mode: TradeFormMode;
     trade_id: number | null;
