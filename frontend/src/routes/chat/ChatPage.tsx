@@ -15,6 +15,7 @@ interface ChatPageProps {
   socketStatus?: ChatSocketStatus;
   socketErrorMessage?: string | null;
   onSendMessage?: (content: string) => Promise<void>;
+  onSendImages?: (content: string, images: File[]) => Promise<void>;
   presentation?: 'drawer' | 'modal' | 'split';
   onSelectConversation?: (conversationId: number | null) => void;
   onCloseModal?: () => void;
@@ -31,6 +32,7 @@ export default function ChatPage({
   socketStatus = 'disconnected',
   socketErrorMessage = null,
   onSendMessage,
+  onSendImages,
   presentation = 'drawer',
   onSelectConversation,
   onCloseModal,
@@ -59,6 +61,7 @@ export default function ChatPage({
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
             hasPreviousMessages={hasPreviousMessages}
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
@@ -101,6 +104,7 @@ export default function ChatPage({
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
             hasPreviousMessages={hasPreviousMessages}
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
@@ -131,6 +135,7 @@ export default function ChatPage({
           socketStatus={socketStatus}
           socketErrorMessage={socketErrorMessage}
           onSendMessage={onSendMessage}
+          onSendImages={onSendImages}
           hasPreviousMessages={hasPreviousMessages}
           isLoadingPreviousMessages={isLoadingPreviousMessages}
           previousMessagesError={previousMessagesError}

@@ -100,6 +100,25 @@ function getRooms() {
 }
 
 export const chatHandlers = [
+  http.post('/api/v1/files', async ({ request }) => {
+    const formData = await request.formData();
+    const files = formData
+      .getAll('files')
+      .filter((file): file is File => file instanceof File);
+
+    return HttpResponse.json({
+      code: 'C000',
+      message: '정상',
+      data: {
+        files: files.map((file, index) => ({
+          url: `https://placehold.co/600x600/png?text=Chat+${index + 1}`,
+          originalName: file.name,
+          contentType: file.type,
+          size: file.size,
+        })),
+      },
+    });
+  }),
   http.get(`${CHAT_ROOMS_PATH}/me`, () =>
     HttpResponse.json({
       code: 'C000',

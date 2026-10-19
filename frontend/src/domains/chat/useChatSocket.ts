@@ -3,7 +3,7 @@ import { Client, type IMessage } from '@stomp/stompjs';
 
 import { readAccessToken } from '@/features/auth/authTokenStorage';
 
-import type { ChatMessage } from './chatType';
+import type { ChatMessage, ChatMessageFile } from './chatType';
 
 export type ChatSocketStatus =
   'connecting' | 'connected' | 'disconnected' | 'error';
@@ -18,6 +18,10 @@ interface UseChatSocketResult {
   status: ChatSocketStatus;
   errorMessage: string | null;
   sendTextMessage: (content: string) => Promise<void>;
+  sendImageMessage: (
+    content: string,
+    files: ChatMessageFile[],
+  ) => Promise<void>;
 }
 
 const RECONNECT_DELAY = 5_000;
@@ -116,6 +120,7 @@ export function useChatSocket({
           senderId: Number(memberId ?? 3),
           type: 'TEXT',
           content: normalizedContent,
+          files: [],
           createdAt: new Date().toISOString(),
         });
         return;
@@ -142,7 +147,50 @@ export function useChatSocket({
     [memberId, roomId],
   );
 
-  return { status, errorMessage, sendTextMessage };
+  const sendImageMessage = useCallback(
+    async (content: string, files: ChatMessageFile[]) => {
+      if (!roomId || files.length === 0) {
+        return;
+      }
+
+      const normalizedContent = content.trim();
+
+      if (__USE_MSW__) {
+        onMessageRef.current({
+          messageId: `mock-image-${Date.now()}`,
+          sequence: Date.now(),
+          roomId,
+          senderId: Number(memberId ?? 3),
+          type: 'IMAGE',
+          content: normalizedContent || null,
+          files,
+          createdAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      const client = clientRef.current;
+
+      if (!client?.connected) {
+        throw new Error(
+          '채팅 서버에 연결 중입니다. 잠시 후 다시 시도해주세요.',
+        );
+      }
+
+      client.publish({
+        destination: `/app/chat/rooms/${roomId}/messages`,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          type: 'IMAGE',
+          content: normalizedContent || null,
+          files,
+        }),
+      });
+    },
+    [memberId, roomId],
+  );
+
+  return { status, errorMessage, sendTextMessage, sendImageMessage };
 }
 
 function createWebSocketUrl(): string {
@@ -156,7 +204,14 @@ function handleMessageFrame(
   onMessage: (message: ChatMessage) => void,
 ): void {
   try {
-    onMessage(JSON.parse(frame.body) as ChatMessage);
+    const parsed = JSON.parse(frame.body) as ChatMessage;
+
+    onMessage({
+      ...parsed,
+      messageId: String(parsed.messageId),
+      content: typeof parsed.content === 'string' ? parsed.content : null,
+      files: Array.isArray(parsed.files) ? parsed.files : [],
+    });
   } catch {
     // 형식이 올바르지 않은 프레임 하나가 이후 메시지 수신을 막지 않도록 무시합니다.
   }

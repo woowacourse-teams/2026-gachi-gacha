@@ -1,14 +1,30 @@
-import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react';
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+} from 'react';
 import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
+import {
+  CHAT_IMAGE_ACCEPT,
+  MAX_CHAT_IMAGE_COUNT,
+  MAX_CHAT_IMAGE_SIZE_MB,
+  validateChatImage,
+} from '@/domains/chat/chatImagePolicy';
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
+import ChatImagePreview from './ChatImagePreview';
+import ChatMessageGallery from './ChatMessageGallery';
 import type { ChatRoom } from '../../model/chat';
 import { formatChatDateLabel } from '../../model/chatDate';
 import { getChatTradeStatusAction } from '../../model/chatTradeStatusAction';
@@ -20,6 +36,8 @@ interface ChatRoomPanelProps {
   socketStatus?: ChatSocketStatus;
   socketErrorMessage?: string | null;
   onSendMessage?: ((content: string) => Promise<void>) | undefined;
+  onSendImages?:
+    ((content: string, images: File[]) => Promise<void>) | undefined;
   hasPreviousMessages?: boolean;
   isLoadingPreviousMessages?: boolean;
   previousMessagesError?: string;
@@ -34,6 +52,7 @@ export default function ChatRoomPanel({
   socketStatus = 'disconnected',
   socketErrorMessage = null,
   onSendMessage,
+  onSendImages,
   hasPreviousMessages = false,
   isLoadingPreviousMessages = false,
   previousMessagesError = '',
@@ -43,6 +62,8 @@ export default function ChatRoomPanel({
   const messagesRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [isDraggingImages, setIsDraggingImages] = useState(false);
   const [sendErrorMessage, setSendErrorMessage] = useState<string | null>(null);
   const [isUpdatingTradeStatus, setIsUpdatingTradeStatus] = useState(false);
   const [tradeStatusError, setTradeStatusError] = useState<string | null>(null);
@@ -63,6 +84,13 @@ export default function ChatRoomPanel({
     setTradeStatusError(null);
     setIsUpdatingTradeStatus(false);
   }, [room?.conversationId, room?.tradeStatus]);
+
+  useEffect(() => {
+    setMessage('');
+    setSelectedImages([]);
+    setSendErrorMessage(null);
+    setIsDraggingImages(false);
+  }, [room?.conversationId]);
 
   async function handleLoadPreviousMessages() {
     if (!onLoadPreviousMessages || isLoadingPreviousMessages) {
@@ -87,12 +115,15 @@ export default function ChatRoomPanel({
 
     const roomId = room?.conversationId;
 
-    if (
-      !roomId ||
-      !onSendMessage ||
-      !message.trim() ||
-      socketStatus !== 'connected'
-    ) {
+    const normalizedMessage = message.trim();
+    const imagesToSend = [...selectedImages];
+    const sendsImages = imagesToSend.length > 0;
+
+    if (!roomId || socketStatus !== 'connected' || isSending) {
+      return;
+    }
+
+    if (sendsImages ? !onSendImages : !onSendMessage || !normalizedMessage) {
       return;
     }
 
@@ -100,18 +131,27 @@ export default function ChatRoomPanel({
     setSendErrorMessage(null);
 
     try {
-      await onSendMessage(message);
+      if (sendsImages && onSendImages) {
+        await onSendImages(normalizedMessage, imagesToSend);
+      } else if (onSendMessage) {
+        await onSendMessage(normalizedMessage);
+      }
       captureAnalyticsEvent('chat_message_send_completed', {
         room_id: roomId,
         outcome: 'success',
-        message_length: message.trim().length,
+        message_length: normalizedMessage.length,
+        message_type: sendsImages ? 'image' : 'text',
+        image_count: imagesToSend.length,
       });
       setMessage('');
+      setSelectedImages([]);
     } catch (error) {
       captureAnalyticsEvent('chat_message_send_completed', {
         room_id: roomId,
         outcome: 'failure',
-        message_length: message.trim().length,
+        message_length: normalizedMessage.length,
+        message_type: sendsImages ? 'image' : 'text',
+        image_count: imagesToSend.length,
       });
       setSendErrorMessage(
         error instanceof Error
@@ -120,6 +160,90 @@ export default function ChatRoomPanel({
       );
     } finally {
       setIsSending(false);
+    }
+  }
+
+  function addImages(files: readonly File[]) {
+    const roomId = room?.conversationId;
+
+    if (!roomId || files.length === 0) {
+      return;
+    }
+
+    const remainingCount = MAX_CHAT_IMAGE_COUNT - selectedImages.length;
+    const candidates = files.slice(0, Math.max(0, remainingCount));
+    const accepted: File[] = [];
+    let rejectedCount = Math.max(0, files.length - candidates.length);
+    let hasUnsupportedType = false;
+    let hasOversizedImage = false;
+
+    candidates.forEach((file) => {
+      const rejection = validateChatImage(file);
+
+      if (rejection === null) {
+        accepted.push(file);
+      } else {
+        rejectedCount += 1;
+        hasUnsupportedType ||= rejection === 'unsupported-type';
+        hasOversizedImage ||= rejection === 'too-large';
+      }
+    });
+
+    setSelectedImages((current) => [...current, ...accepted]);
+    captureAnalyticsEvent('chat_image_selection_completed', {
+      room_id: roomId,
+      accepted_count: accepted.length,
+      rejected_count: rejectedCount,
+    });
+
+    if (files.length > remainingCount) {
+      setSendErrorMessage(
+        `사진은 한 번에 최대 ${MAX_CHAT_IMAGE_COUNT}장까지 보낼 수 있어요.`,
+      );
+    } else if (hasOversizedImage) {
+      setSendErrorMessage(
+        `사진은 한 장당 ${MAX_CHAT_IMAGE_SIZE_MB}MB 이하만 선택할 수 있어요.`,
+      );
+    } else if (hasUnsupportedType) {
+      setSendErrorMessage('JPG, PNG, WebP 사진만 선택할 수 있어요.');
+    } else {
+      setSendErrorMessage(null);
+    }
+  }
+
+  function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    addImages(Array.from(event.target.files ?? []));
+    event.target.value = '';
+  }
+
+  function handleImageDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+
+    if (!canAttachImages) {
+      return;
+    }
+
+    event.dataTransfer.dropEffect = 'copy';
+    setIsDraggingImages(true);
+  }
+
+  function handleImageDragLeave(event: DragEvent<HTMLDivElement>) {
+    if (
+      event.relatedTarget instanceof Node &&
+      event.currentTarget.contains(event.relatedTarget)
+    ) {
+      return;
+    }
+
+    setIsDraggingImages(false);
+  }
+
+  function handleImageDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDraggingImages(false);
+
+    if (canAttachImages) {
+      addImages(Array.from(event.dataTransfer.files));
     }
   }
 
@@ -155,6 +279,9 @@ export default function ChatRoomPanel({
       </EmptyPanel>
     );
   }
+
+  const canAttachImages =
+    Boolean(onSendImages) && socketStatus === 'connected' && !isSending;
 
   return (
     <Panel>
@@ -268,7 +395,13 @@ export default function ChatRoomPanel({
               )}
               <MessageRow data-sender={message.sender}>
                 <MessageBubble data-sender={message.sender}>
-                  {message.text}
+                  {message.images.length > 0 && (
+                    <ChatMessageGallery
+                      roomId={room.conversationId}
+                      images={message.images}
+                    />
+                  )}
+                  {message.text && <MessageText>{message.text}</MessageText>}
                 </MessageBubble>
                 <SentAt>{message.sentAt}</SentAt>
               </MessageRow>
@@ -277,13 +410,47 @@ export default function ChatRoomPanel({
         })}
       </Messages>
 
-      <ComposerArea>
+      <ComposerArea
+        $isDragging={isDraggingImages}
+        onDragOver={handleImageDragOver}
+        onDragLeave={handleImageDragLeave}
+        onDrop={handleImageDrop}
+      >
+        {selectedImages.length > 0 && (
+          <ChatImagePreview
+            files={selectedImages}
+            onRemove={(index) =>
+              setSelectedImages((current) =>
+                current.filter((_, currentIndex) => currentIndex !== index),
+              )
+            }
+          />
+        )}
         {(sendErrorMessage || socketErrorMessage) && (
           <SendError role="alert">
             {sendErrorMessage || socketErrorMessage}
           </SendError>
         )}
+        {isDraggingImages && <DropGuide>사진을 여기에 놓아주세요</DropGuide>}
         <Composer aria-label="메시지 입력 영역" onSubmit={handleSubmit}>
+          <AttachLabel
+            $disabled={
+              !canAttachImages || selectedImages.length >= MAX_CHAT_IMAGE_COUNT
+            }
+          >
+            <span aria-hidden="true">+</span>
+            <HiddenFileInput
+              type="file"
+              aria-label="사진 추가"
+              accept={CHAT_IMAGE_ACCEPT}
+              multiple
+              disabled={
+                !canAttachImages ||
+                selectedImages.length >= MAX_CHAT_IMAGE_COUNT
+              }
+              onChange={handleImageSelection}
+            />
+          </AttachLabel>
           <MessageInput
             value={message}
             aria-label="메시지"
@@ -294,7 +461,9 @@ export default function ChatRoomPanel({
           <SendButton
             type="submit"
             disabled={
-              socketStatus !== 'connected' || isSending || !message.trim()
+              socketStatus !== 'connected' ||
+              isSending ||
+              (!message.trim() && selectedImages.length === 0)
             }
           >
             {isSending ? '전송 중' : '보내기'}
@@ -599,9 +768,10 @@ const MessageRow = styled.div`
   }
 `;
 
-const MessageBubble = styled.p`
+const MessageBubble = styled.div`
   margin: 0;
-  padding: 11px 14px;
+  overflow: hidden;
+  padding: 4px;
   border-radius: 15px 15px 15px 4px;
   background: #ffffff;
   color: #2b2528;
@@ -616,14 +786,39 @@ const MessageBubble = styled.p`
   }
 `;
 
+const MessageText = styled.p`
+  margin: 0;
+  padding: 7px 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+`;
+
 const SentAt = styled.span`
   flex: 0 0 auto;
   color: #aaa2a6;
   font-size: 10px;
 `;
 
-const ComposerArea = styled.div`
+const ComposerArea = styled.div<{ $isDragging: boolean }>`
+  position: relative;
   padding: 12px 20px 16px;
+  background: ${({ $isDragging }) =>
+    $isDragging ? 'rgb(237 23 76 / 6%)' : '#ffffff'};
+`;
+
+const DropGuide = styled.div`
+  position: absolute;
+  inset: 8px 16px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 2px dashed #ed174c;
+  border-radius: 16px;
+  background: rgb(255 255 255 / 92%);
+  color: #c71943;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
 `;
 
 const SendError = styled.p`
@@ -642,6 +837,36 @@ const Composer = styled.form`
   border: 1px solid #eeeaec;
   border-radius: 999px;
   background: #faf8f9;
+`;
+
+const AttachLabel = styled.label<{ $disabled: boolean }>`
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #ded7da;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #665d61;
+  font-size: 24px;
+  line-height: 1;
+  cursor: ${({ $disabled }) => ($disabled ? 'default' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)};
+
+  span {
+    transform: translateY(-1px);
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 `;
 
 const MessageInput = styled.input`
