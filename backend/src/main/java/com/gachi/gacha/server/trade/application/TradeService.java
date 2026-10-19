@@ -5,6 +5,7 @@ import com.gachi.gacha.server.common.infra.application.MultipartUploader;
 import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.category.domain.Category;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
@@ -21,6 +22,7 @@ import com.gachi.gacha.server.trade.domain.TradeSpecifications;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import com.gachi.gacha.server.trade.domain.exception.CategoryNotFoundException;
 import com.gachi.gacha.server.trade.domain.exception.TradeAccessDeniedException;
+import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +49,7 @@ public class TradeService {
     private final MemberJpaRepository memberJpaRepository;
     private final MultipartUploader multipartUploader;
     private final S3TransactionManager s3TransactionManager;
+    private final MemberBlockService memberBlockService;
 
     @Transactional
     public TradeInfo createTrade(
@@ -84,7 +88,11 @@ public class TradeService {
         // 1단계: 필터와 페이징만 적용한다. 컬렉션을 건드리지 않으므로 페이징이 DB에서 정상적으로 끝난다.
         Page<Trade> tradePage = tradeJpaRepository.findAll(
                 TradeSpecifications.search(
-                        normalizeKeyword(condition.keyword()), condition.categoryIds(), condition.status()),
+                        normalizeKeyword(condition.keyword()),
+                        condition.categoryIds(),
+                        condition.status(),
+                        condition.viewerId()
+                ),
                 pageable
         );
 
@@ -93,8 +101,9 @@ public class TradeService {
         return getTradeSummaryInfos(pageable, tradePage);
     }
 
-    public TradeInfo findTrade(final Long tradeId) {
+    public TradeInfo findTrade(@Nullable final Long viewerId, final Long tradeId) {
         Trade trade = tradeJpaRepository.getByIdWithCategories(tradeId);
+        validateAuthorNotBlocked(trade, viewerId);
 
         return TradeInfo.of(trade, findImageUrls(tradeId));
     }
@@ -159,6 +168,15 @@ public class TradeService {
             return null;
         }
         return keyword.trim();
+    }
+
+    /**
+     * 차단한 작성자의 글은 목록에서 제외하므로 상세 조회도 없는 게시글과 같은 응답을 준다.
+     */
+    private void validateAuthorNotBlocked(final Trade trade, @Nullable final Long viewerId) {
+        if (memberBlockService.hasBlocked(viewerId, trade.getMember().getId())) {
+            throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
+        }
     }
 
     private Member getMember(final Long memberId) {

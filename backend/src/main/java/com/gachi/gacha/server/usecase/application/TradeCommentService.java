@@ -5,6 +5,7 @@ import com.gachi.gacha.server.trade.application.TradeService;
 import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.usecase.application.dto.TradeDetailInfo;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,13 +23,16 @@ public class TradeCommentService {
     private final TradeService tradeService;
     private final CommentJpaRepository commentJpaRepository;
 
-    public TradeDetailInfo findTradeDetail(final Long tradeId) {
-        TradeInfo trade = tradeService.findTrade(tradeId);
+    public TradeDetailInfo findTradeDetail(@Nullable final Long viewerId, final Long tradeId) {
+        TradeInfo trade = tradeService.findTrade(viewerId, tradeId);
 
-        return new TradeDetailInfo(trade, countComments(tradeId));
+        return new TradeDetailInfo(trade, countComments(viewerId, tradeId));
     }
 
-    public long countComments(final Long tradeId) {
-        return commentJpaRepository.countByTradeId(tradeId);
+    /**
+     * 댓글 목록과 같은 기준으로, 조회자가 차단한 회원의 댓글은 세지 않는다.
+     */
+    public long countComments(@Nullable final Long viewerId, final Long tradeId) {
+        return commentJpaRepository.countVisibleByTradeId(tradeId, viewerId);
     }
 }

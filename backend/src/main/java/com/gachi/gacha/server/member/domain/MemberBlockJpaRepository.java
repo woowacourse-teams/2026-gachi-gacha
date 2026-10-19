@@ -11,6 +11,8 @@ public interface MemberBlockJpaRepository extends JpaRepository<MemberBlock, Lon
 
     Optional<MemberBlock> findByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
 
+    boolean existsByBlockerIdAndBlockedId(Long blockerId, Long blockedId);
+
     List<MemberBlock> findAllByBlockerIdOrderByCreatedAtDesc(Long blockerId);
 
     @Query("""

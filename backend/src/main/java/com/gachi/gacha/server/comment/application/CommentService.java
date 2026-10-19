@@ -44,10 +44,10 @@ public class CommentService {
         return CommentInfo.from(commentJpaRepository.save(comment));
     }
 
-    public List<CommentInfo> findComments(final Long tradeId) {
+    public List<CommentInfo> findComments(@Nullable final Long viewerId, final Long tradeId) {
         validateTradeExists(tradeId);
 
-        return commentJpaRepository.findAllByTradeIdOrderByIdAsc(tradeId).stream()
+        return commentJpaRepository.findAllVisibleByTradeId(tradeId, viewerId).stream()
                 .map(CommentInfo::from)
                 .toList();
     }

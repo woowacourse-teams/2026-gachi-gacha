@@ -14,6 +14,7 @@ import com.gachi.gacha.server.common.infra.application.MultipartUploader;
 import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
 import com.gachi.gacha.server.category.domain.Category;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
@@ -29,6 +30,7 @@ import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import com.gachi.gacha.server.trade.domain.exception.CategoryNotFoundException;
 import com.gachi.gacha.server.trade.domain.exception.TradeAccessDeniedException;
+import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import com.gachi.gacha.server.trade.domain.Place;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -72,6 +74,9 @@ class TradeServiceTest {
 
     @Mock
     private S3TransactionManager s3TransactionManager;
+
+    @Mock
+    private MemberBlockService memberBlockService;
 
     @InjectMocks
     private TradeService tradeService;
@@ -230,6 +235,37 @@ class TradeServiceTest {
             assertThat(page.getContent()).isEmpty();
             verify(tradeRepository, never()).findByIdsWithCategories(anyList());
             verify(tradeImageRepository, never()).findAllByTradeIdInOrderByIdAsc(anyList());
+        }
+    }
+
+    @Nested
+    @DisplayName("findTrade")
+    class FindTrade {
+
+        @Test
+        @DisplayName("조회자가 작성자를 차단하지 않았으면 게시글을 반환한다.")
+        void returnsTradeWhenAuthorNotBlocked() {
+            // given
+            given(tradeRepository.getByIdWithCategories(TRADE_ID)).willReturn(createTrade());
+            given(memberBlockService.hasBlocked(OTHER_MEMBER_ID, OWNER_ID)).willReturn(false);
+
+            // when
+            TradeInfo tradeInfo = tradeService.findTrade(OTHER_MEMBER_ID, TRADE_ID);
+
+            // then
+            assertThat(tradeInfo.tradeId()).isEqualTo(TRADE_ID);
+        }
+
+        @Test
+        @DisplayName("조회자가 작성자를 차단했으면 없는 게시글과 같은 예외가 발생한다.")
+        void rejectsTradeOfBlockedAuthor() {
+            // given
+            given(tradeRepository.getByIdWithCategories(TRADE_ID)).willReturn(createTrade());
+            given(memberBlockService.hasBlocked(OTHER_MEMBER_ID, OWNER_ID)).willReturn(true);
+
+            // when & then
+            assertThatThrownBy(() -> tradeService.findTrade(OTHER_MEMBER_ID, TRADE_ID))
+                    .isInstanceOf(TradeNotFoundException.class);
         }
     }
 

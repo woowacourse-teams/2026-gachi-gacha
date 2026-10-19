@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,6 +56,13 @@ public class MemberBlockService {
                         blockedMembersById.get(memberBlock.getBlockedId())
                 ))
                 .toList();
+    }
+
+    /**
+     * 한 방향 판정이다. 비로그인 조회처럼 차단자가 없으면 차단하지 않은 것으로 본다.
+     */
+    public boolean hasBlocked(@Nullable final Long blockerId, final Long blockedId) {
+        return blockerId != null && memberBlockJpaRepository.existsByBlockerIdAndBlockedId(blockerId, blockedId);
     }
 
     public boolean isBlockedBetween(final Long memberId, final Long otherMemberId) {

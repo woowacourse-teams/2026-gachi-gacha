@@ -51,12 +51,17 @@ public class CommentController {
         );
     }
 
-    @Operation(summary = "댓글 목록 조회")
+    @Operation(
+            summary = "댓글 목록 조회 (로그인은 선택)",
+            description = "로그인하면 내가 차단한 회원의 댓글을 제외한다. 비회원 댓글은 제외하지 않는다."
+    )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     @GetMapping
     public BaseResponse<CommentListResponse> readComments(
+            @Auth(required = false) final Long memberId,
             @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId
     ) {
-        List<CommentInfo> infos = commentService.findComments(tradeId);
+        List<CommentInfo> infos = commentService.findComments(memberId, tradeId);
 
         return BaseResponse.ok(CommentListResponse.from(infos));
     }

@@ -87,9 +87,14 @@ public class TradeController {
         return BaseResponse.created(location, TradeResponse.of(tradeInfo, 0));
     }
 
-    @Operation(summary = "교환 게시글 목록 조회")
+    @Operation(
+            summary = "교환 게시글 목록 조회 (로그인은 선택)",
+            description = "로그인하면 내가 차단한 회원의 게시글을 제외한다."
+    )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     @GetMapping
     public BaseResponse<Page<TradeSummaryResponse>> readTrades(
+            @Auth(required = false) final Long memberId,
             @Parameter(description = "제목·설명 검색어", example = "산리오")
             @RequestParam(required = false) @Nullable final String keyword,
             @Parameter(description = "카테고리 ID 목록. 하나라도 포함하면 결과에 들어간다.", example = "1,3")
@@ -103,6 +108,7 @@ public class TradeController {
                 .keyword(keyword)
                 .categoryIds(categoryIds)
                 .status(status)
+                .viewerId(memberId)
                 .build();
         Page<TradeSummaryInfo> trades = tradeService.findTrades(condition, pageable);
 
@@ -123,12 +129,17 @@ public class TradeController {
         return BaseResponse.ok(tradeInfos.map(TradeSummaryResponse::from));
     }
 
-    @Operation(summary = "교환 게시글 상세 조회")
+    @Operation(
+            summary = "교환 게시글 상세 조회 (로그인은 선택)",
+            description = "내가 차단한 회원의 게시글이면 없는 게시글과 같이 404/TE001을 반환한다."
+    )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     @GetMapping("/{tradeId}")
     public BaseResponse<TradeResponse> readTrade(
+            @Auth(required = false) final Long memberId,
             @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId
     ) {
-        TradeDetailInfo detail = tradeCommentService.findTradeDetail(tradeId);
+        TradeDetailInfo detail = tradeCommentService.findTradeDetail(memberId, tradeId);
 
         return BaseResponse.ok(TradeResponse.of(detail.trade(), detail.commentCount()));
     }
@@ -158,7 +169,8 @@ public class TradeController {
     ) {
         TradeInfo tradeInfo = tradeService.updateTrade(memberId, tradeId, request.toCommand(), images);
 
-        return BaseResponse.updated(TradeResponse.of(tradeInfo, tradeCommentService.countComments(tradeId)));
+        long commentCount = tradeCommentService.countComments(memberId, tradeId);
+        return BaseResponse.updated(TradeResponse.of(tradeInfo, commentCount));
     }
 
     @Operation(summary = "교환 게시글 상태 변경")
@@ -171,7 +183,8 @@ public class TradeController {
     ) {
         TradeInfo tradeInfo = tradeService.changeStatus(memberId, tradeId, request.status());
 
-        return BaseResponse.updated(TradeResponse.of(tradeInfo, tradeCommentService.countComments(tradeId)));
+        long commentCount = tradeCommentService.countComments(memberId, tradeId);
+        return BaseResponse.updated(TradeResponse.of(tradeInfo, commentCount));
     }
 
     @Operation(summary = "교환 게시글 삭제")
