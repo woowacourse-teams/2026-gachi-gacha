@@ -87,20 +87,18 @@ export const List = styled.ul`
   }
 `;
 
-export const ItemLink = styled(Link, {
-  shouldForwardProp: (propertyName) => propertyName !== '$isRead',
-})<{ $isRead: boolean }>`
+export const ItemLink = styled(Link)`
   display: flex;
   padding: 14px 12px;
   align-items: flex-start;
   gap: 12px;
   border-radius: 13px;
-  background: ${({ $isRead }) => ($isRead ? '#ffffff' : '#fff8f9')};
+  background: #ffffff;
   color: inherit;
   text-decoration: none;
 
   &:hover {
-    background: var(--color-primary-soft, #fff1f3);
+    background: #f7f6f4;
   }
 
   &:focus-visible {

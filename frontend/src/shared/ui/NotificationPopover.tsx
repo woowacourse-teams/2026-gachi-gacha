@@ -66,7 +66,6 @@ function NotificationItems({
         <li key={notification.id}>
           <ItemLink
             to={notification.destination}
-            $isRead={notification.isRead}
             onClick={() => {
               onNotificationSelect?.(notification);
               onClose();
