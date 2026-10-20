@@ -6,10 +6,8 @@ import {
   EmptyIcon,
   EmptyState,
   ErrorMessage,
-  Footer,
   Header,
   ItemContent,
-  ItemIcon,
   ItemLink,
   ItemMessage,
   ItemMeta,
@@ -20,7 +18,6 @@ import {
   RetryButton,
   Title,
   UnreadDot,
-  ViewAllLink,
 } from './NotificationPopover.styles';
 
 export type HeaderNotificationType = 'chat' | 'trade' | 'gacha';
@@ -75,9 +72,6 @@ function NotificationItems({
               onClose();
             }}
           >
-            <ItemIcon $type={notification.type} aria-hidden="true">
-              {notification.type === 'chat' ? '💬' : '↔'}
-            </ItemIcon>
             <ItemContent>
               <ItemMeta>
                 <span>{NOTIFICATION_TYPE_LABELS[notification.type]}</span>
@@ -155,13 +149,6 @@ export function NotificationPopover({
             onNotificationSelect={onNotificationSelect}
           />
         )}
-
-      <Footer>
-        <ViewAllLink to="/notifications" onClick={onClose}>
-          모든 알림 보기
-          <span aria-hidden="true">→</span>
-        </ViewAllLink>
-      </Footer>
     </Popover>
   );
 }

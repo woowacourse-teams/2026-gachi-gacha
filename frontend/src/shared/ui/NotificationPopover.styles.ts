@@ -1,8 +1,6 @@
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
-import type { HeaderNotificationType } from './NotificationPopover';
-
 export const Popover = styled.section`
   position: absolute;
   z-index: 60;
@@ -109,25 +107,6 @@ export const ItemLink = styled(Link, {
     outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: -1px;
   }
-`;
-
-const iconBackground: Record<HeaderNotificationType, string> = {
-  chat: '#edf6ff',
-  trade: '#fff1f3',
-  gacha: '#fff7df',
-};
-
-export const ItemIcon = styled.span<{
-  $type: HeaderNotificationType;
-}>`
-  display: grid;
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 13px;
-  background: ${({ $type }) => iconBackground[$type]};
-  font-size: 18px;
 `;
 
 export const ItemContent = styled.span`
@@ -253,33 +232,5 @@ export const LoadingItem = styled.div`
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
-  }
-`;
-
-export const Footer = styled.footer`
-  padding: 10px 16px 14px;
-  border-top: 1px solid var(--color-border-subtle, #f0eeec);
-`;
-
-export const ViewAllLink = styled(Link)`
-  display: flex;
-  min-height: 40px;
-  padding: 0 12px;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border-radius: 11px;
-  color: var(--color-primary, #d93b54);
-  font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
-
-  &:hover {
-    background: var(--color-primary-soft, #fff1f3);
-  }
-
-  &:focus-visible {
-    outline: 3px solid rgb(217 59 84 / 24%);
-    outline-offset: 1px;
   }
 `;

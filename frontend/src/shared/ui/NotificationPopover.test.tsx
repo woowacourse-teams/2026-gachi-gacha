@@ -61,6 +61,8 @@ describe('NotificationPopover', () => {
       screen.getByRole('link', { name: /새로운 채팅이 도착했어요/ }),
     ).toHaveAttribute('href', '/chat/1');
     expect(screen.getByText('교환이 완료되었어요')).toBeInTheDocument();
+    expect(screen.queryByText('💬')).not.toBeInTheDocument();
+    expect(screen.queryByText('모든 알림 보기')).not.toBeInTheDocument();
   });
 
   it('알림이 없으면 빈 상태를 표시한다', () => {
