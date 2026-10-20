@@ -20,6 +20,28 @@ import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { MockWorkerBoundary } from '@/mocks/MockWorkerBoundary';
 
 import { AppHeader } from './AppHeader';
+import type { HeaderNotification } from './NotificationPopover';
+
+const notificationFixtures = [
+  {
+    id: 'chat-1',
+    type: 'chat',
+    title: '새로운 채팅이 도착했어요',
+    message: '혹시 쿠로미 키링이랑도 교환 가능할까요?',
+    createdAtLabel: '방금 전',
+    isRead: false,
+    destination: '/chat',
+  },
+  {
+    id: 'trade-1',
+    type: 'trade',
+    title: '교환 상태가 변경되었어요',
+    message: '산리오 캐릭터즈 캡슐토이 세트가 교환 완료되었어요.',
+    createdAtLabel: '12분 전',
+    isRead: false,
+    destination: '/trade/99',
+  },
+] satisfies readonly HeaderNotification[];
 
 const meta = {
   title: 'Shared/UI/AppHeader',
@@ -107,6 +129,23 @@ export const StableNavigationWithSearchSlot: Story = {
 };
 
 export const Authenticated: Story = {
+  render: (args) => (
+    <MockWorkerBoundary handlers={[authenticatedMemberHandler]}>
+      <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
+        <AppHeader {...args} />
+      </AuthSessionProvider>
+    </MockWorkerBoundary>
+  ),
+};
+
+export const AuthenticatedWithNotifications: Story = {
+  args: {
+    notificationState: {
+      status: 'success',
+      data: notificationFixtures,
+      errorMessage: null,
+    },
+  },
   render: (args) => (
     <MockWorkerBoundary handlers={[authenticatedMemberHandler]}>
       <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>

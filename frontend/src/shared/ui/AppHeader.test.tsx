@@ -24,7 +24,7 @@ describe('AppHeader', () => {
       screen.queryByRole('link', { name: '채팅' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: '알림' }),
+      screen.queryByRole('button', { name: '알림' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '로그인' })).toBeInTheDocument();
   });
@@ -92,12 +92,103 @@ describe('AppHeader', () => {
       'href',
       '/chat',
     );
-    expect(screen.getByRole('link', { name: '알림' })).toHaveAttribute(
-      'href',
-      '/notifications',
+    expect(screen.getByRole('button', { name: '알림' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
     expect(
       screen.queryByRole('link', { name: '로그인' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('알림 아이콘을 누르면 팝오버를 열고 다시 누르면 닫는다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <AppHeader
+        currentPath="/trade"
+        notificationState={{
+          status: 'success',
+          data: [
+            {
+              id: 'chat-1',
+              type: 'chat',
+              title: '새로운 채팅이 도착했어요',
+              message: '교환이 가능한지 물어봤어요.',
+              createdAtLabel: '방금 전',
+              isRead: false,
+              destination: '/chat',
+            },
+          ],
+          errorMessage: null,
+        }}
+      />,
+      { initialAccessToken: 'access-token' },
+    );
+
+    const notificationButton = await screen.findByRole('button', {
+      name: '알림, 읽지 않은 알림 1개',
+    });
+
+    await user.click(notificationButton);
+
+    expect(screen.getByRole('dialog', { name: '알림' })).toBeInTheDocument();
+    expect(notificationButton).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(notificationButton);
+
+    expect(
+      screen.queryByRole('dialog', { name: '알림' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('Escape로 팝오버를 닫으면 알림 버튼으로 포커스를 돌려준다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<AppHeader currentPath="/trade" />, {
+      initialAccessToken: 'access-token',
+    });
+
+    const notificationButton = await screen.findByRole('button', {
+      name: '알림',
+    });
+    await user.click(notificationButton);
+    await user.tab();
+    await user.keyboard('{Escape}');
+
+    expect(
+      screen.queryByRole('dialog', { name: '알림' }),
+    ).not.toBeInTheDocument();
+    expect(notificationButton).toHaveFocus();
   });
 });
