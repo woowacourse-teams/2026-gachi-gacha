@@ -4,11 +4,16 @@ import { useLocation, useNavigate } from 'react-router';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import {
   hasSeenCurrentLandingTour,
+  LANDING_TOUR_VERSION,
   markCurrentLandingTourAsSeen,
 } from '@/features/onboarding/landingTourSeenStorage';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
-import LandingTour, { type LandingTourStepIndex } from './LandingTour';
+import LandingTour, {
+  LANDING_TOUR_STEPS,
+  type LandingTourStepIndex,
+} from './LandingTour';
 import LandingTourSnapshotBackdrop from './LandingTourSnapshotBackdrop';
 
 const ENTRY_PATH = '/trade';
@@ -45,12 +50,23 @@ export function LandingRoute() {
   const location = useLocation();
   const navigate = useNavigate();
   const [stepIndex, setStepIndex] = useState<LandingTourStepIndex>(0);
+  const hasSeenLandingTour = hasSeenCurrentLandingTour();
+
+  useEffect(() => {
+    if (status !== 'guest' || hasSeenLandingTour) {
+      return;
+    }
+
+    captureAnalyticsEvent('landing_tour_step_viewed', {
+      tour_version: LANDING_TOUR_VERSION,
+      step_number: stepIndex + 1,
+      target: LANDING_TOUR_STEPS[stepIndex].target,
+    });
+  }, [hasSeenLandingTour, status, stepIndex]);
 
   if (status === 'loading') {
     return <PageLoadingFallback label="로그인 상태를 확인하고 있어요." />;
   }
-
-  const hasSeenLandingTour = hasSeenCurrentLandingTour();
 
   if (status === 'authenticated' || hasSeenLandingTour) {
     return (
@@ -62,7 +78,14 @@ export function LandingRoute() {
     );
   }
 
-  const enterService = () => {
+  const enterService = (
+    exitType: 'completed' | 'skip_button' | 'close_button',
+  ) => {
+    captureAnalyticsEvent('landing_tour_exited', {
+      tour_version: LANDING_TOUR_VERSION,
+      exit_type: exitType,
+      last_step_number: stepIndex + 1,
+    });
     markCurrentLandingTourAsSeen();
     navigate(
       {
@@ -80,7 +103,7 @@ export function LandingRoute() {
       <LandingTour
         stepIndex={stepIndex}
         onStepChange={setStepIndex}
-        onComplete={enterService}
+        onComplete={() => enterService('completed')}
         onSkip={enterService}
       />
     </>

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
@@ -66,9 +67,15 @@ export function useTradeComments({
   viewerMemberId,
   isAuthenticated,
 }: UseTradeCommentsOptions) {
+  const { isMemberBlocked } = useMemberBlocks();
   const [attempt, setAttempt] = useState(0);
+  const [hasSubmittedComment, setHasSubmittedComment] = useState(false);
   const [state, setState] =
     useState<AsyncState<TradeCommentResponse[]>>(LOADING_STATE);
+
+  useEffect(() => {
+    setHasSubmittedComment(false);
+  }, [tradeId]);
 
   const retry = useCallback(() => {
     setAttempt((currentAttempt) => currentAttempt + 1);
@@ -150,12 +157,19 @@ export function useTradeComments({
           trade_id: tradeId,
           author_type: isAuthenticated ? 'member' : 'guest',
           outcome: 'success',
+          comment_length: submission.content.length,
+          has_custom_guest_nickname:
+            !isAuthenticated && Boolean(submission.nickname),
         });
+        setHasSubmittedComment(true);
       } catch (error) {
         captureAnalyticsEvent('trade_comment_submission_completed', {
           trade_id: tradeId,
           author_type: isAuthenticated ? 'member' : 'guest',
           outcome: 'failure',
+          comment_length: submission.content.length,
+          has_custom_guest_nickname:
+            !isAuthenticated && Boolean(submission.nickname),
         });
         throw error;
       }
@@ -166,12 +180,16 @@ export function useTradeComments({
   const comments = useMemo(
     () =>
       state.status === 'success'
-        ? state.data.map((comment) =>
-            toTradeComment(comment, postAuthorId, viewerMemberId),
-          )
+        ? state.data
+            .filter(
+              ({ memberId }) => memberId === null || !isMemberBlocked(memberId),
+            )
+            .map((comment) =>
+              toTradeComment(comment, postAuthorId, viewerMemberId),
+            )
         : [],
-    [postAuthorId, state, viewerMemberId],
+    [isMemberBlocked, postAuthorId, state, viewerMemberId],
   );
 
-  return { comments, state, submit, retry };
+  return { comments, state, submit, retry, hasSubmittedComment };
 }

@@ -8,7 +8,14 @@ const INITIAL_QUALITY = 0.8;
 const MAX_CONCURRENT_COMPRESSION_COUNT = 2;
 
 export const TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE =
-  '이미지를 최적화하지 못했습니다. 다시 시도해주세요.';
+  '이미지를 최적화하지 못했습니다. Chrome 브라우저에서 다시 시도해 주세요.';
+
+const IMAGE_FILE_EXTENSIONS = {
+  [WEBP_MIME_TYPE]: 'webp',
+  [PNG_MIME_TYPE]: 'png',
+} as const;
+
+type SupportedCompressionMimeType = keyof typeof IMAGE_FILE_EXTENSIONS;
 
 export interface TradeImageCompressionProgress {
   percentage: number;
@@ -18,8 +25,11 @@ export interface TradeImageCompressionProgress {
 
 type ProgressListener = (progress: TradeImageCompressionProgress) => void;
 
-type SupportedCompressionMimeType =
-  typeof WEBP_MIME_TYPE | typeof PNG_MIME_TYPE;
+function isSupportedCompressionMimeType(
+  mimeType: string,
+): mimeType is SupportedCompressionMimeType {
+  return mimeType in IMAGE_FILE_EXTENSIONS;
+}
 
 function createCompressedFileName(
   fileName: string,
@@ -28,12 +38,53 @@ function createCompressedFileName(
   const extensionStartIndex = fileName.lastIndexOf('.');
   const baseName =
     extensionStartIndex > 0 ? fileName.slice(0, extensionStartIndex) : fileName;
-  const extension = mimeType === WEBP_MIME_TYPE ? 'webp' : 'png';
 
-  return `${baseName}.${extension}`;
+  return `${baseName}.${IMAGE_FILE_EXTENSIONS[mimeType]}`;
 }
 
-/** 선택 순서를 유지하면서 모바일 메모리를 보호하기 위해 최대 두 장씩 압축한다. */
+function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
+  if (!isSupportedCompressionMimeType(compressedBlob.type)) {
+    throw new Error(`지원하지 않는 압축 결과 형식: ${compressedBlob.type}`);
+  }
+
+  return new File(
+    [compressedBlob],
+    createCompressedFileName(sourceFile.name, compressedBlob.type),
+    {
+      type: compressedBlob.type,
+      lastModified: sourceFile.lastModified,
+    },
+  );
+}
+
+/** WebP를 우선 사용하고 브라우저가 인코딩하지 못하면 PNG로 한 번만 폴백한다. */
+async function compressImage(
+  file: File,
+  options: Parameters<typeof imageCompression>[1],
+): Promise<File> {
+  try {
+    const webpBlob = await imageCompression(file, {
+      ...options,
+      fileType: WEBP_MIME_TYPE,
+    });
+
+    // 일부 Safari는 WebP를 요청해도 PNG를 반환한다. 실제 안전한 형식을 존중한다.
+    if (isSupportedCompressionMimeType(webpBlob.type)) {
+      return createCompressedFile(file, webpBlob);
+    }
+  } catch {
+    // WebP 예외도 아래 PNG 폴백에서 동일하게 처리한다.
+  }
+
+  const pngBlob = await imageCompression(file, {
+    ...options,
+    fileType: PNG_MIME_TYPE,
+  });
+
+  return createCompressedFile(file, pngBlob);
+}
+
+/** 선택 순서를 유지하면서 대기 시간을 줄이기 위해 최대 두 장씩 압축한다. */
 export async function compressTradeImages(
   files: File[],
   onProgress: ProgressListener = () => undefined,
@@ -68,68 +119,24 @@ export async function compressTradeImages(
         continue;
       }
 
-      const onImageProgress = (progress: number) => {
-        // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
-        imageProgresses[imageIndex] = Math.max(
-          imageProgresses[imageIndex] ?? 0,
-          Math.min(99, Math.round(progress)),
-        );
-        reportProgress();
-      };
-
-      const compressionOptions = {
+      const compressedFile = await compressImage(file, {
         initialQuality: INITIAL_QUALITY,
         maxSizeMB: MAX_COMPRESSED_SIZE_MB,
         maxWidthOrHeight: MAX_WIDTH_OR_HEIGHT,
-        onProgress: onImageProgress,
+        onProgress: (progress) => {
+          // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
+          imageProgresses[imageIndex] = Math.max(
+            imageProgresses[imageIndex] ?? 0,
+            Math.min(99, Math.round(progress)),
+          );
+          reportProgress();
+        },
         preserveExif: false,
         signal: controller.signal,
         useWebWorker: false,
-      };
+      });
 
-      let compressedBlob: File;
-
-      try {
-        compressedBlob = await imageCompression(file, {
-          ...compressionOptions,
-          fileType: WEBP_MIME_TYPE,
-        });
-      } catch {
-        compressedBlob = await imageCompression(file, {
-          ...compressionOptions,
-          fileType: PNG_MIME_TYPE,
-        });
-      }
-
-      if (
-        compressedBlob.type !== WEBP_MIME_TYPE &&
-        compressedBlob.type !== PNG_MIME_TYPE
-      ) {
-        compressedBlob = await imageCompression(file, {
-          ...compressionOptions,
-          fileType: PNG_MIME_TYPE,
-        });
-      }
-
-      if (
-        compressedBlob.type !== WEBP_MIME_TYPE &&
-        compressedBlob.type !== PNG_MIME_TYPE
-      ) {
-        throw new Error(
-          '이 브라우저에서는 WebP와 PNG 변환을 지원하지 않습니다.',
-        );
-      }
-
-      const outputMimeType = compressedBlob.type;
-
-      results[imageIndex] = new File(
-        [compressedBlob],
-        createCompressedFileName(file.name, outputMimeType),
-        {
-          type: outputMimeType,
-          lastModified: file.lastModified,
-        },
-      );
+      results[imageIndex] = compressedFile;
       imageProgresses[imageIndex] = 100;
       completedCount += 1;
       reportProgress();

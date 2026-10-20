@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { getMyTrades } from '@/domains/trade/api/getMyTrades';
 import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 interface MyPageTradesState {
   recentTrades: TradeSummary[];
@@ -45,6 +46,11 @@ export function useMyPageTrades() {
       }),
     ])
       .then(([recentTradePage, inProgressTradePage]) => {
+        captureAnalyticsEvent('mypage_trades_load_completed', {
+          outcome: 'success',
+          total_count: recentTradePage.totalElements,
+          in_progress_count: inProgressTradePage.totalElements,
+        });
         setState({
           recentTrades: recentTradePage.content,
           totalTradeCount: recentTradePage.totalElements,
@@ -57,6 +63,12 @@ export function useMyPageTrades() {
         if (isAbortError(error)) {
           return;
         }
+
+        captureAnalyticsEvent('mypage_trades_load_completed', {
+          outcome: 'failure',
+          total_count: 0,
+          in_progress_count: 0,
+        });
 
         setState({
           ...INITIAL_STATE,

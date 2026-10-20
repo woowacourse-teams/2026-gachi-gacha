@@ -36,6 +36,30 @@ describe('getTradeComments', () => {
     await expect(getTradeComments(TRADE_ID)).resolves.toEqual(comments);
   });
 
+  it('로그인 토큰이 있으면 서버 차단 필터를 위해 인증 헤더를 보낸다', async () => {
+    let authorizationHeader: string | null = null;
+
+    storeAuthTokens({
+      accessToken: 'member-access-token',
+      refreshToken: 'member-refresh-token',
+    });
+    server.use(
+      http.get(`/api/v1/trades/${TRADE_ID}/comments`, ({ request }) => {
+        authorizationHeader = request.headers.get('Authorization');
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { comments: [], totalCount: 0 },
+        });
+      }),
+    );
+
+    await getTradeComments(TRADE_ID);
+
+    expect(authorizationHeader).toBe('Bearer member-access-token');
+  });
+
   it('댓글 수와 목록 길이가 다르면 잘못된 응답으로 처리한다', async () => {
     server.use(
       http.get(`/api/v1/trades/${TRADE_ID}/comments`, () =>

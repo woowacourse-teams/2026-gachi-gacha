@@ -9,6 +9,9 @@ const meta: Meta<typeof ChatPage> = {
   args: {
     conversations: CHAT_CONVERSATIONS,
     onChangeTradeStatus: async () => undefined,
+    onSendMessage: async () => undefined,
+    onSendImages: async () => undefined,
+    socketStatus: 'connected',
   },
   parameters: {
     layout: 'fullscreen',

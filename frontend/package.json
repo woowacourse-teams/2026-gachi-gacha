@@ -1,7 +1,7 @@
 {
   "name": "@gachi-gacha/frontend",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.10.0",
   "packageManager": "pnpm@11.9.0",
   "engines": {
     "node": "24.19.0",
@@ -20,7 +20,8 @@
     "test:coverage": "jest --coverage",
     "check": "pnpm run lint && pnpm run format:check && pnpm run typecheck && pnpm run test --runInBand && pnpm run build",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "posthog:dashboards": "node scripts/posthog-dashboard-sync.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

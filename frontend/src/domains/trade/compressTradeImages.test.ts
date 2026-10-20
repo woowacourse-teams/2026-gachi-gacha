@@ -16,6 +16,7 @@ const mockedImageCompression = jest.mocked(imageCompression);
 
 describe('compressTradeImages', () => {
   beforeEach(() => {
+    mockedImageCompression.mockReset();
     mockedImageCompression.mockImplementation((async (file, options) => {
       options.onProgress?.(50);
       options.onProgress?.(100);
@@ -90,6 +91,32 @@ describe('compressTradeImages', () => {
     ).toBe(true);
   });
 
+  it('대기 시간을 줄이되 동시에 최대 두 장만 압축한다', async () => {
+    let activeCompressionCount = 0;
+    let maximumActiveCompressionCount = 0;
+
+    mockedImageCompression.mockImplementation((async (file: File) => {
+      activeCompressionCount += 1;
+      maximumActiveCompressionCount = Math.max(
+        maximumActiveCompressionCount,
+        activeCompressionCount,
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      activeCompressionCount -= 1;
+
+      return new File([file], file.name, { type: 'image/webp' });
+    }) as unknown as typeof imageCompression);
+
+    await compressTradeImages([
+      new File(['first'], 'first.png', { type: 'image/png' }),
+      new File(['second'], 'second.png', { type: 'image/png' }),
+      new File(['third'], 'third.png', { type: 'image/png' }),
+    ]);
+
+    expect(maximumActiveCompressionCount).toBe(2);
+  });
+
   it('WebP 변환이 실패하면 PNG로 다시 압축한다', async () => {
     mockedImageCompression
       .mockRejectedValueOnce(new Error('WebP encoding failed'))
@@ -116,20 +143,26 @@ describe('compressTradeImages', () => {
     });
   });
 
-  it('WebP 요청에 PNG가 반환되면 PNG 폴백 결과로 사용한다', async () => {
+  it('WebP 요청에 PNG가 반환되면 실제 PNG 형식으로 사용한다', async () => {
     mockedImageCompression.mockResolvedValueOnce(
       new File(['fallback'], 'kuromi.png', { type: 'image/png' }),
     );
 
     const [compressedFile] = await compressTradeImages([
-      new File(['image'], 'kuromi.jpeg', { type: 'image/jpeg' }),
+      new File(['image'], 'kuromi.jpeg', {
+        type: 'image/jpeg',
+        lastModified: 10,
+      }),
     ]);
 
     expect(mockedImageCompression).toHaveBeenCalledTimes(1);
-    expect(compressedFile).toMatchObject({
-      name: 'kuromi.png',
-      type: 'image/png',
-    });
+    expect(compressedFile).toEqual(
+      expect.objectContaining({
+        name: 'kuromi.png',
+        type: 'image/png',
+        lastModified: 10,
+      }),
+    );
   });
 
   it('WebP 요청에 지원하지 않는 형식이 반환되면 PNG로 다시 압축한다', async () => {
@@ -157,7 +190,7 @@ describe('compressTradeImages', () => {
     });
   });
 
-  it('WebP와 PNG 모두 변환하지 못하면 사용자용 오류로 실패한다', async () => {
+  it('WebP와 PNG 모두 변환하지 못하면 원본 대신 안내 오류를 반환한다', async () => {
     mockedImageCompression
       .mockRejectedValueOnce(new Error('WebP encoding failed'))
       .mockRejectedValueOnce(new Error('PNG encoding failed'));

@@ -10,6 +10,7 @@ const YESTERDAY = toChatDateKey(
 export const CHAT_CONVERSATIONS: ChatConversation[] = [
   {
     id: 1,
+    partnerMemberId: 11,
     partnerName: '가챠좋아',
     partnerProfileImageUrl: null,
     itemTitle: '쿠로미 미니 피규어 vol.2',
@@ -20,6 +21,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
   },
   {
     id: 2,
+    partnerMemberId: 12,
     partnerName: '피규어수집가',
     partnerProfileImageUrl: null,
     itemTitle: '마이멜로디 미니피규어',
@@ -30,6 +32,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
   },
   {
     id: 3,
+    partnerMemberId: 13,
     partnerName: '캡슐러버',
     partnerProfileImageUrl: null,
     itemTitle: '치이카와 키링 교환',
@@ -42,6 +45,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
 
 export const SELECTED_CHAT_ROOM: ChatRoom = {
   conversationId: 1,
+  partnerMemberId: 11,
   tradeId: 1,
   partnerName: '가챠좋아',
   partnerProfileImageUrl: null,
@@ -56,6 +60,7 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       text: '안녕하세요! 올리신 쿠로미 피규어 아직 교환 가능할까요?',
       sentAt: '오전 9:12',
       sentDate: YESTERDAY,
+      images: [],
     },
     {
       id: '2',
@@ -63,6 +68,7 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       text: '네, 아직 가능해요. 어떤 가챠와 교환 원하시나요?',
       sentAt: '오전 9:15',
       sentDate: TODAY,
+      images: [],
     },
     {
       id: '3',
@@ -70,6 +76,12 @@ export const SELECTED_CHAT_ROOM: ChatRoom = {
       text: '시나모롤 키링이 있어요. 사진 확인 부탁드려요.',
       sentAt: '오전 9:20',
       sentDate: TODAY,
+      images: [
+        {
+          url: 'https://placehold.co/600x600/png?text=Gacha+Photo',
+          name: '시나모롤 키링 사진',
+        },
+      ],
     },
   ],
 };

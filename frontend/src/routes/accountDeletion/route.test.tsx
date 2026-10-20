@@ -1,0 +1,158 @@
+import { beforeAll, describe, expect, it } from '@jest/globals';
+import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
+
+import App from '@/App';
+import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import { renderWithProviders } from '@/test/renderWithProviders';
+import { server } from '@/test/server';
+
+const ACCESS_TOKEN = 'account-deletion-access-token';
+
+const MEMBER_RESPONSE = {
+  code: 'C000',
+  message: '정상',
+  data: {
+    name: '김민지',
+    nickname: '가챠러 민지',
+    profileImageUrl: null,
+    desireTradeLocation: null,
+  },
+};
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.open = true;
+  };
+
+  HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+    this.dispatchEvent(new Event('close'));
+  };
+});
+
+describe('외부 회원 탈퇴 페이지', () => {
+  it('비로그인 사용자에게 공개되고 로그인 후 복귀할 수 있는 본인 확인 링크를 제공한다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/account-deletion',
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: '가치가챠 회원 탈퇴' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '본인 확인 후 탈퇴' }),
+    ).toHaveAttribute('href', '/login?returnTo=%2Faccount-deletion');
+  });
+
+  it('회원 탈퇴 복귀 경로에서는 소셜 로그인을 본인 확인으로 안내한다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/login?returnTo=%2Faccount-deletion',
+    });
+
+    expect(await screen.findByRole('heading')).toHaveTextContent(
+      /회원 탈퇴를 위한\s*본인 확인\s*이 필요해요/,
+    );
+    expect(
+      screen.getByRole('link', { name: '카카오로 본인 확인' }),
+    ).toHaveAttribute('href', '/api/v1/oauth/kakao');
+    expect(
+      screen.getByRole('link', { name: '네이버로 본인 확인' }),
+    ).toHaveAttribute('href', '/api/v1/oauth/naver');
+  });
+
+  it('로그인 사용자가 확인 문구를 입력하면 기존 회원 탈퇴 API로 계정을 삭제한다', async () => {
+    const user = userEvent.setup();
+    let requestedAuthorization: string | null = null;
+
+    storeAuthTokens({
+      accessToken: ACCESS_TOKEN,
+      refreshToken: 'account-deletion-refresh-token',
+    });
+
+    server.use(
+      http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
+      http.delete('/api/v1/members/me', ({ request }) => {
+        requestedAuthorization = request.headers.get('Authorization');
+
+        return HttpResponse.json({
+          code: 'C003',
+          message: '정상 삭제',
+          data: { memberId: 1 },
+        });
+      }),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/account-deletion',
+    });
+
+    expect(
+      await screen.findByText('본인 확인 계정:', { exact: false }),
+    ).toHaveTextContent('가챠러 민지');
+
+    await user.click(
+      screen.getByRole('button', { name: '회원 탈퇴 계속하기' }),
+    );
+    await user.type(
+      screen.getByRole('textbox', { name: /^확인 문구/ }),
+      '탈퇴',
+    );
+    await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '계정 삭제 요청을 완료했어요',
+      }),
+    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(requestedAuthorization).toBe(`Bearer ${ACCESS_TOKEN}`);
+    });
+  });
+
+  it('회원 탈퇴 API가 실패하면 입력 내용을 유지하고 오류를 안내한다', async () => {
+    const user = userEvent.setup();
+
+    storeAuthTokens({
+      accessToken: ACCESS_TOKEN,
+      refreshToken: 'account-deletion-refresh-token',
+    });
+
+    server.use(
+      http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
+      http.delete('/api/v1/members/me', () =>
+        HttpResponse.json(
+          {
+            code: 'S001',
+            message: '회원 탈퇴를 완료하지 못했습니다.',
+            data: null,
+          },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/account-deletion',
+    });
+
+    await user.click(
+      await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
+    );
+    const confirmationInput = screen.getByRole('textbox', {
+      name: /^확인 문구/,
+    });
+    await user.type(confirmationInput, '탈퇴');
+    await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '회원 탈퇴를 완료하지 못했습니다.',
+    );
+    expect(confirmationInput).toHaveValue('탈퇴');
+  });
+});

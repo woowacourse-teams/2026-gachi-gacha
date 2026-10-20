@@ -21,6 +21,7 @@ export type TradeDetailAction = 'chat' | 'login' | 'edit' | null;
 interface TradeDetailPageProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
+  hasSubmittedComment?: boolean;
   relatedItems?: TradeItem[];
   hasMoreRelatedItems?: boolean;
   isLoadingRelatedItems?: boolean;
@@ -34,11 +35,14 @@ interface TradeDetailPageProps {
   onRetryComments?: (() => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
+  showSafetyActions?: boolean;
+  onTradeAuthorBlocked?: () => void;
 }
 
 export default function TradeDetailPage({
   detail,
   action = 'chat',
+  hasSubmittedComment = false,
   relatedItems = [],
   hasMoreRelatedItems = false,
   isLoadingRelatedItems = false,
@@ -50,13 +54,21 @@ export default function TradeDetailPage({
   onSubmitComment,
   onRetryComments,
   onCommentAction,
+  showSafetyActions = false,
+  onTradeAuthorBlocked,
 }: TradeDetailPageProps) {
   return (
     <Page>
       <AppHeader currentPath="/trade" />
 
       <Main>
-        <TradeDetail detail={detail} action={action} />
+        <TradeDetail
+          detail={detail}
+          action={action}
+          hasSubmittedComment={hasSubmittedComment}
+          showSafetyActions={showSafetyActions && action === 'chat'}
+          onAuthorBlocked={onTradeAuthorBlocked}
+        />
 
         <TradeComments
           comments={comments}
@@ -66,6 +78,7 @@ export default function TradeDetailPage({
           onSubmit={onSubmitComment}
           onRetryComments={onRetryComments}
           onCommentAction={onCommentAction}
+          showSafetyActions={showSafetyActions}
         />
 
         {relatedItems.length > 0 && (
