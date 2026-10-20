@@ -1,0 +1,70 @@
+name: Android Quality
+
+on:
+  pull_request:
+    branches:
+      - android
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-quality.yml'
+  push:
+    branches:
+      - android
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-quality.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.1
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate TypeScript and bundles
+        run: npm run check
+
+      - name: Generate Android native project
+        env:
+          APP_VARIANT: development
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build debug APK
+        working-directory: android/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: gachi-gacha-android-debug
+          path: android/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
