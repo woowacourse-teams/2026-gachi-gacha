@@ -1,14 +1,14 @@
-# Android 개발 기준
+# Android 개발·테스트 가이드
 
-## 기술 선택
+## 기술 기준
 
 - Expo SDK 57 / React Native 0.86
 - TypeScript strict mode
 - React Native New Architecture
-- WebView로 웹을 감싸지 않고 React Native 네이티브 컴포넌트로 화면을 다시 구현한다.
-- 알림, 로그인처럼 계약 변경 가능성이 큰 기능은 기반이 안정된 다음 별도 이슈로 추가한다.
+- 웹을 WebView로 감싸지 않고 React Native 네이티브 컴포넌트로 화면을 구현한다.
+- 로그인, 알림처럼 계약 변경 가능성이 큰 기능은 기반이 안정된 뒤 별도 이슈로 추가한다.
 
-Expo는 React Native 프레임워크입니다. 향후 Firebase Messaging이나 소셜 로그인처럼 네이티브 설정이 필요한 기능은 Expo development build와 config plugin을 사용하고, 필요한 경우 생성된 Android 네이티브 프로젝트를 직접 수정합니다.
+Expo는 React Native 프레임워크다. Firebase Messaging이나 소셜 로그인처럼 네이티브 설정이 필요한 기능은 Expo development build와 config plugin을 사용하고, 필요하면 Expo가 생성한 Android 네이티브 프로젝트를 확장한다.
 
 ## 브랜치 흐름
 
@@ -19,31 +19,90 @@ feat/<issue>-android-* -> android -> main
 - `android`: Android 통합·테스트 브랜치
 - 기능 개발은 이슈마다 `android`에서 브랜치를 생성한다.
 - Android 기능 브랜치에서는 루트 `android/`와 Android 전용 CI만 변경한다.
-- `main` 병합은 테스트 버전 확인 후 코드 보관과 릴리스 이력 통합을 위해 진행한다.
-- iOS 작업은 `ios` 브랜치와 루트 `ios/`에서 별도로 진행한다.
+- `android`에서 CI와 실제 기기 검증을 마친 뒤에만 `main`으로 병합한다.
+- 백엔드와 다른 플랫폼 코드는 Android 작업에서 변경하지 않는다.
 
 ## 환경 구분
 
-| 환경 | APP_VARIANT | 앱 이름 | application ID | URL scheme |
+| 환경 | `APP_VARIANT` | 앱 이름 | application ID | URL scheme |
 | --- | --- | --- | --- | --- |
 | 개발 | `development` | 가치가챠 Dev | `com.dev.gachigacha.app` | `gachigacha-dev` |
 | 운영 | `production` | 가치가챠 | `com.gachigacha.app` | `gachigacha` |
 
-Android에서는 iOS의 Bundle ID에 대응하는 값을 `applicationId` 또는 package name이라고 부릅니다. Play Console에서도 위 두 ID는 서로 다른 앱으로 취급됩니다.
+Android에서는 Bundle ID에 대응하는 값을 `applicationId` 또는 package name이라고 부른다. Play Console에서는 두 application ID를 서로 다른 앱으로 취급한다.
 
-## 로컬 준비
+## 무엇을 직접 설치해야 하나
 
-VS Code에서 TypeScript와 React Native 코드를 작성할 수 있습니다. Android 네이티브 빌드와 에뮬레이터 사용을 위해서는 다음 도구가 추가로 필요합니다.
+CI에서 만든 APK만 실제 휴대폰에 설치해 확인하려면 별도 설치가 필요 없다. 로컬에서 코드를 실행하거나 에뮬레이터로 확인하려면 아래 도구가 필요하다.
 
 1. Node.js 22.13 이상 25 미만
 2. JDK 17
-3. Android Studio
-4. Android SDK Platform과 Build Tools
-5. Android Emulator 또는 USB 디버깅을 활성화한 실제 기기
+3. Android Studio 안정 버전
+4. Android SDK Platform, SDK Build-Tools, SDK Platform-Tools
+5. Android Emulator와 가상 기기(AVD), 또는 USB 디버깅을 켠 실제 Android 기기
 
-설치 후 `JAVA_HOME`과 `ANDROID_HOME`을 설정합니다.
+Android Studio 설치 마법사에서 권장 SDK를 함께 설치할 수 있고, Emulator도 Android Studio에 포함된다.
 
-## 명령어
+- [Android Studio 설치](https://developer.android.com/studio/install)
+- [Android 가상 기기 만들기](https://developer.android.com/studio/run/managing-avds)
+- [Android 빌드의 JDK 기준](https://developer.android.com/build/jdks)
+
+### 1. JDK 17 확인
+
+Temurin 17 같은 OpenJDK 17 배포판을 설치한 뒤 확인한다.
+
+```bash
+java -version
+```
+
+출력에 `17`이 보여야 한다. Android Studio에서는 `Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK`도 같은 JDK 17로 맞춘다.
+
+### 2. Android Studio와 SDK 설치
+
+Android Studio 설치 마법사의 Standard 설정을 완료한다. 이후 `Tools > SDK Manager`에서 아래 항목을 확인한다.
+
+- SDK Platforms: 프로젝트가 사용하는 최신 Android API
+- SDK Tools: Android SDK Build-Tools
+- SDK Tools: Android SDK Platform-Tools
+- SDK Tools: Android Emulator
+- SDK Tools: Android SDK Command-line Tools (latest)
+
+### 3. Emulator 만들기
+
+1. Android Studio의 `Tools > Device Manager`를 연다.
+2. `Create Virtual Device`를 누른다.
+3. 일반적인 휴대폰 크기 검증을 위해 Pixel 계열 기기를 고른다.
+4. Google Play가 포함된 최신 안정 API 이미지를 내려받는다.
+5. 생성한 기기의 실행 버튼을 누른다.
+
+에뮬레이터가 느리면 BIOS/UEFI의 CPU 가상화가 켜져 있는지 확인한다. 실제 기기를 사용할 때는 개발자 옵션과 USB 디버깅을 켜고 `adb devices`에서 연결 상태를 확인한다.
+
+### 4. 환경 변수
+
+Windows의 일반적인 SDK 경로는 `%LOCALAPPDATA%\Android\Sdk`, macOS는 `$HOME/Library/Android/sdk`, Linux는 `$HOME/Android/Sdk`다.
+
+macOS/Linux 셸 설정 예시:
+
+```bash
+export JAVA_HOME="/path/to/jdk-17"
+export ANDROID_HOME="$HOME/Android/Sdk"
+export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
+```
+
+Windows에서는 시스템 환경 변수에 `JAVA_HOME`, `ANDROID_HOME`을 추가하고 `Path`에 `%ANDROID_HOME%\platform-tools`와 `%ANDROID_HOME%\emulator`를 추가한다.
+
+### WSL2 사용 시 주의
+
+현재 개발 환경처럼 저장소가 WSL2 안에 있다면 Windows용 Gradle·Node와 WSL용 Gradle·Node를 한 빌드에서 섞지 않는다. 가장 단순한 선택은 다음 둘 중 하나다.
+
+- 당장 확인: GitHub Actions의 APK를 휴대폰에 직접 설치한다.
+- 로컬 네이티브 개발: Windows 파일 시스템에 별도 checkout을 두고 Windows의 Node.js, JDK 17, Android Studio, SDK를 함께 사용한다.
+
+Windows Android Studio에서 WSL 내부 경로를 바로 열면 파일 시스템 경계와 SDK 경로 차이 때문에 빌드가 느리거나 실패할 수 있다.
+
+## 로컬 실행
+
+최초 한 번:
 
 ```bash
 cd android
@@ -52,4 +111,77 @@ npm run check
 npm run android:dev
 ```
 
-`npm run check`는 TypeScript, 개발·운영 앱 설정, 두 환경의 Android JS 번들을 검증합니다. 실제 APK/AAB 네이티브 빌드는 JDK와 Android SDK가 준비된 환경에서 추가로 확인합니다.
+`android:dev`는 개발 application ID로 네이티브 프로젝트를 생성하고, 선택한 에뮬레이터 또는 연결된 실제 기기에 개발 앱을 설치한다. 이후에는 Metro 개발 서버를 실행해 빠르게 확인할 수 있다.
+
+```bash
+cd android
+npm run start:dev
+```
+
+Android 앱을 실행한 상태에서는 Fast Refresh로 TypeScript/React Native 변경을 반영한다. 네이티브 설정이나 라이브러리가 바뀌면 `npm run android:dev`로 다시 빌드한다.
+
+## APK와 AAB의 차이
+
+| 파일 | 용도 | 기기에 바로 설치 |
+| --- | --- | --- |
+| APK (`.apk`) | 개발, QA, 실제 기기 직접 테스트 | 가능 |
+| AAB (`.aab`) | Google Play가 기기별 APK를 만들기 위한 제출 파일 | 불가능 |
+
+현재 CI의 APK 산출물은 정상이다. 휴대폰이나 에뮬레이터에 바로 설치해 기능을 확인하기 위한 개발 빌드이기 때문이다. Play Console에는 최종 서명된 운영 AAB를 제출한다.
+
+- [Expo: APK 빌드와 설치](https://docs.expo.dev/build-reference/apk/)
+- [Expo: 로컬 AAB 생성](https://docs.expo.dev/guides/local-app-production/)
+
+## CI 산출물로 실제 휴대폰에서 확인
+
+1. GitHub 저장소의 `Actions`에서 성공한 `Android Quality` 실행을 연다.
+2. 실행 하단 `Artifacts`에서 `gachi-gacha-android-debug`를 내려받는다.
+3. 압축을 풀어 `app-debug.apk`를 휴대폰으로 옮긴다.
+4. 휴대폰에서 APK를 열고, 해당 브라우저/파일 앱의 `알 수 없는 앱 설치`를 이번 설치에만 허용한다.
+5. `가치가챠 Dev` 앱을 실행해 탭 이동, 화면 잘림, 뒤로가기, 글자 크기를 확인한다.
+
+USB로 연결했다면 다음 명령으로도 설치할 수 있다.
+
+```bash
+adb install -r app-debug.apk
+```
+
+APK는 신뢰할 수 있는 이 저장소의 CI 산출물만 설치한다. 개발 앱은 `com.dev.gachigacha.app`이므로 추후 운영 앱과 동시에 설치할 수 있다.
+
+## AAB 생성과 확인
+
+CI는 운영 설정으로 AAB 후보도 생성한다. 산출물 이름은 `gachi-gacha-android-production-aab-candidate`다. 이 파일은 번들 생성 여부와 크기·구조를 확인하기 위한 후보이며, upload key 설정 전에는 Play Console에 제출하는 최종 파일로 사용하지 않는다.
+
+로컬 생성 절차:
+
+```bash
+cd android
+APP_VARIANT=production npx expo prebuild --platform android --clean --no-install
+cd android
+./gradlew bundleRelease
+```
+
+생성 위치:
+
+```text
+android/android/app/build/outputs/bundle/release/app-release.aab
+```
+
+Android Studio의 `Build > Analyze APK`에서 AAB를 선택하면 패키지 구성과 용량을 확인할 수 있다. 최종 출시 전에는 다음 작업을 별도 릴리스 이슈로 진행한다.
+
+1. Play Console에서 Play App Signing 설정
+2. 팀 전용 upload key 생성 및 비밀 저장소 보관
+3. CI에 운영 서명 환경변수 등록
+4. 서명된 AAB 생성
+5. Play 내부 테스트 트랙에 업로드
+6. 내부 테스터 설치·업데이트 검증
+
+## 현재 앱에서 확인할 범위
+
+- 개발 앱 이름과 application ID가 운영 앱과 분리되는가
+- 상태 표시줄과 하단 시스템 영역에 콘텐츠가 가려지지 않는가
+- 거래/교환, 지도, 검색 탭을 이동할 수 있는가
+- 다양한 화면 크기와 시스템 글자 크기에서 레이아웃이 깨지지 않는가
+- Android 뒤로가기 시 앱이 비정상 종료되지 않는가
+
+현재 화면은 네이티브 공통 셸 검증용이다. 로그인, 알림, 실제 지도 SDK, API 데이터는 각각 계약과 권한이 확정된 뒤 별도 이슈에서 연결한다.

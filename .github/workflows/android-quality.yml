@@ -68,3 +68,20 @@ jobs:
           path: android/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+
+      - name: Generate production Android native project
+        env:
+          APP_VARIANT: production
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Build production AAB candidate
+        working-directory: android/android
+        run: ./gradlew bundleRelease
+
+      - name: Upload production AAB candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: gachi-gacha-android-production-aab-candidate
+          path: android/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
