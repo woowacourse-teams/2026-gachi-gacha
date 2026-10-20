@@ -105,29 +105,37 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 채팅·계정 이벤트
 
-| 이벤트                              | 발생 시점                        | 주요 속성                                                                |
-| ----------------------------------- | -------------------------------- | ------------------------------------------------------------------------ |
-| `chat_room_entry_completed`         | 거래 기반 채팅방 조회·생성 완료  | `trade_id`, `room_id`, `room_was_created`, `outcome`                     |
-| `chat_room_selected`                | 채팅 목록에서 방 선택            | `room_id`, `source`                                                      |
-| `chat_message_send_completed`       | 텍스트 메시지 전송 완료          | `room_id`, `outcome`, `message_length`                                   |
-| `chat_history_load_completed`       | 이전 메시지 조회 완료            | `room_id`, `outcome`                                                     |
-| `chat_trade_context_selected`       | 채팅방에서 거래글·신고 동선 선택 | `room_id`, `trade_id`, `action`                                          |
-| `profile_edit_started`              | 프로필 수정창 열기               | 없음                                                                     |
-| `mypage_trades_load_completed`      | 마이페이지 내 교환글 조회 완료   | `outcome`, `total_count`, `in_progress_count`                            |
-| `profile_image_selection_completed` | 프로필 사진 파일 검증 완료       | `outcome`, `rejection_reason`, `format`, `size_bucket`                   |
-| `profile_image_upload_started`      | 프로필 사진 업로드 시작          | `format`, `size_bucket`                                                  |
-| `profile_image_upload_completed`    | 프로필 사진 업로드 완료          | `outcome`, `format`, `size_bucket`                                       |
-| `profile_update_completed`          | 프로필 저장 완료                 | `outcome`, `has_trade_location`, `trade_location_change`, `image_change` |
-| `account_menu_selected`             | 방침·고객센터·로그아웃·탈퇴 선택 | `target`, `source` (`account_deletion` 포함)                             |
-| `account_deletion_completed`        | 회원 탈퇴 요청 완료              | `outcome`                                                                |
-| `event_application_started`         | 마이페이지에서 이벤트 응모 진입  | `source`                                                                 |
-| `event_application_completed`       | 이벤트 응모 제출 완료            | `track`, `outcome`, `has_completed_trade_evidence`                       |
-| `updates_page_viewed`               | 업데이트 소식 페이지 조회        | `latest_visible_version`, `release_count`                                |
-| `release_notes_selected`            | 전체 변경 기록 링크 선택         | `version`, `is_latest`                                                   |
+| 이벤트                               | 발생 시점                        | 주요 속성                                                                |
+| ------------------------------------ | -------------------------------- | ------------------------------------------------------------------------ |
+| `chat_room_entry_completed`          | 거래 기반 채팅방 조회·생성 완료  | `trade_id`, `room_id`, `room_was_created`, `outcome`                     |
+| `chat_room_selected`                 | 채팅 목록에서 방 선택            | `room_id`, `source`                                                      |
+| `chat_message_send_completed`        | 텍스트 메시지 전송 완료          | `room_id`, `outcome`, `message_length`                                   |
+| `chat_history_load_completed`        | 이전 메시지 조회 완료            | `room_id`, `outcome`                                                     |
+| `chat_trade_context_selected`        | 채팅방에서 거래글·신고 동선 선택 | `room_id`, `trade_id`, `action`                                          |
+| `member_safety_menu_opened`          | 사용자 안전 메뉴 열기            | `source`                                                                 |
+| `member_report_form_opened`          | 신고 폼 열기                     | `source`, `entry` (`safety_menu`, `post_block`)                          |
+| `member_report_submission_completed` | 신고 접수 시도 완료              | `source`, `reason`, `outcome`                                            |
+| `member_block_completed`             | 사용자 차단 요청 완료            | `source`, `outcome`                                                      |
+| `member_unblock_completed`           | 사용자 차단 해제 완료            | `source`, `outcome`                                                      |
+| `blocked_members_load_completed`     | 차단 사용자 목록 조회 완료       | `outcome`, `blocked_member_count`                                        |
+| `profile_edit_started`               | 프로필 수정창 열기               | 없음                                                                     |
+| `mypage_trades_load_completed`       | 마이페이지 내 교환글 조회 완료   | `outcome`, `total_count`, `in_progress_count`                            |
+| `profile_image_selection_completed`  | 프로필 사진 파일 검증 완료       | `outcome`, `rejection_reason`, `format`, `size_bucket`                   |
+| `profile_image_upload_started`       | 프로필 사진 업로드 시작          | `format`, `size_bucket`                                                  |
+| `profile_image_upload_completed`     | 프로필 사진 업로드 완료          | `outcome`, `format`, `size_bucket`                                       |
+| `profile_update_completed`           | 프로필 저장 완료                 | `outcome`, `has_trade_location`, `trade_location_change`, `image_change` |
+| `account_menu_selected`              | 방침·고객센터·로그아웃·탈퇴 선택 | `target`, `source` (`account_deletion` 포함)                             |
+| `account_deletion_completed`         | 회원 탈퇴 요청 완료              | `outcome`                                                                |
+| `event_application_started`          | 마이페이지에서 이벤트 응모 진입  | `source`                                                                 |
+| `event_application_completed`        | 이벤트 응모 제출 완료            | `track`, `outcome`, `has_completed_trade_evidence`                       |
+| `updates_page_viewed`                | 업데이트 소식 페이지 조회        | `latest_visible_version`, `release_count`                                |
+| `release_notes_selected`             | 전체 변경 기록 링크 선택         | `version`, `is_latest`                                                   |
 
 `trade_location_change`는 `unchanged`, `set`, `changed`, `cleared` 중 하나다. 위치명과 주소 자체는 전송하지 않는다.
 
 이벤트 분석에는 Instagram ID, 작성·완료 거래글 링크, 파일명·이미지 URL, memberId를 이벤트 속성으로 보내지 않는다. 로그인 회원 식별은 기존 PostHog identify 문맥을 사용하며 `track`은 이벤트 A/B 트랙 선택에 대응하는 `BASIC`, `COMPLETED`, `BOTH` 중 하나다.
+
+신고·차단 이벤트에도 대상 회원 ID, 닉네임, 신고 상세 내용이나 콘텐츠 원문을 넣지 않는다. `entry = post_block`은 차단 완료 안내에서 후속 신고 폼으로 이동한 경우를 뜻한다. 실제 신고 데이터는 접근이 제한된 신고 저장소에서만 확인한다.
 
 ## 핵심 지표와 해석
 

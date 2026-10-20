@@ -230,6 +230,7 @@ function CommentCard({
                 }
                 targetNickname={comment.author.nickname}
                 source="comment"
+                referenceId={comment.commentId}
               />
             </CommentSafetyMenu>
           )}

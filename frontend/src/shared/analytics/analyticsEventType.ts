@@ -306,6 +306,7 @@ export interface AnalyticsEventPropertiesMap {
   };
   member_report_form_opened: {
     source: MemberSafetySource;
+    entry: 'safety_menu' | 'post_block';
   };
   member_report_submission_completed: {
     source: MemberSafetySource;

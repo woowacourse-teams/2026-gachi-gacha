@@ -309,6 +309,7 @@ export default function ChatRoomPanel({
             targetMemberId={room.partnerMemberId}
             targetNickname={room.partnerName}
             source="chat"
+            referenceId={String(room.conversationId)}
             onBlocked={onPartnerBlocked}
           />
         </HeaderActions>

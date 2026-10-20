@@ -14,12 +14,12 @@ import {
 import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 import { useMemberBlocks, type MemberSafetySource } from './MemberBlockContext';
-import { ReportDialog } from './ReportDialog';
 
 interface UserSafetyMenuProps {
   targetMemberId: number | null;
   targetNickname: string;
   source: MemberSafetySource;
+  referenceId?: string | null;
   onBlocked?: (() => void) | undefined;
 }
 
@@ -27,12 +27,12 @@ export function UserSafetyMenu({
   targetMemberId,
   targetNickname,
   source,
+  referenceId = null,
   onBlocked,
 }: UserSafetyMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { blockMember } = useMemberBlocks();
+  const { blockMember, openMemberReport } = useMemberBlocks();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isReportOpen, setIsReportOpen] = useState(false);
   const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
   const [isBlocking, setIsBlocking] = useState(false);
   const [blockError, setBlockError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export function UserSafetyMenu({
     setBlockError(null);
 
     try {
-      await blockMember(targetMemberId, source);
+      await blockMember(targetMemberId, source, targetNickname, referenceId);
       setIsBlockConfirmOpen(false);
       onBlocked?.();
     } catch (error) {
@@ -100,8 +100,12 @@ export function UserSafetyMenu({
               role="menuitem"
               onClick={() => {
                 setIsMenuOpen(false);
-                setIsReportOpen(true);
-                captureAnalyticsEvent('member_report_form_opened', { source });
+                openMemberReport({
+                  memberId: targetMemberId,
+                  nickname: targetNickname,
+                  source,
+                  referenceId,
+                });
               }}
             >
               신고하기
@@ -123,12 +127,6 @@ export function UserSafetyMenu({
         )}
       </MenuRoot>
 
-      <ReportDialog
-        open={isReportOpen}
-        targetNickname={targetNickname}
-        source={source}
-        onClose={() => setIsReportOpen(false)}
-      />
       <ConfirmDialog
         open={isBlockConfirmOpen}
         title={`${targetNickname}님을 차단할까요?`}
