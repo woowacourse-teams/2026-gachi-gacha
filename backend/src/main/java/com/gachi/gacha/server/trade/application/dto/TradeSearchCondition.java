@@ -8,6 +8,8 @@ import lombok.Builder;
 public record TradeSearchCondition(
         String keyword,
         List<Long> categoryIds,
-        TradeStatus status
+        TradeStatus status,
+        int page,
+        int size
 ) {
 }

@@ -7,6 +7,7 @@ import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.member.domain.auth.authcode.AuthCodeRequestUrlProviderComposite;
 import com.gachi.gacha.server.member.domain.auth.client.OauthMemberClientComposite;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -22,10 +23,19 @@ public class OauthService {
     }
 
     public LoginInfo login(final OauthProviderType provider, final String code, final String nonce) {
-        Member member = oauthMemberClientComposite.fetch(provider, code, nonce);
-        return LoginInfo.from(
-                memberJpaRepository.findByOauthId(member.getOauthId())
-                        .orElseGet(() -> memberJpaRepository.save(member))
-        );
+        Member fetched = oauthMemberClientComposite.fetch(provider, code, nonce);
+
+        Member member = memberJpaRepository.findByOauthId(fetched.getOauthId())
+                .orElseGet(() -> saveOrFind(fetched));
+        return LoginInfo.from(member);
+    }
+
+    private Member saveOrFind(final Member fetched) {
+        try {
+            return memberJpaRepository.saveAndFlush(fetched);
+        } catch (DataIntegrityViolationException e) {
+            return memberJpaRepository.findByOauthId(fetched.getOauthId())
+                    .orElseThrow(() -> e);
+        }
     }
 }

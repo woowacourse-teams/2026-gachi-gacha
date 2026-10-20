@@ -13,6 +13,7 @@ import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeUpdateCommand;
 import com.gachi.gacha.server.category.domain.CategoryJpaRepository;
+import com.gachi.gacha.server.trade.application.event.TradeChangedEvent;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeImage;
 import com.gachi.gacha.server.trade.domain.TradeImageJpaRepository;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +48,7 @@ public class TradeService {
     private final MemberJpaRepository memberJpaRepository;
     private final MultipartUploader multipartUploader;
     private final S3TransactionManager s3TransactionManager;
+    private final ApplicationEventPublisher publisher;
 
     @Transactional
     public TradeInfo createTrade(
@@ -66,10 +69,10 @@ public class TradeService {
                 .status(TradeStatus.AVAILABLE)
                 .build();
         trade.replaceCategories(findCategories(command.categoryIds()));
-        tradeJpaRepository.save(trade);
+        Trade saved = tradeJpaRepository.save(trade);
 
         List<String> imageUrls = uploadImages(trade, images);
-
+        publisher.publishEvent(new TradeChangedEvent(saved.getId()));
         return TradeInfo.of(trade, imageUrls);
     }
 
@@ -120,7 +123,7 @@ public class TradeService {
         trade.replaceCategories(findCategories(command.categoryIds()));
 
         List<String> imageUrls = replaceImages(trade, images);
-
+        publisher.publishEvent(new TradeChangedEvent(tradeId));
         return TradeInfo.of(trade, imageUrls);
     }
 
@@ -130,7 +133,7 @@ public class TradeService {
         validateOwner(trade, memberId);
 
         trade.changeStatus(status);
-
+        publisher.publishEvent(new  TradeChangedEvent(tradeId));
         return TradeInfo.of(trade, findImageUrls(tradeId));
     }
 
@@ -146,7 +149,7 @@ public class TradeService {
 
         tradeImageRepository.deleteAll(tradeImages);
         tradeJpaRepository.delete(trade);
-
+        publisher.publishEvent(new TradeChangedEvent(tradeId));
         // 사용자가 올린 콘텐츠라 오삭제·신고 대응 여지를 남기기 위해 완전 삭제가 아닌 휴지통으로 옮긴다.
         s3TransactionManager.trashImagesAfterRemoved(DomainType.TRADE, tradeId, imageUrls);
     }
