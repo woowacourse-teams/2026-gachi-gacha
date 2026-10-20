@@ -58,11 +58,11 @@ public class TradeSearchService {
         }
         boolQueryBuilder.should(s -> s.multiMatch(mm -> mm
                 .query(condition.keyword())
-                .fields("title^3", "title.ngram^2", "categories", "status")
+                .fields("title^3", "title.ngram^2", "categories")
                 .fuzziness("AUTO")));
-        boolQueryBuilder.should(s -> s.multiMatch(mm -> mm
+        boolQueryBuilder.should(s -> s.match(m -> m
                 .query(condition.keyword())
-                .fields("categories^2", "status")
+                .field("categories^2")
                 .analyzer("korean")
                 .boost(0.5f)));
         boolQueryBuilder.should(s -> s.match(m -> m

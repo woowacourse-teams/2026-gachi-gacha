@@ -59,9 +59,9 @@ public class GachaSearchService {
                 .fields("name^3", "categoryNames^2", "caption")
                 .fuzziness("AUTO")));
 
-        boolQueryBuilder.should(s -> s.multiMatch(mm -> mm
+        boolQueryBuilder.should(s -> s.match(m -> m
                 .query(condition.keyword())
-                .fields("categoryNames^2")
+                .field("categoryNames^2")
                 .analyzer("korean")
                 .boost(0.5f)));
 
