@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import {
   breakpoint,
@@ -33,6 +34,7 @@ interface TradeCommentsProps {
   onRetryComments?: (() => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
+  showSafetyActions?: boolean | undefined;
 }
 
 export function TradeComments({
@@ -43,6 +45,7 @@ export function TradeComments({
   onSubmit,
   onRetryComments,
   onCommentAction,
+  showSafetyActions = false,
 }: TradeCommentsProps) {
   const [draft, setDraft] = useState('');
   const [guestNickname, setGuestNickname] = useState('');
@@ -151,6 +154,7 @@ export function TradeComments({
               key={comment.commentId}
               comment={comment}
               onCommentAction={onCommentAction}
+              showSafetyActions={showSafetyActions}
             />
           ))}
         </CommentList>
@@ -174,17 +178,30 @@ interface CommentThreadProps {
   comment: TradeComment;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
+  showSafetyActions?: boolean | undefined;
 }
 
-function CommentThread({ comment, onCommentAction }: CommentThreadProps) {
+function CommentThread({
+  comment,
+  onCommentAction,
+  showSafetyActions,
+}: CommentThreadProps) {
   return (
     <Thread>
-      <CommentCard comment={comment} onCommentAction={onCommentAction} />
+      <CommentCard
+        comment={comment}
+        onCommentAction={onCommentAction}
+        showSafetyActions={showSafetyActions}
+      />
     </Thread>
   );
 }
 
-function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
+function CommentCard({
+  comment,
+  onCommentAction,
+  showSafetyActions,
+}: CommentThreadProps) {
   const actions: Array<{ action: TradeCommentAction; label: string }> =
     comment.isMine && onCommentAction
       ? [
@@ -203,6 +220,19 @@ function CommentCard({ comment, onCommentAction }: CommentThreadProps) {
           <CreatedAt dateTime={comment.createdAt}>
             {formatRelativeTime(comment.createdAt)}
           </CreatedAt>
+          {showSafetyActions && !comment.isMine && (
+            <CommentSafetyMenu>
+              <UserSafetyMenu
+                targetMemberId={
+                  comment.author.memberId === null
+                    ? null
+                    : Number(comment.author.memberId)
+                }
+                targetNickname={comment.author.nickname}
+                source="comment"
+              />
+            </CommentSafetyMenu>
+          )}
         </CommentHeading>
         <CommentText>{comment.content}</CommentText>
         {actions.length > 0 && (
@@ -441,6 +471,10 @@ const AuthorBadge = styled.span`
 const CreatedAt = styled.time`
   color: ${color.textSubtle};
   font-size: ${fontSize.bodySmall};
+`;
+
+const CommentSafetyMenu = styled.span`
+  margin-left: auto;
 `;
 
 const CommentText = styled.p`

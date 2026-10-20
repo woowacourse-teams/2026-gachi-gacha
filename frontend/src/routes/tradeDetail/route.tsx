@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import styled from '@emotion/styled';
+import { useNavigate } from 'react-router';
 
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   color,
@@ -22,7 +25,9 @@ export interface TradeDetailRouteProps {
 }
 
 export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
+  const navigate = useNavigate();
   const { status: authStatus, member, memberId } = useAuthSession();
+  const { isMemberBlocked } = useMemberBlocks();
   const { state, retry } = useTradeDetail(tradeId);
   const {
     comments,
@@ -42,6 +47,15 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     isLoading: isLoadingRelatedItems,
     loadMore: loadMoreRelatedItems,
   } = useRelatedTrades(tradeId);
+
+  const isTradeAuthorBlocked =
+    state.status === 'success' && isMemberBlocked(state.data.memberId);
+
+  useEffect(() => {
+    if (isTradeAuthorBlocked) {
+      navigate('/trade', { replace: true });
+    }
+  }, [isTradeAuthorBlocked, navigate]);
 
   if (state.status === 'loading' || state.status === 'idle') {
     return <PageLoadingFallback label="교환 게시글을 불러오고 있어요." />;
@@ -71,6 +85,10 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
         </ErrorPanel>
       </Page>
     );
+  }
+
+  if (isTradeAuthorBlocked) {
+    return <PageLoadingFallback label="교환 목록으로 이동하고 있어요." />;
   }
 
   const action =
@@ -112,6 +130,8 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
           : undefined
       }
       onRetryComments={retryComments}
+      showSafetyActions={authStatus === 'authenticated'}
+      onTradeAuthorBlocked={() => navigate('/trade', { replace: true })}
     />
   );
 }

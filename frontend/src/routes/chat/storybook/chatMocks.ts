@@ -10,6 +10,7 @@ const YESTERDAY = toChatDateKey(
 export const CHAT_CONVERSATIONS: ChatConversation[] = [
   {
     id: 1,
+    partnerMemberId: 11,
     partnerName: '가챠좋아',
     partnerProfileImageUrl: null,
     itemTitle: '쿠로미 미니 피규어 vol.2',
@@ -20,6 +21,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
   },
   {
     id: 2,
+    partnerMemberId: 12,
     partnerName: '피규어수집가',
     partnerProfileImageUrl: null,
     itemTitle: '마이멜로디 미니피규어',
@@ -30,6 +32,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
   },
   {
     id: 3,
+    partnerMemberId: 13,
     partnerName: '캡슐러버',
     partnerProfileImageUrl: null,
     itemTitle: '치이카와 키링 교환',
@@ -42,6 +45,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
 
 export const SELECTED_CHAT_ROOM: ChatRoom = {
   conversationId: 1,
+  partnerMemberId: 11,
   tradeId: 1,
   partnerName: '가챠좋아',
   partnerProfileImageUrl: null,

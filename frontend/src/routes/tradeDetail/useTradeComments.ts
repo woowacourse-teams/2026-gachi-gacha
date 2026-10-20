@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
@@ -66,6 +67,7 @@ export function useTradeComments({
   viewerMemberId,
   isAuthenticated,
 }: UseTradeCommentsOptions) {
+  const { isMemberBlocked } = useMemberBlocks();
   const [attempt, setAttempt] = useState(0);
   const [hasSubmittedComment, setHasSubmittedComment] = useState(false);
   const [state, setState] =
@@ -178,11 +180,15 @@ export function useTradeComments({
   const comments = useMemo(
     () =>
       state.status === 'success'
-        ? state.data.map((comment) =>
-            toTradeComment(comment, postAuthorId, viewerMemberId),
-          )
+        ? state.data
+            .filter(
+              ({ memberId }) => memberId === null || !isMemberBlocked(memberId),
+            )
+            .map((comment) =>
+              toTradeComment(comment, postAuthorId, viewerMemberId),
+            )
         : [],
-    [postAuthorId, state, viewerMemberId],
+    [isMemberBlocked, postAuthorId, state, viewerMemberId],
   );
 
   return { comments, state, submit, retry, hasSubmittedComment };

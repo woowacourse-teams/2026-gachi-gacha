@@ -333,18 +333,27 @@ describe('ChatRoomPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('거래글 이동과 공식 인스타그램 신고 동선을 제공한다', () => {
+  it('거래글 이동과 상대 사용자 신고 메뉴를 제공한다', async () => {
+    const user = userEvent.setup();
+
     renderPanel(<ChatRoomPanel room={SELECTED_CHAT_ROOM} />);
 
     expect(screen.getByRole('link', { name: '거래글로 이동' })).toHaveAttribute(
       'href',
       `/trade/${SELECTED_CHAT_ROOM.tradeId}`,
     );
-    expect(
-      screen.getByRole('link', {
-        name: '신고하기 (인스타그램 DM, 새 창)',
+    await user.click(
+      screen.getByRole('button', {
+        name: `${SELECTED_CHAT_ROOM.partnerName} 사용자 메뉴`,
       }),
-    ).toHaveAttribute('href', 'https://www.instagram.com/gachi__.gacha/');
+    );
+    await user.click(screen.getByRole('menuitem', { name: '신고하기' }));
+
+    expect(
+      screen.getByRole('heading', {
+        name: `${SELECTED_CHAT_ROOM.partnerName}님 신고하기`,
+      }),
+    ).toBeInTheDocument();
   });
 
   it('상태 변경에 실패하면 서버 오류를 표시한다', async () => {

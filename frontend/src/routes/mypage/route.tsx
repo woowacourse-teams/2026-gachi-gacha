@@ -363,6 +363,26 @@ export function MyPageRoute() {
               <CardTitle>계정 관리</CardTitle>
               <AccountMenu>
                 <AccountMenuRouterLink
+                  to="/mypage/blocked-members"
+                  onClick={() =>
+                    captureAnalyticsEvent('account_menu_selected', {
+                      target: 'blocked_members',
+                      source: 'mypage',
+                    })
+                  }
+                >
+                  <AccountMenuIcon>
+                    <MyPageIcon name="blocked" />
+                  </AccountMenuIcon>
+                  <AccountMenuCopy>
+                    <AccountMenuLabel>차단한 사용자</AccountMenuLabel>
+                    <AccountMenuDescription>
+                      차단 목록을 확인하고 해제할 수 있어요
+                    </AccountMenuDescription>
+                  </AccountMenuCopy>
+                  <MyPageIcon name="chevron" size={18} />
+                </AccountMenuRouterLink>
+                <AccountMenuRouterLink
                   to="/updates"
                   onClick={() =>
                     captureAnalyticsEvent('account_menu_selected', {

@@ -20,8 +20,8 @@ import {
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 import { TradeStatusBadge } from '@/domains/trade/components/TradeStatusBadge';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
 import ChatImagePreview from './ChatImagePreview';
 import ChatMessageGallery from './ChatMessageGallery';
@@ -43,6 +43,7 @@ interface ChatRoomPanelProps {
   previousMessagesError?: string;
   onLoadPreviousMessages?: (() => Promise<void>) | undefined;
   onChangeTradeStatus?: ((status: TradeStatus) => Promise<void>) | undefined;
+  onPartnerBlocked?: (() => void) | undefined;
 }
 
 export default function ChatRoomPanel({
@@ -58,6 +59,7 @@ export default function ChatRoomPanel({
   previousMessagesError = '',
   onLoadPreviousMessages,
   onChangeTradeStatus,
+  onPartnerBlocked,
 }: ChatRoomPanelProps) {
   const messagesRef = useRef<HTMLDivElement>(null);
   const [message, setMessage] = useState('');
@@ -301,7 +303,15 @@ export default function ChatRoomPanel({
             <PartnerName>{room.partnerName}</PartnerName>
           </div>
         </RoomTitleGroup>
-        <TradeStatusBadge status={room.tradeStatus} />
+        <HeaderActions>
+          <TradeStatusBadge status={room.tradeStatus} />
+          <UserSafetyMenu
+            targetMemberId={room.partnerMemberId}
+            targetNickname={room.partnerName}
+            source="chat"
+            onBlocked={onPartnerBlocked}
+          />
+        </HeaderActions>
       </RoomHeader>
 
       <ProductSummary>
@@ -328,21 +338,6 @@ export default function ChatRoomPanel({
             >
               거래글로 이동
             </TradeDetailLink>
-            <ReportLink
-              href={SUPPORT_INSTAGRAM_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="신고하기 (인스타그램 DM, 새 창)"
-              onClick={() =>
-                captureAnalyticsEvent('chat_trade_context_selected', {
-                  room_id: room.conversationId,
-                  trade_id: room.tradeId,
-                  action: 'report',
-                })
-              }
-            >
-              신고하기
-            </ReportLink>
           </ProductLinks>
         </ProductInfo>
         {tradeStatusAction && onChangeTradeStatus && (
@@ -580,6 +575,12 @@ const RoomHeader = styled.header`
   border-bottom: 1px solid #eeeaec;
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
 const PartnerName = styled.h2`
   margin: 0;
   color: #2b2528;
@@ -658,15 +659,6 @@ const ProductLinks = styled.div`
 
 const TradeDetailLink = styled(Link)`
   color: #9a9095;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const ReportLink = styled.a`
-  color: #d9304f;
   text-decoration: none;
 
   &:hover {

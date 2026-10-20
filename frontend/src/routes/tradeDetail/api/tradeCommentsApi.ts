@@ -1,4 +1,7 @@
-import { authenticatedFetch } from '@/features/auth/api/authenticatedFetch';
+import {
+  authenticatedFetch,
+  optionallyAuthenticatedFetch,
+} from '@/features/auth/api/authenticatedFetch';
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
 import type { TradeCommentSubmission } from '../model/tradeComment';
@@ -119,9 +122,12 @@ export async function getTradeComments(
 ): Promise<TradeCommentResponse[]> {
   validateTradeId(tradeId);
 
-  const response = await fetch(`/api/v1/trades/${tradeId}/comments`, {
-    ...(signal ? { signal } : {}),
-  });
+  const response = await optionallyAuthenticatedFetch(
+    `/api/v1/trades/${tradeId}/comments`,
+    {
+      ...(signal ? { signal } : {}),
+    },
+  );
   const responseBody = await readJsonResponse(
     response,
     DEFAULT_LOAD_ERROR_MESSAGE,
