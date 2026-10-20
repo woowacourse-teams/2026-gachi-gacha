@@ -191,13 +191,14 @@ public class TradeController {
         return BaseResponse.deleted(null);
     }
 
+    @Operation(summary = "교환 게시글 검색")
     @GetMapping("/search")
     public SearchResult<TradeDocument> searchTrades(
-            @RequestParam(required = false) final String keyword,
-            @RequestParam(required = false) final List<Long> categoryIds,
-            @RequestParam(required = false) final TradeStatus status,
-            @RequestParam(defaultValue = "0") final int page,
-            @RequestParam(defaultValue = "20") final int size) throws IOException {
+            @Parameter(description = "검색어") @RequestParam(required = false) final String keyword,
+            @Parameter(description = "카테고리 아이디") @RequestParam(required = false) final List<Long> categoryIds,
+            @Parameter(description = "거래 상태") @RequestParam(required = false) final TradeStatus status,
+            @Parameter(description = "페이지") @RequestParam(defaultValue = "0") final int page,
+            @Parameter(description = "한 페이지당 게시글 수") @RequestParam(defaultValue = "20") final int size) throws IOException {
         return tradeSearchService.search(new TradeSearchCondition(keyword, categoryIds, status, page, Math.min(size, 50)));
     }
 }

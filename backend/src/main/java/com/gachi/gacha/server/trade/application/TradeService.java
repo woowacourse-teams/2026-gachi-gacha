@@ -123,7 +123,7 @@ public class TradeService {
         trade.replaceCategories(findCategories(command.categoryIds()));
 
         List<String> imageUrls = replaceImages(trade, images);
-        publisher.publishEvent(new  TradeChangedEvent(tradeId));
+        publisher.publishEvent(new TradeChangedEvent(tradeId));
         return TradeInfo.of(trade, imageUrls);
     }
 
