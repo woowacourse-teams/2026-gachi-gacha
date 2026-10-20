@@ -20,7 +20,7 @@ import {
   UnreadDot,
 } from './NotificationPopover.styles';
 
-export type HeaderNotificationType = 'chat' | 'trade' | 'gacha';
+export type HeaderNotificationType = 'chat' | 'comment' | 'trade' | 'gacha';
 
 export interface HeaderNotification {
   id: string;
@@ -46,6 +46,7 @@ export interface NotificationPopoverProps {
 
 const NOTIFICATION_TYPE_LABELS: Record<HeaderNotificationType, string> = {
   chat: '채팅',
+  comment: '댓글',
   trade: '교환',
   gacha: '가챠',
 };

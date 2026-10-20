@@ -33,6 +33,15 @@ const notificationFixtures = [
     destination: '/chat',
   },
   {
+    id: 'comment-1',
+    type: 'comment',
+    title: '내 교환글에 새 댓글이 달렸어요',
+    message: '저도 교환 원해요. 홍대입구역에서 가능할까요?',
+    createdAtLabel: '5분 전',
+    isRead: false,
+    destination: '/trade/99',
+  },
+  {
     id: 'trade-1',
     type: 'trade',
     title: '교환 상태가 변경되었어요',

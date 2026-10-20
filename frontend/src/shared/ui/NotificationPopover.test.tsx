@@ -19,6 +19,15 @@ const notifications: readonly HeaderNotification[] = [
     destination: '/chat/1',
   },
   {
+    id: 'notification-comment-1',
+    type: 'comment',
+    title: '내 교환글에 새 댓글이 달렸어요',
+    message: '저도 교환 원해요.',
+    createdAtLabel: '5분 전',
+    isRead: false,
+    destination: '/trade/12',
+  },
+  {
     id: 'notification-2',
     type: 'trade',
     title: '교환이 완료되었어요',
@@ -61,6 +70,11 @@ describe('NotificationPopover', () => {
       screen.getByRole('link', { name: /새로운 채팅이 도착했어요/ }),
     ).toHaveAttribute('href', '/chat/1');
     expect(screen.getByText('교환이 완료되었어요')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: /댓글 5분 전 내 교환글에 새 댓글이 달렸어요/,
+      }),
+    ).toHaveAttribute('href', '/trade/12');
     expect(screen.queryByText('💬')).not.toBeInTheDocument();
     expect(screen.queryByText('모든 알림 보기')).not.toBeInTheDocument();
   });
