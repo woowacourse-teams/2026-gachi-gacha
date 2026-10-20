@@ -79,7 +79,7 @@ class MemberBlockControllerTest {
     }
 
     @Nested
-    @DisplayName("PUT /members/{memberId}/block - 회원 차단 API")
+    @DisplayName("PUT /blocks/{blockedMemberId} - 회원 차단 API")
     class BlockMember {
 
         @Test
@@ -87,7 +87,7 @@ class MemberBlockControllerTest {
         void blockMember_success() {
             // when
             ExtractableResponse<Response> response = request(blockerId)
-                    .put(API + "/members/" + blockedId + "/block")
+                    .put(API + "/blocks/" + blockedId)
                     .then().log().ifValidationFails()
                     .extract();
 
@@ -104,7 +104,7 @@ class MemberBlockControllerTest {
         void blockMember_self() {
             // when
             ExtractableResponse<Response> response = request(blockerId)
-                    .put(API + "/members/" + blockerId + "/block")
+                    .put(API + "/blocks/" + blockerId)
                     .then().log().ifValidationFails()
                     .extract();
 
@@ -118,7 +118,7 @@ class MemberBlockControllerTest {
         void blockMember_memberNotFound() {
             // when
             ExtractableResponse<Response> response = request(blockerId)
-                    .put(API + "/members/9999999/block")
+                    .put(API + "/blocks/9999999")
                     .then().log().ifValidationFails()
                     .extract();
 
@@ -133,7 +133,7 @@ class MemberBlockControllerTest {
             // when
             ExtractableResponse<Response> response = RestAssured.given().log().ifValidationFails()
                     .when()
-                    .put(API + "/members/" + blockedId + "/block")
+                    .put(API + "/blocks/" + blockedId)
                     .then().log().ifValidationFails()
                     .extract();
 
@@ -144,7 +144,7 @@ class MemberBlockControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /members/{memberId}/block - 회원 차단 해제 API")
+    @DisplayName("DELETE /blocks/{blockedMemberId} - 회원 차단 해제 API")
     class UnblockMember {
 
         @Test
@@ -155,7 +155,7 @@ class MemberBlockControllerTest {
 
             // when
             ExtractableResponse<Response> response = request(blockerId)
-                    .delete(API + "/members/" + blockedId + "/block")
+                    .delete(API + "/blocks/" + blockedId)
                     .then().log().ifValidationFails()
                     .extract();
 
@@ -168,7 +168,7 @@ class MemberBlockControllerTest {
     }
 
     @Nested
-    @DisplayName("GET /members/me/blocks - 내 차단 목록 조회 API")
+    @DisplayName("GET /blocks - 내 차단 목록 조회 API")
     class ReadBlockedMembers {
 
         @Test
@@ -179,7 +179,7 @@ class MemberBlockControllerTest {
 
             // when
             ExtractableResponse<Response> response = request(blockerId)
-                    .get(API + "/members/me/blocks")
+                    .get(API + "/blocks")
                     .then().log().ifValidationFails()
                     .extract();
 

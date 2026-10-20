@@ -294,11 +294,11 @@ class OsivDisabledControllerTest {
         }
 
         @Test
-        @DisplayName("GET /members/me/blocks - 차단한 회원의 닉네임까지 응답에 담긴다")
+        @DisplayName("GET /blocks - 차단한 회원의 닉네임까지 응답에 담긴다")
         void readMyBlocks() {
             memberBlockJpaRepository.save(MemberBlock.of(requesterId, ownerId));
 
-            ExtractableResponse<Response> response = get("/members/me/blocks", requesterId);
+            ExtractableResponse<Response> response = get("/blocks", requesterId);
 
             assertOk(response);
             assertThat(response.jsonPath().getLong("data.blocks[0].memberId")).isEqualTo(ownerId);

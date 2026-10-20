@@ -24,14 +24,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "회원 차단", description = "회원 차단·차단 해제·내 차단 목록 조회")
 @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 @RestController
-@RequestMapping("/members")
+@RequestMapping("/blocks")
 @RequiredArgsConstructor
 public class MemberBlockController {
 
     private final MemberBlockService memberBlockService;
 
     @Operation(summary = "회원 차단", description = "이미 차단한 회원이면 최초 차단 시각을 그대로 반환한다.")
-    @PutMapping("/{blockedMemberId}/block")
+    @PutMapping("/{blockedMemberId}")
     public BaseResponse<MemberBlockResponse> blockMember(
             @Auth final Long memberId,
             @Parameter(description = "차단할 회원 ID", example = "1") @PathVariable final Long blockedMemberId
@@ -41,7 +41,7 @@ public class MemberBlockController {
     }
 
     @Operation(summary = "회원 차단 해제", description = "차단하지 않은 회원이어도 성공으로 처리한다.")
-    @DeleteMapping("/{blockedMemberId}/block")
+    @DeleteMapping("/{blockedMemberId}")
     public BaseResponse<Void> unblockMember(
             @Auth final Long memberId,
             @Parameter(description = "차단 해제할 회원 ID", example = "1") @PathVariable final Long blockedMemberId
@@ -51,7 +51,7 @@ public class MemberBlockController {
     }
 
     @Operation(summary = "내 차단 목록 조회", description = "최근에 차단한 회원부터 반환한다.")
-    @GetMapping("/me/blocks")
+    @GetMapping
     public BaseResponse<BlockedMemberListResponse> readBlockedMembers(@Auth final Long memberId) {
         List<BlockedMemberInfo> blockedMemberInfos = memberBlockService.getBlockedMembers(memberId);
         return BaseResponse.ok(BlockedMemberListResponse.from(blockedMemberInfos));
