@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.member.infra.config;
 
+import com.gachi.gacha.server.member.infra.apple.client.AppleApiClient;
 import com.gachi.gacha.server.member.infra.kakao.client.KakaoApiClient;
 import com.gachi.gacha.server.member.infra.naver.client.NaverApiClient;
 import io.netty.channel.ChannelOption;
@@ -31,6 +32,11 @@ public class HttpInterfaceConfig {
     @Bean
     public NaverApiClient naverApiClient() {
         return createHttpInterface(NaverApiClient.class);
+    }
+
+    @Bean
+    public AppleApiClient appleApiClient() {
+        return createHttpInterface(AppleApiClient.class);
     }
 
     private <T> T createHttpInterface(Class<T> clazz) {
