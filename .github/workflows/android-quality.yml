@@ -40,8 +40,31 @@ jobs:
           cache: npm
           cache-dependency-path: android/package-lock.json
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Install dependencies
         run: npm ci
 
       - name: Validate TypeScript and bundles
         run: npm run check
+
+      - name: Generate Android native project
+        env:
+          APP_VARIANT: development
+        run: npx expo prebuild --platform android --no-install
+
+      - name: Build debug APK
+        working-directory: android/android
+        run: ./gradlew assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: gachi-gacha-android-debug
+          path: android/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
