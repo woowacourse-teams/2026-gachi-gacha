@@ -48,10 +48,10 @@ public class TradeIndexService {
         BulkRequest.Builder br = new BulkRequest.Builder();
         Set<Long> found = new HashSet<>();
 
-        for (Trade t : trades) {
-            found.add(t.getId());
-            TradeDocument doc = TradeDocument.of(t, thumbnails.get(t.getId()));
-            br.operations(op -> op.index(i -> i.index(INDEX).id(String.valueOf(t.getId())).document(doc)));
+        for (Trade trade : trades) {
+            found.add(trade.getId());
+            TradeDocument doc = TradeDocument.of(trade, thumbnails.get(trade.getId()));
+            br.operations(op -> op.index(i -> i.index(INDEX).id(String.valueOf(trade.getId())).document(doc)));
         }
         for (Long id : tradeIds) {
             if (!found.contains(id)) {

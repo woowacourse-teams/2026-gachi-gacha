@@ -1,8 +1,6 @@
 package com.gachi.gacha.server.trade.application.dto;
 
 import com.gachi.gacha.server.category.domain.Category;
-import com.gachi.gacha.server.gacha.application.dto.GachaDocument.Location;
-import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeCategory;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
@@ -21,27 +19,27 @@ public record TradeDocument(
         String thumbnailUrl,
         LocalDateTime createdAt
 ) {
-    public static TradeDocument of(final Trade t, final String thumbnailUrl) {
-        List<String> categories = t.getTradeCategories()
+    public static TradeDocument of(final Trade trade, final String thumbnailUrl) {
+        List<String> categories = trade.getTradeCategories()
                 .stream()
                 .map(TradeCategory::getCategory)
                 .map(Category::getName)
                 .toList();
-        List<Long> categoryIds = t.getTradeCategories()
+        List<Long> categoryIds = trade.getTradeCategories()
                 .stream()
                 .map(TradeCategory::getCategory)
                 .map(Category::getId)
                 .toList();
 
         return TradeDocument.builder()
-                .tradeId(t.getId())
-                .memberId(t.getMember().getId())
-                .title(t.getTitle())
-                .status(t.getStatus())
+                .tradeId(trade.getId())
+                .memberId(trade.getMember().getId())
+                .title(trade.getTitle())
+                .status(trade.getStatus())
                 .thumbnailUrl(thumbnailUrl)
                 .categoryIds(categoryIds)
                 .categories(categories)
-                .createdAt(t.getCreatedAt())
+                .createdAt(trade.getCreatedAt())
                 .build();
     }
 }
