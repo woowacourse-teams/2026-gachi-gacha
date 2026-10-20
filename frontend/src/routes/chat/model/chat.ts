@@ -4,6 +4,7 @@ export type ChatTradeStatus = TradeStatus;
 
 export interface ChatConversation {
   id: number;
+  partnerMemberId: number;
   partnerName: string;
   partnerProfileImageUrl: string | null;
   itemTitle: string;
@@ -30,6 +31,7 @@ export interface ChatMessageImage {
 
 export interface ChatRoom {
   conversationId: number;
+  partnerMemberId: number;
   tradeId: number;
   partnerName: string;
   partnerProfileImageUrl: string | null;

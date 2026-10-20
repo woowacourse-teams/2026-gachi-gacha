@@ -12,6 +12,9 @@ export type AnalyticsImageFormat = 'jpeg' | 'png' | 'webp' | 'other';
 export type AnalyticsImageSizeBucket =
   'under_1mb' | '1_to_5mb' | '5_to_10mb' | 'over_10mb';
 export type LandingTourTarget = 'create' | 'map' | 'search' | 'chat';
+export type MemberSafetySource = 'trade' | 'comment' | 'chat' | 'mypage';
+export type MemberReportReason =
+  'spam' | 'fraud' | 'harassment' | 'inappropriate' | 'privacy' | 'other';
 export type NavigationDestination =
   | 'brand'
   | 'trade'
@@ -298,6 +301,29 @@ export interface AnalyticsEventPropertiesMap {
     trade_id: number;
     action: 'trade_detail' | 'report';
   };
+  member_safety_menu_opened: {
+    source: MemberSafetySource;
+  };
+  member_report_form_opened: {
+    source: MemberSafetySource;
+  };
+  member_report_submission_completed: {
+    source: MemberSafetySource;
+    reason: MemberReportReason;
+    outcome: AnalyticsOutcome;
+  };
+  member_block_completed: {
+    source: MemberSafetySource;
+    outcome: AnalyticsOutcome;
+  };
+  member_unblock_completed: {
+    source: MemberSafetySource;
+    outcome: AnalyticsOutcome;
+  };
+  blocked_members_load_completed: {
+    outcome: AnalyticsOutcome;
+    blocked_member_count: number;
+  };
   profile_edit_started: Record<string, never>;
   mypage_trades_load_completed: {
     outcome: AnalyticsOutcome;
@@ -326,7 +352,13 @@ export interface AnalyticsEventPropertiesMap {
     image_change: 'unchanged' | 'replaced';
   };
   account_menu_selected: {
-    target: 'updates' | 'privacy' | 'support' | 'logout' | 'delete_account';
+    target:
+      | 'updates'
+      | 'privacy'
+      | 'support'
+      | 'blocked_members'
+      | 'logout'
+      | 'delete_account';
     source: 'login' | 'mypage' | 'account_deletion';
   };
   account_deletion_completed: {

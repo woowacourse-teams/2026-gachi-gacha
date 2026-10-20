@@ -23,6 +23,7 @@ import { getTradeDetail } from '@/domains/trade/api/getTradeDetail';
 import { updateTradeStatus } from '@/domains/trade/api/updateTradeStatus';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { AppHeader } from '@/shared/ui/AppHeader';
@@ -53,6 +54,7 @@ interface ChatRouteState {
 
 export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const { memberId } = useAuthSession();
+  const { isMemberBlocked } = useMemberBlocks();
   const navigate = useNavigate();
   const [selectedListRoomId, setSelectedListRoomId] = useState<
     number | undefined
@@ -75,6 +77,10 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
 
   const receiveMessage = useCallback(
     (message: ChatMessageData) => {
+      if (isMemberBlocked(message.senderId)) {
+        return;
+      }
+
       // 열린 방에서 상대 메시지를 받으면 화면에서 읽은 것이므로 서버에도 읽음 처리합니다.
       if (
         message.roomId === activeRoomId &&
@@ -114,11 +120,26 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         };
       });
     },
-    [activeRoomId, markRead, memberId],
+    [activeRoomId, isMemberBlocked, markRead, memberId],
   );
   const receiveRoomUpdate = useCallback(
     ({ room }: ChatRoomUpdate) => {
       setState((current) => {
+        if (isMemberBlocked(room.otherMember.memberId)) {
+          return {
+            ...current,
+            rooms: current.rooms.filter(
+              ({ otherMember }) =>
+                otherMember.memberId !== room.otherMember.memberId,
+            ),
+            selectedRoom:
+              current.selectedRoom?.otherMember.memberId ===
+              room.otherMember.memberId
+                ? null
+                : current.selectedRoom,
+          };
+        }
+
         const nextRoom =
           room.roomId === activeRoomId ? { ...room, unreadCount: 0 } : room;
 
@@ -137,7 +158,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         };
       });
     },
-    [activeRoomId],
+    [activeRoomId, isMemberBlocked],
   );
   const {
     status: socketStatus,
@@ -229,10 +250,18 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
           return;
         }
 
+        const visibleRooms = rooms.filter(
+          ({ otherMember }) => !isMemberBlocked(otherMember.memberId),
+        );
+        const visibleSelectedRoom =
+          selectedRoom && !isMemberBlocked(selectedRoom.otherMember.memberId)
+            ? selectedRoom
+            : null;
+
         setState({
           status: 'success',
           rooms: activeRoomId
-            ? rooms.map((room) =>
+            ? visibleRooms.map((room) =>
                 room.roomId === activeRoomId ||
                 room.trade.tradeId === selectedTradeDetail?.tradeId
                   ? {
@@ -245,17 +274,17 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
                     }
                   : room,
               )
-            : rooms,
+            : visibleRooms,
           selectedRoom:
-            selectedRoom && selectedTradeDetail
+            visibleSelectedRoom && selectedTradeDetail
               ? {
-                  ...selectedRoom,
+                  ...visibleSelectedRoom,
                   trade: {
-                    ...selectedRoom.trade,
+                    ...visibleSelectedRoom.trade,
                     status: selectedTradeDetail.status,
                   },
                 }
-              : selectedRoom,
+              : visibleSelectedRoom,
           messages,
           errorMessage: '',
           hasPreviousMessages: messagePage?.hasNext === true,
@@ -295,18 +324,23 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     return () => {
       controller.abort();
     };
-  }, [activeRoomId]);
+  }, [activeRoomId, isMemberBlocked]);
 
   const conversations = useMemo(
     () =>
       state.rooms
-        .filter((room) => room.lastMessage !== null)
+        .filter(
+          (room) =>
+            room.lastMessage !== null &&
+            !isMemberBlocked(room.otherMember.memberId),
+        )
         .map(toConversation),
-    [state.rooms],
+    [isMemberBlocked, state.rooms],
   );
   const selectedRoom = useMemo(
     () =>
-      state.selectedRoom
+      state.selectedRoom &&
+      !isMemberBlocked(state.selectedRoom.otherMember.memberId)
         ? toChatRoom(
             state.selectedRoom,
             state.messages,
@@ -314,8 +348,35 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
             state.selectedTradeOwnerId,
           )
         : undefined,
-    [memberId, state.messages, state.selectedRoom, state.selectedTradeOwnerId],
+    [
+      isMemberBlocked,
+      memberId,
+      state.messages,
+      state.selectedRoom,
+      state.selectedTradeOwnerId,
+    ],
   );
+
+  const handlePartnerBlocked = useCallback(() => {
+    const blockedMemberId = state.selectedRoom?.otherMember.memberId;
+
+    if (blockedMemberId !== undefined) {
+      setState((current) => ({
+        ...current,
+        rooms: current.rooms.filter(
+          ({ otherMember }) => otherMember.memberId !== blockedMemberId,
+        ),
+        selectedRoom: null,
+        messages: [],
+      }));
+    }
+
+    setSelectedListRoomId(undefined);
+
+    if (roomId) {
+      navigate('/chat', { replace: true });
+    }
+  }, [navigate, roomId, state.selectedRoom]);
 
   const changeTradeStatus = useCallback(
     async (nextStatus: TradeStatus) => {
@@ -506,6 +567,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       previousMessagesError={state.previousMessagesError}
       onLoadPreviousMessages={loadPreviousMessages}
       onChangeTradeStatus={changeTradeStatus}
+      onPartnerBlocked={handlePartnerBlocked}
       presentation={roomId ? (presentation ?? 'drawer') : 'split'}
       {...(presentation === 'modal'
         ? {
@@ -636,6 +698,7 @@ export function ChatStartRoute({
 function toConversation(room: ChatRoomSummary): ChatConversation {
   return {
     id: room.roomId,
+    partnerMemberId: room.otherMember.memberId,
     partnerName: room.otherMember.nickname,
     partnerProfileImageUrl: room.otherMember.profileImageUrl,
     itemTitle: room.trade.title,
@@ -656,6 +719,7 @@ function toChatRoom(
 ): ChatRoom {
   return {
     conversationId: room.roomId,
+    partnerMemberId: room.otherMember.memberId,
     tradeId: room.trade.tradeId,
     partnerName: room.otherMember.nickname,
     partnerProfileImageUrl: room.otherMember.profileImageUrl,

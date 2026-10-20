@@ -9,6 +9,7 @@ import type {
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
+import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
@@ -23,6 +24,8 @@ interface TradeDetailProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
   hasSubmittedComment?: boolean;
+  showSafetyActions?: boolean;
+  onAuthorBlocked?: (() => void) | undefined;
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
@@ -50,6 +53,8 @@ export default function TradeDetail({
   detail,
   action = 'chat',
   hasSubmittedComment = false,
+  showSafetyActions = false,
+  onAuthorBlocked,
 }: TradeDetailProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -195,7 +200,17 @@ export default function TradeDetail({
         </Gallery>
 
         <Info>
-          <ItemRole>가지고 있는 것</ItemRole>
+          <InfoHeader>
+            <ItemRole>가지고 있는 것</ItemRole>
+            {showSafetyActions && (
+              <UserSafetyMenu
+                targetMemberId={detail.memberId}
+                targetNickname="게시글 작성자"
+                source="trade"
+                onBlocked={onAuthorBlocked}
+              />
+            )}
+          </InfoHeader>
           <Title>{detail.title}</Title>
           <Meta>
             <span>{formatRelativeTime(detail.createdAt)}</span>
@@ -484,6 +499,14 @@ const ThumbnailPhoto = styled.img`
 
 const Info = styled.div`
   padding-top: 8px;
+`;
+
+const InfoHeader = styled.div`
+  display: flex;
+  min-height: 36px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 `;
 
 const ItemRole = styled.p`

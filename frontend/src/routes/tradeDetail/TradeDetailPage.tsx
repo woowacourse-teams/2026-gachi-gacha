@@ -35,6 +35,8 @@ interface TradeDetailPageProps {
   onRetryComments?: (() => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
+  showSafetyActions?: boolean;
+  onTradeAuthorBlocked?: () => void;
 }
 
 export default function TradeDetailPage({
@@ -52,6 +54,8 @@ export default function TradeDetailPage({
   onSubmitComment,
   onRetryComments,
   onCommentAction,
+  showSafetyActions = false,
+  onTradeAuthorBlocked,
 }: TradeDetailPageProps) {
   return (
     <Page>
@@ -62,6 +66,8 @@ export default function TradeDetailPage({
           detail={detail}
           action={action}
           hasSubmittedComment={hasSubmittedComment}
+          showSafetyActions={showSafetyActions && action === 'chat'}
+          onAuthorBlocked={onTradeAuthorBlocked}
         />
 
         <TradeComments
@@ -72,6 +78,7 @@ export default function TradeDetailPage({
           onSubmit={onSubmitComment}
           onRetryComments={onRetryComments}
           onCommentAction={onCommentAction}
+          showSafetyActions={showSafetyActions}
         />
 
         {relatedItems.length > 0 && (

@@ -1,4 +1,5 @@
 import { gachaSearchHandlers } from '@/features/gachaSearch/mocks/gachaSearchHandlers';
+import { memberSafetyHandlers } from '@/features/memberSafety/mocks/memberSafetyHandlers';
 import { chatHandlers } from '@/routes/chat/mocks/chatHandlers';
 import { searchHandlers } from '@/routes/search/mocks/searchHandlers';
 import { storeDetailHandlers } from '@/routes/stores.$storeId/mocks/storeDetailHandlers';
@@ -9,6 +10,7 @@ import { mockAuthHandlers } from './mockAuth';
 export const handlers = [
   ...mockAuthHandlers,
   ...gachaSearchHandlers,
+  ...memberSafetyHandlers,
   ...chatHandlers,
   ...searchHandlers,
   ...storeDetailHandlers,

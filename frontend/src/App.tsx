@@ -12,6 +12,7 @@ import {
 import { OAUTH_CALLBACK_PATH_PREFIX } from '@/features/auth/oauthCallbackPath';
 import { isOAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 import { HomePage } from '@/routes/home';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
@@ -114,6 +115,12 @@ const MyTradesRoute = lazy(async () => {
   return { default: routeModule.MyTradesRoute };
 });
 
+const BlockedMembersRoute = lazy(async () => {
+  const routeModule = await import('@/routes/mypage/blockedMembers/route');
+
+  return { default: routeModule.BlockedMembersRoute };
+});
+
 const EventApplicationRoute = lazy(async () => {
   const routeModule = await import('@/routes/eventApplication/route');
 
@@ -211,6 +218,10 @@ function CanonicalRoutes() {
           <Route path="/notifications" element={<NotificationsRoute />} />
           <Route path="/mypage" element={<MyPageRoute />} />
           <Route path="/mypage/trades" element={<MyTradesRoute />} />
+          <Route
+            path="/mypage/blocked-members"
+            element={<BlockedMembersRoute />}
+          />
           <Route
             path="/events/popular-goods"
             element={<EventApplicationRoute />}
@@ -337,13 +348,13 @@ function AuthCallbackRouteElement() {
 
 export default function App() {
   return (
-    <>
+    <MemberBlockProvider>
       <GlobalStyles />
       <Suspense
         fallback={<PageLoadingFallback label="페이지를 준비하고 있어요." />}
       >
         <CanonicalRoutes />
       </Suspense>
-    </>
+    </MemberBlockProvider>
   );
 }

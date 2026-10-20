@@ -24,6 +24,7 @@ interface ChatPageProps {
   previousMessagesError?: string;
   onLoadPreviousMessages?: () => Promise<void>;
   onChangeTradeStatus?: (status: TradeStatus) => Promise<void>;
+  onPartnerBlocked?: () => void;
 }
 
 export default function ChatPage({
@@ -41,6 +42,7 @@ export default function ChatPage({
   previousMessagesError = '',
   onLoadPreviousMessages,
   onChangeTradeStatus,
+  onPartnerBlocked,
 }: ChatPageProps) {
   if (selectedRoom && presentation === 'modal') {
     return (
@@ -67,6 +69,7 @@ export default function ChatPage({
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
             onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
           />
         </ChatDrawer>
       </ModalLayer>
@@ -110,6 +113,7 @@ export default function ChatPage({
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
             onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
           />
         </ChatDrawer>
       </RoomPage>
@@ -141,6 +145,7 @@ export default function ChatPage({
           previousMessagesError={previousMessagesError}
           onLoadPreviousMessages={onLoadPreviousMessages}
           onChangeTradeStatus={onChangeTradeStatus}
+          onPartnerBlocked={onPartnerBlocked}
         />
       </Main>
     </Page>

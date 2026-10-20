@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { getTrades } from '@/domains/trade/api/getTrades';
 import type { TradeSummaryPage } from '@/domains/trade/tradeSummaryType';
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
@@ -19,6 +20,7 @@ function isAbortError(error: unknown): boolean {
 }
 
 export function useTrades(keyword: string) {
+  const { isMemberBlocked } = useMemberBlocks();
   const loadMoreControllerRef = useRef<AbortController | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] =
@@ -159,8 +161,26 @@ export function useTrades(keyword: string) {
     }
   }, [hasMore, isLoadingMore, normalizedKeyword, state]);
 
+  const visibleState = useMemo<AsyncState<TradeSummaryPage>>(() => {
+    if (state.status !== 'success') {
+      return state;
+    }
+
+    const content = state.data.content.filter(
+      ({ memberId }) => !isMemberBlocked(memberId),
+    );
+
+    return {
+      ...state,
+      data: {
+        ...state.data,
+        content,
+      },
+    };
+  }, [isMemberBlocked, state]);
+
   return {
-    state,
+    state: visibleState,
     retry,
     hasMore,
     isLoadingMore,
