@@ -7,7 +7,7 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
@@ -146,9 +146,34 @@ describe('UserSafetyMenu', () => {
 
   it('신고 저장소가 설정되면 저장 성공 후에만 접수 완료를 안내한다', async () => {
     const user = userEvent.setup();
-    const fetchMock = jest
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(new Response(JSON.stringify({ ok: true })));
+    let memberLoaded = false;
+    let submittedPayload: Record<string, unknown> | null = null;
+
+    server.use(
+      http.get('/api/v1/members/me', () => {
+        memberLoaded = true;
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            oauthUsername: 'reporter',
+            nickname: '신고자',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        });
+      }),
+      http.post(
+        'https://script.google.com/macros/s/test/exec',
+        async ({ request }) => {
+          submittedPayload = JSON.parse(await request.text()) as Record<
+            string,
+            unknown
+          >;
+          return HttpResponse.json({ ok: true });
+        },
+      ),
+    );
 
     renderWithProviders(
       <MemberBlockProvider reportEndpoint="https://script.google.com/macros/s/test/exec">
@@ -159,8 +184,13 @@ describe('UserSafetyMenu', () => {
           referenceId="15"
         />
       </MemberBlockProvider>,
-      { initialAccessToken: null, route: '/trade/15' },
+      {
+        initialAccessToken: 'mock.eyJtZW1iZXJJZCI6M30.mock',
+        route: '/trade/15',
+      },
     );
+
+    await waitFor(() => expect(memberLoaded).toBe(true));
 
     await user.click(
       screen.getByRole('button', { name: '쿠로미러버 사용자 메뉴' }),
@@ -174,9 +204,10 @@ describe('UserSafetyMenu', () => {
     await user.click(screen.getByRole('button', { name: '신고 접수' }));
 
     expect(await screen.findByText('신고를 접수했어요.')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://script.google.com/macros/s/test/exec',
-      expect.objectContaining({ method: 'POST' }),
-    );
+    expect(submittedPayload).toMatchObject({
+      reporterId: '3',
+      reportedUserId: '7',
+      reportType: '욕설·괴롭힘',
+    });
   });
 });

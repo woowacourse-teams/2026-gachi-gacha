@@ -19,12 +19,15 @@
 {
   "reportId": "7fe8e45c-851a-48cc-94a5-fcd39a9d9978",
   "reporterMemberId": "3",
+  "reporterId": "3",
   "targetMemberId": 7,
+  "reportedUserId": "7",
   "targetNickname": "쿠로미러버",
   "source": "comment",
   "referenceId": "12",
   "reason": "harassment",
-  "details": "반복적으로 욕설을 작성했습니다.",
+  "reportType": "욕설·괴롭힘",
+  "details": "[신고 대상: 쿠로미러버 / 위치: 댓글 #12]\n반복적으로 욕설을 작성했습니다.",
   "pagePath": "/trade/15",
   "submittedAt": "2026-10-20T05:00:00.000Z",
   "appVersion": "1.10.0",
@@ -34,10 +37,29 @@
 
 `source`는 `trade`, `comment`, `chat`, `mypage` 중 하나이고, `reason`은
 `spam`, `fraud`, `harassment`, `inappropriate`, `privacy`, `other` 중 하나다.
+`reporterId`, `reportedUserId`, `reportType`은 초기 신고 시트의 단순 계약과
+호환하기 위한 필드다. 비회원 댓글은 회원 ID가 없으므로 `reportedUserId`를
+`ANONYMOUS`로 기록하고, 닉네임과 댓글 참조 ID는 `details`의 문맥 머리말로
+보존한다.
+
 신고 대상 콘텐츠 원문과 전체 URL 쿼리는 전송하지 않는다. 운영자는
 `source`, `referenceId`, `pagePath`를 이용해 서버 원본을 확인한다.
 
 ## 신고 전용 시트와 Apps Script
+
+현재 임시 시트는 다음 5개 열만으로도 접수할 수 있다.
+
+```text
+제출일시 | 신고자 ID | 신고 대상자 ID | 신고 유형 | 상세 내용
+```
+
+현재 배포된 단순 스크립트는 호환 필드인 `reporterId`, `reportedUserId`,
+`reportType`, `details`를 읽는다. 상세 내용은 프론트가 신고 위치를 함께 붙여
+보내므로 거래글·댓글·채팅을 구분할 수 있다. 다만 공개된 Apps Script 주소를
+직접 호출하면 클라이언트 검증을 우회할 수 있으므로, 아래 확장형 스크립트의
+허용 목록·길이 제한·수식 주입 방어와 중복 방지를 적용하는 편이 안전하다.
+
+### 권장 확장형 시트
 
 시트 탭 이름을 `신고`로 만들고 첫 행에 다음 열을 순서대로 추가한다.
 
