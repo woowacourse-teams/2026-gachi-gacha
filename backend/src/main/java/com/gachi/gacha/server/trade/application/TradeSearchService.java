@@ -3,6 +3,7 @@ package com.gachi.gacha.server.trade.application;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
@@ -29,70 +30,70 @@ public class TradeSearchService {
 
     private final ElasticsearchClient esClient;
 
-    public SearchResult<TradeDocument> search(final TradeSearchCondition c) throws IOException {
-        SearchResponse<TradeDocument> res = esClient.search(s -> s
+    public SearchResult<TradeDocument> search(final TradeSearchCondition condition) throws IOException {
+        SearchResponse<TradeDocument> response = esClient.search(s -> s
                 .index(INDEX)
-                .from(c.page() * c.size())
-                .size(c.size() + 1)
-                .query(buildQuery(c))
+                .from(condition.page() * condition.size())
+                .size(condition.size() + 1)
+                .query(buildQuery(condition))
                 .sort(so -> so.score(sc -> sc.order(SortOrder.Desc)))
                 .sort(so -> so.field(f -> f.field("tradeId").order(SortOrder.Desc))),
                 TradeDocument.class);
 
-        return toSearchResult(c, res);
+        return toSearchResult(condition, response);
     }
 
-    private Query buildQuery(final TradeSearchCondition c) {
+    private Query buildQuery(final TradeSearchCondition condition) {
         return Query.of(q -> q.bool(b -> {
-            applyKeyword(c, b);
-            applyCategoryFilter(c, b);
+            applyKeyword(condition, b);
+            applyCategoryFilter(condition, b);
             return b;
         }));
     }
 
-    private void applyKeyword(final TradeSearchCondition c, final Builder b) {
-        if (!StringUtils.hasText(c.keyword())) {
-            b.must(m -> m.matchAll(ma -> ma));
+    private void applyKeyword(final TradeSearchCondition condition, final BoolQuery.Builder boolQueryBuilder) {
+        if (!StringUtils.hasText(condition.keyword())) {
+            boolQueryBuilder.must(m -> m.matchAll(ma -> ma));
             return;
         }
-        b.should(m -> m.multiMatch(mm -> mm
-                .query(c.keyword())
+        boolQueryBuilder.should(s -> s.multiMatch(mm -> mm
+                .query(condition.keyword())
                 .fields("title^3", "title.ngram^2", "categories", "status")
                 .fuzziness("AUTO")));
-        b.should(m -> m.multiMatch(mm -> mm
-                .query(c.keyword())
+        boolQueryBuilder.should(s -> s.multiMatch(mm -> mm
+                .query(condition.keyword())
                 .fields("categories^2", "status")
                 .analyzer("korean")
                 .boost(0.5f)));
-        b.should(m -> m.match(mt -> mt
+        boolQueryBuilder.should(s -> s.match(m -> m
                 .field("title.ngram")
-                .query(c.keyword())
+                .query(condition.keyword())
                 .operator(Operator.And)
                 .boost(1.0f)));
-        b.minimumShouldMatch("1");
+        boolQueryBuilder.minimumShouldMatch("1");
     }
 
-    private void applyCategoryFilter(final TradeSearchCondition c, final Builder b) {
-        if (c.categoryIds() == null || c.categoryIds().isEmpty()) {
+    private void applyCategoryFilter(final TradeSearchCondition condition, final BoolQuery.Builder boolQueryBuilder) {
+        if (condition.categoryIds() == null || condition.categoryIds().isEmpty()) {
             return;
         }
-        b.filter(f -> f.terms(t -> t
+        boolQueryBuilder.filter(f -> f.terms(t -> t
                 .field("categoryIds")
-                .terms(tv -> tv.value(c.categoryIds().stream()
+                .terms(tf -> tf.value(condition.categoryIds().stream()
                         .map(FieldValue::of).toList()))));
     }
 
     private SearchResult<TradeDocument> toSearchResult(
-            final TradeSearchCondition c,
-            final SearchResponse<TradeDocument> res
+            final TradeSearchCondition condition,
+            final SearchResponse<TradeDocument> response
     ) {
-        List<TradeDocument> hits = res.hits().hits().stream()
+        List<TradeDocument> hits = response.hits().hits().stream()
                 .map(Hit::source)
                 .toList();
 
-        boolean hasNext = hits.size() > c.size();
-        List<TradeDocument> content = hasNext ? hits.subList(0, c.size()) : hits;
+        boolean hasNext = hits.size() > condition.size();
+        List<TradeDocument> content = hasNext ? hits.subList(0, condition.size()) : hits;
 
-        return new SearchResult<>(content, c.page(), c.size(), hasNext);
+        return new SearchResult<>(content, condition.page(), content.size(), hasNext);
     }
 }
