@@ -20,7 +20,7 @@ import {
   UnreadDot,
 } from './NotificationPopover.styles';
 
-export type HeaderNotificationType = 'chat' | 'comment' | 'trade' | 'gacha';
+export type HeaderNotificationType = 'chat' | 'comment';
 
 export interface HeaderNotification {
   id: string;
@@ -47,8 +47,6 @@ export interface NotificationPopoverProps {
 const NOTIFICATION_TYPE_LABELS: Record<HeaderNotificationType, string> = {
   chat: '채팅',
   comment: '댓글',
-  trade: '교환',
-  gacha: '가챠',
 };
 
 function NotificationItems({
@@ -136,7 +134,7 @@ export function NotificationPopover({
           <EmptyIcon aria-hidden="true">✓</EmptyIcon>
           <strong>새로운 알림이 없어요</strong>
           <EmptyDescription>
-            교환과 채팅 소식이 생기면 바로 알려드릴게요.
+            채팅과 댓글 소식이 생기면 바로 알려드릴게요.
           </EmptyDescription>
         </EmptyState>
       )}

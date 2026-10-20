@@ -41,15 +41,6 @@ const notificationFixtures = [
     isRead: false,
     destination: '/trade/99',
   },
-  {
-    id: 'trade-1',
-    type: 'trade',
-    title: '교환 상태가 변경되었어요',
-    message: '산리오 캐릭터즈 캡슐토이 세트가 교환 완료되었어요.',
-    createdAtLabel: '12분 전',
-    isRead: false,
-    destination: '/trade/99',
-  },
 ] satisfies readonly HeaderNotification[];
 
 const meta = {

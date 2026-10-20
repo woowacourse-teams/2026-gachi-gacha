@@ -27,15 +27,6 @@ const notifications: readonly HeaderNotification[] = [
     isRead: false,
     destination: '/trade/12',
   },
-  {
-    id: 'notification-2',
-    type: 'trade',
-    title: '교환이 완료되었어요',
-    message: '산리오 피규어 교환 상태가 완료로 변경되었어요.',
-    createdAtLabel: '1시간 전',
-    isRead: true,
-    destination: '/trade/12',
-  },
 ];
 
 function renderPopover(
@@ -69,7 +60,6 @@ describe('NotificationPopover', () => {
     expect(
       screen.getByRole('link', { name: /새로운 채팅이 도착했어요/ }),
     ).toHaveAttribute('href', '/chat/1');
-    expect(screen.getByText('교환이 완료되었어요')).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
         name: /댓글 5분 전 내 교환글에 새 댓글이 달렸어요/,
