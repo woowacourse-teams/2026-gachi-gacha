@@ -1,18 +1,21 @@
 import imageCompression from 'browser-image-compression';
 
 const WEBP_MIME_TYPE = 'image/webp';
+const PNG_MIME_TYPE = 'image/png';
 const MAX_COMPRESSED_SIZE_MB = 1;
 const MAX_WIDTH_OR_HEIGHT = 800;
 const INITIAL_QUALITY = 0.8;
-const WORKER_LIBRARY_URL = '/assets/workers/browser-image-compression.js';
+const MAX_CONCURRENT_COMPRESSION_COUNT = 2;
+
+export const TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE =
+  '이미지를 최적화하지 못했습니다. Chrome 브라우저에서 다시 시도해 주세요.';
 
 const IMAGE_FILE_EXTENSIONS = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/webp': 'webp',
+  [WEBP_MIME_TYPE]: 'webp',
+  [PNG_MIME_TYPE]: 'png',
 } as const;
 
-type SupportedImageMimeType = keyof typeof IMAGE_FILE_EXTENSIONS;
+type SupportedCompressionMimeType = keyof typeof IMAGE_FILE_EXTENSIONS;
 
 export interface TradeImageCompressionProgress {
   percentage: number;
@@ -22,15 +25,15 @@ export interface TradeImageCompressionProgress {
 
 type ProgressListener = (progress: TradeImageCompressionProgress) => void;
 
-function isSupportedImageMimeType(
+function isSupportedCompressionMimeType(
   mimeType: string,
-): mimeType is SupportedImageMimeType {
+): mimeType is SupportedCompressionMimeType {
   return mimeType in IMAGE_FILE_EXTENSIONS;
 }
 
 function createCompressedFileName(
   fileName: string,
-  mimeType: SupportedImageMimeType,
+  mimeType: SupportedCompressionMimeType,
 ): string {
   const extensionStartIndex = fileName.lastIndexOf('.');
   const baseName =
@@ -40,7 +43,7 @@ function createCompressedFileName(
 }
 
 function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
-  if (!isSupportedImageMimeType(compressedBlob.type)) {
+  if (!isSupportedCompressionMimeType(compressedBlob.type)) {
     throw new Error(`지원하지 않는 압축 결과 형식: ${compressedBlob.type}`);
   }
 
@@ -54,47 +57,34 @@ function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
   );
 }
 
+/** WebP를 우선 사용하고 브라우저가 인코딩하지 못하면 PNG로 한 번만 폴백한다. */
 async function compressImage(
   file: File,
-  onProgress: (progress: number) => void,
+  options: Parameters<typeof imageCompression>[1],
 ): Promise<File> {
   try {
-    const compressedBlob = await imageCompression(file, {
+    const webpBlob = await imageCompression(file, {
+      ...options,
       fileType: WEBP_MIME_TYPE,
-      initialQuality: INITIAL_QUALITY,
-      libURL: WORKER_LIBRARY_URL,
-      maxSizeMB: MAX_COMPRESSED_SIZE_MB,
-      maxWidthOrHeight: MAX_WIDTH_OR_HEIGHT,
-      preserveExif: false,
-      useWebWorker: true,
-      onProgress,
     });
 
-    // Safari는 OffscreenCanvas에서 WebP를 지원하지 않을 때 PNG로 폴백할 수 있다.
-    // 실제로 생성된 안전한 이미지 형식을 존중해 게시글 등록을 계속한다.
-    return createCompressedFile(file, compressedBlob);
-  } catch {
-    try {
-      const compressedBlob = await imageCompression(file, {
-        fileType: file.type,
-        initialQuality: INITIAL_QUALITY,
-        maxSizeMB: MAX_COMPRESSED_SIZE_MB,
-        maxWidthOrHeight: MAX_WIDTH_OR_HEIGHT,
-        preserveExif: false,
-        useWebWorker: false,
-        onProgress,
-      });
-
-      return createCompressedFile(file, compressedBlob);
-    } catch {
-      // 사진 선택 단계에서 형식과 용량을 이미 검증했다. 최적화에 실패하더라도
-      // 원본을 사용해 게시글 등록이라는 핵심 동작은 막지 않는다.
-      return file;
+    // 일부 Safari는 WebP를 요청해도 PNG를 반환한다. 실제 안전한 형식을 존중한다.
+    if (isSupportedCompressionMimeType(webpBlob.type)) {
+      return createCompressedFile(file, webpBlob);
     }
+  } catch {
+    // WebP 예외도 아래 PNG 폴백에서 동일하게 처리한다.
   }
+
+  const pngBlob = await imageCompression(file, {
+    ...options,
+    fileType: PNG_MIME_TYPE,
+  });
+
+  return createCompressedFile(file, pngBlob);
 }
 
-/** 선택 순서를 유지하고 iOS의 제한된 캔버스 메모리를 보호하기 위해 순차 압축한다. */
+/** 선택 순서를 유지하면서 대기 시간을 줄이기 위해 최대 두 장씩 압축한다. */
 export async function compressTradeImages(
   files: File[],
   onProgress: ProgressListener = () => undefined,
@@ -103,7 +93,10 @@ export async function compressTradeImages(
     return [];
   }
 
+  const controller = new AbortController();
+  const results = new Array<File>(files.length);
   const imageProgresses = new Array<number>(files.length).fill(0);
+  let nextImageIndex = 0;
   let completedCount = 0;
 
   function reportProgress() {
@@ -115,23 +108,62 @@ export async function compressTradeImages(
     onProgress({ percentage, completedCount, totalCount: files.length });
   }
 
-  const results: File[] = [];
+  async function compressNextImage(): Promise<void> {
+    while (nextImageIndex < files.length) {
+      const imageIndex = nextImageIndex;
+      const file = files[imageIndex];
 
-  for (const [imageIndex, file] of files.entries()) {
-    const compressedFile = await compressImage(file, (progress) => {
-      // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
-      imageProgresses[imageIndex] = Math.max(
-        imageProgresses[imageIndex] ?? 0,
-        Math.min(99, Math.round(progress)),
-      );
+      nextImageIndex += 1;
+
+      if (!file) {
+        continue;
+      }
+
+      const compressedFile = await compressImage(file, {
+        initialQuality: INITIAL_QUALITY,
+        maxSizeMB: MAX_COMPRESSED_SIZE_MB,
+        maxWidthOrHeight: MAX_WIDTH_OR_HEIGHT,
+        onProgress: (progress) => {
+          // 라이브러리가 인코딩 완료 직전에 100을 알릴 수 있어 실제 완료 전에는 99로 제한한다.
+          imageProgresses[imageIndex] = Math.max(
+            imageProgresses[imageIndex] ?? 0,
+            Math.min(99, Math.round(progress)),
+          );
+          reportProgress();
+        },
+        preserveExif: false,
+        signal: controller.signal,
+        useWebWorker: false,
+      });
+
+      results[imageIndex] = compressedFile;
+      imageProgresses[imageIndex] = 100;
+      completedCount += 1;
       reportProgress();
-    });
-
-    results.push(compressedFile);
-    imageProgresses[imageIndex] = 100;
-    completedCount += 1;
-    reportProgress();
+    }
   }
 
-  return results;
+  const compressionWorkerCount = Math.min(
+    MAX_CONCURRENT_COMPRESSION_COUNT,
+    files.length,
+  );
+
+  try {
+    await Promise.all(
+      Array.from({ length: compressionWorkerCount }, () => compressNextImage()),
+    );
+
+    return results;
+  } catch (error: unknown) {
+    if (__APP_ENV__ === 'development') {
+      console.error(
+        '교환 글 이미지 압축 실패',
+        files.map((file) => ({ type: file.type, size: file.size })),
+        error,
+      );
+    }
+
+    controller.abort(error);
+    throw new Error(TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE, { cause: error });
+  }
 }
