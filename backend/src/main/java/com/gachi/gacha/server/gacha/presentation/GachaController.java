@@ -77,11 +77,11 @@ public class GachaController {
     public SearchResult<GachaDocument> search(
             @RequestParam(required = false) final String keyword,
             @RequestParam(required = false) final List<Long> categoryIds,
-            @RequestParam(required = false) final Double lat,
-            @RequestParam(required = false) final Double lon,
+            @RequestParam(required = false) final Double latitude,
+            @RequestParam(required = false) final Double longitude,
             @RequestParam(required = false) final Double distanceKm,
             @RequestParam(defaultValue = "0") final int page,
             @RequestParam(defaultValue = "20") final int size) throws IOException {
-        return gachaSearchService.search(new GachaSearchCondition(keyword, categoryIds, lat, lon, distanceKm, page, Math.min(size, 50)));
+        return gachaSearchService.search(new GachaSearchCondition(keyword, categoryIds, latitude, longitude, distanceKm, page, Math.min(size, 50)));
     }
 }
