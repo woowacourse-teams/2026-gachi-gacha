@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.member.domain;
 
+import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.domain.exception.SelfBlockNotAllowedException;
 import jakarta.persistence.Column;
@@ -9,11 +10,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Getter
@@ -21,7 +20,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(name = "member_block")
 @EntityListeners(AuditingEntityListener.class)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MemberBlock {
+public class MemberBlock extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,10 +31,6 @@ public class MemberBlock {
 
     @Column(nullable = false)
     private Long blockedId;
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     private MemberBlock(final Long blockerId, final Long blockedId) {
         this.blockerId = blockerId;
