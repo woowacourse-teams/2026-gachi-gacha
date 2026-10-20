@@ -1,0 +1,34 @@
+{
+  "name": "@gachi-gacha/android",
+  "version": "0.1.0",
+  "description": "가치가챠 Android React Native 애플리케이션",
+  "main": "index.ts",
+  "engines": {
+    "node": ">=22.13 <25"
+  },
+  "dependencies": {
+    "expo": "~57.0.30",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "cross-env": "^10.1.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "npm run start:dev",
+    "start:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo start",
+    "android:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo run:android",
+    "android:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo run:android --variant release",
+    "config:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo config --type public",
+    "config:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo config --type public",
+    "config:check": "node scripts/validate-app-config.mjs",
+    "export:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo export --platform android --output-dir dist/development",
+    "export:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo export --platform android --output-dir dist/production",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run config:check && npm run export:dev && npm run export:prod"
+  },
+  "private": true
+}
