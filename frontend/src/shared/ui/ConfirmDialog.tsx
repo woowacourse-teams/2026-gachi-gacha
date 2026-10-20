@@ -18,6 +18,7 @@ export interface ConfirmDialogProps {
   title: string;
   description: string;
   confirmLabel: string;
+  cancelLabel?: string;
   pendingLabel?: string;
   isPending?: boolean;
   errorMessage?: string | null;
@@ -31,6 +32,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel = '취소',
   pendingLabel = confirmLabel,
   isPending = false,
   errorMessage = null,
@@ -89,7 +91,7 @@ export function ConfirmDialog({
             disabled={isPending}
             onClick={cancel}
           >
-            취소
+            {cancelLabel}
           </CancelButton>
           <ConfirmButton
             type="button"

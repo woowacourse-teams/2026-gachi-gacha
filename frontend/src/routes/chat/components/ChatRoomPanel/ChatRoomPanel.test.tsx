@@ -11,11 +11,20 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
+import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
+import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
+
 import ChatRoomPanel from './ChatRoomPanel';
 import { SELECTED_CHAT_ROOM } from '../../storybook/chatMocks';
 
 function renderPanel(panel: ReactElement) {
-  return render(<MemoryRouter>{panel}</MemoryRouter>);
+  return render(
+    <MemoryRouter>
+      <AuthSessionProvider initialAccessToken={null}>
+        <MemberBlockProvider>{panel}</MemberBlockProvider>
+      </AuthSessionProvider>
+    </MemoryRouter>,
+  );
 }
 
 describe('ChatRoomPanel', () => {

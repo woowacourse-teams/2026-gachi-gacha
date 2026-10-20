@@ -58,6 +58,7 @@ jobs:
           EVENT_APPLICATION_ENDPOINT: ${{ vars.EVENT_APPLICATION_ENDPOINT }}
           EVENT_APPLICATION_START_AT: ${{ vars.EVENT_APPLICATION_START_AT }}
           EVENT_APPLICATION_END_AT: ${{ vars.EVENT_APPLICATION_END_AT }}
+          MEMBER_REPORT_ENDPOINT: ${{ vars.MEMBER_REPORT_ENDPOINT }}
         run: pnpm build
 
       - name: Deploy to Nginx Directory

@@ -21,6 +21,7 @@ const EVENT_APPLICATION_ENABLED =
 const EVENT_APPLICATION_ENDPOINT = process.env.EVENT_APPLICATION_ENDPOINT ?? '';
 const EVENT_APPLICATION_START_AT = process.env.EVENT_APPLICATION_START_AT ?? '';
 const EVENT_APPLICATION_END_AT = process.env.EVENT_APPLICATION_END_AT ?? '';
+const MEMBER_REPORT_ENDPOINT = process.env.MEMBER_REPORT_ENDPOINT ?? '';
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
 const DEV_SERVER_PORT = Number(process.env.DEV_SERVER_PORT ?? 3000);
@@ -150,6 +151,7 @@ module.exports = (_env, argv) => {
           EVENT_APPLICATION_START_AT,
         ),
         __EVENT_APPLICATION_END_AT__: JSON.stringify(EVENT_APPLICATION_END_AT),
+        __MEMBER_REPORT_ENDPOINT__: JSON.stringify(MEMBER_REPORT_ENDPOINT),
         __APP_ENV__: JSON.stringify(appEnvironment),
         __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),

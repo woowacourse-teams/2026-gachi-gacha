@@ -207,6 +207,7 @@ export default function TradeDetail({
                 targetMemberId={detail.memberId}
                 targetNickname="게시글 작성자"
                 source="trade"
+                referenceId={String(detail.tradeId)}
                 onBlocked={onAuthorBlocked}
               />
             )}
