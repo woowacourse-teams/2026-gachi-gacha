@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { GachaSearchCard } from '../domains/gacha/GachaSearchCard';
 import { useGachaSearch } from '../domains/gacha/useGachaSearch';
+import type { AppTabParamList } from '../navigation/AppTabs';
 import { colors } from '../theme/colors';
 
-export function SearchScreen() {
+type Props = BottomTabScreenProps<AppTabParamList, 'Search'>;
+
+export function SearchScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const search = useGachaSearch(keyword);
@@ -26,7 +30,12 @@ export function SearchScreen() {
         keyboardDismissMode="on-drag"
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
-        renderItem={({ item }) => <GachaSearchCard gacha={item} />}
+        renderItem={({ item }) => (
+          <GachaSearchCard
+            gacha={item}
+            onPress={() => navigation.navigate('Map', { gachaId: item.gachaId, gachaName: item.name })}
+          />
+        )}
         onEndReached={() => void search.loadMore()}
         onEndReachedThreshold={0.35}
         ListHeaderComponent={
