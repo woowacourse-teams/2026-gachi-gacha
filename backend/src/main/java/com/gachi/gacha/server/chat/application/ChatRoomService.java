@@ -12,6 +12,7 @@ import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAlreadyExistException;
 import com.gachi.gacha.server.chat.domain.exception.SelfChatNotAllowedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.domain.Trade;
@@ -39,6 +40,7 @@ public class ChatRoomService {
     private final TradeImageJpaRepository tradeImageJpaRepository;
     private final MemberJpaRepository memberJpaRepository;
     private final ChatRoomJpaRepository chatRoomJpaRepository;
+    private final MemberBlockService memberBlockService;
 
     public List<ChatRoomInfo> getRooms(final Long memberId) {
         List<ChatRoomMember> myChatRoomMembers =
@@ -78,7 +80,7 @@ public class ChatRoomService {
 
     public ChatRoomExistenceInfo findRoomExistence(final Long memberId, final Long tradeId) {
         Trade trade = tradeJpaRepository.getById(tradeId);
-        validateNotOwner(trade, memberId);
+        validateChatStartable(trade, memberId);
 
         Optional<ChatRoom> chatRoom = chatRoomJpaRepository.findByTradeIdAndRequesterId(tradeId, memberId);
         return chatRoom
@@ -117,11 +119,29 @@ public class ChatRoomService {
         return new ChatRoomUpdateInfo(room, totalUnreadCount);
     }
 
+    /**
+     * 차단 관계인 상대와의 방은 목록에서 숨기므로 실시간 갱신으로도 다시 노출하지 않는다.
+     */
+    public Optional<ChatRoomUpdateInfo> findRoomUpdate(final Long memberId, final Long roomId) {
+        ChatRoomUpdateInfo roomUpdate = getRoomWithTotalUnreadCount(memberId, roomId);
+        Long otherMemberId = roomUpdate.room().otherMember().memberId();
+
+        if (memberBlockService.isBlockedBetween(memberId, otherMemberId)) {
+            return Optional.empty();
+        }
+        return Optional.of(roomUpdate);
+    }
+
     private long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
         return Math.max(
                 0L,
                 chatRoom.getLastMessageSequence() - chatRoomMember.getLastReadMessageSequence()
         );
+    }
+
+    private void validateChatStartable(final Trade trade, final Long memberId) {
+        validateNotOwner(trade, memberId);
+        memberBlockService.validateChatAllowed(memberId, trade.getMember().getId());
     }
 
     private void validateNotOwner(final Trade trade, final Long memberId) {
@@ -213,7 +233,7 @@ public class ChatRoomService {
     @Transactional
     public ChatRoomCreateInfo createRoom(final Long memberId, final Long tradeId) {
         Trade trade = tradeJpaRepository.getById(tradeId);
-        validateNotOwner(trade, memberId);
+        validateChatStartable(trade, memberId);
 
         Member requester = memberJpaRepository.getMemberById(memberId);
         Member tradeOwner = trade.getMember();

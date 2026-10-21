@@ -5,12 +5,13 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
+import com.gachi.gacha.server.member.domain.MemberBlock;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * 목록 조회의 선택적 필터(keyword / categoryIds / status)를 조립한다.
+ * 목록 조회의 선택적 필터(keyword / categoryIds / status / viewerId)를 조립한다.
  * <p>
  * 이 레포의 다른 리포지토리들은 모두 {@code @Query}를 쓰는데 여기만 Criteria 를 쓰는 이유는, 필터가 전부
  * 선택값이라 {@code @Query}로 쓰면 같은 WHERE 절이 네 번 복사되기 때문이다. 필터가 세 개면 조합이 여덟 가지인데,
@@ -32,11 +33,13 @@ public final class TradeSpecifications {
      * @param keyword     제목·내용 검색어. 호출 전에 공백을 정리해 넘기고, 값이 없으면 {@code null}이다.
      * @param categoryIds 이 중 하나라도 걸린 게시글을 찾는다(AND 가 아니라 OR). 비어 있으면 조건에서 제외된다.
      * @param status      교환 상태. {@code null}이면 조건에서 제외된다.
+     * @param viewerId    로그인한 조회자. 이 회원이 차단한 작성자의 글을 제외하고, {@code null}이면 조건에서 제외된다.
      */
     public static Specification<Trade> search(
             final String keyword,
             final List<Long> categoryIds,
-            final TradeStatus status
+            final TradeStatus status,
+            final Long viewerId
     ) {
         return (root, query, builder) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -55,6 +58,10 @@ public final class TradeSpecifications {
 
             if (categoryIds != null && !categoryIds.isEmpty()) {
                 predicates.add(builder.exists(categoryIdIn(root, query, builder, categoryIds)));
+            }
+
+            if (viewerId != null) {
+                predicates.add(builder.not(builder.exists(authorBlockedBy(root, query, builder, viewerId))));
             }
 
             // 술어가 하나도 없으면 builder.and()는 항상 참인 조건이 되어, 필터 없는 전체 조회가 된다.
@@ -83,6 +90,25 @@ public final class TradeSpecifications {
                 .where(builder.and(
                         builder.equal(tradeCategory.get("trade").get("id"), root.get("id")),
                         tradeCategory.get("category").get("id").in(categoryIds)
+                ));
+    }
+
+    /**
+     * 조회자가 게시글 작성자를 차단한 기록을 찾는다. 카테고리 필터와 같은 이유로 조인 대신 EXISTS 서브쿼리를 쓴다.
+     */
+    private static Subquery<Long> authorBlockedBy(
+            final Root<Trade> root,
+            final CriteriaQuery<?> query,
+            final CriteriaBuilder builder,
+            final Long viewerId
+    ) {
+        Subquery<Long> subquery = query.subquery(Long.class);
+        Root<MemberBlock> memberBlock = subquery.from(MemberBlock.class);
+
+        return subquery.select(memberBlock.get("id"))
+                .where(builder.and(
+                        builder.equal(memberBlock.get("blockerId"), viewerId),
+                        builder.equal(memberBlock.get("blockedId"), root.get("member").get("id"))
                 ));
     }
 }
