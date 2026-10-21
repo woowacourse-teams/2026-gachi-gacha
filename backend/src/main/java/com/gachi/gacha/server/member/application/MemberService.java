@@ -5,6 +5,7 @@ import com.gachi.gacha.server.member.application.dto.MemberInfo;
 import com.gachi.gacha.server.member.application.dto.MemberUpdateCommand;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
+import com.gachi.gacha.server.notification.domain.PushTokenJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ public class MemberService {
 
     private final MemberJpaRepository memberJpaRepository;
     private final TokenService tokenService;
+    private final PushTokenJpaRepository pushTokenJpaRepository;
 
     public MemberInfo getMemberInfo(final Long memberId) {
         Member member = memberJpaRepository.getMemberById(memberId);
@@ -32,6 +34,7 @@ public class MemberService {
     @Transactional
     public MemberDeleteResult removeMember(final Long memberId) {
         tokenService.revokeAll(memberId);
+        pushTokenJpaRepository.deleteAllByMemberId(memberId);
         Member member = memberJpaRepository.getMemberById(memberId);
         memberJpaRepository.delete(member);
         return new MemberDeleteResult(memberId);

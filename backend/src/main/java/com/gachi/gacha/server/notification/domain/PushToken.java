@@ -54,4 +54,8 @@ public class PushToken extends BaseTimeEntity {
     public void assignTo(final Long memberId) {
         this.memberId = memberId;
     }
+
+    public boolean isOwnedBy(final Long memberId) {
+        return this.memberId.equals(memberId);
+    }
 }
