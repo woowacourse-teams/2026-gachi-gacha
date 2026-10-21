@@ -43,15 +43,14 @@ function createConfig({ config }) {
     scheme: variantConfig.scheme,
     version: '0.1.0',
     orientation: 'portrait',
-    icon: './assets/gacha-logo.png',
+    icon: './assets/lucha-app-icon.png',
     userInterfaceStyle: 'light',
     android: {
       package: variantConfig.applicationId,
       versionCode: 1,
       adaptiveIcon: {
-        backgroundColor: '#fff1f3',
-        foregroundImage: './assets/gacha-logo.png',
-        monochromeImage: './assets/android-icon-monochrome.png',
+        backgroundColor: '#68c4f3',
+        foregroundImage: './assets/lucha-app-icon.png',
       },
       predictiveBackGestureEnabled: true,
     },
