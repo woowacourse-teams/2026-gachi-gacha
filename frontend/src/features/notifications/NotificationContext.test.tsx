@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -43,6 +44,7 @@ describe('NotificationProvider', () => {
       refreshToken: 'refresh-token',
     });
     useAuthenticatedMemberHandler();
+    let notificationListRequestCount = 0;
     server.use(
       http.get('/api/v1/notifications/unread-count', () =>
         HttpResponse.json({
@@ -51,8 +53,10 @@ describe('NotificationProvider', () => {
           data: { unreadCount: 1 },
         }),
       ),
-      http.get('/api/v1/notifications', () =>
-        HttpResponse.json({
+      http.get('/api/v1/notifications', () => {
+        notificationListRequestCount += 1;
+
+        return HttpResponse.json({
           code: 'C000',
           message: '정상',
           data: {
@@ -71,18 +75,20 @@ describe('NotificationProvider', () => {
             nextLastNotificationId: 101,
             hasNext: false,
           },
-        }),
-      ),
+        });
+      }),
     );
 
     render(
-      <BrowserRouter>
-        <AuthSessionProvider>
-          <NotificationProvider>
-            <AppHeader currentPath="/trade" />
-          </NotificationProvider>
-        </AuthSessionProvider>
-      </BrowserRouter>,
+      <StrictMode>
+        <BrowserRouter>
+          <AuthSessionProvider>
+            <NotificationProvider>
+              <AppHeader currentPath="/trade" />
+            </NotificationProvider>
+          </AuthSessionProvider>
+        </BrowserRouter>
+      </StrictMode>,
     );
 
     const notificationButton = await screen.findByRole('button', {
@@ -96,6 +102,7 @@ describe('NotificationProvider', () => {
     expect(
       screen.getByText('가챠친구: 주말에도 가능한가요?'),
     ).toBeInTheDocument();
+    expect(notificationListRequestCount).toBe(1);
   });
 
   it('알림을 선택하면 읽음 처리한 뒤 안 읽은 개수를 다시 조회한다', async () => {

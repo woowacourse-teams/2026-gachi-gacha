@@ -9,6 +9,7 @@ import {
   type NotificationResponseItem,
 } from '@/features/notifications/api/notificationApi';
 import { useOptionalNotifications } from '@/features/notifications/NotificationContext';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
@@ -96,13 +97,14 @@ export function NotificationsRoute() {
     };
   }, [loadFirstPage]);
 
-  const unreadCount = useMemo(
+  const loadedUnreadCount = useMemo(
     () =>
       state.status === 'success'
         ? state.data.filter(({ read }) => !read).length
         : 0,
     [state],
   );
+  const unreadCount = notificationContext?.unreadCount ?? loadedUnreadCount;
 
   async function loadMore() {
     if (
@@ -142,6 +144,12 @@ export function NotificationsRoute() {
   }
 
   function selectNotification(notification: NotificationResponseItem) {
+    captureAnalyticsEvent('notification_selected', {
+      source: 'page',
+      notification_type: 'comment',
+      was_read: notification.read,
+    });
+
     if (notification.read) {
       return;
     }

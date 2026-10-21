@@ -1,12 +1,24 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
 import { AppHeader } from './AppHeader';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
 
 describe('AppHeader', () => {
   it('비로그인 상태에서는 거래/교환, 지도, 검색, 로그인만 노출한다', () => {
@@ -155,6 +167,11 @@ describe('AppHeader', () => {
     expect(
       screen.queryByRole('dialog', { name: '알림' }),
     ).not.toBeInTheDocument();
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledTimes(1);
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'notification_popover_opened',
+      { unread_count: 1 },
+    );
   });
 
   it('Escape로 팝오버를 닫으면 알림 버튼으로 포커스를 돌려준다', async () => {

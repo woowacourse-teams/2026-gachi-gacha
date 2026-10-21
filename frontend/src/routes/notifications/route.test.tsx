@@ -7,6 +7,7 @@ import {
   clearAuthTokens,
   storeAuthTokens,
 } from '@/features/auth/authTokenStorage';
+import { NotificationProvider } from '@/features/notifications/NotificationContext';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
@@ -134,5 +135,39 @@ describe('NotificationsRoute', () => {
       expect(screen.queryByText('1개 안 읽음')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: '모두 읽음' })).toBeDisabled();
     });
+  });
+
+  it('서버의 전체 안 읽은 개수를 목록 계산값보다 우선한다', async () => {
+    prepareAuthenticatedSession();
+    server.use(
+      http.get('/api/v1/notifications/unread-count', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { unreadCount: 30 },
+        }),
+      ),
+      http.get('/api/v1/notifications', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            notifications: [{ ...NOTIFICATION, read: true }],
+            nextLastNotificationId: 101,
+            hasNext: true,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <NotificationProvider>
+        <NotificationsRoute />
+      </NotificationProvider>,
+      { route: '/notifications' },
+    );
+
+    expect(await screen.findByText('30개 안 읽음')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '모두 읽음' })).toBeEnabled();
   });
 });

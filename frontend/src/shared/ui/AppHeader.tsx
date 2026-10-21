@@ -254,14 +254,19 @@ export function AppHeader({
                   aria-haspopup="dialog"
                   title="알림"
                   onClick={() => {
-                    setIsNotificationOpen((isOpen) => {
-                      if (!isOpen && notificationState === undefined) {
+                    const willOpen = !isNotificationOpen;
+
+                    if (willOpen) {
+                      if (notificationState === undefined) {
                         notifications?.loadNotifications();
                       }
 
-                      return !isOpen;
-                    });
-                    captureHeaderNavigation('notifications', isAuthenticated);
+                      captureAnalyticsEvent('notification_popover_opened', {
+                        unread_count: unreadNotificationCount,
+                      });
+                    }
+
+                    setIsNotificationOpen(willOpen);
                   }}
                 >
                   <NotificationIcon />
@@ -280,6 +285,11 @@ export function AppHeader({
                     notificationState={resolvedNotificationState}
                     onClose={() => closeNotificationPopover(true)}
                     onNotificationSelect={(selectedNotification) => {
+                      captureAnalyticsEvent('notification_selected', {
+                        source: 'popover',
+                        notification_type: selectedNotification.type,
+                        was_read: selectedNotification.isRead,
+                      });
                       onNotificationSelect?.(selectedNotification);
 
                       if (notificationState === undefined) {
