@@ -11,12 +11,12 @@ import {
 const notifications: readonly HeaderNotification[] = [
   {
     id: 'notification-1',
-    type: 'chat',
-    title: '새로운 채팅이 도착했어요',
-    message: '쿠로미 키링 교환이 가능한지 물어봤어요.',
+    type: 'comment',
+    title: '새 댓글이 달렸어요',
+    message: '가챠친구: 쿠로미 키링 교환이 가능한지 물어봤어요.',
     createdAtLabel: '방금 전',
     isRead: false,
-    destination: '/chat/1',
+    destination: '/trade/7',
   },
   {
     id: 'notification-comment-1',
@@ -58,8 +58,10 @@ describe('NotificationPopover', () => {
 
     expect(screen.getByRole('dialog', { name: '알림' })).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /새로운 채팅이 도착했어요/ }),
-    ).toHaveAttribute('href', '/chat/1');
+      screen.getByRole('link', {
+        name: /댓글 방금 전 새 댓글이 달렸어요/,
+      }),
+    ).toHaveAttribute('href', '/trade/7');
     expect(
       screen.getByRole('link', {
         name: /댓글 5분 전 내 교환글에 새 댓글이 달렸어요/,
@@ -104,7 +106,7 @@ describe('NotificationPopover', () => {
     );
 
     await user.click(
-      screen.getByRole('link', { name: /새로운 채팅이 도착했어요/ }),
+      screen.getAllByRole('link', { name: /새 댓글이 달렸어요/ })[0]!,
     );
 
     expect(onNotificationSelect).toHaveBeenCalledWith(notifications[0]);

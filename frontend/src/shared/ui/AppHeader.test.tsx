@@ -126,13 +126,13 @@ describe('AppHeader', () => {
           status: 'success',
           data: [
             {
-              id: 'chat-1',
-              type: 'chat',
-              title: '새로운 채팅이 도착했어요',
-              message: '교환이 가능한지 물어봤어요.',
+              id: 'comment-1',
+              type: 'comment',
+              title: '새 댓글이 달렸어요',
+              message: '가챠친구: 교환이 가능한지 물어봤어요.',
               createdAtLabel: '방금 전',
               isRead: false,
-              destination: '/chat',
+              destination: '/trade/7',
             },
           ],
           errorMessage: null,

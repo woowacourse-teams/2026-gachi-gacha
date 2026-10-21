@@ -11,6 +11,7 @@ import {
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { useOptionalNotifications } from '@/features/notifications/NotificationContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { NavigationDestination } from '@/shared/analytics/analyticsEventType';
 
@@ -112,12 +113,13 @@ function AccountIcon() {
 
 export function AppHeader({
   currentPath,
-  notificationState = EMPTY_NOTIFICATION_STATE,
+  notificationState,
   onNotificationRetry,
   onNotificationSelect,
   search,
 }: AppHeaderProps) {
   const { status, member } = useAuthSession();
+  const notifications = useOptionalNotifications();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
@@ -130,13 +132,22 @@ export function AppHeader({
         `${window.location.pathname}${window.location.search}${window.location.hash}`,
       );
 
+  const resolvedNotificationState =
+    notificationState ??
+    notifications?.notificationState ??
+    EMPTY_NOTIFICATION_STATE;
   const unreadNotificationCount = useMemo(() => {
-    if (notificationState.status !== 'success') {
+    if (notificationState === undefined && notifications) {
+      return notifications.unreadCount;
+    }
+
+    if (resolvedNotificationState.status !== 'success') {
       return 0;
     }
 
-    return notificationState.data.filter(({ isRead }) => !isRead).length;
-  }, [notificationState]);
+    return resolvedNotificationState.data.filter(({ isRead }) => !isRead)
+      .length;
+  }, [notificationState, notifications, resolvedNotificationState]);
 
   const closeNotificationPopover = useCallback((restoreFocus = false) => {
     setIsNotificationOpen(false);
@@ -243,7 +254,13 @@ export function AppHeader({
                   aria-haspopup="dialog"
                   title="알림"
                   onClick={() => {
-                    setIsNotificationOpen((isOpen) => !isOpen);
+                    setIsNotificationOpen((isOpen) => {
+                      if (!isOpen && notificationState === undefined) {
+                        notifications?.loadNotifications();
+                      }
+
+                      return !isOpen;
+                    });
                     captureHeaderNavigation('notifications', isAuthenticated);
                   }}
                 >
@@ -260,10 +277,18 @@ export function AppHeader({
                   <NotificationPopover
                     id={notificationPopoverId}
                     titleId={notificationTitleId}
-                    notificationState={notificationState}
+                    notificationState={resolvedNotificationState}
                     onClose={() => closeNotificationPopover(true)}
-                    onNotificationSelect={onNotificationSelect}
-                    onRetry={onNotificationRetry}
+                    onNotificationSelect={(selectedNotification) => {
+                      onNotificationSelect?.(selectedNotification);
+
+                      if (notificationState === undefined) {
+                        notifications?.selectNotification(selectedNotification);
+                      }
+                    }}
+                    onRetry={
+                      onNotificationRetry ?? notifications?.loadNotifications
+                    }
                   />
                 )}
               </NotificationMenu>

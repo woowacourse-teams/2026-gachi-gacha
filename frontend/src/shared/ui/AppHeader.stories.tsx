@@ -24,21 +24,21 @@ import type { HeaderNotification } from './NotificationPopover';
 
 const notificationFixtures = [
   {
-    id: 'chat-1',
-    type: 'chat',
-    title: '새로운 채팅이 도착했어요',
-    message: '혹시 쿠로미 키링이랑도 교환 가능할까요?',
-    createdAtLabel: '방금 전',
-    isRead: false,
-    destination: '/chat',
-  },
-  {
     id: 'comment-1',
     type: 'comment',
-    title: '내 교환글에 새 댓글이 달렸어요',
-    message: '저도 교환 원해요. 홍대입구역에서 가능할까요?',
-    createdAtLabel: '5분 전',
+    title: '새 댓글이 달렸어요',
+    message: '가챠친구: 혹시 주말에도 교환 가능하신가요?',
+    createdAtLabel: '방금 전',
     isRead: false,
+    destination: '/trade/7',
+  },
+  {
+    id: 'comment-2',
+    type: 'comment',
+    title: '새 댓글이 달렸어요',
+    message: '우디: 홍대입구역에서 가능할까요?',
+    createdAtLabel: '5분 전',
+    isRead: true,
     destination: '/trade/99',
   },
 ] satisfies readonly HeaderNotification[];
