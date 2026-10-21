@@ -85,7 +85,10 @@ public enum ErrorCode {
 
     //naver
     NAVER_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "NE01", "네이버 인증에 실패했습니다. 다시 로그인해주세요."),
-    NAVER_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "NE02", "네이버 서버와 통신 중 오류가 발생했습니다.");
+    NAVER_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "NE02", "네이버 서버와 통신 중 오류가 발생했습니다."),
+
+    //elastic search
+    ELASTICSEARCH_INDEX_FAILED(HttpStatus.BAD_GATEWAY, "ES001", "검색 색인 처리에 실패했습니다.");
 
     private final HttpStatus status;
     private final String code;

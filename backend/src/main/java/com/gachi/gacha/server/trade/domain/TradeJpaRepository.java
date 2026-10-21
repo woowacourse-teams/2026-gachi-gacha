@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -52,4 +54,7 @@ public interface TradeJpaRepository extends JpaRepository<Trade, Long>, JpaSpeci
             "LEFT JOIN FETCH tc.category c " +
             "WHERE t.id IN :ids")
     List<Trade> findByIdsWithCategories(@Param("ids") final List<Long> ids);
+
+    @Query("SELECT t.id FROM Trade t")
+    Slice<Long> findTradeIds(PageRequest id);
 }

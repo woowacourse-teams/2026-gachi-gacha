@@ -10,6 +10,8 @@ public record TradeSearchCondition(
         String keyword,
         List<Long> categoryIds,
         TradeStatus status,
-        @Nullable Long viewerId
+        @Nullable Long viewerId,
+        int page,
+        int size
 ) {
 }

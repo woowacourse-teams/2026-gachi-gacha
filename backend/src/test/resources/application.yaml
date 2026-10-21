@@ -52,3 +52,12 @@ jwt:
 cors:
   allowed-origin-patterns:
     - http://localhost:*
+
+elasticsearch:
+  url: localhost:8080
+  api-key: elastic-key
+  index:
+    gacha: index
+    trade: index
+  init:
+    enabled: false

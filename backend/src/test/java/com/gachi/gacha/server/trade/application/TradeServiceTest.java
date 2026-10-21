@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +57,9 @@ class TradeServiceTest {
     private static final Long OWNER_ID = 1L;
     private static final Long OTHER_MEMBER_ID = 2L;
     private static final Long TRADE_ID = 10L;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     @Mock
     private TradeJpaRepository tradeRepository;
@@ -124,7 +128,7 @@ class TradeServiceTest {
             given(multipartUploader.upload(any(MultipartFile.class), any()))
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/first.png")
                     .willReturn("https://bucket.s3.amazonaws.com/gachigacha/trade/second.png");
-
+            given(tradeRepository.save(any(Trade.class))).willReturn(createTrade());
             TradeCreateCommand command = TradeCreateCommand.builder()
                     .title("쿠로미 피규어 교환해요")
                     .categoryIds(List.of(1L))

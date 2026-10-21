@@ -3,6 +3,7 @@ package com.gachi.gacha.server.member.presentation.session;
 import jakarta.servlet.http.HttpSession;
 import java.util.UUID;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.WebUtils;
 
 @Component
 public class OauthNonceSessionManager {
@@ -16,8 +17,11 @@ public class OauthNonceSessionManager {
     }
 
     public String consume(final HttpSession session) {
-        String nonce = (String) session.getAttribute(NONCE_SESSION_KEY);
-        session.removeAttribute(NONCE_SESSION_KEY);
-        return nonce;
+        Object mutex = WebUtils.getSessionMutex(session);
+        synchronized (mutex) {
+            String nonce = (String) session.getAttribute(NONCE_SESSION_KEY);
+            session.removeAttribute(NONCE_SESSION_KEY);
+            return nonce;
+        }
     }
 }

@@ -4,7 +4,6 @@ import com.gachi.gacha.server.gacha.application.dto.GachaInfo;
 import com.gachi.gacha.server.gacha.application.dto.GachaWithStoreCountInfo;
 import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
-import com.gachi.gacha.server.usecase.application.StoreGachaService;
 import com.gachi.gacha.server.usecase.domain.StoreGachaCount;
 import java.util.List;
 import java.util.Map;
