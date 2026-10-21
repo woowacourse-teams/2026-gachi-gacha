@@ -4,9 +4,9 @@ import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Tex
 
 import { ImageViewerModal } from '../components/ImageViewerModal';
 import { getTradeDetail } from '../domains/trade/tradeApi';
-import type { TradeDetail } from '../domains/trade/tradeTypes';
+import type { TradeDetail, TradePlace } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
-import { sharePublicPage } from '../shared/nativeActions';
+import { openDirections, sharePublicPage } from '../shared/nativeActions';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<TradeStackParamList, 'TradeDetail'>;
@@ -36,9 +36,11 @@ export function TradeDetailScreen({ route }: Props) {
   const trade = state.data;
   const rows = [
     ['거래 희망 상품', trade.desiredProduction || '협의'],
-    ['구매 매장', trade.purchaseStore?.name || trade.purchaseStore?.address || '미입력'],
-    ['거래 장소', trade.tradePlace?.name || trade.tradePlace?.address || '협의'],
     ['가능 시간', trade.availableTime || '협의'],
+  ];
+  const locations: Array<{ emptyValue: string; label: string; place: TradePlace | null }> = [
+    { emptyValue: '미입력', label: '구매 매장', place: trade.purchaseStore },
+    { emptyValue: '협의', label: '거래 장소', place: trade.tradePlace },
   ];
 
   async function handleShare() {
@@ -50,6 +52,18 @@ export function TradeDetailScreen({ route }: Props) {
       });
     } catch {
       Alert.alert('공유할 수 없어요', '잠시 후 다시 시도해 주세요.');
+    }
+  }
+
+  async function handlePlaceDirections(label: string, place: TradePlace) {
+    try {
+      await openDirections({
+        label: place.name || label,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      });
+    } catch {
+      Alert.alert('지도를 열 수 없어요', '잠시 후 다시 시도해 주세요.');
     }
   }
 
@@ -83,7 +97,30 @@ export function TradeDetailScreen({ route }: Props) {
       <View style={styles.divider} />
       <Text style={styles.sectionTitle}>상세 설명</Text>
       <Text style={styles.description}>{trade.description || '작성된 설명이 없어요.'}</Text>
-      <View style={styles.infoBox}>{rows.map(([label, value]) => <View key={label} style={styles.infoRow}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value}</Text></View>)}</View>
+      <View style={styles.infoBox}>
+        {rows.map(([label, value]) => (
+          <View key={label} style={styles.infoRow}>
+            <Text style={styles.infoLabel}>{label}</Text>
+            <Text style={styles.infoValue}>{value}</Text>
+          </View>
+        ))}
+        {locations.map(({ emptyValue, label, place }) => (
+          <View key={label} style={styles.infoRow}>
+            <Text style={styles.infoLabel}>{label}</Text>
+            <Text style={styles.infoValue}>{place?.name || place?.address || emptyValue}</Text>
+            {place && (
+              <Pressable
+                accessibilityLabel={`${place.name || label} 지도에서 보기`}
+                accessibilityRole="button"
+                onPress={() => void handlePlaceDirections(label, place)}
+                style={({ pressed }) => [styles.mapButton, pressed && styles.mapButtonPressed]}
+              >
+                <Text style={styles.mapButtonText}>지도에서 보기</Text>
+              </Pressable>
+            )}
+          </View>
+        ))}
+      </View>
       <ImageViewerModal
         imageUrls={trade.imageUrls}
         initialIndex={selectedImageIndex ?? 0}
@@ -121,4 +158,7 @@ const styles = StyleSheet.create({
   infoRow: { gap: 6 },
   infoLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   infoValue: { color: colors.text, fontSize: 14, lineHeight: 20 },
+  mapButton: { minHeight: 40, marginTop: 4, alignSelf: 'flex-start', paddingHorizontal: 15, justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 12, backgroundColor: colors.background },
+  mapButtonPressed: { backgroundColor: colors.primarySoft },
+  mapButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 });
