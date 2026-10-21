@@ -1,5 +1,4 @@
-import Constants from 'expo-constants';
-
+import { getApiBaseUrl } from '../../config/api';
 import {
   TRADE_STATUSES,
   type TradeStatus,
@@ -99,8 +98,7 @@ export async function getTrades({
   page?: number;
   signal?: AbortSignal;
 } = {}): Promise<TradeSummaryPage> {
-  const apiBaseUrl = String(Constants.expoConfig?.extra?.apiBaseUrl ?? '').replace(/\/$/, '');
-  if (!apiBaseUrl) throw new Error('앱의 서버 주소가 설정되지 않았습니다.');
+  const apiBaseUrl = getApiBaseUrl();
 
   const params = new URLSearchParams({ page: String(page), size: '20', sort: 'createdAt,desc' });
   if (keyword.trim()) params.set('keyword', keyword.trim());
@@ -119,8 +117,7 @@ export async function getTrades({
 
 export async function getTradeDetail(tradeId: number, signal?: AbortSignal): Promise<TradeDetail> {
   if (!Number.isSafeInteger(tradeId) || tradeId <= 0) throw new Error('올바른 교환 게시글 ID가 필요합니다.');
-  const apiBaseUrl = String(Constants.expoConfig?.extra?.apiBaseUrl ?? '').replace(/\/$/, '');
-  if (!apiBaseUrl) throw new Error('앱의 서버 주소가 설정되지 않았습니다.');
+  const apiBaseUrl = getApiBaseUrl();
 
   const response = await fetch(`${apiBaseUrl}/api/v1/trades/${tradeId}`, { signal });
   const body: unknown = response.headers.get('content-type')?.includes('application/json')
