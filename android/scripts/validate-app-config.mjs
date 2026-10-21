@@ -10,11 +10,13 @@ const expectedVariants = {
     name: '가치가챠 Dev',
     package: 'com.dev.gachigacha.app',
     scheme: 'gachigacha-dev',
+    apiBaseUrl: 'https://dev.gachigacha.kro.kr',
   },
   production: {
     name: '가치가챠',
     package: 'com.gachigacha.app',
     scheme: 'gachigacha',
+    apiBaseUrl: 'https://gachigacha.kro.kr',
   },
 };
 
@@ -27,12 +29,16 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     scheme: config.scheme,
     icon: config.icon,
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
+    apiBaseUrl: config.extra?.apiBaseUrl,
   };
 
   const expectedConfig = {
-    ...expected,
+    name: expected.name,
+    package: expected.package,
+    scheme: expected.scheme,
     icon: './assets/lucha-app-icon.png',
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
+    apiBaseUrl: expected.apiBaseUrl,
   };
 
   if (JSON.stringify(actual) !== JSON.stringify(expectedConfig)) {

@@ -6,11 +6,13 @@ const VARIANTS = {
     appName: '가치가챠 Dev',
     applicationId: 'com.dev.gachigacha.app',
     scheme: 'gachigacha-dev',
+    apiBaseUrl: 'https://dev.gachigacha.kro.kr',
   },
   production: {
     appName: '가치가챠',
     applicationId: 'com.gachigacha.app',
     scheme: 'gachigacha',
+    apiBaseUrl: 'https://gachigacha.kro.kr',
   },
 };
 
@@ -56,6 +58,7 @@ function createConfig({ config }) {
     },
     extra: {
       appVariant: variant,
+      apiBaseUrl: variantConfig.apiBaseUrl,
     },
   };
 }
