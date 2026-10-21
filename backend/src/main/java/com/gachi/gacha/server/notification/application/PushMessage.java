@@ -18,6 +18,9 @@ public record PushMessage(
         @Nullable String collapseKey
 ) {
 
+    private static final String CHAT_TYPE = "CHAT";
+    private static final String CHAT_COLLAPSE_KEY_PREFIX = "chat-";
+
     /**
      * 알림 목록과 같은 문구를 쓰고, 앱이 눌렀을 때 이동하고 읽음 처리할 수 있도록 대상 ID를 담는다.
      */
@@ -30,5 +33,18 @@ public record PushMessage(
                 "commentId", String.valueOf(notification.getCommentId())
         );
         return new PushMessage(message.title(), message.body(), data, null);
+    }
+
+    /**
+     * 채팅은 알림 목록에 남기지 않으므로 알림 ID 없이 채팅방 ID만 담는다.
+     * 같은 채팅방의 푸시는 기기에서 최신 것 하나로 교체되도록 채팅방 단위로 묶는다.
+     */
+    public static PushMessage ofChat(final Long roomId, final String senderName, final String preview) {
+        String roomIdValue = String.valueOf(roomId);
+        Map<String, String> data = Map.of(
+                "type", CHAT_TYPE,
+                "roomId", roomIdValue
+        );
+        return new PushMessage(senderName, preview, data, CHAT_COLLAPSE_KEY_PREFIX + roomIdValue);
     }
 }

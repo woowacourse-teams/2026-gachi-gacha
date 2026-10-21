@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatMessageSendCommand;
+import com.gachi.gacha.server.chat.application.event.ChatMessageSentEvent;
 import com.gachi.gacha.server.chat.domain.ChatMessage;
 import com.gachi.gacha.server.chat.domain.ChatMessageMongoRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ChatMessageServiceTest {
@@ -52,6 +54,9 @@ class ChatMessageServiceTest {
 
     @Mock
     private MemberBlockService memberBlockService;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     @InjectMocks
     private ChatMessageService chatMessageService;
@@ -154,8 +159,19 @@ class ChatMessageServiceTest {
                     .isInstanceOf(BlockedChatNotAllowedException.class);
 
             verify(chatMessageMongoRepository, never()).save(any());
+            verify(publisher, never()).publishEvent(any(Object.class));
             assertThat(chatRoom.getLastMessageSequence()).isZero();
             assertThat(sender.getLastReadMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("메시지를 저장하면 푸시에 필요한 값을 담아 메시지 전송 이벤트를 발행한다")
+        void sendMessage_publishesEvent() {
+            givenRoomAndSender();
+
+            chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요"));
+
+            verify(publisher).publishEvent(new ChatMessageSentEvent(ROOM_ID, SENDER_ID, "안녕하세요"));
         }
 
         @Test

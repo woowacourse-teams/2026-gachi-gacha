@@ -3,6 +3,7 @@ package com.gachi.gacha.server.chat.application;
 import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatMessagePageInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatMessageSendCommand;
+import com.gachi.gacha.server.chat.application.event.ChatMessageSentEvent;
 import com.gachi.gacha.server.chat.domain.ChatMessage;
 import com.gachi.gacha.server.chat.domain.ChatMessageMongoRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +39,7 @@ public class ChatMessageService {
     private final ChatRoomMemberJpaRepository chatRoomMemberJpaRepository;
     private final ChatMessageMongoRepository chatMessageMongoRepository;
     private final MemberBlockService memberBlockService;
+    private final ApplicationEventPublisher publisher;
 
     public ChatMessagePageInfo getMessages(
             final Long memberId,
@@ -119,6 +122,7 @@ public class ChatMessageService {
         registerRollbackCompensation(savedMessage);
 
         sender.read(sequence);
+        publisher.publishEvent(new ChatMessageSentEvent(roomId, senderId, preview));
 
         return ChatMessageInfo.from(savedMessage);
     }
