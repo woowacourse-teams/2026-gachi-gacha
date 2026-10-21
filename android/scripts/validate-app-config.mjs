@@ -4,7 +4,9 @@ import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const createConfig = require('../app.config.js');
 const {
+  KAKAO_MAP_MAVEN_REPOSITORY,
   KAKAO_MAP_KEY_METADATA_NAME,
+  addKakaoMapMavenRepository,
   setKakaoMapKey,
 } = require('../plugins/withKakaoMapsAndroid.js');
 const PLAY_STORE_ICON_MAX_BYTES = 1024 * 1024;
@@ -111,6 +113,24 @@ if (testManifest.manifest.application[0]['meta-data'].length !== 0) {
 }
 
 console.log('✓ Kakao Map key is added only to the generated Android manifest');
+
+const projectBuildGradle = `allprojects {
+  repositories {
+    google()
+    mavenCentral()
+  }
+}`;
+const projectBuildGradleWithKakao = addKakaoMapMavenRepository(projectBuildGradle);
+
+if (
+  !projectBuildGradleWithKakao.includes(KAKAO_MAP_MAVEN_REPOSITORY) ||
+  addKakaoMapMavenRepository(projectBuildGradleWithKakao) !==
+    projectBuildGradleWithKakao
+) {
+  throw new Error('Kakao Maps Maven repository must be added exactly once.');
+}
+
+console.log('✓ Kakao Maps Maven repository is added to the generated Android project');
 
 const playStoreIcon = readFileSync(
   new URL('../assets/play-store-icon.png', import.meta.url),
