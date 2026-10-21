@@ -31,6 +31,8 @@ jobs:
         working-directory: android
     env:
       EXPO_NO_TELEMETRY: '1'
+      GOOGLE_MAPS_ANDROID_API_KEY_DEV: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY_DEV }}
+      GOOGLE_MAPS_ANDROID_API_KEY_PROD: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY_PROD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

@@ -24,6 +24,11 @@ const expectedVariants = {
   },
 };
 
+const originalDevelopmentMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV;
+const originalProductionMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD;
+delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV;
+delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD;
+
 for (const [variant, expected] of Object.entries(expectedVariants)) {
   process.env.APP_VARIANT = variant;
   const config = createConfig({ config: {} });
@@ -35,6 +40,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
     permissions: config.android?.permissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
+    googleMapsApiKey: config.android?.config?.googleMaps?.apiKey,
+    googleMapsApiKeyConfigured: config.extra?.googleMapsApiKeyConfigured,
   };
 
   const expectedConfig = {
@@ -45,6 +52,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
     permissions: EXPECTED_ANDROID_PERMISSIONS,
     apiBaseUrl: expected.apiBaseUrl,
+    googleMapsApiKey: undefined,
+    googleMapsApiKeyConfigured: false,
   };
 
   if (JSON.stringify(actual) !== JSON.stringify(expectedConfig)) {
@@ -55,6 +64,30 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
 
   console.log(`✓ ${variant}: ${actual.package}`);
 }
+
+process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV = 'development-test-key';
+process.env.APP_VARIANT = 'development';
+const mapsConfig = createConfig({ config: {} });
+
+if (
+  mapsConfig.android?.config?.googleMaps?.apiKey !== 'development-test-key' ||
+  mapsConfig.extra?.googleMapsApiKeyConfigured !== true
+) {
+  throw new Error('Google Maps Android API key was not applied to the development config.');
+}
+
+if (originalDevelopmentMapsKey === undefined) {
+  delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV;
+} else {
+  process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV = originalDevelopmentMapsKey;
+}
+if (originalProductionMapsKey === undefined) {
+  delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD;
+} else {
+  process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD = originalProductionMapsKey;
+}
+
+console.log('✓ Google Maps key is injected without exposing it through public extras');
 
 const playStoreIcon = readFileSync(
   new URL('../assets/play-store-icon.png', import.meta.url),
