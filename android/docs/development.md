@@ -24,10 +24,10 @@ feat/<issue>-android-* -> android -> main
 
 ## 환경 구분
 
-| 환경 | `APP_VARIANT` | 앱 이름 | application ID | URL scheme |
-| --- | --- | --- | --- | --- |
-| 개발 | `development` | 가치가챠 Dev | `com.dev.gachigacha.app` | `gachigacha-dev` |
-| 운영 | `production` | 가치가챠 | `com.gachigacha.app` | `gachigacha` |
+| 환경 | `APP_VARIANT` | 앱 이름 | application ID | URL scheme | API 기준 주소 |
+| --- | --- | --- | --- | --- | --- |
+| 개발 | `development` | 가치가챠 Dev | `com.dev.gachigacha.app` | `gachigacha-dev` | `https://dev.gachigacha.kro.kr` |
+| 운영 | `production` | 가치가챠 | `com.gachigacha.app` | `gachigacha` | `https://gachigacha.kro.kr` |
 
 Android에서는 Bundle ID에 대응하는 값을 `applicationId` 또는 package name이라고 부른다. Play Console에서는 두 application ID를 서로 다른 앱으로 취급한다.
 
@@ -193,7 +193,7 @@ Android Studio의 `Build > Analyze APK`에서 AAB를 선택하면 패키지 구�
 - 다양한 화면 크기와 시스템 글자 크기에서 레이아웃이 깨지지 않는가
 - Android 뒤로가기 시 앱이 비정상 종료되지 않는가
 
-현재 화면은 네이티브 공통 셸 검증용이다. 로그인, 알림, 실제 지도 SDK, API 데이터는 각각 계약과 권한이 확정된 뒤 별도 이슈에서 연결한다.
+거래/교환 탭은 공개 거래 API를 연결해 목록, 검색, 페이지 추가 로딩, 당겨서 새로고침과 오류 복구를 네이티브 화면으로 제공한다. 거래 상세·글쓰기·로그인, 알림과 실제 지도 SDK는 각각 계약과 권한이 확정된 뒤 별도 이슈에서 연결한다.
 
 ## 모바일 내비게이션과 안전영역 원칙
 

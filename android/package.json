@@ -10,6 +10,7 @@
     "@react-navigation/bottom-tabs": "^7.21.0",
     "@react-navigation/native": "^7.5.1",
     "expo": "~57.0.30",
+    "expo-constants": "~57.0.22",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.3",
