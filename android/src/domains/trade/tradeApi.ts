@@ -93,15 +93,18 @@ export async function getTrades({
   keyword = '',
   page = 0,
   signal,
+  status,
 }: {
   keyword?: string;
   page?: number;
   signal?: AbortSignal;
+  status?: TradeStatus;
 } = {}): Promise<TradeSummaryPage> {
   const apiBaseUrl = getApiBaseUrl();
 
   const params = new URLSearchParams({ page: String(page), size: '20', sort: 'createdAt,desc' });
   if (keyword.trim()) params.set('keyword', keyword.trim());
+  if (status) params.set('status', status);
 
   const response = await fetch(`${apiBaseUrl}/api/v1/trades?${params}`, { signal });
   const body: unknown = response.headers.get('content-type')?.includes('application/json')

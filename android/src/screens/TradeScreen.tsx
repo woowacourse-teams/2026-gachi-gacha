@@ -1,19 +1,29 @@
 import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { TradeCard } from '../domains/trade/TradeCard';
 import { useTrades } from '../domains/trade/useTrades';
+import type { TradeStatus } from '../domains/trade/tradeTypes';
 import { colors } from '../theme/colors';
 import type { TradeStackParamList } from '../navigation/TradeStack';
 
 type Props = NativeStackScreenProps<TradeStackParamList, 'TradeList'>;
 
+const statusFilters: Array<{ label: string; value: TradeStatus | null }> = [
+  { label: '전체', value: null },
+  { label: '교환 가능', value: 'AVAILABLE' },
+  { label: '진행 중', value: 'IN_PROGRESS' },
+  { label: '교환 완료', value: 'COMPLETED' },
+];
+
 export function TradeScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
-  const trades = useTrades(keyword);
+  const [tradeStatus, setTradeStatus] = useState<TradeStatus | null>(null);
+  const trades = useTrades(keyword, tradeStatus);
+  const selectedStatusLabel = statusFilters.find(({ value }) => value === tradeStatus)?.label ?? '전체';
 
   return (
     <View style={styles.screen}>
@@ -24,6 +34,8 @@ export function TradeScreen({ navigation }: Props) {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => <TradeCard trade={item} onPress={() => navigation.navigate('TradeDetail', { tradeId: item.tradeId })} />}
         onEndReached={() => void trades.loadMore()}
         onEndReachedThreshold={0.35}
@@ -33,6 +45,8 @@ export function TradeScreen({ navigation }: Props) {
             <Text style={styles.heading}>어떤 거래글을 찾아볼까요?</Text>
             <View style={styles.searchRow}>
               <TextInput
+                accessibilityLabel="교환 게시글 검색어"
+                autoCorrect={false}
                 value={input}
                 onChangeText={setInput}
                 onSubmitEditing={() => setKeyword(input.trim())}
@@ -45,7 +59,37 @@ export function TradeScreen({ navigation }: Props) {
                 <Text style={styles.searchButtonText}>검색</Text>
               </Pressable>
             </View>
-            <Text style={styles.sectionTitle}>{keyword ? `‘${keyword}’ 검색결과` : '최신순'}</Text>
+            <ScrollView
+              contentContainerStyle={styles.filterList}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScroll}
+            >
+              {statusFilters.map((filter) => {
+                const selected = filter.value === tradeStatus;
+
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    key={filter.label}
+                    onPress={() => setTradeStatus(filter.value)}
+                    style={({ pressed }) => [
+                      styles.filterChip,
+                      selected && styles.filterChipSelected,
+                      pressed && styles.filterChipPressed,
+                    ]}
+                  >
+                    <Text style={[styles.filterChipText, selected && styles.filterChipTextSelected]}>
+                      {filter.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Text style={styles.sectionTitle}>
+              {keyword ? `‘${keyword}’ · ${selectedStatusLabel}` : `${selectedStatusLabel} · 최신순`}
+            </Text>
           </View>
         }
         ListEmptyComponent={
@@ -57,7 +101,25 @@ export function TradeScreen({ navigation }: Props) {
             <Text style={styles.emptyText}>{keyword ? '검색어와 일치하는 게시글이 없어요.' : '아직 등록된 교환 게시글이 없어요.'}</Text>
           )
         }
-        ListFooterComponent={trades.isLoadingMore ? <ActivityIndicator color={colors.primary} style={styles.footerLoader} /> : null}
+        ListFooterComponent={
+          <View>
+            {trades.loadMoreErrorMessage && trades.items.length > 0 && (
+              <View style={styles.loadMoreError}>
+                <Text accessibilityLiveRegion="polite" style={styles.stateText}>
+                  {trades.loadMoreErrorMessage}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => void trades.retryLoadMore()}
+                  style={styles.loadMoreRetry}
+                >
+                  <Text style={styles.loadMoreRetryText}>다시 불러오기</Text>
+                </Pressable>
+              </View>
+            )}
+            {trades.isLoadingMore && <ActivityIndicator color={colors.primary} style={styles.footerLoader} />}
+          </View>
+        }
       />
     </View>
   );
@@ -88,6 +150,13 @@ const styles = StyleSheet.create({
   searchButton: { minWidth: 64, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.primary },
   searchPressed: { backgroundColor: colors.primaryPressed },
   searchButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  filterScroll: { marginTop: 18, marginHorizontal: -14 },
+  filterList: { paddingHorizontal: 14, gap: 8 },
+  filterChip: { minHeight: 40, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 20, backgroundColor: colors.background },
+  filterChipSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
+  filterChipPressed: { opacity: 0.78 },
+  filterChipText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  filterChipTextSelected: { color: colors.background },
   sectionTitle: { marginTop: 26, color: colors.text, fontSize: 18, fontWeight: '800' },
   row: { gap: 12, marginBottom: 12 },
   stateBox: { paddingVertical: 64, alignItems: 'center', gap: 16 },
@@ -96,4 +165,7 @@ const styles = StyleSheet.create({
   retryText: { color: colors.background, fontWeight: '700' },
   emptyText: { paddingVertical: 64, color: colors.textMuted, textAlign: 'center' },
   footerLoader: { marginVertical: 20 },
+  loadMoreError: { marginVertical: 20, alignItems: 'center', gap: 10 },
+  loadMoreRetry: { minHeight: 40, paddingHorizontal: 16, justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 12 },
+  loadMoreRetryText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
 });
