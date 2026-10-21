@@ -127,30 +127,39 @@ Android 앱을 실행한 상태에서는 Fast Refresh로 TypeScript/React Native
 | APK (`.apk`) | 개발, QA, 실제 기기 직접 테스트 | 가능 |
 | AAB (`.aab`) | Google Play가 기기별 APK를 만들기 위한 제출 파일 | 불가능 |
 
-현재 CI의 APK 산출물은 정상이다. 휴대폰이나 에뮬레이터에 바로 설치해 기능을 확인하기 위한 개발 빌드이기 때문이다. Play Console에는 최종 서명된 운영 AAB를 제출한다.
+일반적인 debug APK는 Metro 개발 서버 연결을 전제로 할 수 있다. CI는 휴대폰에서 단독 실행할 수 있도록 개발 application ID의 release variant를 사용한 `preview APK`를 만든다. 이 파일은 내부 QA용이며 Play 제출용 운영 릴리스는 아니다. Play Console에는 최종 서명된 운영 AAB를 제출한다.
 
 - [Expo: APK 빌드와 설치](https://docs.expo.dev/build-reference/apk/)
 - [Expo: 로컬 AAB 생성](https://docs.expo.dev/guides/local-app-production/)
 
 ## CI 산출물로 실제 휴대폰에서 확인
 
+CI 실행 기준은 다음과 같다.
+
+- Android PR: TypeScript, 앱 설정, 개발·운영 JS 번들만 빠르게 검증한다.
+- `android` 브랜치 push: 위 검증 후 휴대폰 단독 실행용 preview APK를 백그라운드 생성한다.
+- 수동 실행: GitHub Actions의 `Run workflow`로 preview APK를 다시 생성할 수 있다.
+- AAB: 일상 CI에서는 만들지 않고 출시 작업에서만 생성한다.
+
+설치 방법:
+
 1. GitHub 저장소의 `Actions`에서 성공한 `Android Quality` 실행을 연다.
-2. 실행 하단 `Artifacts`에서 `gachi-gacha-android-debug`를 내려받는다.
-3. 압축을 풀어 `app-debug.apk`를 휴대폰으로 옮긴다.
+2. 실행 하단 `Artifacts`에서 `gachi-gacha-android-preview`를 내려받는다.
+3. 압축을 풀어 `app-release.apk`를 휴대폰으로 옮긴다.
 4. 휴대폰에서 APK를 열고, 해당 브라우저/파일 앱의 `알 수 없는 앱 설치`를 이번 설치에만 허용한다.
 5. `가치가챠 Dev` 앱을 실행해 탭 이동, 화면 잘림, 뒤로가기, 글자 크기를 확인한다.
 
 USB로 연결했다면 다음 명령으로도 설치할 수 있다.
 
 ```bash
-adb install -r app-debug.apk
+adb install -r app-release.apk
 ```
 
 APK는 신뢰할 수 있는 이 저장소의 CI 산출물만 설치한다. 개발 앱은 `com.dev.gachigacha.app`이므로 추후 운영 앱과 동시에 설치할 수 있다.
 
 ## AAB 생성과 확인
 
-CI는 운영 설정으로 AAB 후보도 생성한다. 산출물 이름은 `gachi-gacha-android-production-aab-candidate`다. 이 파일은 번들 생성 여부와 크기·구조를 확인하기 위한 후보이며, upload key 설정 전에는 Play Console에 제출하는 최종 파일로 사용하지 않는다.
+AAB는 일상적인 PR/push CI에서 생성하지 않는다. Play 출시 준비 시 운영 설정과 upload key를 연결한 뒤 릴리스 작업에서만 만든다.
 
 로컬 생성 절차:
 

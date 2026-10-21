@@ -1,6 +1,7 @@
 name: Android Quality
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - android
@@ -24,6 +25,7 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: android
@@ -40,48 +42,39 @@ jobs:
           cache: npm
           cache-dependency-path: android/package-lock.json
 
-      - name: Setup Java
-        uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '17'
-
       - name: Install dependencies
         run: npm ci
 
       - name: Validate TypeScript and bundles
         run: npm run check
 
-      - name: Generate Android native project
+      - name: Generate development Android native project
+        if: github.event_name != 'pull_request'
         env:
           APP_VARIANT: development
         run: npx expo prebuild --platform android --no-install
 
-      - name: Build debug APK
-        working-directory: android/android
-        run: ./gradlew assembleDebug
+      - name: Setup Java
+        if: github.event_name != 'pull_request'
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            android/android/**/*.gradle*
+            android/android/gradle/wrapper/gradle-wrapper.properties
 
-      - name: Upload debug APK
+      - name: Build standalone preview APK
+        if: github.event_name != 'pull_request'
+        working-directory: android/android
+        run: ./gradlew assembleRelease
+
+      - name: Upload standalone preview APK
+        if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v7
         with:
-          name: gachi-gacha-android-debug
-          path: android/android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Generate production Android native project
-        env:
-          APP_VARIANT: production
-        run: npx expo prebuild --platform android --clean --no-install
-
-      - name: Build production AAB candidate
-        working-directory: android/android
-        run: ./gradlew bundleRelease
-
-      - name: Upload production AAB candidate
-        uses: actions/upload-artifact@v7
-        with:
-          name: gachi-gacha-android-production-aab-candidate
-          path: android/android/app/build/outputs/bundle/release/app-release.aab
+          name: gachi-gacha-android-preview
+          path: android/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
