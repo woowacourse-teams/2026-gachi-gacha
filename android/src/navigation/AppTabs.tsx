@@ -1,5 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapScreen } from '../screens/MapScreen';
 import { SearchScreen } from '../screens/SearchScreen';
@@ -13,6 +14,7 @@ export type AppTabParamList = {
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
+const TAB_BAR_CONTENT_HEIGHT = 58;
 
 const tabLabels = {
   Trade: '거래/교환',
@@ -29,6 +31,8 @@ function TabIcon({ focused, label }: { focused: boolean; label: string }) {
 }
 
 export function AppTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       initialRouteName="Trade"
@@ -39,7 +43,14 @@ export function AppTabs() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabel: tabLabels[route.name],
         tabBarLabelStyle: styles.tabLabel,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
+            paddingBottom: insets.bottom,
+          },
+        ],
+        tabBarHideOnKeyboard: true,
         tabBarIcon: ({ focused }) => (
           <TabIcon focused={focused} label={tabLabels[route.name]} />
         ),
@@ -57,7 +68,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   tabBar: {
-    minHeight: 64,
     paddingTop: 7,
     borderTopColor: colors.border,
     backgroundColor: colors.background,
