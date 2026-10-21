@@ -15,10 +15,10 @@ export function AppHeader({ title }: AppHeaderProps) {
       <Image
         accessibilityIgnoresInvertColors
         accessibilityLabel="가치가챠"
-        source={require('../../assets/gacha-logo.png')}
+        resizeMode="contain"
+        source={require('../../assets/gachigacha-wordmark.png')}
         style={styles.logo}
       />
-      <Text style={styles.brand}>가치가챠</Text>
       <Text style={styles.title}>{title}</Text>
     </View>
   );
@@ -36,14 +36,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   logo: {
-    width: 30,
-    height: 30,
-  },
-  brand: {
-    marginLeft: 8,
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '800',
+    width: 128,
+    height: 19,
   },
   title: {
     marginLeft: 'auto',
