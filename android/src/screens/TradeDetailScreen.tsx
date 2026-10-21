@@ -1,10 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { getTradeDetail } from '../domains/trade/tradeApi';
 import type { TradeDetail } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
+import { sharePublicPage } from '../shared/nativeActions';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<TradeStackParamList, 'TradeDetail'>;
@@ -38,6 +39,18 @@ export function TradeDetailScreen({ route }: Props) {
     ['가능 시간', trade.availableTime || '협의'],
   ];
 
+  async function handleShare() {
+    try {
+      await sharePublicPage({
+        title: trade.title,
+        message: `${trade.title}\n가치가챠에서 교환글을 확인해 보세요.`,
+        path: `/trade/${trade.tradeId}`,
+      });
+    } catch {
+      Alert.alert('공유할 수 없어요', '잠시 후 다시 시도해 주세요.');
+    }
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {trade.imageUrls.length > 0 ? (
@@ -47,6 +60,14 @@ export function TradeDetailScreen({ route }: Props) {
       ) : <View style={[styles.image, styles.imagePlaceholder]}><Text style={styles.placeholderText}>G</Text></View>}
       <View style={styles.titleRow}><Text style={styles.title}>{trade.title}</Text><View style={styles.badge}><Text style={styles.badgeText}>{statusLabel[trade.status]}</Text></View></View>
       <Text style={styles.categories}>{trade.categories.join(' · ') || '카테고리 미설정'}</Text>
+      <Pressable
+        accessibilityLabel={`${trade.title} 공유하기`}
+        accessibilityRole="button"
+        onPress={() => void handleShare()}
+        style={({ pressed }) => [styles.shareButton, pressed && styles.shareButtonPressed]}
+      >
+        <Text style={styles.shareButtonText}>교환글 공유</Text>
+      </Pressable>
       <View style={styles.divider} />
       <Text style={styles.sectionTitle}>상세 설명</Text>
       <Text style={styles.description}>{trade.description || '작성된 설명이 없어요.'}</Text>
@@ -70,6 +91,9 @@ const styles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 7, borderRadius: 14, backgroundColor: colors.primarySoft },
   badgeText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   categories: { marginTop: 12, color: '#4e5058', fontWeight: '700' },
+  shareButton: { minHeight: 44, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 14, backgroundColor: colors.background },
+  shareButtonPressed: { backgroundColor: colors.primarySoft },
+  shareButtonText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
   divider: { height: 1, marginVertical: 22, backgroundColor: colors.border },
   sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '800' },
   description: { marginTop: 12, color: colors.text, fontSize: 15, lineHeight: 24 },
