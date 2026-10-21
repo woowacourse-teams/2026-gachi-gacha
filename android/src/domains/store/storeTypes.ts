@@ -9,11 +9,13 @@ export type NearbyStore = {
   gachaCount?: number;
 };
 
+export type MapCoordinate = {
+  latitude: number;
+  longitude: number;
+};
+
 export type NearbyStoreResult = {
-  center: {
-    latitude: number;
-    longitude: number;
-  };
+  center: MapCoordinate;
   radius: number;
   stores: NearbyStore[];
 };

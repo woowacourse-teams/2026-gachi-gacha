@@ -1,9 +1,12 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { NearbyStoreCard } from '../domains/store/NearbyStoreCard';
-import { useNearbyStores } from '../domains/store/useNearbyStores';
+import type { MapCoordinate } from '../domains/store/storeTypes';
+import { useCurrentLocation } from '../domains/store/useCurrentLocation';
+import { HONGDAE_SEARCH_CENTER, useNearbyStores } from '../domains/store/useNearbyStores';
 import type { MapStackParamList } from '../navigation/MapStack';
 import { colors } from '../theme/colors';
 
@@ -12,10 +15,27 @@ type Props = NativeStackScreenProps<MapStackParamList, 'MapHome'>;
 export function MapScreen({ navigation, route }: Props) {
   const gachaId = route.params?.gachaId ?? null;
   const gachaName = route.params?.gachaName;
-  const result = useNearbyStores(gachaId);
+  const [searchCenter, setSearchCenter] = useState<MapCoordinate>(HONGDAE_SEARCH_CENTER);
+  const [isCurrentLocation, setIsCurrentLocation] = useState(false);
+  const location = useCurrentLocation();
+  const result = useNearbyStores(gachaId, searchCenter);
 
   function clearGachaSelection() {
     navigation.setParams({ gachaId: undefined, gachaName: undefined });
+  }
+
+  async function searchFromCurrentLocation() {
+    const coordinate = await location.requestCurrentLocation();
+    if (!coordinate) return;
+
+    setSearchCenter(coordinate);
+    setIsCurrentLocation(true);
+  }
+
+  function resetToHongdae() {
+    setSearchCenter(HONGDAE_SEARCH_CENTER);
+    setIsCurrentLocation(false);
+    location.reset();
   }
 
   return (
@@ -37,17 +57,53 @@ export function MapScreen({ navigation, route }: Props) {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.eyebrow}>현재 지원 지역 · 홍대</Text>
+            <Text style={styles.eyebrow}>
+              현재 검색 지역 · {isCurrentLocation ? '내 위치' : '홍대'}
+            </Text>
             <Text style={styles.heading}>
               {gachaId === null
-                ? '홍대 주변 가챠 매장'
+                ? isCurrentLocation
+                  ? '내 주변 가챠 매장'
+                  : '홍대 주변 가챠 매장'
                 : gachaName
                   ? `‘${gachaName}’ 보유 매장`
                   : '선택한 가챠 보유 매장'}
             </Text>
             <Text style={styles.description}>
-              홍대 중심 3km 안의 매장을 가까운 순서로 보여드려요.
+              {isCurrentLocation ? '내 위치' : '홍대'} 중심 3km 안의 매장을 가까운 순서로 보여드려요.
             </Text>
+            <View style={styles.locationActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={location.status === 'requesting'}
+                onPress={() => void searchFromCurrentLocation()}
+                style={({ pressed }) => [
+                  styles.locationButton,
+                  pressed && styles.locationButtonPressed,
+                  location.status === 'requesting' && styles.buttonDisabled,
+                ]}
+              >
+                {location.status === 'requesting'
+                  ? <ActivityIndicator color={colors.background} />
+                  : <Text style={styles.locationButtonText}>
+                      {isCurrentLocation ? '현재 위치 새로고침' : '내 위치에서 찾기'}
+                    </Text>}
+              </Pressable>
+              {isCurrentLocation && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={resetToHongdae}
+                  style={({ pressed }) => [styles.areaResetButton, pressed && styles.clearButtonPressed]}
+                >
+                  <Text style={styles.clearButtonText}>홍대로 돌아가기</Text>
+                </Pressable>
+              )}
+            </View>
+            {location.errorMessage && (
+              <Text accessibilityLiveRegion="polite" style={styles.locationError}>
+                {location.errorMessage}
+              </Text>
+            )}
             {gachaId !== null && (
               <Pressable
                 accessibilityRole="button"
@@ -102,6 +158,13 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.primary, fontSize: 13, fontWeight: '800' },
   heading: { marginTop: 9, color: colors.text, fontSize: 24, fontWeight: '800', lineHeight: 32 },
   description: { marginTop: 9, color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  locationActions: { marginTop: 17, flexDirection: 'row', gap: 8 },
+  locationButton: { flex: 1, minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  locationButtonPressed: { backgroundColor: colors.primaryPressed },
+  locationButtonText: { color: colors.background, fontSize: 13, fontWeight: '700' },
+  areaResetButton: { minHeight: 46, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 14, backgroundColor: colors.background },
+  buttonDisabled: { opacity: 0.6 },
+  locationError: { marginTop: 10, color: colors.primary, fontSize: 12, lineHeight: 18 },
   clearButton: { minHeight: 44, marginTop: 17, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 14, backgroundColor: colors.background },
   clearButtonPressed: { backgroundColor: colors.primarySoft },
   clearButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
