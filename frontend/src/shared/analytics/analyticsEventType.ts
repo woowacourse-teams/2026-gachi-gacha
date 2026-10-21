@@ -36,6 +36,14 @@ interface StoreResultsContext extends StoreSearchContext {
 }
 
 export interface AnalyticsEventPropertiesMap {
+  notification_popover_opened: {
+    unread_count: number;
+  };
+  notification_selected: {
+    source: 'popover' | 'page';
+    notification_type: 'comment';
+    was_read: boolean;
+  };
   navigation_selected: {
     destination: NavigationDestination;
     source:

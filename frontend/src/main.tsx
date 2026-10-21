@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 
 import App from '@/App';
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
+import { NotificationProvider } from '@/features/notifications/NotificationContext';
 import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
 
 const container = document.getElementById('root');
@@ -35,7 +36,9 @@ void enableMocking().then(() => {
     <StrictMode>
       <BrowserRouter>
         <AuthSessionProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </AuthSessionProvider>
       </BrowserRouter>
     </StrictMode>,
