@@ -1,6 +1,8 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
+import { ImageViewerModal } from '../components/ImageViewerModal';
 import { StoreGachaCard } from '../domains/store/StoreGachaCard';
 import type { StoreDetail } from '../domains/store/storeTypes';
 import { useStoreDetail, useStoreGachas } from '../domains/store/useStoreDetail';
@@ -50,6 +52,7 @@ function createInformationRows(store: StoreDetail): Array<[string, string]> {
 }
 
 export function StoreDetailScreen({ navigation, route }: Props) {
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const detail = useStoreDetail(route.params.storeId);
   const gachas = useStoreGachas(route.params.storeId);
   const { width } = useWindowDimensions();
@@ -147,16 +150,21 @@ export function StoreDetailScreen({ navigation, route }: Props) {
       {imageUrls.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
           {imageUrls.map((url, index) => (
-            <Image
+            <Pressable
               accessibilityLabel={`${store.name} 매장 사진 ${index + 1}`}
+              accessibilityRole="button"
               key={url}
-              source={{ uri: url }}
-              style={[styles.storeImage, { width: imageWidth }]}
-            />
+              onPress={() => setSelectedImageIndex(index)}
+              style={[styles.storeImageFrame, { width: imageWidth }]}
+            >
+              <Image source={{ uri: url }} style={styles.storeImage} />
+            </Pressable>
           ))}
         </ScrollView>
       ) : (
-        <View style={[styles.storeImage, styles.imagePlaceholder, { width: imageWidth }]}>
+        <View
+          style={[styles.storeImageFrame, styles.imagePlaceholder, { width: imageWidth }]}
+        >
           <Text style={styles.placeholderText}>매장 사진을 준비하고 있어요</Text>
         </View>
       )}
@@ -222,6 +230,13 @@ export function StoreDetailScreen({ navigation, route }: Props) {
             : <Text style={styles.outlineButtonText}>가챠 더 보기</Text>}
         </Pressable>
       )}
+      <ImageViewerModal
+        imageUrls={imageUrls}
+        initialIndex={selectedImageIndex ?? 0}
+        onClose={() => setSelectedImageIndex(null)}
+        title={store.name}
+        visible={selectedImageIndex !== null}
+      />
     </ScrollView>
   );
 }
@@ -240,7 +255,8 @@ const styles = StyleSheet.create({
   secondaryActionPressed: { backgroundColor: colors.primarySoft },
   secondaryActionText: { color: colors.text, fontSize: 14, fontWeight: '700' },
   gallery: { marginTop: 20 },
-  storeImage: { aspectRatio: 4 / 3, marginRight: 12, borderRadius: 20, backgroundColor: '#eeeeef' },
+  storeImageFrame: { aspectRatio: 4 / 3, marginRight: 12, overflow: 'hidden', borderRadius: 20, backgroundColor: '#eeeeef' },
+  storeImage: { width: '100%', height: '100%' },
   imagePlaceholder: { marginTop: 20, alignItems: 'center', justifyContent: 'center' },
   placeholderText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   infoBox: { marginTop: 22, padding: 17, gap: 16, borderRadius: 18, backgroundColor: colors.background },
