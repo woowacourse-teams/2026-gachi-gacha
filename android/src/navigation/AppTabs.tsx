@@ -4,8 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapScreen } from '../screens/MapScreen';
 import { SearchScreen } from '../screens/SearchScreen';
-import { TradeScreen } from '../screens/TradeScreen';
 import { colors } from '../theme/colors';
+import { TradeStack } from './TradeStack';
 
 export type AppTabParamList = {
   Trade: undefined;
@@ -56,7 +56,7 @@ export function AppTabs() {
         ),
       })}
     >
-      <Tab.Screen name="Trade" component={TradeScreen} />
+      <Tab.Screen name="Trade" component={TradeStack} />
       <Tab.Screen name="Map" component={MapScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
     </Tab.Navigator>

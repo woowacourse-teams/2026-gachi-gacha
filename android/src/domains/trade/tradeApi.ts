@@ -3,6 +3,8 @@ import Constants from 'expo-constants';
 import {
   TRADE_STATUSES,
   type TradeStatus,
+  type TradeDetail,
+  type TradePlace,
   type TradeSummary,
   type TradeSummaryPage,
 } from './tradeTypes';
@@ -43,6 +45,24 @@ function isTradeSummary(value: unknown): value is TradeSummary {
         typeof place.address === 'string')) &&
     typeof value.createdAt === 'string'
   );
+}
+
+function isTradePlace(value: unknown): value is TradePlace {
+  return isRecord(value) && isNullableString(value.name) &&
+    typeof value.address === 'string' && typeof value.latitude === 'number' &&
+    typeof value.longitude === 'number';
+}
+
+function isTradeDetail(value: unknown): value is TradeDetail {
+  return isRecord(value) && isInteger(value.tradeId) && value.tradeId > 0 &&
+    isInteger(value.memberId) && value.memberId > 0 && typeof value.title === 'string' &&
+    isNullableString(value.description) && isNullableString(value.desiredProduction) &&
+    Array.isArray(value.categories) && value.categories.every((item) => typeof item === 'string') &&
+    isTradeStatus(value.status) && (value.purchaseStore === null || isTradePlace(value.purchaseStore)) &&
+    (value.tradePlace === null || isTradePlace(value.tradePlace)) &&
+    isNullableString(value.availableTime) && Array.isArray(value.imageUrls) &&
+    value.imageUrls.every((item) => typeof item === 'string') &&
+    typeof value.createdAt === 'string' && typeof value.updatedAt === 'string';
 }
 
 function parseResponse(value: unknown): TradeSummaryPage {
@@ -95,4 +115,21 @@ export async function getTrades({
   }
   if (body === null) throw new Error(DEFAULT_ERROR_MESSAGE);
   return parseResponse(body);
+}
+
+export async function getTradeDetail(tradeId: number, signal?: AbortSignal): Promise<TradeDetail> {
+  if (!Number.isSafeInteger(tradeId) || tradeId <= 0) throw new Error('올바른 교환 게시글 ID가 필요합니다.');
+  const apiBaseUrl = String(Constants.expoConfig?.extra?.apiBaseUrl ?? '').replace(/\/$/, '');
+  if (!apiBaseUrl) throw new Error('앱의 서버 주소가 설정되지 않았습니다.');
+
+  const response = await fetch(`${apiBaseUrl}/api/v1/trades/${tradeId}`, { signal });
+  const body: unknown = response.headers.get('content-type')?.includes('application/json')
+    ? await response.json() : null;
+  if (!response.ok) {
+    throw new Error(isRecord(body) && typeof body.message === 'string' ? body.message : DEFAULT_ERROR_MESSAGE);
+  }
+  if (!isRecord(body) || body.code !== 'C000' || !isTradeDetail(body.data)) {
+    throw new Error('교환 게시글 응답 형식이 올바르지 않습니다.');
+  }
+  return body.data;
 }
