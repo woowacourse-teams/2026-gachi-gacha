@@ -10,6 +10,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.infra.apple.AppleOauthConfig;
+import com.gachi.gacha.server.member.infra.apple.exception.ApplePublickeyFetchException;
 import com.gachi.gacha.server.member.infra.apple.exception.UnAuthorizationAppleTokenException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -47,7 +48,10 @@ public class AppleIdTokenValidator {
                     .build()
                     .verify(idToken);
             return AppleIdTokenClaims.from(decoded);
-        } catch (JwkException | JWTVerificationException e) {
+        } catch (JwkException e) {
+            log.error("Apple 공개키 조회 중 네트워크 또는 서버 오류 발생: {}", e.getMessage(), e);
+            throw new ApplePublickeyFetchException(ErrorCode.APPLE_SERVER_ERROR);
+        } catch (JWTVerificationException e) {
             log.warn("Apple ID Token 검증 실패: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             throw new UnAuthorizationAppleTokenException(ErrorCode.UNAUTHORIZATION_TOKEN);
         }
