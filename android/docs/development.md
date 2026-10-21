@@ -201,7 +201,41 @@ Android Studio의 `Build > Analyze APK`에서 AAB를 선택하면 패키지 구�
 
 현재 지도 탭의 매장 목록은 기본적으로 웹이 제공 중인 홍대 서비스 영역을 사용한다. 사용자가 `내 위치에서 찾기`를 선택한 경우에만 Android 전경 위치 권한을 요청하고, 현재 위치 중심 3km의 매장을 조회한다. 권한을 거부하거나 위치 확인에 실패하면 홍대 목록을 그대로 유지한다. 좌표는 지속 추적하거나 앱 저장소에 남기지 않고 주변 매장 조회 요청에만 전달한다.
 
-매장 카드를 선택하면 상세 화면에서 사진, 방문 정보, 가격과 보유 가챠를 확인할 수 있고, 보유 가챠를 선택하면 해당 가챠의 매장 검색 결과로 돌아간다. 실제 지도 SDK는 후속 이슈에서 연결한다. 글쓰기·로그인과 알림도 각각 계약과 화면이 확정된 뒤 별도 이슈에서 연결한다.
+매장 카드를 선택하면 상세 화면에서 사진, 방문 정보, 가격과 보유 가챠를 확인할 수 있고, 보유 가챠를 선택하면 해당 가챠의 매장 검색 결과로 돌아간다. 지도 키가 연결된 빌드는 같은 검색 결과를 지도 핀으로도 표시한다. 글쓰기·로그인과 알림은 각각 계약과 화면이 확정된 뒤 별도 이슈에서 연결한다.
+
+### Google 지도 설정
+
+주변 매장은 `react-native-maps`의 Google 지도 위에 핀으로 표시한다. 지도 키가 없는 빌드는 빈 지도 대신 기존 거리순 매장 목록만 표시하므로 로컬 개발과 PR 검증이 중단되지 않는다. 키를 코드나 `.env` 파일에 커밋하지 않는다.
+
+Google Cloud Console에서 Maps SDK for Android를 활성화하고 개발·운영 키를 분리한다. 각 키에는 다음 제한을 적용한다.
+
+- 애플리케이션 제한: Android 앱
+- 개발 키: package `com.dev.gachigacha.app`과 개발/preview 서명 인증서 SHA-1
+- 운영 키: package `com.gachigacha.app`과 Play App Signing 인증서 SHA-1
+- API 제한: Maps SDK for Android만 허용
+
+GitHub Actions에는 다음 Repository Secret을 등록한다.
+
+```text
+ANDROID_GOOGLE_MAPS_API_KEY_DEV
+ANDROID_GOOGLE_MAPS_API_KEY_PROD
+```
+
+로컬 PowerShell에서는 현재 터미널 세션에만 키를 넣고 개발 앱을 다시 네이티브 빌드한다.
+
+```powershell
+$env:GOOGLE_MAPS_ANDROID_API_KEY_DEV="발급받은-개발-키"
+npm run android:dev
+```
+
+환경변수 이름은 앱 설정에서 다음과 같이 구분한다.
+
+```text
+GOOGLE_MAPS_ANDROID_API_KEY_DEV
+GOOGLE_MAPS_ANDROID_API_KEY_PROD
+```
+
+지도 핀의 말풍선을 누르면 매장 상세로 이동한다. 현재 위치 검색 전에는 홍대 중심을 사용하고, 사용자가 위치 권한을 허용해 현재 위치 검색을 실행하면 지도 중심과 매장 핀을 함께 갱신한다.
 
 매장 상세의 `길찾기`는 사용자가 버튼을 누른 경우에만 설치된 지도 앱을 열며, 앱 연결이 실패하면 좌표를 사용한 Google 지도 웹으로 이동한다. 전화번호가 제공된 매장에는 `전화`를 노출하고 기기의 전화 앱으로 연결한다. 매장과 거래글의 `공유`는 앱 설치 여부와 관계없이 열 수 있는 운영 웹 공개 URL을 Android 공유 시트로 전달한다. 외부 앱 연결 실패는 앱이 종료되지 않도록 안내 문구로 처리한다.
 

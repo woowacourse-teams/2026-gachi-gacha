@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
+import { isGoogleMapsConfigured } from '../config/maps';
 import { NearbyStoreCard } from '../domains/store/NearbyStoreCard';
-import type { MapCoordinate } from '../domains/store/storeTypes';
+import { NearbyStoreMap } from '../domains/store/NearbyStoreMap';
+import type { MapCoordinate, NearbyStore } from '../domains/store/storeTypes';
 import { useCurrentLocation } from '../domains/store/useCurrentLocation';
 import { HONGDAE_SEARCH_CENTER, useNearbyStores } from '../domains/store/useNearbyStores';
 import type { MapStackParamList } from '../navigation/MapStack';
@@ -19,6 +21,16 @@ export function MapScreen({ navigation, route }: Props) {
   const [isCurrentLocation, setIsCurrentLocation] = useState(false);
   const location = useCurrentLocation();
   const result = useNearbyStores(gachaId, searchCenter);
+  const canShowMap = isGoogleMapsConfigured();
+
+  function openStoreDetail(store: NearbyStore) {
+    navigation.navigate('StoreDetail', {
+      storeId: store.storeId,
+      storeName: store.name,
+      latitude: store.latitude,
+      longitude: store.longitude,
+    });
+  }
 
   function clearGachaSelection() {
     navigation.setParams({ gachaId: undefined, gachaName: undefined });
@@ -48,12 +60,7 @@ export function MapScreen({ navigation, route }: Props) {
         renderItem={({ item }) => (
           <NearbyStoreCard
             store={item}
-            onPress={() => navigation.navigate('StoreDetail', {
-              storeId: item.storeId,
-              storeName: item.name,
-              latitude: item.latitude,
-              longitude: item.longitude,
-            })}
+            onPress={() => openStoreDetail(item)}
           />
         )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -116,7 +123,18 @@ export function MapScreen({ navigation, route }: Props) {
               </Pressable>
             )}
             {result.status === 'success' && (
-              <Text style={styles.resultCount}>검색 결과 {result.stores.length}곳</Text>
+              <>
+                <Text style={styles.resultCount}>검색 결과 {result.stores.length}곳</Text>
+                {canShowMap && result.stores.length > 0 && (
+                  <NearbyStoreMap
+                    center={searchCenter}
+                    key={`${searchCenter.latitude}-${searchCenter.longitude}-${gachaId ?? 'all'}`}
+                    onSelectStore={openStoreDetail}
+                    showsUserLocation={isCurrentLocation}
+                    stores={result.stores}
+                  />
+                )}
+              </>
             )}
           </View>
         }
