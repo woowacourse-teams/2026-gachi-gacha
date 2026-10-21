@@ -61,3 +61,6 @@ elasticsearch:
     trade: index
   init:
     enabled: false
+
+firebase:
+  push-enabled: false

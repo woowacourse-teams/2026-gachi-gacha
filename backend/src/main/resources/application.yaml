@@ -99,6 +99,13 @@ springdoc:
     mcp:
       enabled: false
 
+firebase:
+  # 꺼져 있으면 푸시를 FCM 으로 보내지 않고 로그만 남긴다. 서버에서는 반드시 true 로 둔다.
+  push-enabled: ${FCM_PUSH_ENABLED:false}
+  # Firebase 콘솔 > 프로젝트 설정 > 서비스 계정에서 받은 비공개 키(JSON) 파일 내용을 Base64 로 인코딩한 값.
+  # dev 서버에는 gachi-gacha-dev, prod 서버에는 gachi-gacha-prod 프로젝트의 키를 넣는다.
+  service-account-key-base64: ${FIREBASE_SERVICE_ACCOUNT_KEY_BASE64:}
+
 elasticsearch:
   url: ${ELASTIC_SEARCH_URL}
   api-key: ${ELASTIC_SEARCH_API_KEY}
