@@ -33,7 +33,10 @@ export function SearchScreen({ navigation }: Props) {
         renderItem={({ item }) => (
           <GachaSearchCard
             gacha={item}
-            onPress={() => navigation.navigate('Map', { gachaId: item.gachaId, gachaName: item.name })}
+            onPress={() => navigation.navigate('Map', {
+              screen: 'MapHome',
+              params: { gachaId: item.gachaId, gachaName: item.name },
+            })}
           />
         )}
         onEndReached={() => void search.loadMore()}
