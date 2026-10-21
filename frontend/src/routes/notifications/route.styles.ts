@@ -29,23 +29,6 @@ export const Main = styled.main`
   }
 `;
 
-export const BackLink = styled(Link)`
-  color: ${color.textMuted};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.bold};
-  text-decoration: none;
-
-  &:hover {
-    color: ${color.primary};
-  }
-
-  &:focus-visible {
-    border-radius: ${radius.small};
-    box-shadow: ${focusRing};
-    outline: none;
-  }
-`;
-
 export const HeadingArea = styled.header`
   display: flex;
   margin: ${space.xl} 0 ${space.lg};

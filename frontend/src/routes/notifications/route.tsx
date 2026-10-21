@@ -16,7 +16,6 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 
 import {
   ActionError,
-  BackLink,
   EmptyDescription,
   HeaderActions,
   Heading,
@@ -218,7 +217,6 @@ export function NotificationsRoute() {
         search={<GachaSearchBar onSelect={openGachaSearchResults} />}
       />
       <Main>
-        <BackLink to="/mypage">← 마이페이지</BackLink>
         <HeadingArea>
           <div>
             <Heading>알림</Heading>
