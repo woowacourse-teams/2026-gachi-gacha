@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { getNearbyStores } from './nearbyStoreApi';
-import type { NearbyStore } from './storeTypes';
+import type { MapCoordinate, NearbyStore } from './storeTypes';
 
 export const HONGDAE_SEARCH_CENTER = {
   latitude: 37.5563,
@@ -16,7 +16,7 @@ type StoreSearchState = {
   errorMessage: string | null;
 };
 
-export function useNearbyStores(gachaId: number | null) {
+export function useNearbyStores(gachaId: number | null, center: MapCoordinate) {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<StoreSearchState>({
     status: 'loading',
@@ -32,7 +32,8 @@ export function useNearbyStores(gachaId: number | null) {
     setState({ status: 'loading', stores: [], errorMessage: null });
 
     getNearbyStores({
-      ...HONGDAE_SEARCH_CENTER,
+      latitude: center.latitude,
+      longitude: center.longitude,
       radius: STORE_SEARCH_RADIUS_METERS,
       gachaId,
       signal: controller.signal,
@@ -54,7 +55,7 @@ export function useNearbyStores(gachaId: number | null) {
       controller.abort();
       if (requestIdRef.current === requestId) requestIdRef.current += 1;
     };
-  }, [attempt, gachaId]);
+  }, [attempt, center.latitude, center.longitude, gachaId]);
 
   return {
     ...state,
