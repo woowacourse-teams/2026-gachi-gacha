@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { TradeCard } from '../domains/trade/TradeCard';
 import { useTrades } from '../domains/trade/useTrades';
 import { colors } from '../theme/colors';
+import type { TradeStackParamList } from '../navigation/TradeStack';
 
-export function TradeScreen() {
+type Props = NativeStackScreenProps<TradeStackParamList, 'TradeList'>;
+
+export function TradeScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const trades = useTrades(keyword);
@@ -20,7 +24,7 @@ export function TradeScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
-        renderItem={({ item }) => <TradeCard trade={item} />}
+        renderItem={({ item }) => <TradeCard trade={item} onPress={() => navigation.navigate('TradeDetail', { tradeId: item.tradeId })} />}
         onEndReached={() => void trades.loadMore()}
         onEndReachedThreshold={0.35}
         refreshControl={<RefreshControl refreshing={trades.isRefreshing} onRefresh={() => void trades.refresh()} colors={[colors.primary]} />}

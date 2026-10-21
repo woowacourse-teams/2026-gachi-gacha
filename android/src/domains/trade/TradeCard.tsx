@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
 import type { TradeStatus, TradeSummary } from './tradeTypes';
@@ -18,12 +18,12 @@ function formatRelativeTime(value: string): string {
   return `${Math.floor(hours / 24)}일 전`;
 }
 
-export function TradeCard({ trade }: { trade: TradeSummary }) {
+export function TradeCard({ trade, onPress }: { trade: TradeSummary; onPress: () => void }) {
   const status = statusPresentation[trade.status];
   const place = trade.tradePlace?.name || trade.tradePlace?.address || '교환 장소 협의';
 
   return (
-    <View style={styles.card}>
+    <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       {trade.thumbnailUrl ? (
         <Image source={{ uri: trade.thumbnailUrl }} style={styles.thumbnail} />
       ) : (
@@ -47,12 +47,13 @@ export function TradeCard({ trade }: { trade: TradeSummary }) {
           </View>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: { flex: 1, minHeight: 340, padding: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.background },
+  cardPressed: { opacity: 0.82 },
   thumbnail: { width: '100%', aspectRatio: 1, borderRadius: 14, backgroundColor: '#f1f1f3' },
   placeholder: { alignItems: 'center', justifyContent: 'center' },
   placeholderText: { color: colors.primary, fontSize: 34, fontWeight: '900' },
