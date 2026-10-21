@@ -194,3 +194,36 @@ Android Studio의 `Build > Analyze APK`에서 AAB를 선택하면 패키지 구�
 - Android 뒤로가기 시 앱이 비정상 종료되지 않는가
 
 현재 화면은 네이티브 공통 셸 검증용이다. 로그인, 알림, 실제 지도 SDK, API 데이터는 각각 계약과 권한이 확정된 뒤 별도 이슈에서 연결한다.
+
+## 모바일 내비게이션과 안전영역 원칙
+
+하단 탭은 사용 빈도가 높고 서로 대등한 핵심 목적지만 둔다.
+
+- 하단 탭: 거래/교환, 지도, 검색, 채팅
+- 상단 앱 바: 가치가챠 브랜드, 알림, 로그인 또는 프로필
+- 마이페이지: 프로필에서 진입하며 하단 핵심 탭으로 중복하지 않는다.
+- 알림: 모바일에서는 작은 드롭다운보다 전체 알림 화면으로 이동시킨다. 읽지 않은 알림은 배지로 알린다.
+
+채팅·알림·로그인 화면이 실제로 연결되기 전에는 동작하지 않는 버튼을 먼저 노출하지 않는다. 기능이 포팅되는 이슈에서 각 목적지를 함께 추가한다.
+
+Android의 제스처 내비게이션과 3버튼 내비게이션은 기기 설정에 따라 하단 시스템 영역 높이가 다르다. 따라서 하단 탭의 위치를 임의의 고정 여백으로 올리지 않고 `react-native-safe-area-context`가 제공하는 `insets.bottom`을 높이와 내부 여백에 반영한다. 새 화면에서도 다음 원칙을 지킨다.
+
+- 상태 표시줄과 시스템 내비게이션 바 높이를 숫자로 가정하지 않는다.
+- 클릭 가능한 UI는 시스템 안전영역 안쪽에 둔다.
+- Galaxy 3버튼, Android 제스처, 가로·세로 화면에서 겹침을 확인한다.
+- 키보드가 열리면 하단 탭을 숨겨 입력 영역을 방해하지 않게 한다.
+
+참고: [Android edge-to-edge](https://developer.android.com/develop/ui/views/layout/edge-to-edge), [React Navigation bottom tabs](https://reactnavigation.org/docs/bottom-tab-navigator/)
+
+## 앱 아이콘 원칙
+
+앱 런처에는 루챠 캐릭터 자산 `assets/lucha-app-icon.png`을 사용한다. 중요한 얼굴 요소는 Android adaptive icon의 중앙 안전영역 안에 두어 원형·스쿼클·둥근 사각형 마스크에서도 잘리지 않게 한다. 이전 G 아이콘이 테마 아이콘으로 다시 보이지 않도록 별도의 구형 monochrome 자산은 연결하지 않는다.
+
+Play Console 등록정보용 아이콘은 런처 빌드 자산과 별도로 `assets/play-store-icon.png`에 보관한다. `npm run config:check`가 아래 조건을 자동 검증한다.
+
+- 512×512 PNG
+- 32-bit PNG
+- 1,024KB 이하
+- 문구, 순위·가격·할인·Play 배지처럼 오해를 유발하는 요소 없음
+
+참고: [Google Play 그래픽 자산 요구사항](https://support.google.com/googleplay/android-developer/answer/9866151), [Android adaptive icon 디자인](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive)
