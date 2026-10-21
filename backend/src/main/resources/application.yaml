@@ -10,6 +10,11 @@ server:
 spring:
   application:
     name: backend
+  task:
+    execution:
+      # 알림 전용 실행기(notificationExecutor)를 Bean 으로 등록해도 기본 applicationTaskExecutor 가
+      # 물러나지 않게 한다. 기존 @Async 작업과 WebSocket 은 계속 기본 실행기를 쓴다.
+      mode: force
   servlet:
     multipart:
       max-file-size: 10MB

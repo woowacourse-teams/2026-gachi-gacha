@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: backend
+  task:
+    execution:
+      mode: force
   servlet:
     multipart:
       max-file-size: 100MB

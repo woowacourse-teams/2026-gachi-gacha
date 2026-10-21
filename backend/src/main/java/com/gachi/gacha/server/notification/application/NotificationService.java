@@ -34,6 +34,11 @@ public class NotificationService {
         return NotificationPageInfo.of(notifications, pageSize);
     }
 
+    @Transactional
+    public Notification save(final Notification notification) {
+        return notificationJpaRepository.save(notification);
+    }
+
     public long getUnreadCount(final Long memberId) {
         return notificationJpaRepository.countByReceiverIdAndIsReadFalse(memberId);
     }
