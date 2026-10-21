@@ -3,6 +3,7 @@ package com.gachi.gacha.server.common.exception;
 import com.gachi.gacha.server.common.exception.dto.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +19,16 @@ public class GlobalExceptionHandler {
     protected ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(final MethodArgumentNotValidException e) {
         log.warn("handleMethodArgumentNotValidException: {}", e.getMessage());
         ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE, e.getBindingResult());
+        return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(response);
+    }
+
+    /**
+     * JSON 형식이 깨졌거나 enum 에 없는 값처럼 본문을 객체로 바꿀 수 없는 요청이다. 클라이언트 입력 오류이므로 400 으로 응답한다.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    protected ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(final HttpMessageNotReadableException e) {
+        log.warn("handleHttpMessageNotReadableException: {}", e.getMessage());
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INVALID_INPUT_VALUE);
         return ResponseEntity.status(ErrorCode.INVALID_INPUT_VALUE.getStatus()).body(response);
     }
 
