@@ -2,6 +2,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ImageViewerModal } from '../components/ImageViewerModal';
 import { getTradeDetail } from '../domains/trade/tradeApi';
 import type { TradeDetail } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
@@ -15,6 +16,7 @@ const statusLabel = { AVAILABLE: '교환 가능', IN_PROGRESS: '교환 진행 �
 
 export function TradeDetailScreen({ route }: Props) {
   const [attempt, setAttempt] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [state, setState] = useState<State>({ status: 'loading', data: null, message: null });
 
   useEffect(() => {
@@ -55,9 +57,19 @@ export function TradeDetailScreen({ route }: Props) {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {trade.imageUrls.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-          {trade.imageUrls.map((url) => <Image key={url} source={{ uri: url }} style={styles.image} />)}
+          {trade.imageUrls.map((url, index) => (
+            <Pressable
+              accessibilityLabel={`${trade.title} 사진 ${index + 1}`}
+              accessibilityRole="button"
+              key={`${url}-${index}`}
+              onPress={() => setSelectedImageIndex(index)}
+              style={styles.imageFrame}
+            >
+              <Image source={{ uri: url }} style={styles.image} />
+            </Pressable>
+          ))}
         </ScrollView>
-      ) : <View style={[styles.image, styles.imagePlaceholder]}><Text style={styles.placeholderText}>G</Text></View>}
+      ) : <View style={[styles.imageFrame, styles.imagePlaceholder]}><Text style={styles.placeholderText}>G</Text></View>}
       <View style={styles.titleRow}><Text style={styles.title}>{trade.title}</Text><View style={styles.badge}><Text style={styles.badgeText}>{statusLabel[trade.status]}</Text></View></View>
       <Text style={styles.categories}>{trade.categories.join(' · ') || '카테고리 미설정'}</Text>
       <Pressable
@@ -72,6 +84,13 @@ export function TradeDetailScreen({ route }: Props) {
       <Text style={styles.sectionTitle}>상세 설명</Text>
       <Text style={styles.description}>{trade.description || '작성된 설명이 없어요.'}</Text>
       <View style={styles.infoBox}>{rows.map(([label, value]) => <View key={label} style={styles.infoRow}><Text style={styles.infoLabel}>{label}</Text><Text style={styles.infoValue}>{value}</Text></View>)}</View>
+      <ImageViewerModal
+        imageUrls={trade.imageUrls}
+        initialIndex={selectedImageIndex ?? 0}
+        onClose={() => setSelectedImageIndex(null)}
+        title={trade.title}
+        visible={selectedImageIndex !== null}
+      />
     </ScrollView>
   );
 }
@@ -83,7 +102,8 @@ const styles = StyleSheet.create({
   muted: { color: colors.textMuted, textAlign: 'center' },
   retry: { paddingHorizontal: 20, minHeight: 44, justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   retryText: { color: colors.background, fontWeight: '700' },
-  image: { width: 340, maxWidth: '100%', aspectRatio: 1, borderRadius: 20, backgroundColor: '#f0f0f2', marginRight: 12 },
+  imageFrame: { width: 340, maxWidth: '100%', aspectRatio: 1, marginRight: 12, overflow: 'hidden', borderRadius: 20, backgroundColor: '#f0f0f2' },
+  image: { width: '100%', height: '100%' },
   imagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   placeholderText: { color: colors.primary, fontSize: 52, fontWeight: '900' },
   titleRow: { marginTop: 22, flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
