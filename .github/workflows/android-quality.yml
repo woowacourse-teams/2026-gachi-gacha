@@ -76,6 +76,11 @@ jobs:
             android/android/**/*.gradle*
             android/android/gradle/wrapper/gradle-wrapper.properties
 
+      - name: Compile Kakao Maps native bridge
+        if: github.event_name != 'pull_request'
+        working-directory: android/android
+        run: ./gradlew :gachi-kakao-map:compileReleaseKotlin
+
       - name: Build standalone preview APK
         if: github.event_name != 'pull_request'
         working-directory: android/android
