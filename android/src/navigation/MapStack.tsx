@@ -6,7 +6,12 @@ import { colors } from '../theme/colors';
 
 export type MapStackParamList = {
   MapHome: { gachaId?: number; gachaName?: string } | undefined;
-  StoreDetail: { storeId: number; storeName?: string };
+  StoreDetail: {
+    storeId: number;
+    storeName?: string;
+    latitude: number;
+    longitude: number;
+  };
 };
 
 const Stack = createNativeStackNavigator<MapStackParamList>();

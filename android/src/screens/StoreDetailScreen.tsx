@@ -1,10 +1,11 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { StoreGachaCard } from '../domains/store/StoreGachaCard';
 import type { StoreDetail } from '../domains/store/storeTypes';
 import { useStoreDetail, useStoreGachas } from '../domains/store/useStoreDetail';
 import type { MapStackParamList } from '../navigation/MapStack';
+import { openDirections, openPhoneNumber, sharePublicPage } from '../shared/nativeActions';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<MapStackParamList, 'StoreDetail'>;
@@ -76,10 +77,72 @@ export function StoreDetailScreen({ navigation, route }: Props) {
   ].filter((url): url is string => Boolean(url?.trim())))];
   const rows = createInformationRows(store);
 
+  async function handleDirections() {
+    try {
+      await openDirections({
+        label: store.name,
+        latitude: route.params.latitude,
+        longitude: route.params.longitude,
+      });
+    } catch {
+      Alert.alert('길찾기를 열 수 없어요', '잠시 후 다시 시도해 주세요.');
+    }
+  }
+
+  async function handlePhone() {
+    if (!store.phoneNumber) return;
+
+    try {
+      await openPhoneNumber(store.phoneNumber);
+    } catch {
+      Alert.alert('전화를 연결할 수 없어요', '기기의 전화 기능과 전화번호를 확인해 주세요.');
+    }
+  }
+
+  async function handleShare() {
+    try {
+      await sharePublicPage({
+        title: store.name,
+        message: `${store.name}\n${store.address}`,
+        path: `/stores/${store.storeId}`,
+      });
+    } catch {
+      Alert.alert('공유할 수 없어요', '잠시 후 다시 시도해 주세요.');
+    }
+  }
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{store.name}</Text>
       <Text style={styles.address}>{store.address}</Text>
+      <View style={styles.actionRow}>
+        <Pressable
+          accessibilityLabel={`${store.name} 길찾기`}
+          accessibilityRole="button"
+          onPress={() => void handleDirections()}
+          style={({ pressed }) => [styles.primaryAction, pressed && styles.primaryActionPressed]}
+        >
+          <Text style={styles.primaryActionText}>길찾기</Text>
+        </Pressable>
+        {store.phoneNumber && (
+          <Pressable
+            accessibilityLabel={`${store.name} 전화 걸기`}
+            accessibilityRole="button"
+            onPress={() => void handlePhone()}
+            style={({ pressed }) => [styles.secondaryAction, pressed && styles.secondaryActionPressed]}
+          >
+            <Text style={styles.secondaryActionText}>전화</Text>
+          </Pressable>
+        )}
+        <Pressable
+          accessibilityLabel={`${store.name} 공유하기`}
+          accessibilityRole="button"
+          onPress={() => void handleShare()}
+          style={({ pressed }) => [styles.secondaryAction, pressed && styles.secondaryActionPressed]}
+        >
+          <Text style={styles.secondaryActionText}>공유</Text>
+        </Pressable>
+      </View>
 
       {imageUrls.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={styles.gallery}>
@@ -169,6 +232,13 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24, backgroundColor: colors.surface },
   title: { color: colors.text, fontSize: 27, fontWeight: '800', lineHeight: 36 },
   address: { marginTop: 8, color: colors.textMuted, fontSize: 14, lineHeight: 21 },
+  actionRow: { marginTop: 18, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  primaryAction: { minHeight: 44, paddingHorizontal: 24, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
+  primaryActionPressed: { backgroundColor: colors.primaryPressed },
+  primaryActionText: { color: colors.background, fontSize: 14, fontWeight: '800' },
+  secondaryAction: { minHeight: 44, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 14, backgroundColor: colors.background },
+  secondaryActionPressed: { backgroundColor: colors.primarySoft },
+  secondaryActionText: { color: colors.text, fontSize: 14, fontWeight: '700' },
   gallery: { marginTop: 20 },
   storeImage: { aspectRatio: 4 / 3, marginRight: 12, borderRadius: 20, backgroundColor: '#eeeeef' },
   imagePlaceholder: { marginTop: 20, alignItems: 'center', justifyContent: 'center' },

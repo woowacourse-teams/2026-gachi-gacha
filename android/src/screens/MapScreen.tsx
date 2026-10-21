@@ -51,6 +51,8 @@ export function MapScreen({ navigation, route }: Props) {
             onPress={() => navigation.navigate('StoreDetail', {
               storeId: item.storeId,
               storeName: item.name,
+              latitude: item.latitude,
+              longitude: item.longitude,
             })}
           />
         )}
