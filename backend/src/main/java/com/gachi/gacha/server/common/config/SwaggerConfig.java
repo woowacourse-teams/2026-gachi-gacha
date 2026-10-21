@@ -40,7 +40,7 @@ import org.springframework.context.annotation.Configuration;
                         ## 오류 형식
                         오류는 `ErrorResponse` 스키마로 내려갑니다. 아래 Schemas 항목에서 구조를 확인할 수 있습니다.
                         `code` 는 도메인별 접두어를 가집니다 — 공통 `CE`, 가챠 `GE`, 매장 `SE`,
-                        회원·인증 `AUE`, 채팅 `CHE`, 교환 게시글 `TE`, 파일 `FE`, S3 `S3E`.
+                        회원·인증 `AUE`, 회원 차단 `BLE`, 채팅 `CHE`, 교환 게시글 `TE`, 파일 `FE`, S3 `S3E`.
 
                         입력값 검증 실패(`CE001`)일 때만 `errors` 에 필드별 사유가 함께 담깁니다.
 

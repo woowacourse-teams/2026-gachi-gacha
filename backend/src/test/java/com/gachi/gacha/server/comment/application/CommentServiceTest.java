@@ -120,12 +120,12 @@ class CommentServiceTest {
         @DisplayName("등록순으로 반환하며 회원·비회원 표시 이름이 각각 적용된다.")
         void returnsCommentsInOrder() {
             givenTradeExists();
-            given(commentJpaRepository.findAllByTradeIdOrderByIdAsc(TRADE_ID)).willReturn(List.of(
+            given(commentJpaRepository.findAllVisibleByTradeId(TRADE_ID, null)).willReturn(List.of(
                     Comment.ofAnonymous(TRADE_ID, null, MASKED_IP, "첫 댓글"),
                     Comment.ofMember(TRADE_ID, MEMBER_ID, "가챠러버", null, "둘째 댓글")
             ));
 
-            List<CommentInfo> infos = commentService.findComments(TRADE_ID);
+            List<CommentInfo> infos = commentService.findComments(null, TRADE_ID);
 
             assertThat(infos).extracting(CommentInfo::nickname)
                     .containsExactly("루챠-118.44", "가챠러버");
@@ -136,7 +136,7 @@ class CommentServiceTest {
         void rejectsMissingTrade() {
             given(tradeJpaRepository.existsById(TRADE_ID)).willReturn(false);
 
-            assertThatThrownBy(() -> commentService.findComments(TRADE_ID))
+            assertThatThrownBy(() -> commentService.findComments(null, TRADE_ID))
                     .isInstanceOf(TradeNotFoundException.class);
         }
     }

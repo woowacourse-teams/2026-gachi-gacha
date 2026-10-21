@@ -35,8 +35,8 @@ import org.jspecify.annotations.Nullable;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -92,9 +92,14 @@ public class TradeController {
         return BaseResponse.created(location, TradeResponse.of(tradeInfo, 0));
     }
 
-    @Operation(summary = "교환 게시글 목록 조회")
+    @Operation(
+            summary = "교환 게시글 목록 조회 (로그인은 선택)",
+            description = "로그인하면 내가 차단한 회원의 게시글을 제외한다."
+    )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     @GetMapping
     public BaseResponse<Page<TradeSummaryResponse>> readTrades(
+            @Auth(required = false) final Long memberId,
             @Parameter(description = "제목·설명 검색어", example = "산리오")
             @RequestParam(required = false) @Nullable final String keyword,
             @Parameter(description = "카테고리 ID 목록. 하나라도 포함하면 결과에 들어간다.", example = "1,3")
@@ -108,6 +113,7 @@ public class TradeController {
                 .keyword(keyword)
                 .categoryIds(categoryIds)
                 .status(status)
+                .viewerId(memberId)
                 .build();
         Page<TradeSummaryInfo> trades = tradeService.findTrades(condition, pageable);
 
@@ -128,19 +134,24 @@ public class TradeController {
         return BaseResponse.ok(tradeInfos.map(TradeSummaryResponse::from));
     }
 
-    @Operation(summary = "교환 게시글 상세 조회")
+    @Operation(
+            summary = "교환 게시글 상세 조회 (로그인은 선택)",
+            description = "내가 차단한 회원의 게시글이면 없는 게시글과 같이 404/TE001을 반환한다."
+    )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     @GetMapping("/{tradeId}")
     public BaseResponse<TradeResponse> readTrade(
+            @Auth(required = false) final Long memberId,
             @Parameter(description = "교환 게시글 ID", example = "1") @PathVariable final Long tradeId
     ) {
-        TradeDetailInfo detail = tradeCommentService.findTradeDetail(tradeId);
+        TradeDetailInfo detail = tradeCommentService.findTradeDetail(memberId, tradeId);
 
         return BaseResponse.ok(TradeResponse.of(detail.trade(), detail.commentCount()));
     }
 
     /**
-     * 수정 화면이 기존 값이 채워진 폼을 통째로 제출하는 흐름이라 부분 수정이 아닌 전체 교체(PUT)로 받는다.
-     * 단 이미지는 예외로, images 를 보내면 전체 교체하고 보내지 않으면 기존 이미지를 유지한다.
+     * 수정 화면이 기존 값이 채워진 폼을 통째로 제출하는 흐름이라 부분 수정이 아닌 전체 교체(PUT)로 받는다. 단 이미지는 예외로, images 를 보내면 전체 교체하고 보내지 않으면 기존 이미지를
+     * 유지한다.
      */
     @Operation(summary = "교환 게시글 수정")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -163,7 +174,8 @@ public class TradeController {
     ) {
         TradeInfo tradeInfo = tradeService.updateTrade(memberId, tradeId, request.toCommand(), images);
 
-        return BaseResponse.updated(TradeResponse.of(tradeInfo, tradeCommentService.countComments(tradeId)));
+        long commentCount = tradeCommentService.countComments(memberId, tradeId);
+        return BaseResponse.updated(TradeResponse.of(tradeInfo, commentCount));
     }
 
     @Operation(summary = "교환 게시글 상태 변경")
@@ -176,7 +188,8 @@ public class TradeController {
     ) {
         TradeInfo tradeInfo = tradeService.changeStatus(memberId, tradeId, request.status());
 
-        return BaseResponse.updated(TradeResponse.of(tradeInfo, tradeCommentService.countComments(tradeId)));
+        long commentCount = tradeCommentService.countComments(memberId, tradeId);
+        return BaseResponse.updated(TradeResponse.of(tradeInfo, commentCount));
     }
 
     @Operation(summary = "교환 게시글 삭제")
@@ -198,7 +211,9 @@ public class TradeController {
             @Parameter(description = "카테고리 아이디") @RequestParam(required = false) final List<Long> categoryIds,
             @Parameter(description = "거래 상태") @RequestParam(required = false) final TradeStatus status,
             @Parameter(description = "페이지") @RequestParam(defaultValue = "0") final int page,
-            @Parameter(description = "한 페이지당 게시글 수") @RequestParam(defaultValue = "20") final int size) throws IOException {
-        return tradeSearchService.search(new TradeSearchCondition(keyword, categoryIds, status, page, Math.min(size, 50)));
+            @Parameter(description = "한 페이지당 게시글 수") @RequestParam(defaultValue = "20") final int size)
+            throws IOException {
+        return tradeSearchService.search(
+                new TradeSearchCondition(keyword, categoryIds, status, null, page, Math.min(size, 50)));
     }
 }

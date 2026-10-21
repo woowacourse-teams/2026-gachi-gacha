@@ -13,6 +13,8 @@ import com.gachi.gacha.server.gacha.domain.Gacha;
 import com.gachi.gacha.server.gacha.domain.GachaCategory;
 import com.gachi.gacha.server.gacha.domain.GachaJpaRepository;
 import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.member.domain.MemberBlock;
+import com.gachi.gacha.server.member.domain.MemberBlockJpaRepository;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
@@ -74,6 +76,9 @@ class OsivDisabledControllerTest {
 
     @Autowired
     private MemberJpaRepository memberJpaRepository;
+
+    @Autowired
+    private MemberBlockJpaRepository memberBlockJpaRepository;
 
     @Autowired
     private CategoryJpaRepository categoryJpaRepository;
@@ -153,6 +158,9 @@ class OsivDisabledControllerTest {
             if (categoryId != null) {
                 categoryJpaRepository.deleteAllByIdInBatch(List.of(categoryId));
             }
+            entityManager.createQuery("DELETE FROM MemberBlock b WHERE b.blockerId IN :memberIds")
+                    .setParameter("memberIds", memberIds)
+                    .executeUpdate();
             memberJpaRepository.deleteAllByIdInBatch(memberIds);
         });
     }
@@ -283,6 +291,18 @@ class OsivDisabledControllerTest {
 
             assertOk(response);
             assertThat(response.jsonPath().getString("data.nickname")).isEqualTo("requester");
+        }
+
+        @Test
+        @DisplayName("GET /blocks - 차단한 회원의 닉네임까지 응답에 담긴다")
+        void readMyBlocks() {
+            memberBlockJpaRepository.save(MemberBlock.of(requesterId, ownerId));
+
+            ExtractableResponse<Response> response = get("/blocks", requesterId);
+
+            assertOk(response);
+            assertThat(response.jsonPath().getLong("data.blocks[0].memberId")).isEqualTo(ownerId);
+            assertThat(response.jsonPath().getString("data.blocks[0].nickname")).isEqualTo("owner");
         }
     }
 
