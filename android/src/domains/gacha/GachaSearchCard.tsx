@@ -1,13 +1,27 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
 import type { GachaSearchItem } from './gachaTypes';
 
-export function GachaSearchCard({ gacha }: { gacha: GachaSearchItem }) {
+export function GachaSearchCard({
+  gacha,
+  onPress,
+}: {
+  gacha: GachaSearchItem;
+  onPress: () => void;
+}) {
+  const hasStore = gacha.storeCount > 0;
   const storeLabel = gacha.storeCount > 0 ? `${gacha.storeCount}개 매장 보유중` : '보유 매장 없음';
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${gacha.name}, ${storeLabel}`}
+      accessibilityState={{ disabled: !hasStore }}
+      disabled={!hasStore}
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
       {gacha.thumbnailUrl ? (
         <Image source={{ uri: gacha.thumbnailUrl }} style={styles.thumbnail} />
       ) : (
@@ -20,7 +34,7 @@ export function GachaSearchCard({ gacha }: { gacha: GachaSearchItem }) {
         {gacha.categories.slice(0, 3).join(' · ') || '카테고리 미설정'}
       </Text>
       <Text style={[styles.storeCount, gacha.storeCount === 0 && styles.noStore]}>{storeLabel}</Text>
-    </View>
+    </Pressable>
   );
 }
 
@@ -34,6 +48,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.background,
   },
+  cardPressed: { opacity: 0.78 },
   thumbnail: {
     width: '100%',
     aspectRatio: 1,

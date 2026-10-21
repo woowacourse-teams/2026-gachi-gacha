@@ -9,7 +9,7 @@ import { TradeStack } from './TradeStack';
 
 export type AppTabParamList = {
   Trade: undefined;
-  Map: undefined;
+  Map: { gachaId?: number; gachaName?: string } | undefined;
   Search: undefined;
 };
 
