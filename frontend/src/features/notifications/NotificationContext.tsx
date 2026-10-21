@@ -18,6 +18,7 @@ import type {
 import {
   getNotifications,
   getUnreadNotificationCount,
+  markAllNotificationsRead,
   markNotificationRead,
 } from './api/notificationApi';
 
@@ -26,6 +27,7 @@ interface NotificationContextValue {
   unreadCount: number;
   loadNotifications: () => void;
   selectNotification: (notification: HeaderNotification) => void;
+  readAllNotifications: () => Promise<void>;
 }
 
 const IDLE_NOTIFICATION_STATE: HeaderNotificationState = {
@@ -147,14 +149,39 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [loadNotifications, refreshUnreadCount],
   );
 
+  const readAllNotifications = useCallback(async () => {
+    await markAllNotificationsRead();
+    setNotificationState((currentState) => {
+      if (currentState.status !== 'success') {
+        return currentState;
+      }
+
+      return {
+        ...currentState,
+        data: currentState.data.map((notification) => ({
+          ...notification,
+          isRead: true,
+        })),
+      };
+    });
+    await refreshUnreadCount();
+  }, [refreshUnreadCount]);
+
   const value = useMemo<NotificationContextValue>(
     () => ({
       notificationState,
       unreadCount,
       loadNotifications,
       selectNotification,
+      readAllNotifications,
     }),
-    [loadNotifications, notificationState, selectNotification, unreadCount],
+    [
+      loadNotifications,
+      notificationState,
+      readAllNotifications,
+      selectNotification,
+      unreadCount,
+    ],
   );
 
   return (

@@ -4,7 +4,7 @@ import { isApiResponse } from '@/shared/api/isApiResponse';
 const NOTIFICATIONS_API_PATH = '/api/v1/notifications';
 const JSON_CONTENT_TYPE = 'application/json';
 
-interface NotificationResponseItem {
+export interface NotificationResponseItem {
   notificationId: number;
   type: 'COMMENT';
   title: string;
@@ -19,6 +19,12 @@ export interface NotificationPage {
   notifications: readonly NotificationResponseItem[];
   nextLastNotificationId: number | null;
   hasNext: boolean;
+}
+
+export interface GetNotificationsOptions {
+  lastNotificationId?: number;
+  size?: number;
+  signal?: AbortSignal | undefined;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -89,10 +95,16 @@ async function readJsonResponse(
   return responseBody;
 }
 
-export async function getNotifications(
-  signal?: AbortSignal,
-): Promise<NotificationPage> {
-  const searchParams = new URLSearchParams({ size: '20' });
+export async function getNotifications({
+  lastNotificationId,
+  size = 20,
+  signal,
+}: GetNotificationsOptions = {}): Promise<NotificationPage> {
+  const searchParams = new URLSearchParams({ size: String(size) });
+
+  if (lastNotificationId !== undefined) {
+    searchParams.set('lastNotificationId', String(lastNotificationId));
+  }
   const response = await authenticatedFetch(
     `${NOTIFICATIONS_API_PATH}?${searchParams.toString()}`,
     { signal: signal ?? null },
@@ -168,6 +180,25 @@ export async function markNotificationRead(
       isApiResponse(responseBody)
         ? responseBody.message
         : '알림을 읽음 처리하지 못했습니다.',
+    );
+  }
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  const response = await authenticatedFetch(
+    `${NOTIFICATIONS_API_PATH}/read-all`,
+    { method: 'PATCH' },
+  );
+  const responseBody = await readJsonResponse(
+    response,
+    '알림을 모두 읽음 처리하지 못했습니다.',
+  );
+
+  if (!isApiResponse(responseBody) || responseBody.code !== 'C002') {
+    throw new Error(
+      isApiResponse(responseBody)
+        ? responseBody.message
+        : '알림을 모두 읽음 처리하지 못했습니다.',
     );
   }
 }

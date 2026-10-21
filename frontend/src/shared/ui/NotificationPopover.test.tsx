@@ -68,7 +68,9 @@ describe('NotificationPopover', () => {
       }),
     ).toHaveAttribute('href', '/trade/12');
     expect(screen.queryByText('💬')).not.toBeInTheDocument();
-    expect(screen.queryByText('모든 알림 보기')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '모든 알림 보기' }),
+    ).toHaveAttribute('href', '/notifications');
   });
 
   it('알림이 없으면 빈 상태를 표시한다', () => {

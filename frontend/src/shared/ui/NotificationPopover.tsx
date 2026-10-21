@@ -6,6 +6,7 @@ import {
   EmptyIcon,
   EmptyState,
   ErrorMessage,
+  Footer,
   Header,
   ItemContent,
   ItemLink,
@@ -18,6 +19,7 @@ import {
   RetryButton,
   Title,
   UnreadDot,
+  ViewAllLink,
 } from './NotificationPopover.styles';
 
 export type HeaderNotificationType = 'comment';
@@ -146,6 +148,13 @@ export function NotificationPopover({
             onNotificationSelect={onNotificationSelect}
           />
         )}
+
+      <Footer>
+        <ViewAllLink to="/notifications" onClick={onClose}>
+          모든 알림 보기
+          <span aria-hidden="true">→</span>
+        </ViewAllLink>
+      </Footer>
     </Popover>
   );
 }

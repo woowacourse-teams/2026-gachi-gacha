@@ -232,3 +232,31 @@ export const LoadingItem = styled.div`
     animation: none;
   }
 `;
+
+export const Footer = styled.footer`
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--color-border-subtle, #f0eeec);
+`;
+
+export const ViewAllLink = styled(Link)`
+  display: flex;
+  min-height: 40px;
+  padding: 0 12px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 11px;
+  color: var(--color-primary, #d93b54);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--color-primary-soft, #fff1f3);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(217 59 84 / 24%);
+    outline-offset: 1px;
+  }
+`;

@@ -10,6 +10,7 @@ import { server } from '@/test/server';
 import {
   getNotifications,
   getUnreadNotificationCount,
+  markAllNotificationsRead,
   markNotificationRead,
 } from './notificationApi';
 
@@ -123,5 +124,19 @@ describe('notificationApi', () => {
     await expect(getUnreadNotificationCount()).resolves.toBe(3);
     await expect(markNotificationRead('101')).resolves.toBeUndefined();
     expect(requestedNotificationId).toBe('101');
+  });
+
+  it('모든 알림을 읽음 처리한다', async () => {
+    storeAuthTokens(TOKENS);
+    let requestCount = 0;
+    server.use(
+      http.patch('/api/v1/notifications/read-all', () => {
+        requestCount += 1;
+        return HttpResponse.json({ code: 'C002', message: '수정 완료' });
+      }),
+    );
+
+    await expect(markAllNotificationsRead()).resolves.toBeUndefined();
+    expect(requestCount).toBe(1);
   });
 });

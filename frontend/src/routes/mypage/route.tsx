@@ -235,7 +235,7 @@ export function MyPageRoute() {
                   <ProfileDetailCopy>
                     <ProfileDetailLabel>알림</ProfileDetailLabel>
                     <ProfileDetailValue>
-                      교환과 관심 가챠 알림 준비 중
+                      내 교환글의 새 댓글 확인
                     </ProfileDetailValue>
                   </ProfileDetailCopy>
                   <MyPageIcon name="chevron" size={18} />
