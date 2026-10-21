@@ -1,13 +1,13 @@
-import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { NearbyStoreCard } from '../domains/store/NearbyStoreCard';
 import { useNearbyStores } from '../domains/store/useNearbyStores';
-import type { AppTabParamList } from '../navigation/AppTabs';
+import type { MapStackParamList } from '../navigation/MapStack';
 import { colors } from '../theme/colors';
 
-type Props = BottomTabScreenProps<AppTabParamList, 'Map'>;
+type Props = NativeStackScreenProps<MapStackParamList, 'MapHome'>;
 
 export function MapScreen({ navigation, route }: Props) {
   const gachaId = route.params?.gachaId ?? null;
@@ -25,7 +25,15 @@ export function MapScreen({ navigation, route }: Props) {
         data={result.stores}
         keyExtractor={({ storeId }) => String(storeId)}
         contentContainerStyle={styles.content}
-        renderItem={({ item }) => <NearbyStoreCard store={item} />}
+        renderItem={({ item }) => (
+          <NearbyStoreCard
+            store={item}
+            onPress={() => navigation.navigate('StoreDetail', {
+              storeId: item.storeId,
+              storeName: item.name,
+            })}
+          />
+        )}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <View style={styles.header}>

@@ -1,15 +1,16 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 import { StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MapScreen } from '../screens/MapScreen';
 import { SearchScreen } from '../screens/SearchScreen';
 import { colors } from '../theme/colors';
+import { MapStack, type MapStackParamList } from './MapStack';
 import { TradeStack } from './TradeStack';
 
 export type AppTabParamList = {
   Trade: undefined;
-  Map: { gachaId?: number; gachaName?: string } | undefined;
+  Map: NavigatorScreenParams<MapStackParamList> | undefined;
   Search: undefined;
 };
 
@@ -57,7 +58,7 @@ export function AppTabs() {
       })}
     >
       <Tab.Screen name="Trade" component={TradeStack} />
-      <Tab.Screen name="Map" component={MapScreen} />
+      <Tab.Screen name="Map" component={MapStack} />
       <Tab.Screen name="Search" component={SearchScreen} />
     </Tab.Navigator>
   );

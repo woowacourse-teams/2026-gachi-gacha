@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../../theme/colors';
 import type { NearbyStore } from './storeTypes';
@@ -8,9 +8,14 @@ function formatDistance(distance: number): string {
   return `${(distance / 1000).toFixed(1)}km`;
 }
 
-export function NearbyStoreCard({ store }: { store: NearbyStore }) {
+export function NearbyStoreCard({ store, onPress }: { store: NearbyStore; onPress: () => void }) {
   return (
-    <View style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${store.name} 매장 상세 보기`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    >
       {store.thumbnailUrl ? (
         <Image source={{ uri: store.thumbnailUrl }} style={styles.thumbnail} />
       ) : (
@@ -28,7 +33,7 @@ export function NearbyStoreCard({ store }: { store: NearbyStore }) {
           <Text style={styles.gachaCount}>보유 가챠 {store.gachaCount}개</Text>
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -43,6 +48,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.background,
   },
+  cardPressed: { opacity: 0.78 },
   thumbnail: {
     width: 92,
     height: 92,
