@@ -120,6 +120,9 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
               val markerId = (label.tag as? Number)?.toDouble()
               if (markerId != null) {
                 onMarkerPress(mapOf("id" to markerId))
+                true
+              } else {
+                false
               }
             }
             updateCamera()
@@ -161,10 +164,11 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
 
   private fun renderMarkers() {
     val map = kakaoMap ?: return
-    val layer = map.labelManager.layer
+    val labelManager = map.labelManager ?: return
+    val layer = labelManager.layer ?: return
     layer.removeAll()
 
-    val markerStyle = storeMarkerStyle ?: map.labelManager
+    val markerStyle = storeMarkerStyle ?: labelManager
       .addLabelStyles(
         LabelStyles.from(
           STORE_MARKER_STYLE_ID,
@@ -188,7 +192,7 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     }
 
     if (showsUserLocation) {
-      val currentLocationStyle = userLocationStyle ?: map.labelManager
+      val currentLocationStyle = userLocationStyle ?: labelManager
         .addLabelStyles(
           LabelStyles.from(
             USER_LOCATION_STYLE_ID,
