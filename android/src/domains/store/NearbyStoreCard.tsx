@@ -1,5 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { RemoteImageWithFallback } from '../../components/RemoteImageWithFallback';
 import { colors } from '../../theme/colors';
 import type { NearbyStore } from './storeTypes';
 
@@ -16,13 +17,11 @@ export function NearbyStoreCard({ store, onPress }: { store: NearbyStore; onPres
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      {store.thumbnailUrl ? (
-        <Image source={{ uri: store.thumbnailUrl }} style={styles.thumbnail} />
-      ) : (
-        <View style={[styles.thumbnail, styles.placeholder]}>
-          <Text style={styles.placeholderText}>매장</Text>
-        </View>
-      )}
+      <RemoteImageWithFallback
+        accessibilityLabel={`${store.name} 매장 이미지`}
+        style={styles.thumbnail}
+        uri={store.thumbnailUrl}
+      />
       <View style={styles.information}>
         <View style={styles.titleRow}>
           <Text numberOfLines={1} style={styles.name}>{store.name}</Text>
@@ -55,8 +54,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: '#f1f1f3',
   },
-  placeholder: { alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: colors.primary, fontSize: 14, fontWeight: '800' },
   information: { flex: 1, paddingVertical: 4 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '800' },

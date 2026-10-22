@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { TradeCard } from '../domains/trade/TradeCard';
@@ -18,11 +18,16 @@ const statusFilters: Array<{ label: string; value: TradeStatus | null }> = [
   { label: '교환 완료', value: 'COMPLETED' },
 ];
 
+const CONTENT_HORIZONTAL_PADDING = 14;
+const CARD_GAP = 12;
+
 export function TradeScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [tradeStatus, setTradeStatus] = useState<TradeStatus | null>(null);
   const trades = useTrades(keyword, tradeStatus);
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - CONTENT_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
   const selectedStatusLabel = statusFilters.find(({ value }) => value === tradeStatus)?.label ?? '전체';
 
   return (
@@ -36,7 +41,14 @@ export function TradeScreen({ navigation }: Props) {
         contentContainerStyle={styles.content}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => <TradeCard trade={item} onPress={() => navigation.navigate('TradeDetail', { tradeId: item.tradeId })} />}
+        renderItem={({ item }) => (
+          <View style={{ width: cardWidth }}>
+            <TradeCard
+              trade={item}
+              onPress={() => navigation.navigate('TradeDetail', { tradeId: item.tradeId })}
+            />
+          </View>
+        )}
         onEndReached={() => void trades.loadMore()}
         onEndReachedThreshold={0.35}
         refreshControl={<RefreshControl refreshing={trades.isRefreshing} onRefresh={() => void trades.refresh()} colors={[colors.primary]} />}

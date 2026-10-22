@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
 import { GachaSearchCard } from '../domains/gacha/GachaSearchCard';
@@ -10,10 +10,15 @@ import { colors } from '../theme/colors';
 
 type Props = BottomTabScreenProps<AppTabParamList, 'Search'>;
 
+const CONTENT_HORIZONTAL_PADDING = 14;
+const CARD_GAP = 12;
+
 export function SearchScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const search = useGachaSearch(keyword);
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - CONTENT_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
 
   function submitSearch() {
     setKeyword(input.trim());
@@ -31,13 +36,15 @@ export function SearchScreen({ navigation }: Props) {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.content}
         renderItem={({ item }) => (
-          <GachaSearchCard
-            gacha={item}
-            onPress={() => navigation.navigate('Map', {
-              screen: 'MapHome',
-              params: { gachaId: item.gachaId, gachaName: item.name },
-            })}
-          />
+          <View style={{ width: cardWidth }}>
+            <GachaSearchCard
+              gacha={item}
+              onPress={() => navigation.navigate('Map', {
+                screen: 'MapHome',
+                params: { gachaId: item.gachaId, gachaName: item.name },
+              })}
+            />
+          </View>
         )}
         onEndReached={() => void search.loadMore()}
         onEndReachedThreshold={0.35}

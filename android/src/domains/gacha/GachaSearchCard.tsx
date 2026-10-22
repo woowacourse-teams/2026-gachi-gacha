@@ -1,5 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
+import { RemoteImageWithFallback } from '../../components/RemoteImageWithFallback';
 import { colors } from '../../theme/colors';
 import type { GachaSearchItem } from './gachaTypes';
 
@@ -22,13 +23,11 @@ export function GachaSearchCard({
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      {gacha.thumbnailUrl ? (
-        <Image source={{ uri: gacha.thumbnailUrl }} style={styles.thumbnail} />
-      ) : (
-        <View style={[styles.thumbnail, styles.placeholder]}>
-          <Text style={styles.placeholderText}>이미지 없음</Text>
-        </View>
-      )}
+      <RemoteImageWithFallback
+        accessibilityLabel={`${gacha.name} 이미지`}
+        style={styles.thumbnail}
+        uri={gacha.thumbnailUrl}
+      />
       <Text numberOfLines={2} style={styles.name}>{gacha.name}</Text>
       <Text numberOfLines={2} style={styles.categories}>
         {gacha.categories.slice(0, 3).join(' · ') || '카테고리 미설정'}
@@ -54,15 +53,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 14,
     backgroundColor: '#f1f1f3',
-  },
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '700',
   },
   name: {
     minHeight: 42,
