@@ -7,7 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface PushTokenJpaRepository extends JpaRepository<PushToken, Long> {
@@ -18,7 +17,6 @@ public interface PushTokenJpaRepository extends JpaRepository<PushToken, Long> {
 
     void deleteAllByMemberId(Long memberId);
 
-    @Transactional
     @Modifying
     @Query("DELETE FROM PushToken pushToken WHERE pushToken.token IN :tokens")
     void deleteAllByTokenIn(Collection<String> tokens);

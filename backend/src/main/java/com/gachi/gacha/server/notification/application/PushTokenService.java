@@ -3,6 +3,7 @@ package com.gachi.gacha.server.notification.application;
 import com.gachi.gacha.server.notification.application.dto.PushTokenRegisterCommand;
 import com.gachi.gacha.server.notification.domain.PushToken;
 import com.gachi.gacha.server.notification.domain.PushTokenJpaRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,6 +34,11 @@ public class PushTokenService {
     public void unregister(final Long memberId, final String token) {
         pushTokenJpaRepository.findByToken(token)
                 .ifPresent(pushToken -> deleteIfOwned(pushToken, memberId));
+    }
+
+    @Transactional
+    public void deleteInvalidTokens(final List<String> tokens) {
+        pushTokenJpaRepository.deleteAllByTokenIn(tokens);
     }
 
     private void reassign(final PushToken pushToken, final Long memberId) {

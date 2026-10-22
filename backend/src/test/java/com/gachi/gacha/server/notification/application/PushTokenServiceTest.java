@@ -8,6 +8,7 @@ import com.gachi.gacha.server.notification.application.dto.PushTokenRegisterComm
 import com.gachi.gacha.server.notification.domain.PushPlatform;
 import com.gachi.gacha.server.notification.domain.PushToken;
 import com.gachi.gacha.server.notification.domain.PushTokenJpaRepository;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -116,6 +117,28 @@ class PushTokenServiceTest {
 
             // then
             assertThat(pushTokenJpaRepository.findByToken(TOKEN)).isPresent();
+        }
+    }
+
+    @Nested
+    @DisplayName("무효 토큰 삭제")
+    class DeleteInvalidTokens {
+
+        @Test
+        @DisplayName("전달한 토큰만 회원과 관계없이 삭제한다")
+        void deleteInvalidTokens() {
+            // given
+            pushTokenService.register(member.getId(), new PushTokenRegisterCommand("invalid-token", PushPlatform.ANDROID));
+            pushTokenService.register(other.getId(), new PushTokenRegisterCommand("other-invalid-token", PushPlatform.IOS));
+            pushTokenService.register(member.getId(), new PushTokenRegisterCommand("valid-token", PushPlatform.IOS));
+
+            // when
+            pushTokenService.deleteInvalidTokens(List.of("invalid-token", "other-invalid-token"));
+
+            // then
+            assertThat(pushTokenJpaRepository.findByToken("invalid-token")).isEmpty();
+            assertThat(pushTokenJpaRepository.findByToken("other-invalid-token")).isEmpty();
+            assertThat(pushTokenJpaRepository.findByToken("valid-token")).isPresent();
         }
     }
 }
