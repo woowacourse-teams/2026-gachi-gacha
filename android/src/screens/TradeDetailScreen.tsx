@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ImageViewerModal } from '../components/ImageViewerModal';
+import { TradeCommentsSection } from '../domains/trade/TradeCommentsSection';
 import { getTradeDetail } from '../domains/trade/tradeApi';
 import type { TradeDetail, TradePlace } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
@@ -68,7 +69,7 @@ export function TradeDetailScreen({ route }: Props) {
   }
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+    <ScrollView keyboardShouldPersistTaps="handled" style={styles.screen} contentContainerStyle={styles.content}>
       {trade.imageUrls.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
           {trade.imageUrls.map((url, index) => (
@@ -121,6 +122,7 @@ export function TradeDetailScreen({ route }: Props) {
           </View>
         ))}
       </View>
+      <TradeCommentsSection tradeId={trade.tradeId} />
       <ImageViewerModal
         imageUrls={trade.imageUrls}
         initialIndex={selectedImageIndex ?? 0}
