@@ -15,6 +15,7 @@ import com.google.firebase.messaging.MulticastMessage;
 import com.google.firebase.messaging.Notification;
 import com.google.firebase.messaging.SendResponse;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class FcmPushSender implements PushSender {
     public List<String> send(final List<String> tokens, final PushMessage message) {
         try {
             BatchResponse response = firebaseMessaging.sendEachForMulticast(toMulticastMessage(tokens, message));
+            logFailures(response.getResponses());
             return findInvalidTokens(tokens, response.getResponses());
         } catch (FirebaseMessagingException e) {
             log.error("FCM 푸시 발송 실패. tokenCount = {}", tokens.size(), e);
@@ -93,6 +95,23 @@ public class FcmPushSender implements PushSender {
             config.putHeader(APNS_COLLAPSE_ID_HEADER, message.collapseKey());
         }
         return config.build();
+    }
+
+    /**
+     * 토큰 값은 남기지 않고 실패 건수와 에러 코드만 남긴다.
+     */
+    private void logFailures(final List<SendResponse> responses) {
+        List<MessagingErrorCode> errorCodes = responses.stream()
+                .filter(response -> !response.isSuccessful())
+                .map(SendResponse::getException)
+                .filter(Objects::nonNull)
+                .map(FirebaseMessagingException::getMessagingErrorCode)
+                .toList();
+        if (errorCodes.isEmpty()) {
+            return;
+        }
+        log.warn("FCM 일부 토큰 발송 실패. tokenCount = {}, failureCount = {}, errorCodes = {}",
+                responses.size(), errorCodes.size(), errorCodes);
     }
 
     private List<String> findInvalidTokens(final List<String> tokens, final List<SendResponse> responses) {

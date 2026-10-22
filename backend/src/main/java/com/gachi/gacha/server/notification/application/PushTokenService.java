@@ -4,9 +4,11 @@ import com.gachi.gacha.server.notification.application.dto.PushTokenRegisterComm
 import com.gachi.gacha.server.notification.domain.PushToken;
 import com.gachi.gacha.server.notification.domain.PushTokenJpaRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -22,7 +24,7 @@ public class PushTokenService {
     public void register(final Long memberId, final PushTokenRegisterCommand command) {
         pushTokenJpaRepository.findByToken(command.token())
                 .ifPresentOrElse(
-                        pushToken -> pushToken.assignTo(memberId),
+                        pushToken -> reassign(pushToken, memberId),
                         () -> pushTokenJpaRepository.save(PushToken.of(memberId, command.token(), command.platform()))
                 );
     }
@@ -30,7 +32,26 @@ public class PushTokenService {
     @Transactional
     public void unregister(final Long memberId, final String token) {
         pushTokenJpaRepository.findByToken(token)
-                .filter(pushToken -> pushToken.isOwnedBy(memberId))
-                .ifPresent(pushTokenJpaRepository::delete);
+                .ifPresent(pushToken -> deleteIfOwned(pushToken, memberId));
+    }
+
+    private void reassign(final PushToken pushToken, final Long memberId) {
+        if (!pushToken.isOwnedBy(memberId)) {
+            log.info("푸시 토큰 소유 회원 변경. pushTokenId = {}, fromMemberId = {}, toMemberId = {}",
+                    pushToken.getId(), pushToken.getMemberId(), memberId);
+        }
+        pushToken.assignTo(memberId);
+    }
+
+    /**
+     * 다른 회원의 토큰은 지우지 않는다. 정상 흐름에서는 나오기 어려운 요청이라 경고로 남긴다.
+     */
+    private void deleteIfOwned(final PushToken pushToken, final Long memberId) {
+        if (!pushToken.isOwnedBy(memberId)) {
+            log.warn("다른 회원의 푸시 토큰 삭제 요청 무시. pushTokenId = {}, ownerId = {}, requesterId = {}",
+                    pushToken.getId(), pushToken.getMemberId(), memberId);
+            return;
+        }
+        pushTokenJpaRepository.delete(pushToken);
     }
 }

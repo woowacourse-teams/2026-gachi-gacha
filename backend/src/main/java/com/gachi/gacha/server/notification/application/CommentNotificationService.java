@@ -6,7 +6,7 @@ import com.gachi.gacha.server.notification.domain.Notification;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>알림 저장은 자체 트랜잭션에서 끝내고, FCM 발송은 트랜잭션 밖에서 한다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CommentNotificationService {
@@ -24,9 +25,15 @@ public class CommentNotificationService {
     private final PushService pushService;
 
     public void notifyTradeOwner(final CommentCreatedEvent event) {
-        findTradeOwnerId(event.tradeId())
-                .filter(tradeOwnerId -> shouldNotify(tradeOwnerId, event.writerId()))
-                .ifPresent(tradeOwnerId -> notify(tradeOwnerId, event));
+        Optional<Long> tradeOwnerId = findTradeOwnerId(event.tradeId());
+        if (tradeOwnerId.isEmpty()) {
+            log.warn("댓글 알림 생략: 게시글을 찾을 수 없음. tradeId = {}, commentId = {}",
+                    event.tradeId(), event.commentId());
+            return;
+        }
+        if (shouldNotify(tradeOwnerId.get(), event)) {
+            notify(tradeOwnerId.get(), event);
+        }
     }
 
     private Optional<Long> findTradeOwnerId(final Long tradeId) {
@@ -37,11 +44,20 @@ public class CommentNotificationService {
     /**
      * 본인 댓글과 게시글 작성자가 차단한 회원의 댓글은 알리지 않는다. 비회원 댓글은 차단 대상이 아니라 항상 알린다.
      */
-    private boolean shouldNotify(final Long tradeOwnerId, @Nullable final Long writerId) {
+    private boolean shouldNotify(final Long tradeOwnerId, final CommentCreatedEvent event) {
+        Long writerId = event.writerId();
         if (writerId == null) {
             return true;
         }
-        return !tradeOwnerId.equals(writerId) && !memberBlockService.hasBlocked(tradeOwnerId, writerId);
+        if (tradeOwnerId.equals(writerId)) {
+            return false;
+        }
+        if (memberBlockService.hasBlocked(tradeOwnerId, writerId)) {
+            log.info("댓글 알림 생략: 차단한 회원의 댓글. tradeOwnerId = {}, writerId = {}, tradeId = {}, commentId = {}",
+                    tradeOwnerId, writerId, event.tradeId(), event.commentId());
+            return false;
+        }
+        return true;
     }
 
     private void notify(final Long tradeOwnerId, final CommentCreatedEvent event) {
