@@ -15,6 +15,12 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnBooleanProperty("firebase.push-enabled")
 public class FirebaseConfig {
 
+    /**
+     * 지정하지 않으면 무한 대기라 FCM 이 응답하지 않을 때 알림 스레드가 묶인다.
+     */
+    private static final int CONNECT_TIMEOUT_MILLIS = 3_000;
+    private static final int READ_TIMEOUT_MILLIS = 5_000;
+
     @Bean
     public FirebaseApp firebaseApp(final FirebaseProperty firebaseProperty) throws IOException {
         // devtools 재시작처럼 같은 JVM 에서 다시 뜨면 이미 초기화된 기본 앱을 그대로 쓴다.
@@ -25,6 +31,8 @@ public class FirebaseConfig {
         byte[] serviceAccountKey = Base64.getDecoder().decode(firebaseProperty.serviceAccountKeyBase64());
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(new ByteArrayInputStream(serviceAccountKey)))
+                .setConnectTimeout(CONNECT_TIMEOUT_MILLIS)
+                .setReadTimeout(READ_TIMEOUT_MILLIS)
                 .build();
         return FirebaseApp.initializeApp(options);
     }
