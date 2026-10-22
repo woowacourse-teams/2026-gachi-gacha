@@ -86,6 +86,7 @@ oauth:
     key-id: ${APPLE_KEY_ID}
     private-key: ${APPLE_PRIVATE_KEY}
     redirect-uri: ${APPLE_REDIRECT_URI}
+    withdraw-redirect-uri: ${APPLE_WITHDRAW_REDIRECT_URI}
     scope:
       - name
       - email

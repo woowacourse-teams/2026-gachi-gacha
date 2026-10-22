@@ -20,13 +20,21 @@ public class AppleAuthCodeRequestUrlProvider implements AuthCodeRequestUrlProvid
 
     @Override
     public String provide(final String nonce) {
+        return build(nonce, config.redirectUri());
+    }
+
+    public String provideForWithdraw(final String nonce) {
+        return build(nonce, config.withdrawRedirectUri());
+    }
+
+    private String build(final String nonce, final String redirectUri) {
         return UriComponentsBuilder
                 .fromUriString("https://appleid.apple.com/auth/authorize")
                 .queryParam("response_type", "code")
-                .queryParam("response_mode", "form_post")   // name/email scope 사용 시 필수
+                .queryParam("response_mode", "form_post")
                 .queryParam("client_id", config.clientId())
-                .queryParam("redirect_uri", config.redirectUri())
-                .queryParam("scope", String.join(" ", config.scope())) // 공백 구분
+                .queryParam("redirect_uri", redirectUri)
+                .queryParam("scope", String.join(" ", config.scope()))
                 .queryParam("state", nonce)
                 .queryParam("nonce", nonce)
                 .encode()

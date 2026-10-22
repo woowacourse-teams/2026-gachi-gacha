@@ -45,7 +45,7 @@ public class AppleMemberClient implements OauthMemberClient {
 
     @Override
     public Member fetch(final String authCode, final String nonce, final String name) {
-        AppleToken token = fetchToken(authCode);
+        AppleToken token = fetchToken(authCode, config.redirectUri());
         AppleIdTokenClaims claims = validator.validate(token.idToken(), nonce);
         return Member.builder()
                 .oauthId(new OauthId(claims.sub(), OauthProviderType.APPLE))
@@ -56,7 +56,7 @@ public class AppleMemberClient implements OauthMemberClient {
 
     @Override
     public void revokeByAuthCode(final String authCode, final String nonce, final String expectedOauthId) {
-        AppleToken token = fetchToken(authCode);
+        AppleToken token = fetchToken(authCode, config.withdrawRedirectUri());
         AppleIdTokenClaims claims = validator.validate(token.idToken(), nonce);
         if (!claims.sub().equals(expectedOauthId)) {
             throw new InvalidAppleOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
@@ -90,13 +90,13 @@ public class AppleMemberClient implements OauthMemberClient {
         return cleaned.substring(0, end);
     }
 
-    private AppleToken fetchToken(final String authCode) {
+    private AppleToken fetchToken(final String authCode, String redirectUri) {
         try {
             MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
             params.add("grant_type", "authorization_code");
             params.add("client_id", config.clientId());
             params.add("client_secret", secretGenerator.generate());
-            params.add("redirect_uri", config.redirectUri());
+            params.add("redirect_uri", redirectUri);
             params.add("code", authCode);
             return appleApiClient.fetchToken(params);
         } catch (WebClientResponseException.BadRequest e) {

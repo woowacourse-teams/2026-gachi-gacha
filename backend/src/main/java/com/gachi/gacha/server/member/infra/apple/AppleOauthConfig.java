@@ -10,6 +10,7 @@ public record AppleOauthConfig(
         String keyId,         // .p8 발급 시 Key ID
         String privateKey,    // .p8 내용 (환경변수/시크릿으로 주입)
         String redirectUri,
+        String withdrawRedirectUri,
         List<String> scope    // ["name", "email"]
 ) {
 }

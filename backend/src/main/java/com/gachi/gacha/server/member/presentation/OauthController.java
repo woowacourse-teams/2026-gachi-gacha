@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.member.presentation;
 
+import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.application.OauthService;
@@ -50,6 +51,16 @@ public class OauthController {
         String redirectUrl = oauthService.getAuthCodeRequestUrl(provider, nonce);
 
         return BaseResponse.redirect(URI.create(redirectUrl));
+    }
+
+    @Operation(summary = "Apple 회원 탈퇴용 재인증 URL 발급")
+    @GetMapping("/withdraw-url")
+    public BaseResponse<String> withdrawUrl(
+            @Auth final Long memberId,
+            final HttpSession session
+    ) {
+        String nonce = oauthNonceSessionManager.issue(session);
+        return BaseResponse.ok(oauthService.getWithdrawAuthCodeRequestUrl(memberId, nonce));
     }
 
     @Operation(summary = "소셜 로그인 콜백")

@@ -28,6 +28,10 @@ public class AuthCodeRequestUrlProviderComposite {
         return getProvider(provider).provide(nonce);
     }
 
+    public String provideForWithdraw(final OauthProviderType provider, final String nonce) {
+        return getProvider(provider).provideForWithdraw(nonce);
+    }
+    
     private AuthCodeRequestUrlProvider getProvider(final OauthProviderType providerType) {
         return Optional.ofNullable(mapping.get(providerType))
                 .orElseThrow(() -> new UnSupportedProviderTypeException(ErrorCode.UNSUPPORTED_TYPE_ERROR));

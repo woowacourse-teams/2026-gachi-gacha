@@ -26,6 +26,13 @@ public class OauthService {
         return authCodeRequestUrlProviderComposite.provide(provider, nonce);
     }
 
+    public String getWithdrawAuthCodeRequestUrl(final Long memberId, final String nonce) {
+        Member member = memberJpaRepository.findById(memberId)
+                .orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
+        return authCodeRequestUrlProviderComposite.provideForWithdraw(
+                member.getOauthId().getOauthProvider(), nonce);
+    }
+
     public LoginInfo login(final OauthProviderType provider, final String code, final String nonce, final String name) {
         Member fetched = oauthMemberClientComposite.fetch(provider, code, nonce, name);
 
