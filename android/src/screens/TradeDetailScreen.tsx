@@ -1,6 +1,16 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { ImageViewerModal } from '../components/ImageViewerModal';
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
@@ -18,6 +28,7 @@ type State = { status: 'loading' | 'error' | 'success'; data: TradeDetail | null
 const statusLabel = { AVAILABLE: '교환 가능', IN_PROGRESS: '교환 진행 중', COMPLETED: '교환 완료' } as const;
 
 export function TradeDetailScreen({ route }: Props) {
+  const scrollRef = useRef<ScrollView>(null);
   const [attempt, setAttempt] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [state, setState] = useState<State>({ status: 'loading', data: null, message: null });
@@ -70,8 +81,23 @@ export function TradeDetailScreen({ route }: Props) {
     }
   }
 
+  function revealCommentComposer() {
+    scrollRef.current?.scrollToEnd({ animated: true });
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220);
+  }
+
   return (
-    <ScrollView keyboardShouldPersistTaps="handled" style={styles.screen} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.screen}
+    >
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        ref={scrollRef}
+        style={styles.screen}
+      >
       {trade.imageUrls.length > 0 ? (
         <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
           {trade.imageUrls.map((url, index) => (
@@ -143,7 +169,10 @@ export function TradeDetailScreen({ route }: Props) {
           </View>
         ))}
       </View>
-      <TradeCommentsSection tradeId={trade.tradeId} />
+      <TradeCommentsSection
+        onComposerFocus={revealCommentComposer}
+        tradeId={trade.tradeId}
+      />
       <ImageViewerModal
         imageUrls={trade.imageUrls}
         initialIndex={selectedImageIndex ?? 0}
@@ -151,7 +180,8 @@ export function TradeDetailScreen({ route }: Props) {
         title={trade.title}
         visible={selectedImageIndex !== null}
       />
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
