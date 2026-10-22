@@ -264,6 +264,8 @@ Android의 제스처 내비게이션과 3버튼 내비게이션은 기기 설정
 - Galaxy 3버튼, Android 제스처, 가로·세로 화면에서 겹침을 확인한다.
 - 키보드가 열리면 하단 탭을 숨겨 입력 영역을 방해하지 않게 한다.
 
+하단 탭은 시스템 내비게이션 영역을 배경으로 덮지 않는다. `insets.bottom` 위에 별도의 둥근 컨테이너로 띄우고, 탭의 눌림 효과도 해당 컨테이너 안에서만 잘리도록 한다. 루트 화면의 Android 뒤로가기는 첫 입력에 종료 안내 Toast를 표시하고 2초 안에 한 번 더 입력한 경우에만 앱을 종료한다. 상세 stack에서의 뒤로가기는 기존 화면 이동을 우선한다.
+
 참고: [Android edge-to-edge](https://developer.android.com/develop/ui/views/layout/edge-to-edge), [React Navigation bottom tabs](https://reactnavigation.org/docs/bottom-tab-navigator/)
 
 ## 네트워크 이미지 EXIF 런타임
