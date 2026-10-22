@@ -2,7 +2,7 @@ package com.gachi.gacha.server.notification.application;
 
 import com.gachi.gacha.server.comment.application.event.CommentCreatedEvent;
 import com.gachi.gacha.server.member.application.MemberBlockService;
-import com.gachi.gacha.server.notification.domain.Notification;
+import com.gachi.gacha.server.notification.application.dto.NotificationInfo;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -61,13 +61,7 @@ public class CommentNotificationService {
     }
 
     private void notify(final Long tradeOwnerId, final CommentCreatedEvent event) {
-        Notification notification = notificationService.save(Notification.ofComment(
-                tradeOwnerId,
-                event.tradeId(),
-                event.commentId(),
-                event.writerName(),
-                event.content()
-        ));
+        NotificationInfo notification = notificationService.createCommentNotification(tradeOwnerId, event);
         pushService.sendTo(tradeOwnerId, PushMessage.from(notification));
     }
 }

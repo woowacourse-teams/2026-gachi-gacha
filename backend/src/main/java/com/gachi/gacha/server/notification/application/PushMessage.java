@@ -1,7 +1,6 @@
 package com.gachi.gacha.server.notification.application;
 
-import com.gachi.gacha.server.notification.domain.Notification;
-import com.gachi.gacha.server.notification.domain.NotificationMessage;
+import com.gachi.gacha.server.notification.application.dto.NotificationInfo;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
@@ -24,15 +23,14 @@ public record PushMessage(
     /**
      * 알림 목록과 같은 문구를 쓰고, 앱이 눌렀을 때 이동하고 읽음 처리할 수 있도록 대상 ID를 담는다.
      */
-    public static PushMessage from(final Notification notification) {
-        NotificationMessage message = NotificationMessage.from(notification);
+    public static PushMessage from(final NotificationInfo notification) {
         Map<String, String> data = Map.of(
-                "type", notification.getType().name(),
-                "notificationId", String.valueOf(notification.getId()),
-                "tradeId", String.valueOf(notification.getTradeId()),
-                "commentId", String.valueOf(notification.getCommentId())
+                "type", notification.type().name(),
+                "notificationId", String.valueOf(notification.notificationId()),
+                "tradeId", String.valueOf(notification.tradeId()),
+                "commentId", String.valueOf(notification.commentId())
         );
-        return new PushMessage(message.title(), message.body(), data, null);
+        return new PushMessage(notification.title(), notification.body(), data, null);
     }
 
     /**

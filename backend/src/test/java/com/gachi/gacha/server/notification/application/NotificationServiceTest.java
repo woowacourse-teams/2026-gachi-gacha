@@ -3,6 +3,7 @@ package com.gachi.gacha.server.notification.application;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.gachi.gacha.server.comment.application.event.CommentCreatedEvent;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
@@ -41,6 +42,33 @@ class NotificationServiceTest {
     void setUp() {
         receiver = memberJpaRepository.save(Member.builder().nickname("receiver").build());
         other = memberJpaRepository.save(Member.builder().nickname("other").build());
+    }
+
+    @Nested
+    @DisplayName("댓글 알림 생성")
+    class CreateCommentNotification {
+
+        @Test
+        @DisplayName("받는 회원의 안 읽은 댓글 알림을 저장하고 목록과 같은 문구로 반환한다")
+        void createCommentNotification() {
+            // given
+            CommentCreatedEvent event = new CommentCreatedEvent(TRADE_ID, 1L, other.getId(), "가챠친구", "교환 가능할까요?");
+
+            // when
+            NotificationInfo info = notificationService.createCommentNotification(receiver.getId(), event);
+
+            // then
+            assertThat(notificationJpaRepository.findById(info.notificationId()))
+                    .get()
+                    .satisfies(notification -> {
+                        assertThat(notification.getReceiverId()).isEqualTo(receiver.getId());
+                        assertThat(notification.isRead()).isFalse();
+                    });
+            assertThat(info.title()).isEqualTo("새 댓글이 달렸어요");
+            assertThat(info.body()).isEqualTo("가챠친구: 교환 가능할까요?");
+            assertThat(info.tradeId()).isEqualTo(TRADE_ID);
+            assertThat(info.commentId()).isEqualTo(1L);
+        }
     }
 
     @Nested

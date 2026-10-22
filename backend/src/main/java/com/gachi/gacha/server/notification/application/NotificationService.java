@@ -1,7 +1,9 @@
 package com.gachi.gacha.server.notification.application;
 
+import com.gachi.gacha.server.comment.application.event.CommentCreatedEvent;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
+import com.gachi.gacha.server.notification.application.dto.NotificationInfo;
 import com.gachi.gacha.server.notification.application.dto.NotificationPageInfo;
 import com.gachi.gacha.server.notification.domain.Notification;
 import com.gachi.gacha.server.notification.domain.NotificationJpaRepository;
@@ -35,8 +37,15 @@ public class NotificationService {
     }
 
     @Transactional
-    public Notification save(final Notification notification) {
-        return notificationJpaRepository.save(notification);
+    public NotificationInfo createCommentNotification(final Long receiverId, final CommentCreatedEvent event) {
+        Notification notification = notificationJpaRepository.save(Notification.ofComment(
+                receiverId,
+                event.tradeId(),
+                event.commentId(),
+                event.writerName(),
+                event.content()
+        ));
+        return NotificationInfo.from(notification);
     }
 
     public long getUnreadCount(final Long memberId) {
