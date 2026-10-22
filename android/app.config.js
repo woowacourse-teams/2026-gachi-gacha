@@ -66,6 +66,7 @@ function createConfig({ config }) {
       predictiveBackGestureEnabled: true,
     },
     plugins: [
+      './plugins/withAndroidExifInterface',
       [
         './plugins/withKakaoMapsAndroid',
         { nativeAppKey: kakaoMapNativeAppKey ?? '' },

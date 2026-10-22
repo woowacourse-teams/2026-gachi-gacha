@@ -266,6 +266,21 @@ Android의 제스처 내비게이션과 3버튼 내비게이션은 기기 설정
 
 참고: [Android edge-to-edge](https://developer.android.com/develop/ui/views/layout/edge-to-edge), [React Navigation bottom tabs](https://reactnavigation.org/docs/bottom-tab-navigator/)
 
+## 네트워크 이미지 EXIF 런타임
+
+React Native의 Android 이미지 파이프라인인 Fresco는 내려받은 HEIF 등의 이미지 방향과 메타데이터를 분석할 때 AndroidX `ExifInterface`를 사용한다. 이 클래스가 release APK의 런타임에 없으면 이미지 응답을 처리하는 백그라운드 스레드에서 `NoClassDefFoundError`가 발생하며 앱 전체가 종료된다.
+
+생성되는 `android/app/build.gradle`을 직접 고치지 않고 `plugins/withAndroidExifInterface.js` config plugin에서 안정 버전 의존성을 주입한다. Expo prebuild를 다시 수행해도 설정이 유지되며, 생성된 프로젝트에서는 다음 명령으로 release 런타임 포함 여부를 확인할 수 있다.
+
+```bash
+cd android/android
+./gradlew :app:dependencyInsight \
+  --configuration releaseRuntimeClasspath \
+  --dependency androidx.exifinterface
+```
+
+출력에 `androidx.exifinterface:exifinterface:1.4.2`가 나타나야 한다. 해당 버전은 plugin과 설정 검증 스크립트에서 한 곳의 상수로 관리한다.
+
 ## 앱 아이콘 원칙
 
 앱 런처에는 루챠 캐릭터 자산 `assets/lucha-app-icon.png`을 사용한다. 중요한 얼굴 요소는 Android adaptive icon의 중앙 안전영역 안에 두어 원형·스쿼클·둥근 사각형 마스크에서도 잘리지 않게 한다. 이전 G 아이콘이 테마 아이콘으로 다시 보이지 않도록 별도의 구형 monochrome 자산은 연결하지 않는다.
