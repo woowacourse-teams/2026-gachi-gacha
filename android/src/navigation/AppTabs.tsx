@@ -1,6 +1,9 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {
+  createBottomTabNavigator,
+  type BottomTabBarButtonProps,
+} from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import { StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SearchScreen } from '../screens/SearchScreen';
@@ -15,7 +18,8 @@ export type AppTabParamList = {
 };
 
 const Tab = createBottomTabNavigator<AppTabParamList>();
-const TAB_BAR_CONTENT_HEIGHT = 58;
+const TAB_BAR_HEIGHT = 64;
+const TAB_BAR_GAP = 10;
 
 const tabLabels = {
   Trade: '거래/교환',
@@ -31,24 +35,61 @@ function TabIcon({ focused, label }: { focused: boolean; label: string }) {
   );
 }
 
+function TabBarButton({
+  accessibilityLabel,
+  accessibilityState,
+  children,
+  onLongPress,
+  onPress,
+  style,
+  testID,
+}: BottomTabBarButtonProps) {
+  return (
+    <Pressable
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      accessibilityState={accessibilityState}
+      onLongPress={onLongPress}
+      onPress={onPress}
+      style={({ pressed }) => [
+        style,
+        styles.tabButton,
+        pressed && styles.tabButtonPressed,
+      ]}
+      testID={testID}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
 export function AppTabs() {
   const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
       initialRouteName="Trade"
+      safeAreaInsets={{ bottom: 0 }}
       screenOptions={({ route }) => ({
         headerShown: false,
-        sceneStyle: styles.scene,
+        sceneStyle: [
+          styles.scene,
+          {
+            paddingBottom: TAB_BAR_HEIGHT + insets.bottom + TAB_BAR_GAP * 2,
+          },
+        ],
         tabBarActiveTintColor: colors.primary,
+        tabBarActiveBackgroundColor: colors.primarySoft,
         tabBarInactiveTintColor: colors.textMuted,
+        tabBarButton: TabBarButton,
+        tabBarItemStyle: styles.tabItem,
         tabBarLabel: tabLabels[route.name],
         tabBarLabelStyle: styles.tabLabel,
         tabBarStyle: [
           styles.tabBar,
           {
-            height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
-            paddingBottom: insets.bottom,
+            bottom: insets.bottom + TAB_BAR_GAP,
+            height: TAB_BAR_HEIGHT,
           },
         ],
         tabBarHideOnKeyboard: true,
@@ -69,9 +110,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   tabBar: {
-    paddingTop: 7,
-    borderTopColor: colors.border,
+    position: 'absolute',
+    right: 12,
+    left: 12,
+    paddingTop: 5,
+    paddingBottom: 5,
+    overflow: 'hidden',
+    borderTopWidth: 0,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
     backgroundColor: colors.background,
+    elevation: 8,
+    shadowColor: '#242122',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.14,
+    shadowRadius: 12,
+  },
+  tabItem: {
+    marginHorizontal: 4,
+    overflow: 'hidden',
+    borderRadius: 16,
+  },
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+  },
+  tabButtonPressed: {
+    opacity: 0.72,
   },
   tabLabel: {
     fontSize: 12,
