@@ -1,5 +1,5 @@
 import Constants from 'expo-constants';
 
-export function isGoogleMapsConfigured(): boolean {
-  return Constants.expoConfig?.extra?.googleMapsApiKeyConfigured === true;
+export function isKakaoMapConfigured(): boolean {
+  return Constants.expoConfig?.extra?.kakaoMapNativeAppKeyConfigured === true;
 }

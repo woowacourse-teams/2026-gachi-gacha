@@ -197,7 +197,7 @@ Android Studio의 `Build > Analyze APK`에서 AAB를 선택하면 패키지 구�
 
 거래 목록은 전체·교환 가능·진행 중·교환 완료 필터를 공개 API의 `status` 조건으로 조회한다. 검색어 또는 상태가 달라지면 첫 페이지부터 다시 요청하며, 이전 조건의 추가 페이지 응답이 늦게 도착해 새 목록에 섞이지 않도록 요청 식별자를 확인한다. 추가 페이지 로딩만 실패한 경우 이미 불러온 목록은 유지하고 목록 끝에서 재시도할 수 있다.
 
-거래 상세 응답에 구매 매장이나 거래 장소 좌표가 있으면 `지도에서 보기`를 제공한다. 매장 상세 길찾기와 같은 공용 외부 액션을 사용해 설치된 지도 앱을 우선 열고, 연결할 수 없으면 Google 지도 웹으로 이동한다.
+거래 상세 응답에 구매 매장이나 거래 장소 좌표가 있으면 `지도에서 보기`를 제공한다. 매장 상세 길찾기와 같은 공용 외부 액션을 사용해 설치된 Kakao Map 앱을 우선 열고, 연결할 수 없으면 Kakao Map 웹으로 이동한다.
 
 검색 탭은 웹과 동일하게 검색어로 관련 카테고리를 찾은 뒤 해당 카테고리의 가챠를 조회한다. 썸네일, 이름, 카테고리, 보유 매장 수와 페이지 추가 로딩을 네이티브 UI로 제공한다. 검색 결과를 선택하면 지도 탭으로 이동해 홍대 중심 3km 내 보유 매장을 가까운 순서로 보여준다. 가챠 조건을 해제하면 같은 범위의 전체 매장도 확인할 수 있다.
 
@@ -205,41 +205,42 @@ Android Studio의 `Build > Analyze APK`에서 AAB를 선택하면 패키지 구�
 
 매장 카드를 선택하면 상세 화면에서 사진, 방문 정보, 가격과 보유 가챠를 확인할 수 있고, 보유 가챠를 선택하면 해당 가챠의 매장 검색 결과로 돌아간다. 지도 키가 연결된 빌드는 같은 검색 결과를 지도 핀으로도 표시한다. 글쓰기·로그인과 알림은 각각 계약과 화면이 확정된 뒤 별도 이슈에서 연결한다.
 
-### Google 지도 설정
+### Kakao Maps 네이티브 SDK 설정
 
-주변 매장은 `react-native-maps`의 Google 지도 위에 핀으로 표시한다. 지도 키가 없는 빌드는 빈 지도 대신 기존 거리순 매장 목록만 표시하므로 로컬 개발과 PR 검증이 중단되지 않는다. 키를 코드나 `.env` 파일에 커밋하지 않는다.
+주변 매장은 웹과 같은 Kakao Maps를 Android 네이티브 SDK로 표시한다. React Native 화면과 Kakao `MapView` 사이는 저장소의 로컬 Expo 네이티브 모듈 `modules/gachi-kakao-map`이 연결한다. 지도 키가 없거나 지도를 시작하지 못한 빌드는 앱을 종료하지 않고 기존 거리순 매장 목록만 유지한다.
 
-Google Cloud Console에서 Maps SDK for Android를 활성화하고 개발·운영 키를 분리한다. 각 키에는 다음 제한을 적용한다.
+Kakao Developers에서 Android 플랫폼의 패키지명과 앱 서명 키 해시를 모두 등록해야 한다.
 
-- 애플리케이션 제한: Android 앱
-- 개발 키: package `com.dev.gachigacha.app`과 개발/preview 서명 인증서 SHA-1
-- 운영 키: package `com.gachigacha.app`과 Play App Signing 인증서 SHA-1
-- API 제한: Maps SDK for Android만 허용
+| 환경 | package | 등록할 키 해시 |
+| --- | --- | --- |
+| 개발·CI preview | `com.dev.gachigacha.app` | 로컬 debug 인증서, CI preview 인증서 |
+| 운영·Play | `com.gachigacha.app` | Play App Signing 인증서와 필요한 로컬 release 인증서 |
 
-GitHub Actions에는 다음 Repository Secret을 등록한다.
+Native App Key는 앱 바이너리에 포함되는 플랫폼 식별자지만 소스 코드에는 직접 커밋하지 않는다. GitHub Actions에는 다음 Repository Secret으로 저장한다.
 
 ```text
-ANDROID_GOOGLE_MAPS_API_KEY_DEV
-ANDROID_GOOGLE_MAPS_API_KEY_PROD
+ANDROID_KAKAO_MAP_NATIVE_APP_KEY_DEV
+ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD
 ```
+
+`android` 브랜치에서 실행된 Android Quality workflow의 Summary에는 설치한 preview APK와 함께 등록해야 할 package와 Kakao key hash가 표시된다. `workflow_dispatch`에서 `production`을 선택하면 운영 패키지로 별도 preview APK를 만들 수 있다.
 
 로컬 PowerShell에서는 현재 터미널 세션에만 키를 넣고 개발 앱을 다시 네이티브 빌드한다.
 
 ```powershell
-$env:GOOGLE_MAPS_ANDROID_API_KEY_DEV="발급받은-개발-키"
+$env:KAKAO_MAP_NATIVE_APP_KEY_DEV="발급받은-네이티브-앱-키"
 npm run android:dev
 ```
 
-환경변수 이름은 앱 설정에서 다음과 같이 구분한다.
+로컬 debug 키 해시는 JDK의 `keytool`과 OpenSSL을 사용할 수 있는 터미널에서 다음과 같이 확인한다.
 
-```text
-GOOGLE_MAPS_ANDROID_API_KEY_DEV
-GOOGLE_MAPS_ANDROID_API_KEY_PROD
+```bash
+keytool -exportcert -alias androiddebugkey -keystore "$HOME/.android/debug.keystore" -storepass android -keypass android | openssl sha1 -binary | openssl base64
 ```
 
-지도 핀의 말풍선을 누르면 매장 상세로 이동한다. 현재 위치 검색 전에는 홍대 중심을 사용하고, 사용자가 위치 권한을 허용해 현재 위치 검색을 실행하면 지도 중심과 매장 핀을 함께 갱신한다.
+지도 위 캡슐 마커를 누르면 매장 상세로 이동한다. 현재 위치 검색 전에는 홍대 중심을 사용하고, 사용자가 위치 권한을 허용해 현재 위치 검색을 실행하면 지도 중심과 매장 마커를 함께 갱신한다. 마커는 매장마다 이미지 파일을 디코딩하지 않고 density별로 한 번 생성한 비트맵을 재사용한다.
 
-매장 상세의 `길찾기`는 사용자가 버튼을 누른 경우에만 설치된 지도 앱을 열며, 앱 연결이 실패하면 좌표를 사용한 Google 지도 웹으로 이동한다. 전화번호가 제공된 매장에는 `전화`를 노출하고 기기의 전화 앱으로 연결한다. 매장과 거래글의 `공유`는 앱 설치 여부와 관계없이 열 수 있는 운영 웹 공개 URL을 Android 공유 시트로 전달한다. 외부 앱 연결 실패는 앱이 종료되지 않도록 안내 문구로 처리한다.
+매장 상세의 `길찾기`는 사용자가 버튼을 누른 경우에만 설치된 Kakao Map 앱을 열며, 앱 연결이 실패하면 좌표를 사용한 Kakao Map 웹으로 이동한다. 전화번호가 제공된 매장에는 `전화`를 노출하고 기기의 전화 앱으로 연결한다. 매장과 거래글의 `공유`는 앱 설치 여부와 관계없이 열 수 있는 운영 웹 공개 URL을 Android 공유 시트로 전달한다. 외부 앱 연결 실패는 앱이 종료되지 않도록 안내 문구로 처리한다.
 
 거래글과 매장 상세의 사진을 누르면 공용 전체 화면 뷰어를 열 수 있다. 좌우 스와이프로 사진을 넘기고 현재 순서를 확인하며, 화면의 닫기 버튼이나 Android 시스템 뒤로가기로 상세 화면에 돌아온다. 뷰어는 React Native 기본 `Modal`과 이미지 컴포넌트로 구현해 별도의 네이티브 의존성을 추가하지 않는다.
 

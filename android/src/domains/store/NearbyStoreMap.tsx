@@ -1,7 +1,8 @@
-import { StyleSheet } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import { useIsFocused } from '@react-navigation/native';
+import { useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
-import { colors } from '../../theme/colors';
+import { GachiKakaoMapView } from '../../../modules/gachi-kakao-map';
 import type { MapCoordinate, NearbyStore } from './storeTypes';
 
 type Props = {
@@ -12,39 +13,49 @@ type Props = {
 };
 
 export function NearbyStoreMap({ center, onSelectStore, showsUserLocation, stores }: Props) {
+  const isFocused = useIsFocused();
+  const [hasMapError, setHasMapError] = useState(false);
+  const markers = useMemo(
+    () => stores.map(({ storeId, latitude, longitude }) => ({
+      id: storeId,
+      latitude,
+      longitude,
+    })),
+    [stores],
+  );
+
+  if (hasMapError) return null;
+
   return (
-    <MapView
+    <View
+      accessible
       accessibilityLabel="주변 가챠 매장 지도"
-      initialRegion={{
-        latitude: center.latitude,
-        longitude: center.longitude,
-        latitudeDelta: 0.06,
-        longitudeDelta: 0.06,
-      }}
-      provider={PROVIDER_GOOGLE}
-      showsMyLocationButton={false}
-      showsUserLocation={showsUserLocation}
-      style={styles.map}
+      style={styles.mapFrame}
     >
-      {stores.map((store) => (
-        <Marker
-          coordinate={{ latitude: store.latitude, longitude: store.longitude }}
-          description={store.address}
-          key={store.storeId}
-          onCalloutPress={() => onSelectStore(store)}
-          pinColor={colors.primary}
-          title={store.name}
-        />
-      ))}
-    </MapView>
+      <GachiKakaoMapView
+        active={isFocused}
+        center={center}
+        markers={markers}
+        onMapError={() => setHasMapError(true)}
+        onMarkerPress={({ nativeEvent }) => {
+          const selectedStore = stores.find(({ storeId }) => storeId === nativeEvent.id);
+          if (selectedStore) onSelectStore(selectedStore);
+        }}
+        showsUserLocation={showsUserLocation}
+        style={styles.map}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  map: {
+  mapFrame: {
     height: 320,
     marginTop: 16,
     overflow: 'hidden',
     borderRadius: 20,
+  },
+  map: {
+    flex: 1,
   },
 });

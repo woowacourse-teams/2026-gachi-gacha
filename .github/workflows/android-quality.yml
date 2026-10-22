@@ -2,6 +2,15 @@ name: Android Quality
 
 on:
   workflow_dispatch:
+    inputs:
+      app_variant:
+        description: 'Preview APK environment'
+        required: true
+        default: development
+        type: choice
+        options:
+          - development
+          - production
   pull_request:
     branches:
       - android
@@ -31,8 +40,8 @@ jobs:
         working-directory: android
     env:
       EXPO_NO_TELEMETRY: '1'
-      GOOGLE_MAPS_ANDROID_API_KEY_DEV: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY_DEV }}
-      GOOGLE_MAPS_ANDROID_API_KEY_PROD: ${{ secrets.ANDROID_GOOGLE_MAPS_API_KEY_PROD }}
+      KAKAO_MAP_NATIVE_APP_KEY_DEV: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_DEV }}
+      KAKAO_MAP_NATIVE_APP_KEY_PROD: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -50,10 +59,10 @@ jobs:
       - name: Validate TypeScript and bundles
         run: npm run check
 
-      - name: Generate development Android native project
+      - name: Generate Android native project
         if: github.event_name != 'pull_request'
         env:
-          APP_VARIANT: development
+          APP_VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}
         run: npx expo prebuild --platform android --no-install
 
       - name: Setup Java
@@ -67,10 +76,29 @@ jobs:
             android/android/**/*.gradle*
             android/android/gradle/wrapper/gradle-wrapper.properties
 
+      - name: Compile Kakao Maps native bridge
+        if: github.event_name != 'pull_request'
+        working-directory: android/android
+        run: ./gradlew :gachi-kakao-map:compileReleaseKotlin
+
       - name: Build standalone preview APK
         if: github.event_name != 'pull_request'
         working-directory: android/android
         run: ./gradlew assembleRelease
+
+      - name: Publish preview Kakao key hash
+        if: github.event_name != 'pull_request'
+        working-directory: android/android
+        shell: bash
+        run: |
+          KEY_HASH="$(keytool -exportcert -alias androiddebugkey -keystore app/debug.keystore -storepass android -keypass android | openssl sha1 -binary | openssl base64)"
+          {
+            echo '### Kakao Maps preview registration'
+            echo ''
+            echo '- Variant: `${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}`'
+            echo '- Package: `${{ (github.event_name == 'workflow_dispatch' && inputs.app_variant == 'production') && 'com.gachigacha.app' || 'com.dev.gachigacha.app' }}`'
+            echo "- Key hash: \`${KEY_HASH}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload standalone preview APK
         if: github.event_name != 'pull_request'

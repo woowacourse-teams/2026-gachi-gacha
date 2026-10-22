@@ -32,13 +32,11 @@ type OpenDirectionsParams = {
 };
 
 export async function openDirections({ label, latitude, longitude }: OpenDirectionsParams): Promise<void> {
-  const query = `${latitude},${longitude}(${label})`;
-
   try {
-    await Linking.openURL(`geo:0,0?q=${encodeURIComponent(query)}`);
+    await Linking.openURL(`kakaomap://look?p=${latitude},${longitude}`);
   } catch {
     await Linking.openURL(
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${latitude},${longitude}`)}`,
+      `https://map.kakao.com/link/map/${encodeURIComponent(label)},${latitude},${longitude}`,
     );
   }
 }

@@ -37,10 +37,10 @@ function resolveVariant(value) {
 function createConfig({ config }) {
   const variant = resolveVariant(process.env.APP_VARIANT);
   const variantConfig = VARIANTS[variant];
-  const googleMapsApiKey = process.env[
+  const kakaoMapNativeAppKey = process.env[
     variant === DEVELOPMENT_VARIANT
-      ? 'GOOGLE_MAPS_ANDROID_API_KEY_DEV'
-      : 'GOOGLE_MAPS_ANDROID_API_KEY_PROD'
+      ? 'KAKAO_MAP_NATIVE_APP_KEY_DEV'
+      : 'KAKAO_MAP_NATIVE_APP_KEY_PROD'
   ]?.trim();
 
   return {
@@ -55,9 +55,6 @@ function createConfig({ config }) {
     android: {
       package: variantConfig.applicationId,
       versionCode: 1,
-      ...(googleMapsApiKey
-        ? { config: { googleMaps: { apiKey: googleMapsApiKey } } }
-        : {}),
       permissions: [
         'android.permission.ACCESS_COARSE_LOCATION',
         'android.permission.ACCESS_FINE_LOCATION',
@@ -68,10 +65,16 @@ function createConfig({ config }) {
       },
       predictiveBackGestureEnabled: true,
     },
+    plugins: [
+      [
+        './plugins/withKakaoMapsAndroid',
+        { nativeAppKey: kakaoMapNativeAppKey ?? '' },
+      ],
+    ],
     extra: {
       appVariant: variant,
       apiBaseUrl: variantConfig.apiBaseUrl,
-      googleMapsApiKeyConfigured: Boolean(googleMapsApiKey),
+      kakaoMapNativeAppKeyConfigured: Boolean(kakaoMapNativeAppKey),
     },
   };
 }

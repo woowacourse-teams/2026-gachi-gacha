@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
-import { isGoogleMapsConfigured } from '../config/maps';
+import { isKakaoMapConfigured } from '../config/maps';
 import { NearbyStoreCard } from '../domains/store/NearbyStoreCard';
 import { NearbyStoreMap } from '../domains/store/NearbyStoreMap';
 import type { MapCoordinate, NearbyStore } from '../domains/store/storeTypes';
@@ -21,7 +21,7 @@ export function MapScreen({ navigation, route }: Props) {
   const [isCurrentLocation, setIsCurrentLocation] = useState(false);
   const location = useCurrentLocation();
   const result = useNearbyStores(gachaId, searchCenter);
-  const canShowMap = isGoogleMapsConfigured();
+  const canShowMap = isKakaoMapConfigured();
 
   function openStoreDetail(store: NearbyStore) {
     navigation.navigate('StoreDetail', {

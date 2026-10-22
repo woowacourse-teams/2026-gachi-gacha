@@ -3,6 +3,12 @@ import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const createConfig = require('../app.config.js');
+const {
+  KAKAO_MAP_MAVEN_REPOSITORY,
+  KAKAO_MAP_KEY_METADATA_NAME,
+  addKakaoMapMavenRepository,
+  setKakaoMapKey,
+} = require('../plugins/withKakaoMapsAndroid.js');
 const PLAY_STORE_ICON_MAX_BYTES = 1024 * 1024;
 const EXPECTED_ANDROID_PERMISSIONS = [
   'android.permission.ACCESS_COARSE_LOCATION',
@@ -24,10 +30,10 @@ const expectedVariants = {
   },
 };
 
-const originalDevelopmentMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV;
-const originalProductionMapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD;
-delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV;
-delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD;
+const originalDevelopmentMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
+const originalProductionMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
+delete process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
+delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 
 for (const [variant, expected] of Object.entries(expectedVariants)) {
   process.env.APP_VARIANT = variant;
@@ -40,8 +46,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
     permissions: config.android?.permissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
-    googleMapsApiKey: config.android?.config?.googleMaps?.apiKey,
-    googleMapsApiKeyConfigured: config.extra?.googleMapsApiKeyConfigured,
+    kakaoMapNativeAppKeyConfigured:
+      config.extra?.kakaoMapNativeAppKeyConfigured,
   };
 
   const expectedConfig = {
@@ -52,8 +58,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
     permissions: EXPECTED_ANDROID_PERMISSIONS,
     apiBaseUrl: expected.apiBaseUrl,
-    googleMapsApiKey: undefined,
-    googleMapsApiKeyConfigured: false,
+    kakaoMapNativeAppKeyConfigured: false,
   };
 
   if (JSON.stringify(actual) !== JSON.stringify(expectedConfig)) {
@@ -65,29 +70,67 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
   console.log(`✓ ${variant}: ${actual.package}`);
 }
 
-process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV = 'development-test-key';
+process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV = 'development-test-key';
 process.env.APP_VARIANT = 'development';
 const mapsConfig = createConfig({ config: {} });
 
-if (
-  mapsConfig.android?.config?.googleMaps?.apiKey !== 'development-test-key' ||
-  mapsConfig.extra?.googleMapsApiKeyConfigured !== true
-) {
-  throw new Error('Google Maps Android API key was not applied to the development config.');
+if (mapsConfig.extra?.kakaoMapNativeAppKeyConfigured !== true) {
+  throw new Error('Kakao Map Native App Key was not applied to the development config.');
 }
 
 if (originalDevelopmentMapsKey === undefined) {
-  delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV;
+  delete process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
 } else {
-  process.env.GOOGLE_MAPS_ANDROID_API_KEY_DEV = originalDevelopmentMapsKey;
+  process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV = originalDevelopmentMapsKey;
 }
 if (originalProductionMapsKey === undefined) {
-  delete process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD;
+  delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 } else {
-  process.env.GOOGLE_MAPS_ANDROID_API_KEY_PROD = originalProductionMapsKey;
+  process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD = originalProductionMapsKey;
 }
 
-console.log('✓ Google Maps key is injected without exposing it through public extras');
+console.log('✓ Kakao Map key is injected without exposing it through public extras');
+
+const testManifest = {
+  manifest: {
+    application: [{ $: {} }],
+  },
+};
+setKakaoMapKey(testManifest, 'development-test-key');
+const kakaoMapMetadata = testManifest.manifest.application[0]['meta-data'];
+
+if (
+  kakaoMapMetadata?.length !== 1 ||
+  kakaoMapMetadata[0].$['android:name'] !== KAKAO_MAP_KEY_METADATA_NAME ||
+  kakaoMapMetadata[0].$['android:value'] !== 'development-test-key'
+) {
+  throw new Error('Kakao Map Native App Key was not injected into AndroidManifest.xml.');
+}
+
+setKakaoMapKey(testManifest, '');
+if (testManifest.manifest.application[0]['meta-data'].length !== 0) {
+  throw new Error('Empty Kakao Map key must not remain in AndroidManifest.xml.');
+}
+
+console.log('✓ Kakao Map key is added only to the generated Android manifest');
+
+const projectBuildGradle = `allprojects {
+  repositories {
+    google()
+    mavenCentral()
+  }
+}`;
+const projectBuildGradleWithKakao = addKakaoMapMavenRepository(projectBuildGradle);
+
+if (
+  !projectBuildGradleWithKakao.includes(KAKAO_MAP_MAVEN_REPOSITORY) ||
+  addKakaoMapMavenRepository(projectBuildGradleWithKakao) !==
+    projectBuildGradleWithKakao
+) {
+  throw new Error('Kakao Maps Maven repository must be added exactly once.');
+}
+
+console.log('✓ Kakao Maps Maven repository is added to the generated Android project');
 
 const playStoreIcon = readFileSync(
   new URL('../assets/play-store-icon.png', import.meta.url),
