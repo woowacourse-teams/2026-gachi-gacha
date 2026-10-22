@@ -49,6 +49,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     scheme: config.scheme,
     icon: config.icon,
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
+    softwareKeyboardLayoutMode: config.android?.softwareKeyboardLayoutMode,
     permissions: config.android?.permissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured:
@@ -61,6 +62,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     scheme: expected.scheme,
     icon: './assets/lucha-app-icon.png',
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
+    softwareKeyboardLayoutMode: 'resize',
     permissions: EXPECTED_ANDROID_PERMISSIONS,
     apiBaseUrl: expected.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured: false,

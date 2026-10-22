@@ -26,6 +26,7 @@ type LoadState =
   | { status: 'error'; comments: TradeComment[]; message: string };
 
 interface TradeCommentsSectionProps {
+  onComposerFocus?: () => void;
   tradeId: number;
 }
 
@@ -37,7 +38,7 @@ function formatCreatedAt(value: string): string {
   return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function TradeCommentsSection({ tradeId }: TradeCommentsSectionProps) {
+export function TradeCommentsSection({ onComposerFocus, tradeId }: TradeCommentsSectionProps) {
   const [attempt, setAttempt] = useState(0);
   const [nickname, setNickname] = useState('');
   const [content, setContent] = useState('');
@@ -108,6 +109,7 @@ export function TradeCommentsSection({ tradeId }: TradeCommentsSectionProps) {
           autoCapitalize="none"
           maxLength={MAX_GUEST_NICKNAME_LENGTH}
           onChangeText={setNickname}
+          onFocus={onComposerFocus}
           placeholder="이름 (선택, 미입력 시 루챠)"
           placeholderTextColor={colors.textMuted}
           style={styles.nicknameInput}
@@ -119,6 +121,7 @@ export function TradeCommentsSection({ tradeId }: TradeCommentsSectionProps) {
           maxLength={MAX_COMMENT_LENGTH}
           multiline
           onChangeText={setContent}
+          onFocus={onComposerFocus}
           placeholder="댓글을 입력해 주세요."
           placeholderTextColor={colors.textMuted}
           style={styles.commentInput}
