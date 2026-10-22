@@ -9,6 +9,11 @@ const {
   addKakaoMapMavenRepository,
   setKakaoMapKey,
 } = require('../plugins/withKakaoMapsAndroid.js');
+const {
+  EXIF_INTERFACE_DEPENDENCY,
+  EXIF_INTERFACE_MODULE,
+  addExifInterfaceDependency,
+} = require('../plugins/withAndroidExifInterface.js');
 const PLAY_STORE_ICON_MAX_BYTES = 1024 * 1024;
 const EXPECTED_ANDROID_PERMISSIONS = [
   'android.permission.ACCESS_COARSE_LOCATION',
@@ -131,6 +136,30 @@ if (
 }
 
 console.log('✓ Kakao Maps Maven repository is added to the generated Android project');
+
+const appBuildGradle = `android {
+  namespace 'com.gachigacha.app'
+}
+
+dependencies {
+  implementation("com.facebook.react:react-android")
+}`;
+const appBuildGradleWithExif = addExifInterfaceDependency(appBuildGradle);
+
+if (
+  !appBuildGradleWithExif.includes(EXIF_INTERFACE_DEPENDENCY) ||
+  addExifInterfaceDependency(appBuildGradleWithExif) !==
+    appBuildGradleWithExif ||
+  appBuildGradleWithExif.split(EXIF_INTERFACE_MODULE).length !== 2
+) {
+  throw new Error(
+    'AndroidX ExifInterface must be added exactly once to the generated app Gradle.',
+  );
+}
+
+console.log(
+  '✓ AndroidX ExifInterface is added once to the generated Android app runtime',
+);
 
 const playStoreIcon = readFileSync(
   new URL('../assets/play-store-icon.png', import.meta.url),
