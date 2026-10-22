@@ -1,5 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { RemoteImageWithFallback } from '../../components/RemoteImageWithFallback';
 import { colors } from '../../theme/colors';
 import type { TradeStatus, TradeSummary } from './tradeTypes';
 
@@ -24,13 +25,11 @@ export function TradeCard({ trade, onPress }: { trade: TradeSummary; onPress: ()
 
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
-      {trade.thumbnailUrl ? (
-        <Image source={{ uri: trade.thumbnailUrl }} style={styles.thumbnail} />
-      ) : (
-        <View style={[styles.thumbnail, styles.placeholder]}>
-          <Text style={styles.placeholderText}>G</Text>
-        </View>
-      )}
+      <RemoteImageWithFallback
+        accessibilityLabel={`${trade.title} 대표 이미지`}
+        style={styles.thumbnail}
+        uri={trade.thumbnailUrl}
+      />
       <View style={styles.content}>
         <View>
           <Text numberOfLines={2} style={styles.title}>{trade.title}</Text>
@@ -55,8 +54,6 @@ const styles = StyleSheet.create({
   card: { flex: 1, minHeight: 340, padding: 8, borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.background },
   cardPressed: { opacity: 0.82 },
   thumbnail: { width: '100%', aspectRatio: 1, borderRadius: 14, backgroundColor: '#f1f1f3' },
-  placeholder: { alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: colors.primary, fontSize: 34, fontWeight: '900' },
   content: { flex: 1, paddingHorizontal: 4, paddingTop: 10, justifyContent: 'space-between' },
   title: { color: colors.text, fontSize: 15, fontWeight: '600', lineHeight: 21 },
   categories: { marginTop: 8, color: '#4e5058', fontSize: 12, fontWeight: '700', lineHeight: 17 },

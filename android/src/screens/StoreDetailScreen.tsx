@@ -1,8 +1,9 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { ImageViewerModal } from '../components/ImageViewerModal';
+import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
 import { StoreGachaCard } from '../domains/store/StoreGachaCard';
 import type { StoreDetail } from '../domains/store/storeTypes';
 import { useStoreDetail, useStoreGachas } from '../domains/store/useStoreDetail';
@@ -157,16 +158,20 @@ export function StoreDetailScreen({ navigation, route }: Props) {
               onPress={() => setSelectedImageIndex(index)}
               style={[styles.storeImageFrame, { width: imageWidth }]}
             >
-              <Image source={{ uri: url }} style={styles.storeImage} />
+              <RemoteImageWithFallback
+                accessibilityLabel={`${store.name} 매장 사진 ${index + 1}`}
+                style={styles.storeImage}
+                uri={url}
+              />
             </Pressable>
           ))}
         </ScrollView>
       ) : (
-        <View
+        <RemoteImageWithFallback
+          accessibilityLabel="가치가챠 기본 매장 이미지"
           style={[styles.storeImageFrame, styles.imagePlaceholder, { width: imageWidth }]}
-        >
-          <Text style={styles.placeholderText}>매장 사진을 준비하고 있어요</Text>
-        </View>
+          uri={null}
+        />
       )}
 
       {rows.length > 0 && (
@@ -209,6 +214,29 @@ export function StoreDetailScreen({ navigation, route }: Props) {
               })}
             />
           ))}
+          {gachas.page &&
+            gachas.page.pageNumber + 1 < gachas.page.totalPages &&
+            !gachas.loadMoreErrorMessage && (
+            <Pressable
+              accessibilityLabel="보유 가챠 더 불러오기"
+              accessibilityRole="button"
+              disabled={gachas.isLoadingMore}
+              onPress={() => void gachas.loadMore()}
+              style={({ pressed }) => [
+                styles.catalogMoreButton,
+                pressed && styles.outlineButtonPressed,
+              ]}
+            >
+              {gachas.isLoadingMore ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <>
+                  <Text style={styles.catalogMoreText}>가챠 더 보기</Text>
+                  <Text aria-hidden style={styles.catalogMoreArrow}>→</Text>
+                </>
+              )}
+            </Pressable>
+          )}
         </ScrollView>
       )}
       {gachas.loadMoreErrorMessage && (
@@ -218,17 +246,6 @@ export function StoreDetailScreen({ navigation, route }: Props) {
             <Text style={styles.outlineButtonText}>다시 불러오기</Text>
           </Pressable>
         </View>
-      )}
-      {gachas.page && gachas.page.pageNumber + 1 < gachas.page.totalPages && !gachas.loadMoreErrorMessage && (
-        <Pressable
-          disabled={gachas.isLoadingMore}
-          onPress={() => void gachas.loadMore()}
-          style={({ pressed }) => [styles.outlineButton, pressed && styles.outlineButtonPressed]}
-        >
-          {gachas.isLoadingMore
-            ? <ActivityIndicator color={colors.primary} />
-            : <Text style={styles.outlineButtonText}>가챠 더 보기</Text>}
-        </Pressable>
       )}
       <ImageViewerModal
         imageUrls={imageUrls}
@@ -257,8 +274,7 @@ const styles = StyleSheet.create({
   gallery: { marginTop: 20 },
   storeImageFrame: { aspectRatio: 4 / 3, marginRight: 12, overflow: 'hidden', borderRadius: 20, backgroundColor: '#eeeeef' },
   storeImage: { width: '100%', height: '100%' },
-  imagePlaceholder: { marginTop: 20, alignItems: 'center', justifyContent: 'center' },
-  placeholderText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  imagePlaceholder: { marginTop: 20 },
   infoBox: { marginTop: 22, padding: 17, gap: 16, borderRadius: 18, backgroundColor: colors.background },
   infoRow: { gap: 5 },
   infoLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
@@ -272,6 +288,9 @@ const styles = StyleSheet.create({
   retryText: { color: colors.background, fontWeight: '700' },
   emptyText: { paddingVertical: 48, color: colors.textMuted, textAlign: 'center' },
   gachaList: { paddingTop: 16, paddingBottom: 4, gap: 12 },
+  catalogMoreButton: { width: 126, minHeight: 235, alignItems: 'center', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: colors.primary, borderRadius: 17, backgroundColor: colors.background },
+  catalogMoreText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
+  catalogMoreArrow: { color: colors.primary, fontSize: 25, lineHeight: 28 },
   loadMoreState: { marginTop: 18, alignItems: 'center', gap: 10 },
   outlineButton: { minHeight: 46, marginTop: 18, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 14, backgroundColor: colors.background },
   outlineButtonPressed: { backgroundColor: colors.primarySoft },
