@@ -4,6 +4,11 @@ import { readFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const createConfig = require('../app.config.js');
 const {
+  DEFAULT_ANDROID_VERSION_CODE,
+  DEFAULT_APP_VERSION,
+  PRODUCTION_BLOCKED_PERMISSIONS,
+} = createConfig;
+const {
   KAKAO_MAP_MAVEN_REPOSITORY,
   KAKAO_MAP_KEY_METADATA_NAME,
   addKakaoMapMavenRepository,
@@ -14,6 +19,11 @@ const {
   EXIF_INTERFACE_MODULE,
   addExifInterfaceDependency,
 } = require('../plugins/withAndroidExifInterface.js');
+const {
+  SIGNING_MARKER,
+  SIGNING_PROPERTIES,
+  addReleaseSigning,
+} = require('../plugins/withAndroidReleaseSigning.js');
 const PLAY_STORE_ICON_MAX_BYTES = 1024 * 1024;
 
 const expectedVariants = {
@@ -33,8 +43,12 @@ const expectedVariants = {
 
 const originalDevelopmentMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
 const originalProductionMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
+const originalAppVersion = process.env.APP_VERSION;
+const originalAndroidVersionCode = process.env.ANDROID_VERSION_CODE;
 delete process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
 delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
+delete process.env.APP_VERSION;
+delete process.env.ANDROID_VERSION_CODE;
 
 for (const [variant, expected] of Object.entries(expectedVariants)) {
   process.env.APP_VARIANT = variant;
@@ -46,6 +60,9 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     icon: config.icon,
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
     softwareKeyboardLayoutMode: config.android?.softwareKeyboardLayoutMode,
+    version: config.version,
+    versionCode: config.android?.versionCode,
+    blockedPermissions: config.android?.blockedPermissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured:
       config.extra?.kakaoMapNativeAppKeyConfigured,
@@ -58,6 +75,10 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     icon: './assets/lucha-app-icon.png',
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
     softwareKeyboardLayoutMode: 'resize',
+    version: DEFAULT_APP_VERSION,
+    versionCode: DEFAULT_ANDROID_VERSION_CODE,
+    blockedPermissions:
+      variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured: false,
   };
@@ -69,6 +90,41 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
   }
 
   console.log(`✓ ${variant}: ${actual.package}`);
+}
+
+process.env.APP_VARIANT = 'production';
+process.env.APP_VERSION = '1.2.3';
+process.env.ANDROID_VERSION_CODE = '42';
+const versionedConfig = createConfig({ config: {} });
+if (
+  versionedConfig.version !== '1.2.3' ||
+  versionedConfig.android?.versionCode !== 42
+) {
+  throw new Error('Release version overrides were not applied.');
+}
+
+console.log('✓ release versionName and versionCode are configurable');
+
+process.env.APP_VERSION = 'not-a-version';
+if (!throws(() => createConfig({ config: {} }))) {
+  throw new Error('Invalid APP_VERSION must fail config generation.');
+}
+process.env.APP_VERSION = '1.2.3';
+process.env.ANDROID_VERSION_CODE = '0';
+if (!throws(() => createConfig({ config: {} }))) {
+  throw new Error('Invalid ANDROID_VERSION_CODE must fail config generation.');
+}
+
+delete process.env.APP_VERSION;
+delete process.env.ANDROID_VERSION_CODE;
+
+function throws(callback) {
+  try {
+    callback();
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV = 'development-test-key';
@@ -88,6 +144,16 @@ if (originalProductionMapsKey === undefined) {
   delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 } else {
   process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD = originalProductionMapsKey;
+}
+if (originalAppVersion === undefined) {
+  delete process.env.APP_VERSION;
+} else {
+  process.env.APP_VERSION = originalAppVersion;
+}
+if (originalAndroidVersionCode === undefined) {
+  delete process.env.ANDROID_VERSION_CODE;
+} else {
+  process.env.ANDROID_VERSION_CODE = originalAndroidVersionCode;
 }
 
 console.log('✓ Kakao Map key is injected without exposing it through public extras');
@@ -156,6 +222,44 @@ if (
 console.log(
   '✓ AndroidX ExifInterface is added once to the generated Android app runtime',
 );
+
+const releaseGradle = `def jscFlavor = 'io.github.react-native-community:jsc-android-intl:+'
+
+android {
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}`;
+const releaseGradleWithSigning = addReleaseSigning(releaseGradle);
+
+if (
+  !releaseGradleWithSigning.includes(SIGNING_MARKER) ||
+  !releaseGradleWithSigning.includes('GACHI_REQUIRE_UPLOAD_SIGNING') ||
+  !releaseGradleWithSigning.includes(
+    'signingConfig gachiHasUploadSigning ? signingConfigs.release : signingConfigs.debug',
+  ) ||
+  !releaseGradleWithSigning.includes(
+    `debug {
+            storeFile file('debug.keystore')`,
+  ) ||
+  SIGNING_PROPERTIES.some(
+    (property) => !releaseGradleWithSigning.includes(property),
+  ) ||
+  addReleaseSigning(releaseGradleWithSigning) !== releaseGradleWithSigning
+) {
+  throw new Error(
+    'Google Play release signing must be injected exactly once with a debug preview fallback.',
+  );
+}
+
+console.log('✓ Google Play release signing is injected without embedding credentials');
 
 const playStoreIcon = readFileSync(
   new URL('../assets/play-store-icon.png', import.meta.url),
