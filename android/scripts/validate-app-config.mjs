@@ -25,6 +25,7 @@ const {
   addReleaseSigning,
 } = require('../plugins/withAndroidReleaseSigning.js');
 const PLAY_STORE_ICON_MAX_BYTES = 1024 * 1024;
+const PLAY_FEATURE_GRAPHIC_MAX_BYTES = 15 * 1024 * 1024;
 
 const expectedVariants = {
   development: {
@@ -66,6 +67,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     apiBaseUrl: config.extra?.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured:
       config.extra?.kakaoMapNativeAppKeyConfigured,
+    tradeFeaturesEnabled: config.extra?.tradeFeaturesEnabled,
   };
 
   const expectedConfig = {
@@ -81,6 +83,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
       variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured: false,
+    tradeFeaturesEnabled: variant === 'development',
   };
 
   if (JSON.stringify(actual) !== JSON.stringify(expectedConfig)) {
@@ -280,3 +283,25 @@ if (
 }
 
 console.log(`✓ Play Store icon: 512x512 RGBA, ${playStoreIcon.length} bytes`);
+
+const playFeatureGraphic = readFileSync(
+  new URL('../assets/play-feature-graphic.png', import.meta.url),
+);
+const playFeatureGraphicWidth = playFeatureGraphic.readUInt32BE(16);
+const playFeatureGraphicHeight = playFeatureGraphic.readUInt32BE(20);
+const playFeatureGraphicColorType = playFeatureGraphic.readUInt8(25);
+
+if (
+  playFeatureGraphicWidth !== 1024 ||
+  playFeatureGraphicHeight !== 500 ||
+  playFeatureGraphic.length > PLAY_FEATURE_GRAPHIC_MAX_BYTES ||
+  playFeatureGraphicColorType !== 2
+) {
+  throw new Error(
+    'Play feature graphic must be a 1024x500 RGB PNG without alpha and no larger than 15MB.',
+  );
+}
+
+console.log(
+  `✓ Play feature graphic: 1024x500 RGB, ${playFeatureGraphic.length} bytes`,
+);

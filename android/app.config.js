@@ -130,6 +130,7 @@ function createConfig({ config }) {
       appVariant: variant,
       apiBaseUrl: variantConfig.apiBaseUrl,
       kakaoMapNativeAppKeyConfigured: Boolean(kakaoMapNativeAppKey),
+      tradeFeaturesEnabled: variant === DEVELOPMENT_VARIANT,
     },
   };
 }

@@ -1,6 +1,6 @@
 import { Linking, Share } from 'react-native';
 
-const PUBLIC_WEB_BASE_URL = 'https://gachigacha.kro.kr';
+import { PUBLIC_WEB_BASE_URL } from '../config/web';
 
 type SharePublicPageParams = {
   message: string;
