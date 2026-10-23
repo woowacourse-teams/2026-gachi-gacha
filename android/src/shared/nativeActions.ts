@@ -40,3 +40,31 @@ export async function openDirections({ label, latitude, longitude }: OpenDirecti
     );
   }
 }
+
+export type InstagramProfile = {
+  displayName: string;
+  url: string;
+};
+
+export function createInstagramProfile(instagramId: string | null): InstagramProfile | null {
+  const value = instagramId?.trim();
+  if (!value) return null;
+
+  const profileUrlMatch = value.match(
+    /^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9._]+)\/?(?:\?.*)?$/i,
+  );
+  const username = (profileUrlMatch?.[1] ?? value.replace(/^@/, '')).trim();
+
+  if (username.length > 30 || !/^[a-zA-Z0-9._]+$/.test(username)) {
+    return null;
+  }
+
+  return {
+    displayName: `@${username}`,
+    url: `https://www.instagram.com/${username}/`,
+  };
+}
+
+export async function openInstagramProfile(profile: InstagramProfile): Promise<void> {
+  await Linking.openURL(profile.url);
+}
