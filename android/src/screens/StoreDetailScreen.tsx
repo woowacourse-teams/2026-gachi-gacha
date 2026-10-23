@@ -8,7 +8,13 @@ import { StoreGachaCard } from '../domains/store/StoreGachaCard';
 import type { StoreDetail } from '../domains/store/storeTypes';
 import { useStoreDetail, useStoreGachas } from '../domains/store/useStoreDetail';
 import type { MapStackParamList } from '../navigation/MapStack';
-import { openDirections, openPhoneNumber, sharePublicPage } from '../shared/nativeActions';
+import {
+  createInstagramProfile,
+  openDirections,
+  openInstagramProfile,
+  openPhoneNumber,
+  sharePublicPage,
+} from '../shared/nativeActions';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<MapStackParamList, 'StoreDetail'>;
@@ -38,7 +44,7 @@ function createInformationRows(store: StoreDetail): Array<[string, string]> {
   const rows: Array<[string, string | null]> = [
     ['영업시간', store.businessHours],
     ['전화번호', store.phoneNumber],
-    ['인스타그램', store.instagramId],
+    ['인스타그램', store.instagramId?.trim() || '등록된 계정이 없어요'],
     ['결제수단', store.paymentMethods],
     ['편의시설', amenities.length > 0 ? [...new Set(amenities)].join(' · ') : null],
     ['가챠 기기', store.gachaMachineAmount !== null && store.gachaMachineAmount > 0 ? `${store.gachaMachineAmount}대` : null],
@@ -75,6 +81,7 @@ export function StoreDetailScreen({ navigation, route }: Props) {
   }
 
   const store = detail.data;
+  const instagramProfile = createInstagramProfile(store.instagramId);
   const imageUrls = [...new Set([
     store.thumbnailUrl,
     ...store.images.map(({ imageUrl }) => imageUrl),
@@ -112,6 +119,16 @@ export function StoreDetailScreen({ navigation, route }: Props) {
       });
     } catch {
       Alert.alert('공유할 수 없어요', '잠시 후 다시 시도해 주세요.');
+    }
+  }
+
+  async function handleInstagram() {
+    if (!instagramProfile) return;
+
+    try {
+      await openInstagramProfile(instagramProfile);
+    } catch {
+      Alert.alert('Instagram을 열 수 없어요', '잠시 후 다시 시도해 주세요.');
     }
   }
 
@@ -176,7 +193,57 @@ export function StoreDetailScreen({ navigation, route }: Props) {
 
       {rows.length > 0 && (
         <View style={styles.infoBox}>
-          {rows.map(([label, value]) => (
+          {rows.map(([label, value]) => label === '인스타그램' ? (
+            <Pressable
+              accessibilityLabel={instagramProfile
+                ? `${instagramProfile.displayName} Instagram 열기`
+                : '등록된 Instagram 계정 없음'}
+              accessibilityRole={instagramProfile ? 'link' : undefined}
+              accessibilityState={{ disabled: !instagramProfile }}
+              disabled={!instagramProfile}
+              key={label}
+              onPress={() => void handleInstagram()}
+              style={({ pressed }) => [
+                styles.instagramRow,
+                !instagramProfile && styles.instagramRowDisabled,
+                pressed && styles.secondaryActionPressed,
+              ]}
+            >
+              <View
+                aria-hidden
+                style={[
+                  styles.instagramIcon,
+                  !instagramProfile && styles.instagramIconDisabled,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.instagramLens,
+                    !instagramProfile && styles.instagramLensDisabled,
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.instagramDot,
+                    !instagramProfile && styles.instagramDotDisabled,
+                  ]}
+                />
+              </View>
+              <View style={styles.instagramCopy}>
+                <Text style={styles.infoLabel}>{label}</Text>
+                <Text
+                  style={[
+                    styles.infoValue,
+                    instagramProfile && styles.instagramLink,
+                    !instagramProfile && styles.instagramValueDisabled,
+                  ]}
+                >
+                  {instagramProfile?.displayName ?? value}
+                </Text>
+              </View>
+              {instagramProfile && <Text aria-hidden style={styles.externalArrow}>↗</Text>}
+            </Pressable>
+          ) : (
             <View key={label} style={styles.infoRow}>
               <Text style={styles.infoLabel}>{label}</Text>
               <Text style={styles.infoValue}>{value}</Text>
@@ -279,6 +346,48 @@ const styles = StyleSheet.create({
   infoRow: { gap: 5 },
   infoLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   infoValue: { color: colors.text, fontSize: 14, lineHeight: 21 },
+  instagramRow: {
+    minHeight: 58,
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 12,
+  },
+  instagramRowDisabled: { opacity: 0.58 },
+  instagramIcon: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 8,
+  },
+  instagramIconDisabled: { borderColor: colors.textMuted },
+  instagramLens: {
+    width: 10,
+    height: 10,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 5,
+  },
+  instagramLensDisabled: { borderColor: colors.textMuted },
+  instagramDot: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+  },
+  instagramDotDisabled: { backgroundColor: colors.textMuted },
+  instagramCopy: { flex: 1, gap: 3 },
+  instagramLink: { color: colors.primary, fontWeight: '800' },
+  instagramValueDisabled: { color: colors.textMuted },
+  externalArrow: { color: colors.primary, fontSize: 20, fontWeight: '800' },
   catalogHeader: { marginTop: 30, flexDirection: 'row', alignItems: 'center', gap: 8 },
   sectionTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
   totalCount: { color: colors.primary, fontSize: 14, fontWeight: '700' },
