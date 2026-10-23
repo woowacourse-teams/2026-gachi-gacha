@@ -11,6 +11,9 @@ import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.member.domain.exception.MemberNotFoundException;
+import com.gachi.gacha.server.notification.domain.PushPlatform;
+import com.gachi.gacha.server.notification.domain.PushToken;
+import com.gachi.gacha.server.notification.domain.PushTokenJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +31,9 @@ class MemberServiceTest {
 
     @Autowired
     private MemberJpaRepository memberJpaRepository;
+
+    @Autowired
+    private PushTokenJpaRepository pushTokenJpaRepository;
 
     private Member savedMember;
 
@@ -110,6 +116,20 @@ class MemberServiceTest {
 
             assertThatThrownBy(() -> memberJpaRepository.getMemberById(savedMember.getId()))
                     .isInstanceOf(MemberNotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("회원을 삭제하면 그 회원의 푸시 토큰도 모두 삭제한다")
+        void removeMember_deletesPushTokens() {
+            // given
+            pushTokenJpaRepository.save(PushToken.of(savedMember.getId(), "android-token", PushPlatform.ANDROID));
+            pushTokenJpaRepository.save(PushToken.of(savedMember.getId(), "ios-token", PushPlatform.IOS));
+
+            // when
+            memberService.removeMember(savedMember.getId());
+
+            // then
+            assertThat(pushTokenJpaRepository.findAllByMemberId(savedMember.getId())).isEmpty();
         }
     }
 }

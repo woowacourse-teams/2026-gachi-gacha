@@ -4,6 +4,9 @@ server:
 spring:
   application:
     name: backend
+  task:
+    execution:
+      mode: force
   servlet:
     multipart:
       max-file-size: 100MB
@@ -61,6 +64,9 @@ elasticsearch:
     trade: index
   init:
     enabled: false
+
+firebase:
+  push-enabled: false
 oauth:
   apple:
     client-id: test

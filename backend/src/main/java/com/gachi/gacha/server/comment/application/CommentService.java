@@ -2,6 +2,7 @@ package com.gachi.gacha.server.comment.application;
 
 import com.gachi.gacha.server.comment.application.dto.CommentCreateCommand;
 import com.gachi.gacha.server.comment.application.dto.CommentInfo;
+import com.gachi.gacha.server.comment.application.event.CommentCreatedEvent;
 import com.gachi.gacha.server.comment.domain.Comment;
 import com.gachi.gacha.server.comment.domain.CommentJpaRepository;
 import com.gachi.gacha.server.common.exception.ErrorCode;
@@ -12,6 +13,7 @@ import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class CommentService {
     private final CommentJpaRepository commentJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
     private final MemberJpaRepository memberJpaRepository;
+    private final ApplicationEventPublisher publisher;
 
     /**
      * 회원이면 작성 시점의 닉네임·프로필을 복사해 두고, 비회원이면 마스킹된 IP 를 남긴다.
@@ -41,7 +44,9 @@ public class CommentService {
                 ? Comment.ofAnonymous(tradeId, command.nickname(), maskedIp, command.content())
                 : toMemberComment(tradeId, memberId, command);
 
-        return CommentInfo.from(commentJpaRepository.save(comment));
+        Comment savedComment = commentJpaRepository.save(comment);
+        publisher.publishEvent(CommentCreatedEvent.from(savedComment));
+        return CommentInfo.from(savedComment);
     }
 
     public List<CommentInfo> findComments(@Nullable final Long viewerId, final Long tradeId) {
