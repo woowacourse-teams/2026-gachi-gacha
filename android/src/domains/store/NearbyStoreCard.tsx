@@ -9,13 +9,25 @@ function formatDistance(distance: number): string {
   return `${(distance / 1000).toFixed(1)}km`;
 }
 
-export function NearbyStoreCard({ store, onPress }: { store: NearbyStore; onPress: () => void }) {
+export function NearbyStoreCard({
+  selected = false,
+  store,
+  onPress,
+}: {
+  selected?: boolean;
+  store: NearbyStore;
+  onPress: () => void;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${store.name} 매장 상세 보기`}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [
+        styles.card,
+        selected && styles.cardSelected,
+        pressed && styles.cardPressed,
+      ]}
     >
       <RemoteImageWithFallback
         accessibilityLabel={`${store.name} 매장 이미지`}
@@ -48,6 +60,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   cardPressed: { opacity: 0.78 },
+  cardSelected: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    backgroundColor: '#fffafa',
+  },
   thumbnail: {
     width: 92,
     height: 92,

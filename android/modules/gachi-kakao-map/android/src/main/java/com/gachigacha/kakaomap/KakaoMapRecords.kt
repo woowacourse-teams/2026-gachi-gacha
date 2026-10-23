@@ -20,4 +20,7 @@ class KakaoMapMarkerRecord : Record {
 
   @Field
   var longitude: Double = 0.0
+
+  @Field
+  var selected: Boolean = false
 }

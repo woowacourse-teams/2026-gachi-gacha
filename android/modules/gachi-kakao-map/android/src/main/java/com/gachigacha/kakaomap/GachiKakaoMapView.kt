@@ -18,6 +18,7 @@ import expo.modules.kotlin.viewevent.EventDispatcher
 import expo.modules.kotlin.views.ExpoView
 
 class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(context, appContext) {
+  private val onCameraMoveEnd by EventDispatcher<Map<String, Double>>()
   private val onMapError by EventDispatcher<Map<String, String>>()
   private val onMapReady by EventDispatcher<Unit>()
   private val onMarkerPress by EventDispatcher<Map<String, Double>>()
@@ -27,9 +28,11 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
   private var kakaoMap: KakaoMap? = null
   private var mapView: MapView? = null
   private var markers: List<Marker> = emptyList()
+  private var recenterRequestId = 0
   private var showsUserLocation = false
   private var started = false
   private var storeMarkerStyle: LabelStyles? = null
+  private var selectedStoreMarkerStyle: LabelStyles? = null
   private var userLocationStyle: LabelStyles? = null
 
   fun setActive(value: Boolean) {
@@ -49,10 +52,17 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
       if (!marker.latitude.isValidLatitude() || !marker.longitude.isValidLongitude()) {
         null
       } else {
-        Marker(marker.id, marker.latitude, marker.longitude)
+        Marker(marker.id, marker.latitude, marker.longitude, marker.selected)
       }
     }
     renderMarkers()
+  }
+
+  fun setRecenterRequestId(value: Int) {
+    if (recenterRequestId == value) return
+
+    recenterRequestId = value
+    updateCamera()
   }
 
   fun setShowsUserLocation(value: Boolean) {
@@ -76,6 +86,7 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     started = false
     kakaoMap = null
     storeMarkerStyle = null
+    selectedStoreMarkerStyle = null
     userLocationStyle = null
     super.onDetachedFromWindow()
   }
@@ -98,6 +109,7 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
       // KakaoMapSdk must be initialized before MapView is constructed.
       initializeSdk(context.applicationContext, nativeAppKey)
       val currentMapView = MapView(context).apply {
+        setFinishManually(true)
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
       }
       mapView = currentMapView
@@ -116,6 +128,15 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
         object : KakaoMapReadyCallback() {
           override fun onMapReady(map: KakaoMap) {
             kakaoMap = map
+            map.setOnCameraMoveEndListener { _, cameraPosition, _ ->
+              val position = cameraPosition.position
+              onCameraMoveEnd(
+                mapOf(
+                  "latitude" to position.latitude,
+                  "longitude" to position.longitude,
+                ),
+              )
+            }
             map.setOnLabelClickListener { _, _, label ->
               val markerId = (label.tag as? Number)?.toDouble()
               if (markerId != null) {
@@ -179,13 +200,24 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
       )
       .also { storeMarkerStyle = it }
 
-    markers.forEach { marker ->
+    val selectedMarkerStyle = selectedStoreMarkerStyle ?: labelManager
+      .addLabelStyles(
+        LabelStyles.from(
+          SELECTED_STORE_MARKER_STYLE_ID,
+          LabelStyle.from(CapsuleMarkerBitmapFactory.selectedStoreMarker(context))
+            .setApplyDpScale(false)
+            .setAnchorPoint(0.5f, 1f),
+        ),
+      )
+      .also { selectedStoreMarkerStyle = it }
+
+    markers.sortedBy { it.selected }.forEach { marker ->
       layer.addLabel(
         LabelOptions.from(
           "store-${marker.id.toLong()}",
           LatLng.from(marker.latitude, marker.longitude),
         )
-          .setStyles(markerStyle)
+          .setStyles(if (marker.selected) selectedMarkerStyle else markerStyle)
           .setClickable(true)
           .setTag(marker.id),
       )
@@ -229,6 +261,7 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     val id: Double,
     val latitude: Double,
     val longitude: Double,
+    val selected: Boolean,
   )
 
   companion object {
@@ -238,6 +271,7 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     private const val DEFAULT_LONGITUDE = 126.9236
     private const val DEFAULT_ZOOM_LEVEL = 14
     private const val STORE_MARKER_STYLE_ID = "gachi-store-marker"
+    private const val SELECTED_STORE_MARKER_STYLE_ID = "gachi-selected-store-marker"
     private const val USER_LOCATION_STYLE_ID = "gachi-user-location-marker"
     private const val USER_LOCATION_LABEL_ID = "current-user-location"
 

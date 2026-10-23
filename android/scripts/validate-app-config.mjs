@@ -15,10 +15,6 @@ const {
   addExifInterfaceDependency,
 } = require('../plugins/withAndroidExifInterface.js');
 const PLAY_STORE_ICON_MAX_BYTES = 1024 * 1024;
-const EXPECTED_ANDROID_PERMISSIONS = [
-  'android.permission.ACCESS_COARSE_LOCATION',
-  'android.permission.ACCESS_FINE_LOCATION',
-];
 
 const expectedVariants = {
   development: {
@@ -50,7 +46,6 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     icon: config.icon,
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
     softwareKeyboardLayoutMode: config.android?.softwareKeyboardLayoutMode,
-    permissions: config.android?.permissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured:
       config.extra?.kakaoMapNativeAppKeyConfigured,
@@ -63,7 +58,6 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     icon: './assets/lucha-app-icon.png',
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
     softwareKeyboardLayoutMode: 'resize',
-    permissions: EXPECTED_ANDROID_PERMISSIONS,
     apiBaseUrl: expected.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured: false,
   };

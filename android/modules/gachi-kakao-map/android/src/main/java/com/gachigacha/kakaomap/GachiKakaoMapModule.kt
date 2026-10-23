@@ -8,7 +8,7 @@ class GachiKakaoMapModule : Module() {
     Name("GachiKakaoMap")
 
     View(GachiKakaoMapView::class) {
-      Events("onMapError", "onMapReady", "onMarkerPress")
+      Events("onCameraMoveEnd", "onMapError", "onMapReady", "onMarkerPress")
 
       Prop("active") { view: GachiKakaoMapView, active: Boolean ->
         view.setActive(active)
@@ -20,6 +20,10 @@ class GachiKakaoMapModule : Module() {
 
       Prop("markers") { view: GachiKakaoMapView, markers: List<KakaoMapMarkerRecord> ->
         view.setMarkers(markers)
+      }
+
+      Prop("recenterRequestId") { view: GachiKakaoMapView, requestId: Int ->
+        view.setRecenterRequestId(requestId)
       }
 
       Prop("showsUserLocation") { view: GachiKakaoMapView, showsUserLocation: Boolean ->

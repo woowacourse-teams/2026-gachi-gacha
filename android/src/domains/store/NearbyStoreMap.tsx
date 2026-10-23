@@ -1,5 +1,5 @@
 import { useIsFocused } from '@react-navigation/native';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GachiKakaoMapView } from '../../../modules/gachi-kakao-map';
@@ -8,25 +8,40 @@ import type { MapCoordinate, NearbyStore } from './storeTypes';
 
 type Props = {
   center: MapCoordinate;
+  onCameraMoveEnd: (center: MapCoordinate) => void;
   onSelectStore: (store: NearbyStore) => void;
-  showsUserLocation: boolean;
+  recenterRequestId: number;
+  selectedStoreId: number | null;
   stores: NearbyStore[];
 };
 
-export function NearbyStoreMap({ center, onSelectStore, showsUserLocation, stores }: Props) {
+export function NearbyStoreMap({
+  center,
+  onCameraMoveEnd,
+  onSelectStore,
+  recenterRequestId,
+  selectedStoreId,
+  stores,
+}: Props) {
   const isFocused = useIsFocused();
   const [hasMapError, setHasMapError] = useState(false);
-  const markers = useMemo(
-    () => stores.map(({ storeId, latitude, longitude }) => ({
+  const [focusSession, setFocusSession] = useState(0);
+  const wasFocusedRef = useRef(false);
+  const markers = useMemo(() => stores.map(({ storeId, latitude, longitude }) => ({
       id: storeId,
       latitude,
       longitude,
+      selected: storeId === selectedStoreId,
     })),
-    [stores],
+    [selectedStoreId, stores],
   );
 
   useEffect(() => {
-    if (isFocused) setHasMapError(false);
+    if (isFocused && !wasFocusedRef.current) {
+      setHasMapError(false);
+      setFocusSession((session) => session + 1);
+    }
+    wasFocusedRef.current = isFocused;
   }, [isFocused]);
 
   return (
@@ -35,13 +50,16 @@ export function NearbyStoreMap({ center, onSelectStore, showsUserLocation, store
         <GachiKakaoMapView
           active
           center={center}
+          key={focusSession}
           markers={markers}
+          onCameraMoveEnd={({ nativeEvent }) => onCameraMoveEnd(nativeEvent)}
           onMapError={() => setHasMapError(true)}
           onMarkerPress={({ nativeEvent }) => {
             const selectedStore = stores.find(({ storeId }) => storeId === nativeEvent.id);
             if (selectedStore) onSelectStore(selectedStore);
           }}
-          showsUserLocation={showsUserLocation}
+          recenterRequestId={recenterRequestId}
+          showsUserLocation={false}
           style={styles.map}
         />
       ) : (
