@@ -6,6 +6,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { areTradeFeaturesEnabled } from '../config/features';
 import { SearchScreen } from '../screens/SearchScreen';
 import { colors } from '../theme/colors';
 import { MapStack, type MapStackParamList } from './MapStack';
@@ -65,10 +66,11 @@ function TabBarButton({
 
 export function AppTabs() {
   const insets = useSafeAreaInsets();
+  const tradeFeaturesEnabled = areTradeFeaturesEnabled();
 
   return (
     <Tab.Navigator
-      initialRouteName="Trade"
+      initialRouteName={tradeFeaturesEnabled ? 'Trade' : 'Map'}
       safeAreaInsets={{ bottom: 0 }}
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -98,7 +100,9 @@ export function AppTabs() {
         ),
       })}
     >
-      <Tab.Screen name="Trade" component={TradeStack} />
+      {tradeFeaturesEnabled && (
+        <Tab.Screen name="Trade" component={TradeStack} />
+      )}
       <Tab.Screen name="Map" component={MapStack} />
       <Tab.Screen name="Search" component={SearchScreen} />
     </Tab.Navigator>
