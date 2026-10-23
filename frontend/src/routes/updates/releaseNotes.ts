@@ -10,6 +10,25 @@ export interface ServiceReleaseNote {
 
 export const SERVICE_RELEASE_NOTES = [
   {
+    version: 'v1.6.0',
+    releasedAt: '2026-10-23',
+    releasedAtLabel: '2026년 10월 23일',
+    title: '더 안전하고 편리해진 교환과 소식 확인',
+    summary:
+      '사진으로 더 편하게 교환하고, 필요한 소식을 놓치지 않으며, 원치 않는 사용자로부터 스스로를 보호할 수 있도록 개선했어요.',
+    highlights: [
+      '채팅에서 사진을 선택하거나 끌어다 놓아 미리 확인한 뒤 보낼 수 있어요.',
+      '거래글 사진을 붙여넣거나 끌어다 놓고, 원하는 순서로 정리할 수 있어요.',
+      '마이페이지에서 내가 작성한 교환글 전체를 확인하고, 가지고 있는 것과 얻고 싶은 것을 더 명확하게 구분해요.',
+      '교환글·댓글·채팅에서 사용자를 차단하거나 신고하고, 마이페이지에서 차단을 해제할 수 있어요.',
+      '로그인하지 않은 상태에서도 공개 회원탈퇴 페이지에서 계정 삭제를 요청할 수 있어요.',
+      '댓글과 채팅 소식을 헤더의 알림 목록에서 확인하고 읽음 처리할 수 있어요.',
+      'iPhone Safari에서 사진 압축이 실패할 때 PNG로 다시 처리해 등록 안정성을 높였어요.',
+    ],
+    releaseUrl:
+      'https://github.com/woowacourse-teams/2026-gachi-gacha/releases/tag/v1.6.0',
+  },
+  {
     version: 'v1.5.0',
     releasedAt: '2026-10-16',
     releasedAtLabel: '2026년 10월 16일',
