@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const webpack = require('webpack');
 
@@ -20,6 +21,7 @@ const EVENT_APPLICATION_ENABLED =
 const EVENT_APPLICATION_ENDPOINT = process.env.EVENT_APPLICATION_ENDPOINT ?? '';
 const EVENT_APPLICATION_START_AT = process.env.EVENT_APPLICATION_START_AT ?? '';
 const EVENT_APPLICATION_END_AT = process.env.EVENT_APPLICATION_END_AT ?? '';
+const MEMBER_REPORT_ENDPOINT = process.env.MEMBER_REPORT_ENDPOINT ?? '';
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
 const DEV_SERVER_PORT = Number(process.env.DEV_SERVER_PORT ?? 3000);
@@ -40,6 +42,7 @@ module.exports = (_env, argv) => {
   const isProduction = argv.mode === 'production';
   const appEnvironment =
     process.env.APP_ENV ?? (isProduction ? 'production' : 'development');
+  const isSearchIndexable = appEnvironment === 'production';
 
   return {
     entry: path.resolve(__dirname, 'src/main.tsx'),
@@ -89,6 +92,40 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, 'public/index.html'),
+        searchEngineRobots: isSearchIndexable
+          ? 'index,follow'
+          : 'noindex,nofollow',
+        exposeNaverSiteVerification: isSearchIndexable,
+      }),
+
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: path.resolve(
+              __dirname,
+              isSearchIndexable
+                ? 'public/robots.production.txt'
+                : 'public/robots.non-production.txt',
+            ),
+            to: 'robots.txt',
+          },
+          {
+            from: path.resolve(__dirname, 'public/sitemap.xml'),
+            to: 'sitemap.xml',
+          },
+          {
+            from: path.resolve(__dirname, 'public/og-image.png'),
+            to: 'og-image.png',
+          },
+          {
+            from: require.resolve('@fontsource/gaegu/files/gaegu-korean-400-normal.woff2'),
+            to: 'assets/fonts/gaegu-korean-400-normal.woff2',
+          },
+          {
+            from: require.resolve('@fontsource/gaegu/files/gaegu-korean-700-normal.woff2'),
+            to: 'assets/fonts/gaegu-korean-700-normal.woff2',
+          },
+        ],
       }),
 
       new webpack.DefinePlugin({
@@ -110,6 +147,7 @@ module.exports = (_env, argv) => {
           EVENT_APPLICATION_START_AT,
         ),
         __EVENT_APPLICATION_END_AT__: JSON.stringify(EVENT_APPLICATION_END_AT),
+        __MEMBER_REPORT_ENDPOINT__: JSON.stringify(MEMBER_REPORT_ENDPOINT),
         __APP_ENV__: JSON.stringify(appEnvironment),
         __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),

@@ -111,6 +111,7 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
                   store_id: store.storeId,
                   photo_index: index,
                   photo_count: imageUrls.length,
+                  source: 'gallery',
                 });
                 setViewerStartIndex(index);
               }}
@@ -143,6 +144,7 @@ export function StoreDetailOverview({ store }: StoreDetailOverviewProps) {
         <StorePhotoViewer
           imageUrls={imageUrls}
           initialIndex={viewerStartIndex}
+          storeId={store.storeId}
           storeName={store.name}
           onClose={() => setViewerStartIndex(null)}
           onImageError={handleImageError}

@@ -9,6 +9,7 @@ import {
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { markCurrentLandingTourAsSeen } from '@/features/onboarding/landingTourSeenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
@@ -42,6 +43,7 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         await authenticate(authTokens);
 
         if (isCurrent) {
+          markCurrentLandingTourAsSeen();
           captureAnalyticsEvent('oauth_login_completed', {
             provider,
             outcome: 'success',

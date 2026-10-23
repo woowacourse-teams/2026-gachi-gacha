@@ -15,6 +15,7 @@ interface ChatPageProps {
   socketStatus?: ChatSocketStatus;
   socketErrorMessage?: string | null;
   onSendMessage?: (content: string) => Promise<void>;
+  onSendImages?: (content: string, images: File[]) => Promise<void>;
   presentation?: 'drawer' | 'modal' | 'split';
   onSelectConversation?: (conversationId: number | null) => void;
   onCloseModal?: () => void;
@@ -23,6 +24,7 @@ interface ChatPageProps {
   previousMessagesError?: string;
   onLoadPreviousMessages?: () => Promise<void>;
   onChangeTradeStatus?: (status: TradeStatus) => Promise<void>;
+  onPartnerBlocked?: () => void;
 }
 
 export default function ChatPage({
@@ -31,6 +33,7 @@ export default function ChatPage({
   socketStatus = 'disconnected',
   socketErrorMessage = null,
   onSendMessage,
+  onSendImages,
   presentation = 'drawer',
   onSelectConversation,
   onCloseModal,
@@ -39,6 +42,7 @@ export default function ChatPage({
   previousMessagesError = '',
   onLoadPreviousMessages,
   onChangeTradeStatus,
+  onPartnerBlocked,
 }: ChatPageProps) {
   if (selectedRoom && presentation === 'modal') {
     return (
@@ -59,11 +63,13 @@ export default function ChatPage({
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
             hasPreviousMessages={hasPreviousMessages}
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
             onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
           />
         </ChatDrawer>
       </ModalLayer>
@@ -101,11 +107,13 @@ export default function ChatPage({
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
             hasPreviousMessages={hasPreviousMessages}
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
             onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
           />
         </ChatDrawer>
       </RoomPage>
@@ -131,11 +139,13 @@ export default function ChatPage({
           socketStatus={socketStatus}
           socketErrorMessage={socketErrorMessage}
           onSendMessage={onSendMessage}
+          onSendImages={onSendImages}
           hasPreviousMessages={hasPreviousMessages}
           isLoadingPreviousMessages={isLoadingPreviousMessages}
           previousMessagesError={previousMessagesError}
           onLoadPreviousMessages={onLoadPreviousMessages}
           onChangeTradeStatus={onChangeTradeStatus}
+          onPartnerBlocked={onPartnerBlocked}
         />
       </Main>
     </Page>

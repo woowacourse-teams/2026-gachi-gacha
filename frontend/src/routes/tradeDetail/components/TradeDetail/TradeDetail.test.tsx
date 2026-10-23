@@ -1,12 +1,41 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+
 import TradeDetail from './TradeDetail';
 import { TRADE_DETAIL } from '../../storybook/tradeDetailMocks';
 
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
+
 describe('TradeDetail', () => {
+  it('가지고 있는 상품과 얻고 싶은 상품을 명확히 구분한다', () => {
+    render(
+      <MemoryRouter>
+        <TradeDetail detail={TRADE_DETAIL} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('가지고 있는 것')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '가지고 있는 상품 설명' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('얻고 싶은 것')).toBeInTheDocument();
+    expect(
+      screen.getByText('시나모롤 키링 또는 산리오 랜덤 피규어'),
+    ).toBeInTheDocument();
+  });
+
   it('상품 사진을 좌우로 넘기고 선택한 사진을 크게 본다', async () => {
     const user = userEvent.setup();
     const detail = {
@@ -29,12 +58,31 @@ describe('TradeDetail', () => {
 
     await user.click(screen.getByRole('button', { name: '다음 상품 사진' }));
 
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_detail_photo_selected',
+      {
+        trade_id: detail.tradeId,
+        photo_index: 1,
+        photo_count: 2,
+        source: 'gallery_next',
+      },
+    );
+
     expect(
       screen.getByRole('img', { name: `${detail.title} 상품 사진 2` }),
     ).toHaveAttribute('src', detail.imageUrls[1]);
 
     await user.click(
       screen.getByRole('button', { name: '2번째 상품 사진 크게 보기' }),
+    );
+
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_detail_photo_viewer_opened',
+      {
+        trade_id: detail.tradeId,
+        photo_index: 1,
+        photo_count: 2,
+      },
     );
 
     const dialog = screen.getByRole('dialog', {

@@ -1,3 +1,5 @@
+import { optionallyAuthenticatedFetch } from '@/features/auth/api/authenticatedFetch';
+
 import type { TradeStatus, TradeSummaryPage } from '../tradeSummaryType';
 import { parseTradeSummaryPageResponse } from './parseTradeSummaryPageResponse';
 
@@ -47,7 +49,7 @@ export async function getTrades({
   signal,
   ...params
 }: GetTradesOptions = {}): Promise<TradeSummaryPage> {
-  const response = await fetch(createTradesUrl(params), {
+  const response = await optionallyAuthenticatedFetch(createTradesUrl(params), {
     signal: signal ?? null,
   });
   const contentType = response.headers.get('content-type');

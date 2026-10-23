@@ -21,42 +21,64 @@ export type TradeDetailAction = 'chat' | 'login' | 'edit' | null;
 interface TradeDetailPageProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
+  hasSubmittedComment?: boolean;
   relatedItems?: TradeItem[];
   hasMoreRelatedItems?: boolean;
   isLoadingRelatedItems?: boolean;
   onLoadMoreRelatedItems?: () => void;
   comments?: TradeComment[];
+  commentsStatus?: 'loading' | 'success' | 'error';
+  commentsErrorMessage?: string | null;
   commentViewer?: TradeCommentAuthor | null;
   onSubmitComment?:
     ((submission: TradeCommentSubmission) => Promise<void> | void) | undefined;
+  onRetryComments?: (() => void) | undefined;
   onCommentAction?:
     ((action: TradeCommentAction, comment: TradeComment) => void) | undefined;
+  showSafetyActions?: boolean;
+  onTradeAuthorBlocked?: () => void;
 }
 
 export default function TradeDetailPage({
   detail,
   action = 'chat',
+  hasSubmittedComment = false,
   relatedItems = [],
   hasMoreRelatedItems = false,
   isLoadingRelatedItems = false,
   onLoadMoreRelatedItems,
   comments = [],
+  commentsStatus = 'success',
+  commentsErrorMessage = null,
   commentViewer = null,
   onSubmitComment,
+  onRetryComments,
   onCommentAction,
+  showSafetyActions = false,
+  onTradeAuthorBlocked,
 }: TradeDetailPageProps) {
   return (
     <Page>
       <AppHeader currentPath="/trade" />
 
       <Main>
-        <TradeDetail detail={detail} action={action} />
+        <TradeDetail
+          detail={detail}
+          action={action}
+          hasSubmittedComment={hasSubmittedComment}
+          showSafetyActions={showSafetyActions && action === 'chat'}
+          onAuthorBlocked={onTradeAuthorBlocked}
+        />
 
         <TradeComments
           comments={comments}
+          commentsStatus={commentsStatus}
+          commentsErrorMessage={commentsErrorMessage}
           viewer={commentViewer}
           onSubmit={onSubmitComment}
+          onRetryComments={onRetryComments}
           onCommentAction={onCommentAction}
+          showSafetyActions={showSafetyActions}
         />
 
         {relatedItems.length > 0 && (

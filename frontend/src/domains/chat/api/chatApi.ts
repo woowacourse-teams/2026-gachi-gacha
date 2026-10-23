@@ -1,13 +1,17 @@
 import { authenticatedFetch } from '@/features/auth/api/authenticatedFetch';
+import { isApiResponse } from '@/shared/api/isApiResponse';
 
+import { MAX_CHAT_IMAGE_COUNT } from '../chatImagePolicy';
 import type {
   ChatMessage,
+  ChatMessageFile,
   ChatMessagePage,
   ChatRoomSummary,
 } from '../chatType';
 
 const CHAT_ROOMS_PATH = '/api/v1/chat/rooms';
 const JSON_CONTENT_TYPE = 'application/json';
+const FILE_UPLOAD_PATH = '/api/v1/files';
 
 interface BaseResponse<T> {
   data: T;
@@ -187,6 +191,48 @@ export async function markChatMessagesRead(
   }
 }
 
+export async function uploadChatImages(
+  files: readonly File[],
+): Promise<ChatMessageFile[]> {
+  if (files.length === 0 || files.length > MAX_CHAT_IMAGE_COUNT) {
+    throw new Error(
+      `사진은 한 번에 최대 ${MAX_CHAT_IMAGE_COUNT}장까지 보낼 수 있어요.`,
+    );
+  }
+
+  const formData = new FormData();
+  files.forEach((file) => formData.append('files', file));
+
+  const response = await authenticatedFetch(FILE_UPLOAD_PATH, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.headers.get('content-type')?.includes(JSON_CONTENT_TYPE)) {
+    throw new Error('사진 업로드 응답을 확인하지 못했습니다.');
+  }
+
+  const body: unknown = await response.json();
+
+  if (!response.ok) {
+    throw new Error(getErrorMessage(body, '사진을 업로드하지 못했습니다.'));
+  }
+
+  if (!isApiResponse(body) || !isRecord(body.data)) {
+    throw new Error('사진 업로드 응답 형식이 올바르지 않습니다.');
+  }
+
+  const uploadedFiles = Array.isArray(body.data.files)
+    ? body.data.files.filter(isChatMessageFile)
+    : [];
+
+  if (uploadedFiles.length !== files.length) {
+    throw new Error('업로드된 사진 정보를 확인하지 못했습니다.');
+  }
+
+  return uploadedFiles;
+}
+
 function validatePositiveId(id: number, subject: string): void {
   if (!Number.isSafeInteger(id) || id <= 0) {
     throw new Error(`올바른 ${subject} ID가 필요합니다.`);
@@ -216,5 +262,20 @@ function normalizeMessage(message: ChatMessage): ChatMessage {
   return {
     ...message,
     messageId: String(message.messageId),
+    content: typeof message.content === 'string' ? message.content : null,
+    files: Array.isArray(message.files)
+      ? message.files.filter(isChatMessageFile)
+      : [],
   };
+}
+
+function isChatMessageFile(value: unknown): value is ChatMessageFile {
+  return (
+    isRecord(value) &&
+    typeof value.url === 'string' &&
+    value.url.length > 0 &&
+    typeof value.originalName === 'string' &&
+    (typeof value.contentType === 'string' || value.contentType === null) &&
+    typeof value.size === 'number'
+  );
 }
