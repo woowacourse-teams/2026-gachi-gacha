@@ -67,3 +67,13 @@ elasticsearch:
 
 firebase:
   push-enabled: false
+oauth:
+  apple:
+    client-id: test
+    team-id: test
+    key-id: test
+    private-key: MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgwClea+5yWodNotwMbYD79xac0KIYEztcBeqap3CnJw6hRANCAARUG6SfHr0r7CwqqPaRWX8Y5d1diVDhfOUQDbbAh7edgKKcmLPVVvDTobMKlDx599SIbq5JkcnyCFGq/cMG6rOR # 더미 키
+    redirect-uri: http://localhost/test
+    scope:
+      - name
+      - email

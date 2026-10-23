@@ -25,8 +25,14 @@ public class OauthMemberClientComposite {
                 ));
     }
 
-    public Member fetch(final OauthProviderType oauthProviderType, final String authCode, final String nonce) {
-        return getClient(oauthProviderType).fetch(authCode, nonce);
+    public void revokeByAuthCode(final OauthProviderType type, final String authCode,
+                                 final String nonce, final String expectedOauthId) {
+        getClient(type).revokeByAuthCode(authCode, nonce, expectedOauthId);
+    }
+
+    public Member fetch(final OauthProviderType oauthProviderType, final String authCode,
+                        final String nonce, final String name) {
+        return getClient(oauthProviderType).fetch(authCode, nonce, name);
     }
 
     private OauthMemberClient getClient(final OauthProviderType oauthProviderType) {

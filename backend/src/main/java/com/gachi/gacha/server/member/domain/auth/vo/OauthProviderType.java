@@ -7,7 +7,8 @@ import com.gachi.gacha.server.member.domain.exception.UnSupportedProviderTypeExc
 
 public enum OauthProviderType {
     KAKAO,
-    NAVER
+    NAVER,
+    APPLE
     ;
     public static OauthProviderType fromName(String type) {
         try {
