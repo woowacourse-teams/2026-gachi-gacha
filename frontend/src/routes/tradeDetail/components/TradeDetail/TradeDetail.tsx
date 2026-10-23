@@ -9,16 +9,23 @@ import type {
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
+import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
-import { PhotoViewer } from '@/shared/ui/PhotoViewer';
+import {
+  PhotoViewer,
+  type PhotoViewerNavigationSource,
+} from '@/shared/ui/PhotoViewer';
 
 import type { TradeDetailAction } from '../../TradeDetailPage';
 
 interface TradeDetailProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
+  hasSubmittedComment?: boolean;
+  showSafetyActions?: boolean;
+  onAuthorBlocked?: (() => void) | undefined;
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ko-KR', {
@@ -45,6 +52,9 @@ function formatAvailableTime(availableTime: string | null): string {
 export default function TradeDetail({
   detail,
   action = 'chat',
+  hasSubmittedComment = false,
+  showSafetyActions = false,
+  onAuthorBlocked,
 }: TradeDetailProps) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -55,14 +65,47 @@ export default function TradeDetail({
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
   const closePhotoViewer = useCallback(() => setIsPhotoViewerOpen(false), []);
 
-  function selectImage(index: number) {
+  function selectImage(
+    index: number,
+    source: 'gallery_previous' | 'gallery_next' | 'thumbnail',
+  ) {
     captureAnalyticsEvent('trade_detail_photo_selected', {
       trade_id: detail.tradeId,
       photo_index: index,
       photo_count: detail.imageUrls.length,
+      source,
     });
     setSelectedImageIndex(index);
   }
+
+  const changeViewerImage = useCallback(
+    (index: number, source: PhotoViewerNavigationSource) => {
+      setSelectedImageIndex(index);
+
+      if (source === 'initial') {
+        return;
+      }
+
+      const analyticsSource = {
+        previous_button: 'viewer_previous',
+        next_button: 'viewer_next',
+        thumbnail: 'viewer_thumbnail',
+        scroll: 'viewer_scroll',
+      }[source] as
+        | 'viewer_previous'
+        | 'viewer_next'
+        | 'viewer_thumbnail'
+        | 'viewer_scroll';
+
+      captureAnalyticsEvent('trade_detail_photo_selected', {
+        trade_id: detail.tradeId,
+        photo_index: index,
+        photo_count: detail.imageUrls.length,
+        source: analyticsSource,
+      });
+    },
+    [detail.imageUrls.length, detail.tradeId],
+  );
 
   return (
     <Wrapper>
@@ -75,11 +118,20 @@ export default function TradeDetail({
               <MainPhotoButton
                 type="button"
                 aria-label={`${selectedImageIndex + 1}번째 상품 사진 크게 보기`}
-                onClick={() => setIsPhotoViewerOpen(true)}
+                onClick={() => {
+                  captureAnalyticsEvent('trade_detail_photo_viewer_opened', {
+                    trade_id: detail.tradeId,
+                    photo_index: selectedImageIndex,
+                    photo_count: detail.imageUrls.length,
+                  });
+                  setIsPhotoViewerOpen(true);
+                }}
               >
                 <MainPhoto
                   src={selectedImageUrl}
                   alt={`${detail.title} 상품 사진 ${selectedImageIndex + 1}`}
+                  loading="eager"
+                  decoding="async"
                 />
               </MainPhotoButton>
             ) : (
@@ -92,7 +144,9 @@ export default function TradeDetail({
                   type="button"
                   aria-label="이전 상품 사진"
                   disabled={selectedImageIndex === 0}
-                  onClick={() => selectImage(selectedImageIndex - 1)}
+                  onClick={() =>
+                    selectImage(selectedImageIndex - 1, 'gallery_previous')
+                  }
                 >
                   <svg viewBox="0 0 20 20" aria-hidden="true">
                     <path d="m12 5-5 5 5 5" />
@@ -103,7 +157,9 @@ export default function TradeDetail({
                   type="button"
                   aria-label="다음 상품 사진"
                   disabled={selectedImageIndex === detail.imageUrls.length - 1}
-                  onClick={() => selectImage(selectedImageIndex + 1)}
+                  onClick={() =>
+                    selectImage(selectedImageIndex + 1, 'gallery_next')
+                  }
                 >
                   <svg viewBox="0 0 20 20" aria-hidden="true">
                     <path d="m8 5 5 5-5 5" />
@@ -129,9 +185,14 @@ export default function TradeDetail({
                   aria-current={
                     index === selectedImageIndex ? 'true' : undefined
                   }
-                  onClick={() => selectImage(index)}
+                  onClick={() => selectImage(index, 'thumbnail')}
                 >
-                  <ThumbnailPhoto src={imageUrl} alt="" />
+                  <ThumbnailPhoto
+                    src={imageUrl}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </Thumbnail>
               ))}
             </ThumbnailList>
@@ -139,6 +200,18 @@ export default function TradeDetail({
         </Gallery>
 
         <Info>
+          <InfoHeader>
+            <ItemRole>가지고 있는 것</ItemRole>
+            {showSafetyActions && (
+              <UserSafetyMenu
+                targetMemberId={detail.memberId}
+                targetNickname="게시글 작성자"
+                source="trade"
+                referenceId={String(detail.tradeId)}
+                onBlocked={onAuthorBlocked}
+              />
+            )}
+          </InfoHeader>
           <Title>{detail.title}</Title>
           <Meta>
             <span>{formatRelativeTime(detail.createdAt)}</span>
@@ -149,7 +222,7 @@ export default function TradeDetail({
 
           <InfoList>
             <InfoRow>
-              <InfoLabel>원하는 교환</InfoLabel>
+              <InfoLabel>얻고 싶은 것</InfoLabel>
               <InfoValue>{detail.desiredProduction || '제안 받아요'}</InfoValue>
             </InfoRow>
             <InfoRow>
@@ -171,7 +244,7 @@ export default function TradeDetail({
           </InfoList>
 
           <DescriptionSection>
-            <SectionTitle>상품 설명</SectionTitle>
+            <SectionTitle>가지고 있는 상품 설명</SectionTitle>
             <Description>
               {detail.description || '등록된 설명이 없어요.'}
             </Description>
@@ -219,6 +292,9 @@ export default function TradeDetail({
                     captureAnalyticsEvent('trade_chat_started', {
                       trade_id: detail.tradeId,
                       is_authenticated: false,
+                      comment_context: hasSubmittedComment
+                        ? 'submitted_this_session'
+                        : 'none',
                     })
                   }
                 >
@@ -232,6 +308,9 @@ export default function TradeDetail({
                     captureAnalyticsEvent('trade_chat_started', {
                       trade_id: detail.tradeId,
                       is_authenticated: true,
+                      comment_context: hasSubmittedComment
+                        ? 'submitted_this_session'
+                        : 'none',
                     })
                   }
                 >
@@ -263,7 +342,7 @@ export default function TradeDetail({
           thumbnailListLabel="상품 사진 목록"
           closeLabel="상품 사진 크게 보기 닫기"
           onClose={closePhotoViewer}
-          onActiveIndexChange={setSelectedImageIndex}
+          onActiveIndexChange={changeViewerImage}
         />
       )}
     </Wrapper>
@@ -421,6 +500,21 @@ const ThumbnailPhoto = styled.img`
 
 const Info = styled.div`
   padding-top: 8px;
+`;
+
+const InfoHeader = styled.div`
+  display: flex;
+  min-height: 36px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const ItemRole = styled.p`
+  margin: 0 0 8px;
+  color: #ed174c;
+  font-size: 14px;
+  font-weight: 800;
 `;
 
 const CategoryList = styled.div`

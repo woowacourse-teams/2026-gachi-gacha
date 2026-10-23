@@ -22,6 +22,7 @@ module.exports = {
     __EVENT_APPLICATION_ENDPOINT__: '',
     __EVENT_APPLICATION_START_AT__: '',
     __EVENT_APPLICATION_END_AT__: '',
+    __MEMBER_REPORT_ENDPOINT__: '',
     __USE_MSW__: false,
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],

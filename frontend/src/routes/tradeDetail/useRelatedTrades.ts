@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { getTrades } from '@/domains/trade/api/getTrades';
 import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 
 const RELATED_ITEM_PAGE_SIZE = 6;
 const RELATED_ITEM_VISIBLE_STEP = 5;
@@ -14,6 +15,7 @@ interface RelatedTradesResult {
 }
 
 export function useRelatedTrades(tradeId: number): RelatedTradesResult {
+  const { isMemberBlocked } = useMemberBlocks();
   const [items, setItems] = useState<TradeSummary[]>([]);
   const [page, setPage] = useState(0);
   const [visibleCount, setVisibleCount] = useState(RELATED_ITEM_VISIBLE_STEP);
@@ -83,7 +85,9 @@ export function useRelatedTrades(tradeId: number): RelatedTradesResult {
     }
   }, [hasNextPage, isLoading]);
 
-  const visibleItems = items.slice(0, visibleCount);
+  const visibleItems = items
+    .filter(({ memberId }) => !isMemberBlocked(memberId))
+    .slice(0, visibleCount);
   const hasMore = items.length > visibleCount || hasNextPage;
 
   return { items: visibleItems, hasMore, isLoading, loadMore };

@@ -4,6 +4,10 @@ import { useNavigate } from 'react-router';
 
 import { createTrade } from '@/domains/trade/api/createTrade';
 import { updateTrade } from '@/domains/trade/api/updateTrade';
+import {
+  compressTradeImages,
+  type TradeImageCompressionProgress,
+} from '@/domains/trade/compressTradeImages';
 import type { TradeCategory } from '@/domains/trade/tradeCategoryType';
 import type {
   CreateTradeRequest,
@@ -15,8 +19,14 @@ import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
 import StickyActionBar from '../StickyActionBar';
+import TradeSubmissionOverlay from '../TradeSubmissionOverlay';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
+
+type SubmissionState =
+  | { stage: 'idle' }
+  | ({ stage: 'compressing' } & TradeImageCompressionProgress)
+  | { stage: 'uploading' };
 
 export interface TradeFormInitialValues {
   title: string;
@@ -53,7 +63,10 @@ export default function TradeForm(props: TradeFormProps) {
   const [isPurchaseStoreDialogOpen, setIsPurchaseStoreDialogOpen] =
     useState(false);
   const [isPlaceDialogOpen, setIsPlaceDialogOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionState, setSubmissionState] = useState<SubmissionState>({
+    stage: 'idle',
+  });
+  const isSubmitting = submissionState.stage !== 'idle';
   const [titleErrorMessage, setTitleErrorMessage] = useState<string | null>(
     null,
   );
@@ -183,7 +196,16 @@ export default function TradeForm(props: TradeFormProps) {
     setTitleErrorMessage(null);
     setSubmissionError(null);
     submittingRef.current = true;
-    setIsSubmitting(true);
+    setSubmissionState(
+      images.length > 0
+        ? {
+            stage: 'compressing',
+            percentage: 0,
+            completedCount: 0,
+            totalCount: images.length,
+          }
+        : { stage: 'uploading' },
+    );
 
     const analyticsMode = isEditMode ? 'edit' : 'create';
     const editingTradeId = props.mode === 'edit' ? props.tradeId : null;
@@ -199,10 +221,20 @@ export default function TradeForm(props: TradeFormProps) {
     });
 
     try {
+      const compressedImages = await compressTradeImages(images, (progress) => {
+        setSubmissionState({ stage: 'compressing', ...progress });
+      });
+
+      setSubmissionState({ stage: 'uploading' });
+
       const savedTrade =
         props.mode === 'edit'
-          ? await updateTrade({ tradeId: props.tradeId, request, images })
-          : await createTrade({ request, images });
+          ? await updateTrade({
+              tradeId: props.tradeId,
+              request,
+              images: compressedImages,
+            })
+          : await createTrade({ request, images: compressedImages });
 
       captureAnalyticsEvent('trade_form_completed', {
         mode: analyticsMode,
@@ -222,9 +254,9 @@ export default function TradeForm(props: TradeFormProps) {
           ? error.message
           : `거래 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
       );
+      setSubmissionState({ stage: 'idle' });
     } finally {
       submittingRef.current = false;
-      setIsSubmitting(false);
     }
   }
 
@@ -236,140 +268,162 @@ export default function TradeForm(props: TradeFormProps) {
         onKeyDown={preventImplicitSubmit}
         onSubmit={(event) => void handleSubmit(event)}
       >
-        <PhotoUploader
-          files={images}
-          {...(initialValues
-            ? { initialImageUrls: initialValues.imageUrls }
-            : {})}
-          errorMessage={photoErrorMessage ?? undefined}
-          onFilesChange={changeImages}
-        />
+        <ItemSection aria-labelledby="offered-item-heading">
+          <ItemSectionHeader>
+            <ItemSectionTitle id="offered-item-heading">
+              가지고 있는 것
+            </ItemSectionTitle>
+            <ItemSectionDescription>
+              교환에 내놓을 상품의 사진과 상태를 알려주세요.
+            </ItemSectionDescription>
+          </ItemSectionHeader>
 
-        <Field>
-          <Label htmlFor="trade-title">
-            제목 <RequiredMark aria-hidden="true">*</RequiredMark>
-          </Label>
-          <Input
-            id="trade-title"
-            name="title"
-            defaultValue={initialValues?.title}
-            required
-            maxLength={MAX_SHORT_TEXT_LENGTH}
-            aria-invalid={Boolean(titleErrorMessage)}
-            aria-describedby={
-              titleErrorMessage ? 'trade-title-error' : undefined
-            }
-            placeholder="거래할 가챠를 알아보기 쉽게 적어주세요"
-            onChange={() => {
-              if (titleErrorMessage) {
-                setTitleErrorMessage(null);
+          <PhotoUploader
+            files={images}
+            {...(initialValues
+              ? { initialImageUrls: initialValues.imageUrls }
+              : {})}
+            errorMessage={photoErrorMessage ?? undefined}
+            onFilesChange={changeImages}
+          />
+
+          <Field>
+            <Label htmlFor="trade-title">
+              제목 <RequiredMark aria-hidden="true">*</RequiredMark>
+            </Label>
+            <Input
+              id="trade-title"
+              name="title"
+              defaultValue={initialValues?.title}
+              required
+              maxLength={MAX_SHORT_TEXT_LENGTH}
+              aria-invalid={Boolean(titleErrorMessage)}
+              aria-describedby={
+                titleErrorMessage ? 'trade-title-error' : undefined
               }
-            }}
-          />
-          {titleErrorMessage && (
-            <FieldError id="trade-title-error" role="alert">
-              {titleErrorMessage}
-            </FieldError>
-          )}
-        </Field>
-
-        <Field>
-          <Label htmlFor="trade-description">
-            설명 <RequiredMark aria-hidden="true">*</RequiredMark>
-          </Label>
-          <Textarea
-            id="trade-description"
-            name="description"
-            defaultValue={initialValues?.description}
-            required
-            placeholder="가챠의 상태와 거래 방법을 자세히 적어주세요"
-          />
-        </Field>
-
-        <Field>
-          <Label htmlFor="trade-category-search">
-            카테고리 <OptionalMark>(선택)</OptionalMark>
-          </Label>
-          <Input
-            id="trade-category-search"
-            type="search"
-            value={categoryKeyword}
-            autoComplete="off"
-            placeholder="카테고리를 검색해주세요"
-            onChange={(event) => setCategoryKeyword(event.target.value)}
-            onKeyDown={handleCategoryKeywordKeyDown}
-          />
-
-          {selectedCategories.length > 0 && (
-            <CategoryGroup>
-              <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
-              {selectedCategories.map((category) => (
-                <input
-                  key={category.categoryId}
-                  type="hidden"
-                  name="categoryIds"
-                  value={category.categoryId}
-                />
-              ))}
-              <CategoryList aria-label="선택한 카테고리">
-                {selectedCategories.map((category) => (
-                  <CategoryButton
-                    key={category.categoryId}
-                    type="button"
-                    data-selected="true"
-                    aria-label={`${category.name} 카테고리 선택 해제`}
-                    onClick={() => removeCategory(category.categoryId)}
-                  >
-                    #{category.name} ×
-                  </CategoryButton>
-                ))}
-              </CategoryList>
-            </CategoryGroup>
-          )}
-
-          <CategoryGroup>
-            <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
-            {categoryState.status === 'idle' ? (
-              <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
-            ) : categoryState.status === 'loading' ? (
-              <CategoryMessage role="status">
-                카테고리를 불러오는 중...
-              </CategoryMessage>
-            ) : categoryState.status === 'error' ? (
-              <CategoryMessage role="alert">
-                {categoryState.errorMessage}
-              </CategoryMessage>
-            ) : availableCategories.length === 0 ? (
-              <CategoryMessage>검색결과가 없어요.</CategoryMessage>
-            ) : (
-              <CategoryList aria-label="카테고리 검색 결과">
-                {availableCategories.map((category) => (
-                  <CategoryButton
-                    key={category.categoryId}
-                    type="button"
-                    data-selected="false"
-                    onClick={() => selectCategory(category)}
-                  >
-                    {category.name}
-                  </CategoryButton>
-                ))}
-              </CategoryList>
+              placeholder="가지고 있는 가챠를 알아보기 쉽게 적어주세요"
+              onChange={() => {
+                if (titleErrorMessage) {
+                  setTitleErrorMessage(null);
+                }
+              }}
+            />
+            {titleErrorMessage && (
+              <FieldError id="trade-title-error" role="alert">
+                {titleErrorMessage}
+              </FieldError>
             )}
-          </CategoryGroup>
-        </Field>
+          </Field>
 
-        <Field>
-          <Label htmlFor="trade-desired-production">
-            거래 희망 상품 <OptionalMark>(선택)</OptionalMark>
-          </Label>
-          <Input
-            id="trade-desired-production"
-            name="desiredProduction"
-            defaultValue={initialValues?.desiredProduction}
-            maxLength={MAX_SHORT_TEXT_LENGTH}
-            placeholder="예: 시나모롤 키링 또는 산리오 랜덤 상품"
-          />
-        </Field>
+          <Field>
+            <Label htmlFor="trade-description">
+              설명 <RequiredMark aria-hidden="true">*</RequiredMark>
+            </Label>
+            <Textarea
+              id="trade-description"
+              name="description"
+              defaultValue={initialValues?.description}
+              required
+              placeholder="상품의 상태와 거래 방법을 자세히 적어주세요"
+            />
+          </Field>
+
+          <Field>
+            <Label htmlFor="trade-category-search">
+              카테고리 <OptionalMark>(선택)</OptionalMark>
+            </Label>
+            <Input
+              id="trade-category-search"
+              type="search"
+              value={categoryKeyword}
+              autoComplete="off"
+              placeholder="카테고리를 검색해주세요"
+              onChange={(event) => setCategoryKeyword(event.target.value)}
+              onKeyDown={handleCategoryKeywordKeyDown}
+            />
+
+            {selectedCategories.length > 0 && (
+              <CategoryGroup>
+                <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
+                {selectedCategories.map((category) => (
+                  <input
+                    key={category.categoryId}
+                    type="hidden"
+                    name="categoryIds"
+                    value={category.categoryId}
+                  />
+                ))}
+                <CategoryList aria-label="선택한 카테고리">
+                  {selectedCategories.map((category) => (
+                    <CategoryButton
+                      key={category.categoryId}
+                      type="button"
+                      data-selected="true"
+                      aria-label={`${category.name} 카테고리 선택 해제`}
+                      onClick={() => removeCategory(category.categoryId)}
+                    >
+                      #{category.name} ×
+                    </CategoryButton>
+                  ))}
+                </CategoryList>
+              </CategoryGroup>
+            )}
+
+            <CategoryGroup>
+              <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
+              {categoryState.status === 'idle' ? (
+                <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
+              ) : categoryState.status === 'loading' ? (
+                <CategoryMessage role="status">
+                  카테고리를 불러오는 중...
+                </CategoryMessage>
+              ) : categoryState.status === 'error' ? (
+                <CategoryMessage role="alert">
+                  {categoryState.errorMessage}
+                </CategoryMessage>
+              ) : availableCategories.length === 0 ? (
+                <CategoryMessage>검색결과가 없어요.</CategoryMessage>
+              ) : (
+                <CategoryList aria-label="카테고리 검색 결과">
+                  {availableCategories.map((category) => (
+                    <CategoryButton
+                      key={category.categoryId}
+                      type="button"
+                      data-selected="false"
+                      onClick={() => selectCategory(category)}
+                    >
+                      {category.name}
+                    </CategoryButton>
+                  ))}
+                </CategoryList>
+              )}
+            </CategoryGroup>
+          </Field>
+        </ItemSection>
+
+        <ItemSection aria-labelledby="desired-item-heading">
+          <ItemSectionHeader>
+            <ItemSectionTitle id="desired-item-heading">
+              얻고 싶은 것
+            </ItemSectionTitle>
+            <ItemSectionDescription>
+              원하는 상품이 없다면 비워두고 제안을 받을 수 있어요.
+            </ItemSectionDescription>
+          </ItemSectionHeader>
+
+          <Field>
+            <Label htmlFor="trade-desired-production">
+              얻고 싶은 상품 <OptionalMark>(선택)</OptionalMark>
+            </Label>
+            <Input
+              id="trade-desired-production"
+              name="desiredProduction"
+              defaultValue={initialValues?.desiredProduction}
+              maxLength={MAX_SHORT_TEXT_LENGTH}
+              placeholder="예: 시나모롤 키링 또는 산리오 랜덤 상품"
+            />
+          </Field>
+        </ItemSection>
 
         <Field>
           <Label htmlFor="purchase-store">
@@ -507,6 +561,13 @@ export default function TradeForm(props: TradeFormProps) {
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
       />
 
+      {submissionState.stage !== 'idle' && (
+        <TradeSubmissionOverlay
+          {...submissionState}
+          action={isEditMode ? 'edit' : 'create'}
+        />
+      )}
+
       <KakaoPlaceSearchDialog
         open={isPurchaseStoreDialogOpen}
         analyticsContext="trade_purchase_store"
@@ -555,6 +616,36 @@ const Form = styled.form`
   display: flex;
   flex-direction: column;
   gap: 28px;
+`;
+
+const ItemSection = styled.section`
+  display: flex;
+  min-width: 0;
+  padding: 0 0 4px;
+  flex-direction: column;
+  gap: 28px;
+  border: 0;
+`;
+
+const ItemSectionHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const ItemSectionTitle = styled.h2`
+  margin: 0;
+  color: #242429;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+`;
+
+const ItemSectionDescription = styled.p`
+  margin: 0;
+  color: #777981;
+  font-size: 14px;
+  line-height: 1.5;
 `;
 
 const Field = styled.div`
