@@ -63,7 +63,7 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           APP_VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}
-        run: npx expo prebuild --platform android --no-install
+        run: npx expo prebuild --platform android --clean --no-install
 
       - name: Setup Java
         if: github.event_name != 'pull_request'
