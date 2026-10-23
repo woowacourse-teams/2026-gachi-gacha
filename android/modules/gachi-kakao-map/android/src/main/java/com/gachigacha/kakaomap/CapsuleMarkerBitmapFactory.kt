@@ -12,15 +12,24 @@ import kotlin.math.roundToInt
 
 internal object CapsuleMarkerBitmapFactory {
   private const val STORE_MARKER_SIZE_DP = 34f
+  private const val SELECTED_STORE_MARKER_SIZE_DP = 44f
   private const val USER_MARKER_SIZE_DP = 20f
 
   private val storeMarkers = ConcurrentHashMap<Int, Bitmap>()
+  private val selectedStoreMarkers = ConcurrentHashMap<Int, Bitmap>()
   private val userMarkers = ConcurrentHashMap<Int, Bitmap>()
 
   fun storeMarker(context: Context): Bitmap {
     val densityDpi = context.resources.displayMetrics.densityDpi
     return storeMarkers.getOrPut(densityDpi) {
       drawStoreMarker(context.resources.displayMetrics.density)
+    }
+  }
+
+  fun selectedStoreMarker(context: Context): Bitmap {
+    val densityDpi = context.resources.displayMetrics.densityDpi
+    return selectedStoreMarkers.getOrPut(densityDpi) {
+      drawSelectedStoreMarker(context.resources.displayMetrics.density)
     }
   }
 
@@ -96,6 +105,42 @@ internal object CapsuleMarkerBitmapFactory {
       color = Color.parseColor("#111111")
     }
     canvas.drawCircle(center, center, radius, outlinePaint)
+
+    return bitmap
+  }
+
+  private fun drawSelectedStoreMarker(density: Float): Bitmap {
+    val size = (SELECTED_STORE_MARKER_SIZE_DP * density).roundToInt()
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val center = size / 2f
+    val selectionRadius = 20f * density
+
+    val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      style = Paint.Style.FILL
+      color = Color.argb(52, 36, 33, 34)
+    }
+    canvas.drawCircle(center, center + 1.4f * density, selectionRadius, shadowPaint)
+
+    val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      style = Paint.Style.FILL
+      color = Color.WHITE
+    }
+    canvas.drawCircle(center, center, selectionRadius, selectionPaint)
+
+    selectionPaint.style = Paint.Style.STROKE
+    selectionPaint.strokeWidth = 2.4f * density
+    selectionPaint.color = Color.parseColor("#D1495B")
+    canvas.drawCircle(center, center, selectionRadius - 1.2f * density, selectionPaint)
+
+    val capsule = drawStoreMarker(density)
+    canvas.drawBitmap(
+      capsule,
+      center - capsule.width / 2f,
+      center - capsule.height / 2f,
+      null,
+    )
+    capsule.recycle()
 
     return bitmap
   }

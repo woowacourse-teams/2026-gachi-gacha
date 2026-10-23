@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,7 +15,6 @@ import { isKakaoMapConfigured } from '../config/maps';
 import { NearbyStoreCard } from '../domains/store/NearbyStoreCard';
 import { NearbyStoreMap } from '../domains/store/NearbyStoreMap';
 import type { MapCoordinate, NearbyStore } from '../domains/store/storeTypes';
-import { useCurrentLocation } from '../domains/store/useCurrentLocation';
 import {
   HONGDAE_SEARCH_CENTER,
   useNearbyStores,
@@ -28,23 +27,62 @@ type Props = NativeStackScreenProps<MapStackParamList, 'MapHome'>;
 const CAROUSEL_HORIZONTAL_INSET = 12;
 const CAROUSEL_GAP = 10;
 const STORE_CARD_HEIGHT = 124;
+const HONGDAE_RETURN_DISTANCE_METERS = 700;
+
+function calculateDistanceInMeters(first: MapCoordinate, second: MapCoordinate): number {
+  const earthRadius = 6_371_000;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const latitudeDelta = toRadians(second.latitude - first.latitude);
+  const longitudeDelta = toRadians(second.longitude - first.longitude);
+  const firstLatitude = toRadians(first.latitude);
+  const secondLatitude = toRadians(second.latitude);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(firstLatitude) * Math.cos(secondLatitude) *
+    Math.sin(longitudeDelta / 2) ** 2;
+
+  return earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+}
 
 export function MapScreen({ navigation, route }: Props) {
   const gachaId = route.params?.gachaId ?? null;
   const gachaName = route.params?.gachaName;
-  const [searchCenter, setSearchCenter] = useState<MapCoordinate>(
-    HONGDAE_SEARCH_CENTER,
-  );
-  const [isCurrentLocation, setIsCurrentLocation] = useState(false);
+  const [isMapAwayFromHongdae, setIsMapAwayFromHongdae] = useState(false);
+  const [recenterRequestId, setRecenterRequestId] = useState(0);
+  const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+  const carouselRef = useRef<FlatList<NearbyStore>>(null);
   const { width } = useWindowDimensions();
-  const location = useCurrentLocation();
-  const result = useNearbyStores(gachaId, searchCenter);
+  const result = useNearbyStores(gachaId, HONGDAE_SEARCH_CENTER);
   const canShowMap = isKakaoMapConfigured();
   const storeCardWidth = Math.max(
     260,
     width - CAROUSEL_HORIZONTAL_INSET * 2,
   );
   const hasStoreCarousel = result.status === 'success' && result.stores.length > 0;
+
+  useEffect(() => {
+    setSelectedStoreId(null);
+    setIsMapAwayFromHongdae(false);
+    setRecenterRequestId((requestId) => requestId + 1);
+  }, [gachaId]);
+
+  useEffect(() => {
+    if (selectedStoreId === null) return;
+
+    const selectedIndex = result.stores.findIndex(
+      ({ storeId }) => storeId === selectedStoreId,
+    );
+    if (selectedIndex < 0) {
+      setSelectedStoreId(null);
+      return;
+    }
+
+    carouselRef.current?.scrollToIndex({
+      animated: true,
+      index: selectedIndex,
+      viewPosition: 0,
+    });
+  }, [result.stores, selectedStoreId]);
 
   function openStoreDetail(store: NearbyStore) {
     navigation.navigate('StoreDetail', {
@@ -56,21 +94,34 @@ export function MapScreen({ navigation, route }: Props) {
   }
 
   function clearGachaSelection() {
+    setSelectedStoreId(null);
     navigation.setParams({ gachaId: undefined, gachaName: undefined });
   }
 
-  async function moveToCurrentLocation() {
-    const coordinate = await location.requestCurrentLocation();
-    if (!coordinate) return;
+  function selectStoreFromMarker(store: NearbyStore) {
+    if (selectedStoreId === store.storeId) {
+      openStoreDetail(store);
+      return;
+    }
 
-    setSearchCenter(coordinate);
-    setIsCurrentLocation(true);
+    setSelectedStoreId(store.storeId);
+  }
+
+  function handleCameraMoveEnd(center: MapCoordinate) {
+    setIsMapAwayFromHongdae(
+      calculateDistanceInMeters(center, HONGDAE_SEARCH_CENTER) >
+        HONGDAE_RETURN_DISTANCE_METERS,
+    );
+  }
+
+  function returnToHongdae() {
+    setSelectedStoreId(null);
+    setIsMapAwayFromHongdae(false);
+    setRecenterRequestId((requestId) => requestId + 1);
   }
 
   const heading = gachaId === null
-    ? isCurrentLocation
-      ? '내 주변 가챠 매장'
-      : '홍대 주변 가챠 매장'
+    ? '홍대 주변 가챠 매장'
     : gachaName
       ? `‘${gachaName}’ 보유 매장`
       : '선택한 가챠 보유 매장';
@@ -81,9 +132,11 @@ export function MapScreen({ navigation, route }: Props) {
       <View style={styles.mapStage}>
         {canShowMap ? (
           <NearbyStoreMap
-            center={searchCenter}
-            onSelectStore={openStoreDetail}
-            showsUserLocation={isCurrentLocation}
+            center={HONGDAE_SEARCH_CENTER}
+            onCameraMoveEnd={handleCameraMoveEnd}
+            onSelectStore={selectStoreFromMarker}
+            recenterRequestId={recenterRequestId}
+            selectedStoreId={selectedStoreId}
             stores={result.stores}
           />
         ) : (
@@ -96,7 +149,7 @@ export function MapScreen({ navigation, route }: Props) {
           <View style={styles.summaryHeadingRow}>
             <View style={styles.summaryCopy}>
               <Text style={styles.eyebrow}>
-                {isCurrentLocation ? '현재 위치' : '기본 탐색 지역 · 홍대'}
+                기본 탐색 지역 · 홍대
               </Text>
               <Text numberOfLines={2} style={styles.heading}>{heading}</Text>
             </View>
@@ -120,31 +173,23 @@ export function MapScreen({ navigation, route }: Props) {
               </Text>
             </Pressable>
           )}
-          {location.errorMessage && (
-            <Text accessibilityLiveRegion="polite" style={styles.locationError}>
-              {location.errorMessage}
-            </Text>
-          )}
         </View>
 
-        <Pressable
-          accessibilityLabel="내 현재 위치로 지도 이동"
-          accessibilityRole="button"
-          disabled={location.status === 'requesting'}
-          onPress={() => void moveToCurrentLocation()}
-          style={({ pressed }) => [
-            styles.locationButton,
-            hasStoreCarousel && styles.locationButtonAboveCarousel,
-            pressed && styles.buttonPressed,
-            location.status === 'requesting' && styles.buttonDisabled,
-          ]}
-        >
-          {location.status === 'requesting' ? (
-            <ActivityIndicator color={colors.primary} size="small" />
-          ) : (
-            <Text aria-hidden style={styles.locationIcon}>◎</Text>
-          )}
-        </Pressable>
+        {isMapAwayFromHongdae && (
+          <Pressable
+            accessibilityLabel="지도를 홍대 중심으로 되돌리기"
+            accessibilityRole="button"
+            onPress={returnToHongdae}
+            style={({ pressed }) => [
+              styles.returnButton,
+              hasStoreCarousel && styles.returnButtonAboveCarousel,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text aria-hidden style={styles.returnIcon}>↺</Text>
+            <Text style={styles.returnText}>홍대로 돌아가기</Text>
+          </Pressable>
+        )}
 
         {result.status === 'loading' && (
           <View style={styles.stateOverlay}>
@@ -170,8 +215,8 @@ export function MapScreen({ navigation, route }: Props) {
           <View style={styles.stateOverlay}>
             <Text style={styles.stateText}>
               {gachaId === null
-                ? '현재 지도 주변에 등록된 가챠 매장이 없어요.'
-                : '현재 지도 주변에는 이 가챠를 보유한 매장이 없어요.'}
+                ? '홍대 주변에 등록된 가챠 매장이 없어요.'
+                : '홍대 주변에는 이 가챠를 보유한 매장이 없어요.'}
             </Text>
           </View>
         )}
@@ -189,9 +234,11 @@ export function MapScreen({ navigation, route }: Props) {
               })}
               horizontal
               keyExtractor={({ storeId }) => String(storeId)}
+              ref={carouselRef}
               renderItem={({ item }) => (
                 <View style={{ width: storeCardWidth }}>
                   <NearbyStoreCard
+                    selected={item.storeId === selectedStoreId}
                     store={item}
                     onPress={() => openStoreDetail(item)}
                   />
@@ -278,24 +325,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   clearConditionText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
-  locationError: {
-    marginTop: 10,
-    color: colors.primary,
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  locationButton: {
+  returnButton: {
     position: 'absolute',
     right: 16,
     bottom: 18,
-    width: 48,
-    height: 48,
+    minHeight: 46,
+    paddingHorizontal: 15,
+    flexDirection: 'row',
+    gap: 7,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(36, 33, 34, 0.12)',
-    borderRadius: 24,
+    borderRadius: 23,
     backgroundColor: colors.background,
     elevation: 7,
     shadowColor: '#242122',
@@ -303,17 +346,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 9,
   },
-  locationButtonAboveCarousel: {
+  returnButtonAboveCarousel: {
     bottom: STORE_CARD_HEIGHT + 32,
   },
-  locationIcon: {
+  returnIcon: {
     color: colors.primary,
-    fontSize: 28,
+    fontSize: 21,
     fontWeight: '800',
-    lineHeight: 31,
+    lineHeight: 24,
   },
+  returnText: { color: colors.text, fontSize: 13, fontWeight: '800' },
   buttonPressed: { opacity: 0.72 },
-  buttonDisabled: { opacity: 0.55 },
   stateOverlay: {
     position: 'absolute',
     right: 14,

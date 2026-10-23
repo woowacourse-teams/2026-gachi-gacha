@@ -56,10 +56,6 @@ function createConfig({ config }) {
       package: variantConfig.applicationId,
       versionCode: 1,
       softwareKeyboardLayoutMode: 'resize',
-      permissions: [
-        'android.permission.ACCESS_COARSE_LOCATION',
-        'android.permission.ACCESS_FINE_LOCATION',
-      ],
       adaptiveIcon: {
         backgroundColor: '#68c4f3',
         foregroundImage: './assets/lucha-app-icon.png',
