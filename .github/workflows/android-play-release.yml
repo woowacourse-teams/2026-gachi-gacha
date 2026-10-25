@@ -130,7 +130,11 @@ jobs:
         shell: bash
         run: |
           AAB_PATH='app/build/outputs/bundle/release/app-release.aab'
-          jarsigner -verify -strict "$AAB_PATH"
+          # Android upload keys are self-signed certificates. `-strict` turns
+          # that expected trust-chain warning into exit code 4 even when the
+          # bundle signature itself is valid. Without `-strict`, jarsigner
+          # still exits non-zero when signature verification actually fails.
+          jarsigner -verify "$AAB_PATH"
           AAB_SHA256="$(sha256sum "$AAB_PATH" | cut -d ' ' -f 1)"
           {
             echo '### Google Play production AAB'
