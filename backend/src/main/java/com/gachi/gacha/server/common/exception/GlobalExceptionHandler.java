@@ -71,7 +71,6 @@ public class GlobalExceptionHandler {
             final BusinessException e,
             final HttpServletRequest request
     ) {
-        log.warn("handleBusinessException: {} - {}", e.getErrorCode(), e.getMessage());
         ErrorCode errorCode = e.getErrorCode();
         if (errorCode.getStatus().is5xxServerError()) {
             log.error("[{} {}] BusinessException: {} - {}", request.getMethod(), request.getRequestURI(),
