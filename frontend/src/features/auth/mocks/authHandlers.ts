@@ -2,11 +2,27 @@ import { delay, http, HttpResponse } from 'msw';
 
 const CURRENT_MEMBER_API_PATH = '/api/v1/members/me';
 const REFRESH_API_PATH = '/api/v1/auth/refresh';
+const APPLE_LOGIN_PREPARATION_API_PATH = '/api/v1/oauth/apple/prepare';
 
 export const AUTH_STORY_TOKEN = 'storybook-access-token';
 export const AUTH_STORY_EXPIRED_TOKEN = 'storybook-expired-access-token';
 export const AUTH_STORY_REFRESH_TOKEN = 'storybook-refresh-token';
 export const AUTH_STORY_REFRESHED_TOKEN = 'storybook-refreshed-access-token';
+
+export const appleLoginPreparationHandler = http.post(
+  APPLE_LOGIN_PREPARATION_API_PATH,
+  () =>
+    HttpResponse.json({
+      code: 'C000',
+      message: '요청에 성공했습니다.',
+      data: {
+        clientId: 'com.gachigacha.web.dev',
+        redirectUri: 'https://dev.gachigacha.kro.kr/api/v1/oauth/login/apple',
+        state: 'storybook-apple-state',
+        nonce: 'storybook-apple-nonce',
+      },
+    }),
+);
 
 const AUTHENTICATED_MEMBER_DATA = {
   name: '김민지',
