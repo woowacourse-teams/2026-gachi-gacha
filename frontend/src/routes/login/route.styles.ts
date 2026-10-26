@@ -98,8 +98,8 @@ const providerButtonLayout = css`
   display: flex;
   width: 100%;
   min-width: 140px;
-  min-height: 30px;
-  aspect-ratio: 375 / 44;
+  height: 44px;
+  min-height: 44px;
   padding: 0 ${space.xl};
   align-items: center;
   justify-content: center;

@@ -10,9 +10,13 @@ import {
 
 import { syncAnalyticsUser } from '@/shared/analytics/analyticsClient';
 
-import { isUnauthorizedAuthApiError } from './api/AuthApiError';
+import {
+  AuthApiError,
+  isUnauthorizedAuthApiError,
+} from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
 import { deleteCurrentMember } from './api/deleteCurrentMember';
+import { getAccountDeletionReauthenticationUrl } from './api/getAccountDeletionReauthenticationUrl';
 import { getCurrentMember } from './api/getCurrentMember';
 import { logoutAuthSession } from './api/logoutAuthSession';
 import { refreshAuthTokensOnce } from './api/refreshAuthTokens';
@@ -39,10 +43,16 @@ interface AuthSessionValue {
   errorMessage: string | null;
   authenticate: (tokens: AuthTokens) => Promise<void>;
   updateProfile: (input: UpdateCurrentMemberInput) => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  deleteAccount: (authorizationCode?: string) => Promise<AccountDeletionResult>;
   logout: () => void;
   retry: () => void;
 }
+
+export type AccountDeletionResult =
+  | { status: 'deleted' }
+  | { status: 'reauthentication-required'; authorizationUrl: string };
+
+const INVALID_OAUTH_STATE_CODE = 'AUE03';
 
 interface AuthState {
   status: AuthStatus;
@@ -276,10 +286,29 @@ export function AuthSessionProvider({
     }));
   }, []);
 
-  const deleteAccount = useCallback(async () => {
-    await deleteCurrentMember();
+  const deleteAccount = useCallback(async (authorizationCode?: string) => {
+    try {
+      await deleteCurrentMember(authorizationCode);
+    } catch (error) {
+      if (
+        !authorizationCode &&
+        error instanceof AuthApiError &&
+        error.code === INVALID_OAUTH_STATE_CODE
+      ) {
+        return {
+          status: 'reauthentication-required' as const,
+          authorizationUrl:
+            await getAccountDeletionReauthenticationUrl(),
+        };
+      }
+
+      throw error;
+    }
+
     clearAuthTokens();
     setState(GUEST_STATE);
+
+    return { status: 'deleted' as const };
   }, []);
 
   const logout = useCallback(() => {
