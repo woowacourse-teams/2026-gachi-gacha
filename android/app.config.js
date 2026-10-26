@@ -94,6 +94,7 @@ function createConfig({ config }) {
       ? 'KAKAO_MAP_NATIVE_APP_KEY_DEV'
       : 'KAKAO_MAP_NATIVE_APP_KEY_PROD'
   ]?.trim();
+  const memberReportEndpoint = process.env.ANDROID_MEMBER_REPORT_ENDPOINT?.trim() ?? '';
 
   return {
     ...config,
@@ -133,6 +134,7 @@ function createConfig({ config }) {
     extra: {
       appVariant: variant,
       apiBaseUrl: variantConfig.apiBaseUrl,
+      memberReportEndpoint,
       kakaoMapNativeAppKeyConfigured: Boolean(kakaoMapNativeAppKey),
       tradeFeaturesEnabled: variant === DEVELOPMENT_VARIANT,
     },

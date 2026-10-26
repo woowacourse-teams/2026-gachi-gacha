@@ -42,6 +42,7 @@ jobs:
       EXPO_NO_TELEMETRY: '1'
       KAKAO_MAP_NATIVE_APP_KEY_DEV: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_DEV }}
       KAKAO_MAP_NATIVE_APP_KEY_PROD: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD }}
+      ANDROID_MEMBER_REPORT_ENDPOINT: ${{ secrets.ANDROID_MEMBER_REPORT_ENDPOINT }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
