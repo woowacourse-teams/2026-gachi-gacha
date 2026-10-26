@@ -10,6 +10,9 @@ import {
 } from 'react-native';
 
 import { colors } from '../../theme/colors';
+import { useAuthSession } from '../auth/AuthSessionContext';
+import { useMemberSafety } from '../memberSafety/MemberSafetyContext';
+import { UserSafetyMenu } from '../memberSafety/UserSafetyMenu';
 import {
   createTradeComment,
   getTradeComments,
@@ -39,6 +42,8 @@ function formatCreatedAt(value: string): string {
 }
 
 export function TradeCommentsSection({ onComposerFocus, tradeId }: TradeCommentsSectionProps) {
+  const { memberId, status: authStatus } = useAuthSession();
+  const { blockedMemberIds } = useMemberSafety();
   const [attempt, setAttempt] = useState(0);
   const [nickname, setNickname] = useState('');
   const [content, setContent] = useState('');
@@ -69,6 +74,10 @@ export function TradeCommentsSection({ onComposerFocus, tradeId }: TradeComments
 
   const trimmedContent = content.trim();
   const canSubmit = trimmedContent.length > 0 && !isSubmitting;
+  const visibleComments = state.comments.filter(
+    ({ memberId: commentMemberId }) =>
+      commentMemberId === null || !blockedMemberIds.has(commentMemberId),
+  );
 
   async function handleSubmit() {
     if (!canSubmit) return;
@@ -100,7 +109,7 @@ export function TradeCommentsSection({ onComposerFocus, tradeId }: TradeComments
   return (
     <View style={styles.section}>
       <Text accessibilityRole="header" style={styles.title}>
-        댓글 <Text style={styles.count}>{state.comments.length}</Text>
+        댓글 <Text style={styles.count}>{visibleComments.length}</Text>
       </Text>
 
       <View style={styles.composer}>
@@ -165,13 +174,13 @@ export function TradeCommentsSection({ onComposerFocus, tradeId }: TradeComments
           </Pressable>
         </View>
       )}
-      {state.status === 'success' && state.comments.length === 0 && (
+      {state.status === 'success' && visibleComments.length === 0 && (
         <View style={styles.stateBox}>
           <Text style={styles.emptyTitle}>아직 댓글이 없어요.</Text>
           <Text style={styles.stateText}>첫 댓글로 교환 이야기를 시작해 보세요.</Text>
         </View>
       )}
-      {state.status === 'success' && state.comments.map((comment) => (
+      {state.status === 'success' && visibleComments.map((comment) => (
         <View key={comment.commentId} style={styles.commentRow}>
           <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.avatar}>
             {comment.profileImageUrl ? (
@@ -182,8 +191,18 @@ export function TradeCommentsSection({ onComposerFocus, tradeId }: TradeComments
           </View>
           <View style={styles.commentBody}>
             <View style={styles.commentHeading}>
-              <Text style={styles.author}>{comment.nickname}</Text>
-              <Text style={styles.createdAt}>{formatCreatedAt(comment.createdAt)}</Text>
+              <View style={styles.commentMeta}>
+                <Text style={styles.author}>{comment.nickname}</Text>
+                <Text style={styles.createdAt}>{formatCreatedAt(comment.createdAt)}</Text>
+              </View>
+              {authStatus === 'authenticated' && comment.memberId !== memberId && (
+                <UserSafetyMenu
+                  referenceId={String(comment.commentId)}
+                  source="comment"
+                  targetMemberId={comment.memberId}
+                  targetNickname={comment.nickname}
+                />
+              )}
             </View>
             <Text style={styles.commentText}>{comment.content}</Text>
           </View>
@@ -218,7 +237,8 @@ const styles = StyleSheet.create({
   avatarImage: { width: '100%', height: '100%' },
   avatarText: { color: colors.primary, fontSize: 15, fontWeight: '800' },
   commentBody: { flex: 1, minWidth: 0 },
-  commentHeading: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  commentHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  commentMeta: { minWidth: 0, flex: 1, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
   author: { color: colors.text, fontSize: 14, fontWeight: '800' },
   createdAt: { color: colors.textMuted, fontSize: 11 },
   commentText: { marginTop: 7, color: colors.text, fontSize: 14, lineHeight: 21 },

@@ -8,6 +8,7 @@ import { BackHandler, ToastAndroid } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthSessionProvider } from './src/domains/auth/AuthSessionContext';
+import { MemberSafetyProvider } from './src/domains/memberSafety/MemberSafetyContext';
 import { AppTabs, type AppTabParamList } from './src/navigation/AppTabs';
 import { navigationTheme } from './src/theme/navigationTheme';
 
@@ -43,10 +44,12 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthSessionProvider>
-        <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-          <StatusBar style="dark" />
-          <AppTabs />
-        </NavigationContainer>
+        <MemberSafetyProvider>
+          <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <StatusBar style="dark" />
+            <AppTabs />
+          </NavigationContainer>
+        </MemberSafetyProvider>
       </AuthSessionProvider>
     </SafeAreaProvider>
   );

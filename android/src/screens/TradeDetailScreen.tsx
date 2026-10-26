@@ -16,6 +16,9 @@ import { ImageViewerModal } from '../components/ImageViewerModal';
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
 import { ShareIcon } from '../components/ShareIcon';
 import { TradeCommentsSection } from '../domains/trade/TradeCommentsSection';
+import { useAuthSession } from '../domains/auth/AuthSessionContext';
+import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
+import { UserSafetyMenu } from '../domains/memberSafety/UserSafetyMenu';
 import { getTradeDetail } from '../domains/trade/tradeApi';
 import type { TradeDetail, TradePlace } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
@@ -27,8 +30,10 @@ type State = { status: 'loading' | 'error' | 'success'; data: TradeDetail | null
 
 const statusLabel = { AVAILABLE: '교환 가능', IN_PROGRESS: '교환 진행 중', COMPLETED: '교환 완료' } as const;
 
-export function TradeDetailScreen({ route }: Props) {
+export function TradeDetailScreen({ navigation, route }: Props) {
   const scrollRef = useRef<ScrollView>(null);
+  const { memberId, status: authStatus } = useAuthSession();
+  const { isMemberBlocked } = useMemberSafety();
   const [attempt, setAttempt] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [state, setState] = useState<State>({ status: 'loading', data: null, message: null });
@@ -48,6 +53,18 @@ export function TradeDetailScreen({ route }: Props) {
   if (state.status === 'error' || !state.data) return <View style={styles.center}><Text style={styles.muted}>{state.message}</Text><Pressable style={styles.retry} onPress={() => setAttempt((value) => value + 1)}><Text style={styles.retryText}>다시 시도</Text></Pressable></View>;
 
   const trade = state.data;
+
+  if (isMemberBlocked(trade.memberId)) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.blockedTitle}>차단한 사용자의 글이에요</Text>
+        <Text style={styles.muted}>차단을 해제하면 이 교환글을 다시 확인할 수 있어요.</Text>
+        <Pressable accessibilityRole="button" onPress={() => navigation.goBack()} style={styles.retry}>
+          <Text style={styles.retryText}>목록으로 돌아가기</Text>
+        </Pressable>
+      </View>
+    );
+  }
   const rows = [
     ['얻고 싶은 것', trade.desiredProduction || '협의'],
     ['가능 시간', trade.availableTime || '협의'],
@@ -139,6 +156,15 @@ export function TradeDetailScreen({ route }: Props) {
           >
             <ShareIcon />
           </Pressable>
+          {authStatus === 'authenticated' && memberId !== trade.memberId && (
+            <UserSafetyMenu
+              onBlocked={() => navigation.goBack()}
+              referenceId={String(trade.tradeId)}
+              source="trade"
+              targetMemberId={trade.memberId}
+              targetNickname="작성자"
+            />
+          )}
         </View>
       </View>
       <Text style={styles.categories}>{trade.categories.join(' · ') || '카테고리 미설정'}</Text>
@@ -190,6 +216,7 @@ const styles = StyleSheet.create({
   content: { padding: 18, paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, backgroundColor: colors.surface },
   muted: { color: colors.textMuted, textAlign: 'center' },
+  blockedTitle: { color: colors.text, fontSize: 19, fontWeight: '800' },
   retry: { paddingHorizontal: 20, minHeight: 44, justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   retryText: { color: colors.background, fontWeight: '700' },
   imageFrame: { width: 340, maxWidth: '100%', aspectRatio: 1, marginRight: 12, overflow: 'hidden', borderRadius: 20, backgroundColor: '#f0f0f2' },
