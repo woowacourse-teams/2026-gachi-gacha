@@ -6,6 +6,8 @@ import { AuthApiError } from './AuthApiError';
 import { parseAuthTokensResponse } from './parseAuthTokensResponse';
 
 const JSON_CONTENT_TYPE = 'application/json';
+const APPLE_LOGIN_COMPLETION_API_PATH =
+  '/api/v1/oauth/login/apple/complete';
 const CALLBACK_PARAMETER_NAMES = [
   'code',
   'state',
@@ -35,16 +37,7 @@ function createLoginCallbackUrl(
   return `/api/v1/oauth/login/${provider}?${apiParams.toString()}`;
 }
 
-async function exchangeOAuthCode(
-  provider: OAuthProvider,
-  callbackSearch: string,
-): Promise<AuthTokens> {
-  const response = await fetch(
-    createLoginCallbackUrl(provider, callbackSearch),
-    {
-      credentials: 'include',
-    },
-  );
+async function parseAuthTokens(response: Response): Promise<AuthTokens> {
   const contentType = response.headers.get('content-type');
 
   if (!contentType?.includes(JSON_CONTENT_TYPE)) {
@@ -67,9 +60,58 @@ async function exchangeOAuthCode(
   return parseAuthTokensResponse(responseBody);
 }
 
+async function exchangeOAuthCode(
+  provider: OAuthProvider,
+  callbackSearch: string,
+): Promise<AuthTokens> {
+  const response = await fetch(
+    createLoginCallbackUrl(provider, callbackSearch),
+    {
+      credentials: 'include',
+    },
+  );
+  return parseAuthTokens(response);
+}
+
+async function exchangeAppleLoginTicket(
+  callbackSearch: string,
+): Promise<AuthTokens> {
+  const ticket = new URLSearchParams(callbackSearch).get('ticket')?.trim();
+
+  if (!ticket) {
+    throw new Error('Apple 로그인 인증 결과가 없습니다.');
+  }
+
+  const response = await fetch(APPLE_LOGIN_COMPLETION_API_PATH, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': JSON_CONTENT_TYPE },
+    body: JSON.stringify({ ticket }),
+  });
+
+  return parseAuthTokens(response);
+}
+
+async function exchangeOAuthCallback(
+  provider: OAuthProvider,
+  callbackSearch: string,
+): Promise<AuthTokens> {
+  const hasTicket = new URLSearchParams(callbackSearch).has('ticket');
+
+  if (hasTicket) {
+    if (provider !== 'apple') {
+      throw new Error('소셜 로그인 인증 결과가 올바르지 않습니다.');
+    }
+
+    return exchangeAppleLoginTicket(callbackSearch);
+  }
+
+  return exchangeOAuthCode(provider, callbackSearch);
+}
+
 let pendingExchange: { key: string; promise: Promise<AuthTokens> } | undefined;
 
-export function exchangeOAuthCodeOnce(
+export function exchangeOAuthCallbackOnce(
   provider: OAuthProvider,
   callbackSearch: string,
 ): Promise<AuthTokens> {
@@ -79,7 +121,7 @@ export function exchangeOAuthCodeOnce(
     return pendingExchange.promise;
   }
 
-  const promise = exchangeOAuthCode(provider, callbackSearch);
+  const promise = exchangeOAuthCallback(provider, callbackSearch);
   pendingExchange = { key, promise };
 
   return promise;

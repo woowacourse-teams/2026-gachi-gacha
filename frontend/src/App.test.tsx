@@ -162,6 +162,55 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(hasSeenCurrentLandingTour()).toBe(true);
   });
 
+  it('Apple callback의 일회용 ticket을 토큰으로 교환하고 기존 화면으로 복귀한다', async () => {
+    let requestedTicket: string | null = null;
+
+    storeAuthReturnPath('/trade/new');
+    server.use(
+      http.post(
+        '/api/v1/oauth/login/apple/complete',
+        async ({ request }) => {
+          const body: unknown = await request.json();
+
+          requestedTicket =
+            typeof body === 'object' && body !== null && 'ticket' in body
+              ? String(body.ticket)
+              : null;
+
+          return HttpResponse.json({
+            code: 'C000',
+            message: '요청에 성공했습니다.',
+            data: { accessToken, refreshToken },
+          });
+        },
+      ),
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '요청에 성공했습니다.',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/oauth/login/apple?ticket=one-time-login-ticket',
+    });
+
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith('/trade/new');
+    });
+    expect(requestedTicket).toBe('one-time-login-ticket');
+    expect(readAccessToken()).toBe(accessToken);
+    expect(readRefreshToken()).toBe(refreshToken);
+  });
+
   it('OAuth API 오류가 발생하면 오류 안내와 다시 로그인 링크를 보여준다', async () => {
     storeAuthReturnPath('/notifications');
     server.use(

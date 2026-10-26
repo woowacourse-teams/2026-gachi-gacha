@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
-import { exchangeOAuthCodeOnce } from '@/features/auth/api/exchangeOAuthCode';
+import { exchangeOAuthCallbackOnce } from '@/features/auth/api/exchangeOAuthCode';
 import {
   consumeAuthReturnPath,
   createLoginUrl,
@@ -34,7 +34,7 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
   useEffect(() => {
     let isCurrent = true;
 
-    void exchangeOAuthCodeOnce(provider, window.location.search)
+    void exchangeOAuthCallbackOnce(provider, window.location.search)
       .then(async (authTokens) => {
         if (!isCurrent) {
           return;
