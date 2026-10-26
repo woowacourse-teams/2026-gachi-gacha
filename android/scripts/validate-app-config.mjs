@@ -46,10 +46,12 @@ const originalDevelopmentMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
 const originalProductionMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 const originalAppVersion = process.env.APP_VERSION;
 const originalAndroidVersionCode = process.env.ANDROID_VERSION_CODE;
+const originalMemberReportEndpoint = process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
 delete process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
 delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 delete process.env.APP_VERSION;
 delete process.env.ANDROID_VERSION_CODE;
+delete process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
 
 for (const [variant, expected] of Object.entries(expectedVariants)) {
   process.env.APP_VARIANT = variant;
@@ -67,6 +69,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     apiBaseUrl: config.extra?.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured:
       config.extra?.kakaoMapNativeAppKeyConfigured,
+    memberReportEndpoint: config.extra?.memberReportEndpoint,
     tradeFeaturesEnabled: config.extra?.tradeFeaturesEnabled,
   };
 
@@ -83,6 +86,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
       variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured: false,
+    memberReportEndpoint: '',
     tradeFeaturesEnabled: variant === 'development',
   };
 
@@ -158,6 +162,22 @@ if (originalAndroidVersionCode === undefined) {
 } else {
   process.env.ANDROID_VERSION_CODE = originalAndroidVersionCode;
 }
+
+process.env.ANDROID_MEMBER_REPORT_ENDPOINT = 'https://example.com/report';
+process.env.APP_VARIANT = 'development';
+const reportConfig = createConfig({ config: {} });
+
+if (reportConfig.extra?.memberReportEndpoint !== 'https://example.com/report') {
+  throw new Error('Android member report endpoint was not injected into the app config.');
+}
+
+if (originalMemberReportEndpoint === undefined) {
+  delete process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
+} else {
+  process.env.ANDROID_MEMBER_REPORT_ENDPOINT = originalMemberReportEndpoint;
+}
+
+console.log('✓ Android member report endpoint is injected at build time');
 
 console.log('✓ Kakao Map key is injected without exposing it through public extras');
 

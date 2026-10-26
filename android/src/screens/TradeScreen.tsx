@@ -3,6 +3,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
+import { useAuthSession } from '../domains/auth/AuthSessionContext';
+import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import { TradeCard } from '../domains/trade/TradeCard';
 import { useTrades } from '../domains/trade/useTrades';
 import type { TradeStatus } from '../domains/trade/tradeTypes';
@@ -25,16 +27,19 @@ export function TradeScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [tradeStatus, setTradeStatus] = useState<TradeStatus | null>(null);
+  const { status: authStatus } = useAuthSession();
+  const { blockedMemberIds } = useMemberSafety();
   const trades = useTrades(keyword, tradeStatus);
   const { width } = useWindowDimensions();
   const cardWidth = (width - CONTENT_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
   const selectedStatusLabel = statusFilters.find(({ value }) => value === tradeStatus)?.label ?? '전체';
+  const visibleTrades = trades.items.filter(({ memberId }) => !blockedMemberIds.has(memberId));
 
   return (
     <View style={styles.screen}>
       <AppHeader title="거래/교환" />
       <FlatList
-        data={trades.items}
+        data={visibleTrades}
         keyExtractor={({ tradeId }) => String(tradeId)}
         numColumns={2}
         columnWrapperStyle={styles.row}
@@ -55,6 +60,15 @@ export function TradeScreen({ navigation }: Props) {
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.heading}>어떤 거래글을 찾아볼까요?</Text>
+            {authStatus === 'authenticated' && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => navigation.navigate('BlockedMembers')}
+                style={({ pressed }) => [styles.blockManagementButton, pressed && styles.blockManagementPressed]}
+              >
+                <Text style={styles.blockManagementText}>차단 관리</Text>
+              </Pressable>
+            )}
             <View style={styles.searchRow}>
               <TextInput
                 accessibilityLabel="교환 게시글 검색어"
@@ -115,7 +129,7 @@ export function TradeScreen({ navigation }: Props) {
         }
         ListFooterComponent={
           <View>
-            {trades.loadMoreErrorMessage && trades.items.length > 0 && (
+            {trades.loadMoreErrorMessage && visibleTrades.length > 0 && (
               <View style={styles.loadMoreError}>
                 <Text accessibilityLiveRegion="polite" style={styles.stateText}>
                   {trades.loadMoreErrorMessage}
@@ -157,6 +171,9 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
   },
+  blockManagementButton: { minHeight: 40, marginTop: 8, alignSelf: 'flex-end', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
+  blockManagementPressed: { backgroundColor: colors.primarySoft },
+  blockManagementText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
   searchRow: { marginTop: 18, flexDirection: 'row', gap: 8 },
   searchInput: { flex: 1, minHeight: 48, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.background, color: colors.text, fontSize: 14 },
   searchButton: { minWidth: 64, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.primary },
