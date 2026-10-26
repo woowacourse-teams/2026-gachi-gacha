@@ -1,12 +1,26 @@
-import { beforeAll, describe, expect, it } from '@jest/globals';
+import {
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import App from '@/App';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
+
+jest.mock('@/shared/browser/browserNavigation', () => ({
+  assignBrowserLocation: jest.fn(),
+}));
+
+const mockedAssignBrowserLocation = jest.mocked(assignBrowserLocation);
 
 const ACCESS_TOKEN = 'account-deletion-access-token';
 
@@ -30,6 +44,10 @@ beforeAll(() => {
     this.open = false;
     this.dispatchEvent(new Event('close'));
   };
+});
+
+beforeEach(() => {
+  mockedAssignBrowserLocation.mockClear();
 });
 
 describe('외부 회원 탈퇴 페이지', () => {
@@ -154,5 +172,100 @@ describe('외부 회원 탈퇴 페이지', () => {
       '회원 탈퇴를 완료하지 못했습니다.',
     );
     expect(confirmationInput).toHaveValue('탈퇴');
+  });
+
+  it('Apple 회원은 재인증이 필요하면 서버가 발급한 Apple 인증 주소로 이동한다', async () => {
+    const user = userEvent.setup();
+    const authorizationUrl =
+      'https://appleid.apple.com/auth/authorize?response_type=code';
+
+    storeAuthTokens({
+      accessToken: ACCESS_TOKEN,
+      refreshToken: 'account-deletion-refresh-token',
+    });
+
+    server.use(
+      http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
+      http.delete('/api/v1/members/me', () =>
+        HttpResponse.json(
+          {
+            code: 'AUE03',
+            message: '로그인 요청이 유효하지 않습니다.',
+          },
+          { status: 400 },
+        ),
+      ),
+      http.get('/api/v1/oauth/withdraw-url', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: authorizationUrl,
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/account-deletion',
+    });
+
+    await user.click(
+      await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
+    );
+    await user.type(
+      screen.getByRole('textbox', { name: /^확인 문구/ }),
+      '탈퇴',
+    );
+    await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
+
+    await waitFor(() => {
+      expect(mockedAssignBrowserLocation).toHaveBeenCalledWith(
+        authorizationUrl,
+      );
+    });
+  });
+
+  it('Apple 재인증으로 받은 code를 회원 탈퇴 API에 전달한다', async () => {
+    const user = userEvent.setup();
+    let requestedCode: string | null = null;
+
+    storeAuthTokens({
+      accessToken: ACCESS_TOKEN,
+      refreshToken: 'account-deletion-refresh-token',
+    });
+
+    server.use(
+      http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
+      http.delete('/api/v1/members/me', ({ request }) => {
+        requestedCode = new URL(request.url).searchParams.get('code');
+
+        return HttpResponse.json({
+          code: 'C003',
+          message: '정상 삭제',
+          data: { memberId: 1 },
+        });
+      }),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/account-deletion?code=apple-authorization-code',
+    });
+
+    await user.click(
+      await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
+    );
+    await user.type(
+      screen.getByRole('textbox', { name: /^확인 문구/ }),
+      '탈퇴',
+    );
+    await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '계정 삭제 요청을 완료했어요',
+      }),
+    ).toBeInTheDocument();
+    expect(requestedCode).toBe('apple-authorization-code');
   });
 });

@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { AccountDeletionDialog } from '@/routes/mypage/components/AccountDeletionDialog';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
@@ -33,6 +35,7 @@ import {
 const ACCOUNT_DELETION_PATH = '/account-deletion';
 
 export function AccountDeletionRoute() {
+  const { search } = useLocation();
   const { status, member, deleteAccount, retry } = useAuthSession();
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
   const [isDeletionComplete, setIsDeletionComplete] = useState(false);
@@ -43,7 +46,15 @@ export function AccountDeletionRoute() {
 
   async function handleDeleteAccount() {
     try {
-      await deleteAccount();
+      const authorizationCode =
+        new URLSearchParams(search).get('code')?.trim() || undefined;
+      const result = await deleteAccount(authorizationCode);
+
+      if (result.status === 'reauthentication-required') {
+        assignBrowserLocation(result.authorizationUrl);
+        return;
+      }
+
       captureAnalyticsEvent('account_deletion_completed', {
         outcome: 'success',
       });
