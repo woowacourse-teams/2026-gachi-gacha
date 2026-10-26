@@ -17,7 +17,7 @@ import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 import {
   Accent,
   AppleProviderLogo,
-  AppleProviderButton,
+  AppleProviderLink,
   Brand,
   BrandLogo,
   BrandName,
@@ -140,14 +140,13 @@ export function LoginRoute() {
           )}
 
           <ProviderList aria-label="소셜 로그인">
-            <AppleProviderButton
-              type="button"
+            <AppleProviderLink
+              href="/api/v1/oauth/apple"
               aria-label={
                 isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'
               }
               data-apple-sign-in
-              disabled
-              title="Apple 로그인 연동 준비 중"
+              onClick={() => prepareOAuthLogin('apple')}
             >
               <AppleProviderLogo
                 src={appleSignInLogo}
@@ -160,7 +159,7 @@ export function LoginRoute() {
               <span>
                 {isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'}
               </span>
-            </AppleProviderButton>
+            </AppleProviderLink>
             {PROVIDERS.map(({ provider, label }) => (
               <ProviderLink
                 key={provider}

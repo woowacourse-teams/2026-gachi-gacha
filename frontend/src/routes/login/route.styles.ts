@@ -112,7 +112,7 @@ const providerButtonLayout = css`
   text-decoration: none;
 `;
 
-export const AppleProviderButton = styled.button`
+export const AppleProviderLink = styled.a`
   ${providerButtonLayout};
   background: #000000;
   color: #ffffff;
@@ -127,12 +127,6 @@ export const AppleProviderButton = styled.button`
   &:focus-visible {
     box-shadow: ${focusRing};
     outline: none;
-  }
-
-  &:disabled {
-    cursor: wait;
-    opacity: 0.7;
-    transform: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
