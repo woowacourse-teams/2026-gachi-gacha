@@ -251,11 +251,22 @@ export async function authenticatedFetch(
     const refreshedTokens = await refreshAuthTokensOnce(latestSession.refreshToken);
 
     const sessionBeforeStore = await readAuthTokens();
-    if (sessionBeforeStore?.refreshToken !== latestSession.refreshToken) {
+    const refreshWasAlreadyStored =
+      sessionBeforeStore?.accessToken === refreshedTokens.accessToken &&
+      sessionBeforeStore.refreshToken === refreshedTokens.refreshToken;
+
+    if (!sessionBeforeStore) {
       throw new AuthApiError('로그인 상태가 변경되었습니다.', 401);
     }
 
-    await storeAuthTokens(refreshedTokens);
+    if (!refreshWasAlreadyStored) {
+      if (sessionBeforeStore.refreshToken !== latestSession.refreshToken) {
+        throw new AuthApiError('로그인 상태가 변경되었습니다.', 401);
+      }
+
+      await storeAuthTokens(refreshedTokens);
+    }
+
     const retryResponse = await fetch(
       url,
       withAccessToken(init, refreshedTokens.accessToken),
