@@ -119,6 +119,10 @@ function createConfig({ config }) {
       predictiveBackGestureEnabled: true,
     },
     plugins: [
+      [
+        'expo-secure-store',
+        { configureAndroidBackup: true },
+      ],
       './plugins/withAndroidExifInterface',
       './plugins/withAndroidReleaseSigning',
       [

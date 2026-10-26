@@ -8,6 +8,10 @@
 - 웹을 WebView로 감싸지 않고 React Native 네이티브 컴포넌트로 화면을 구현한다.
 - 로그인, 알림처럼 계약 변경 가능성이 큰 기능은 기반이 안정된 뒤 별도 이슈로 추가한다.
 
+웹 기능 대비 구현 현황과 순서는 [Android 기능 포팅 현황](./feature-porting-roadmap.md),
+로그인에 필요한 서버 인계 조건은 [Android 네이티브 로그인 인계 계약](./native-auth-contract.md)을
+기준으로 확인한다.
+
 Expo는 React Native 프레임워크다. Firebase Messaging이나 소셜 로그인처럼 네이티브 설정이 필요한 기능은 Expo development build와 config plugin을 사용하고, 필요하면 Expo가 생성한 Android 네이티브 프로젝트를 확장한다.
 
 ## 브랜치 흐름
