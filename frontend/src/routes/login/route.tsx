@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import appleSignInLogo from '@/assets/apple-sign-in-logo-white.svg';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
@@ -10,11 +10,6 @@ import {
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
-import {
-  prepareAppleSignIn,
-  signInWithApple,
-} from '@/features/auth/signInWithApple';
-import { markCurrentLandingTourAsSeen } from '@/features/onboarding/landingTourSeenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
@@ -65,12 +60,7 @@ function ProviderBrandIcon({ provider }: { provider: 'kakao' | 'naver' }) {
 }
 
 export function LoginRoute() {
-  const { status, errorMessage, retry, authenticate } = useAuthSession();
-  const [appleErrorMessage, setAppleErrorMessage] = useState<string | null>(
-    null,
-  );
-  const [isAppleLoginPending, setIsAppleLoginPending] = useState(false);
-  const [isAppleLoginReady, setIsAppleLoginReady] = useState(false);
+  const { status, errorMessage, retry } = useAuthSession();
   const returnPath = useMemo(
     () => readLoginReturnPath(window.location.search),
     [],
@@ -85,30 +75,6 @@ export function LoginRoute() {
     }
   }, [returnPath, status]);
 
-  useEffect(() => {
-    let isCurrent = true;
-
-    void prepareAppleSignIn()
-      .then(() => {
-        if (isCurrent) {
-          setIsAppleLoginReady(true);
-        }
-      })
-      .catch((error: unknown) => {
-        if (isCurrent) {
-          setAppleErrorMessage(
-            error instanceof Error
-              ? error.message
-              : 'Apple 로그인을 준비하지 못했습니다.',
-          );
-        }
-      });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, []);
-
   if (status === 'loading' || status === 'authenticated') {
     return <PageLoadingFallback label="로그인 상태를 확인하고 있어요." />;
   }
@@ -119,39 +85,6 @@ export function LoginRoute() {
       provider,
       return_pathname: new URL(returnPath, window.location.origin).pathname,
     });
-  }
-
-  async function handleAppleLogin() {
-    prepareOAuthLogin('apple');
-    setAppleErrorMessage(null);
-    setIsAppleLoginPending(true);
-
-    try {
-      const tokens = await signInWithApple();
-
-      await authenticate(tokens);
-      markCurrentLandingTourAsSeen();
-      captureAnalyticsEvent('oauth_login_completed', {
-        provider: 'apple',
-        outcome: 'success',
-      });
-    } catch (error) {
-      captureAnalyticsEvent('oauth_login_completed', {
-        provider: 'apple',
-        outcome: 'failure',
-      });
-      setAppleErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Apple 로그인을 완료하지 못했습니다.',
-      );
-      setIsAppleLoginPending(false);
-      setIsAppleLoginReady(false);
-
-      void prepareAppleSignIn()
-        .then(() => setIsAppleLoginReady(true))
-        .catch(() => undefined);
-    }
   }
 
   return (
@@ -206,10 +139,6 @@ export function LoginRoute() {
             </ErrorMessage>
           )}
 
-          {appleErrorMessage && (
-            <ErrorMessage role="alert">{appleErrorMessage}</ErrorMessage>
-          )}
-
           <ProviderList aria-label="소셜 로그인">
             <AppleProviderButton
               type="button"
@@ -217,8 +146,8 @@ export function LoginRoute() {
                 isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'
               }
               data-apple-sign-in
-              disabled={isAppleLoginPending || !isAppleLoginReady}
-              onClick={() => void handleAppleLogin()}
+              disabled
+              title="Apple 로그인 연동 준비 중"
             >
               <AppleProviderLogo
                 src={appleSignInLogo}
@@ -229,13 +158,7 @@ export function LoginRoute() {
                 data-apple-logo
               />
               <span>
-                {isAppleLoginPending
-                  ? 'Apple 로그인 중...'
-                  : !isAppleLoginReady
-                    ? 'Apple 로그인 준비 중...'
-                    : isAccountDeletionFlow
-                      ? 'Apple로 본인 확인'
-                      : 'Apple로 로그인'}
+                {isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'}
               </span>
             </AppleProviderButton>
             {PROVIDERS.map(({ provider, label }) => (

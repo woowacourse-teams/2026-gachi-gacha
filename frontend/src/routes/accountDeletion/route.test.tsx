@@ -12,7 +12,6 @@ import { http, HttpResponse } from 'msw';
 
 import App from '@/App';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
-import { prepareAppleSignIn } from '@/features/auth/signInWithApple';
 import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -20,13 +19,8 @@ import { server } from '@/test/server';
 jest.mock('@/shared/browser/browserNavigation', () => ({
   assignBrowserLocation: jest.fn(),
 }));
-jest.mock('@/features/auth/signInWithApple', () => ({
-  prepareAppleSignIn: jest.fn(),
-  signInWithApple: jest.fn(),
-}));
 
 const mockedAssignBrowserLocation = jest.mocked(assignBrowserLocation);
-const mockedPrepareAppleSignIn = jest.mocked(prepareAppleSignIn);
 
 const ACCESS_TOKEN = 'account-deletion-access-token';
 
@@ -54,8 +48,6 @@ beforeAll(() => {
 
 beforeEach(() => {
   mockedAssignBrowserLocation.mockClear();
-  mockedPrepareAppleSignIn.mockReset();
-  mockedPrepareAppleSignIn.mockResolvedValue();
 });
 
 describe('외부 회원 탈퇴 페이지', () => {
