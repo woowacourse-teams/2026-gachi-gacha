@@ -1,3 +1,4 @@
+import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import {
@@ -29,7 +30,7 @@ export const Brand = styled.a`
   width: fit-content;
   align-items: center;
   justify-content: center;
-  gap: ${space.sm};
+  gap: ${space.xs};
   color: ${color.primary};
   font-size: clamp(20px, 3vw, 24px);
   font-weight: ${fontWeight.extraBold};
@@ -88,36 +89,68 @@ export const Accent = styled.span`
 
 export const ProviderList = styled.div`
   display: grid;
-  width: 100%;
+  width: min(100%, 375px);
   margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
   gap: ${space.sm};
 `;
 
-export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
+const providerButtonLayout = css`
   display: flex;
   width: 100%;
-  height: 56px;
+  min-width: 140px;
+  min-height: 30px;
+  aspect-ratio: 375 / 44;
   padding: 0 ${space.xl};
   align-items: center;
   justify-content: center;
-  gap: ${space.sm};
-  border: 1px solid
-    ${({ $provider }) => ($provider === 'kakao' ? '#dbc600' : '#009f49')};
+  gap: ${space.xs};
+  border: 0;
   border-radius: ${radius.card};
-  background: ${({ $provider }) =>
-    $provider === 'kakao' ? '#f1da19' : '#08b957'};
-  color: ${({ $provider }) => ($provider === 'kakao' ? '#191919' : '#ffffff')};
-  font-size: ${fontSize.subheading};
-  font-weight: ${fontWeight.bold};
+  font-size: 19px;
+  font-weight: ${fontWeight.medium};
+  line-height: 1;
   text-decoration: none;
+`;
+
+export const AppleProviderLink = styled.a`
+  ${providerButtonLayout};
+  background: #000000;
+  color: #ffffff;
   transition:
-    background 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
 
   &:hover {
-    background: ${({ $provider }) =>
-      $provider === 'kakao' ? '#e6cf08' : '#00a94e'};
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+export const AppleProviderLogo = styled.img`
+  display: block;
+  width: auto;
+  height: 100%;
+  flex: 0 0 auto;
+`;
+
+export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
+  ${providerButtonLayout};
+  background: ${({ $provider }) =>
+    $provider === 'kakao' ? '#fee500' : '#03a94d'};
+  color: ${({ $provider }) => ($provider === 'kakao' ? '#191919' : '#ffffff')};
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+
+  &:hover {
     transform: translateY(-1px);
   }
 
@@ -133,18 +166,16 @@ export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
 
 export const ProviderIcon = styled.span`
   display: grid;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  font-size: 21px;
-  font-weight: 900;
-  line-height: 1;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
   place-items: center;
 
-  svg {
+  img {
     display: block;
-    width: 24px;
-    height: 24px;
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
   }
 `;
 

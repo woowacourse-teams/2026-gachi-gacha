@@ -51,11 +51,11 @@ export interface AnalyticsEventPropertiesMap {
     is_authenticated: boolean | null;
   };
   oauth_login_started: {
-    provider: 'kakao' | 'naver';
+    provider: 'apple' | 'kakao' | 'naver';
     return_pathname: string;
   };
   oauth_login_completed: {
-    provider: 'kakao' | 'naver';
+    provider: 'apple' | 'kakao' | 'naver';
     outcome: AnalyticsOutcome;
   };
   auth_required_redirected: {

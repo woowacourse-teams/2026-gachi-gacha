@@ -1,6 +1,9 @@
 import { useEffect, useMemo } from 'react';
 
+import appleSignInLogo from '@/assets/apple-sign-in-logo-white.svg';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import kakaoLoginSymbol from '@/assets/kakao-login-symbol.svg';
+import naverLoginSymbol from '@/assets/naver-login-symbol.png';
 import {
   readLoginReturnPath,
   storeAuthReturnPath,
@@ -13,6 +16,8 @@ import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
   Accent,
+  AppleProviderLogo,
+  AppleProviderLink,
   Brand,
   BrandLogo,
   BrandName,
@@ -32,30 +37,24 @@ import {
 const PROVIDERS = [
   {
     provider: 'kakao',
-    label: '카카오로 시작하기',
+    label: '카카오로 로그인',
   },
   {
     provider: 'naver',
-    label: '네이버로 시작하기',
+    label: '네이버로 로그인',
   },
 ] as const satisfies readonly {
   provider: OAuthProvider;
   label: string;
 }[];
 
-function ProviderBrandIcon({ provider }: { provider: OAuthProvider }) {
-  if (provider === 'naver') {
-    return <ProviderIcon aria-hidden="true">N</ProviderIcon>;
-  }
-
+function ProviderBrandIcon({ provider }: { provider: 'kakao' | 'naver' }) {
   return (
     <ProviderIcon aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 4C6.9 4 3 7.1 3 11c0 2.5 1.6 4.7 4.1 5.9l-.8 3 3.5-2.2c.7.1 1.4.2 2.2.2 5.1 0 9-3.1 9-6.9S17.1 4 12 4Z"
-          fill="currentColor"
-        />
-      </svg>
+      <img
+        src={provider === 'kakao' ? kakaoLoginSymbol : naverLoginSymbol}
+        alt=""
+      />
     </ProviderIcon>
   );
 }
@@ -141,6 +140,22 @@ export function LoginRoute() {
           )}
 
           <ProviderList aria-label="소셜 로그인">
+            <AppleProviderLink
+              href="/api/v1/oauth/apple"
+              aria-label="Apple로 로그인"
+              data-apple-sign-in
+              onClick={() => prepareOAuthLogin('apple')}
+            >
+              <AppleProviderLogo
+                src={appleSignInLogo}
+                alt=""
+                aria-hidden="true"
+                width={31}
+                height={44}
+                data-apple-logo
+              />
+              <span>Apple로 로그인</span>
+            </AppleProviderLink>
             {PROVIDERS.map(({ provider, label }) => (
               <ProviderLink
                 key={provider}
