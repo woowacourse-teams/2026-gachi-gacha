@@ -7,6 +7,9 @@
 네이티브 `fetch`와 시스템 브라우저는 쿠키 저장소를 공유하지 않으므로 웹 콜백을
 앱이 바로 가로채서 같은 API를 호출하면 세션 검증에 실패할 수 있다.
 
+공통 provider는 `apple | kakao | naver`다. Apple 웹 OAuth도 state와 최초 로그인
+사용자 이름을 같은 브라우저 세션에서 처리하므로 일회성 인계 원칙은 동일하다.
+
 다음 방식은 사용하지 않는다.
 
 - access token 또는 refresh token을 딥링크 URL에 포함
@@ -18,7 +21,8 @@
 백엔드 구현은 백엔드 크루와 별도 이슈에서 합의하며 Android 저장소에서는 변경하지
 않는다. 엔드포인트 이름은 예시이고, 아래 보안 속성이 계약의 핵심이다.
 
-1. 앱이 provider, 환경별 callback scheme, PKCE challenge와 state를 포함해 로그인
+1. 앱이 provider(`apple | kakao | naver`), 환경별 callback scheme, PKCE challenge와
+   state를 포함해 로그인
    시작 API를 호출한다.
 2. 시스템 브라우저에서 카카오 또는 네이버 로그인을 진행한다.
 3. 서버가 provider callback을 처리하고 1회용 인계 코드만 다음 딥링크로 전달한다.
@@ -28,6 +32,11 @@
 5. 서버는 코드를 즉시 폐기하고 기존 형식의 access/refresh token을 응답한다.
 6. 앱은 두 토큰을 하나의 `expo-secure-store` 항목으로 저장한 뒤 내 정보를 조회한다.
 
+iOS가 Apple 네이티브 로그인 API를 사용하고 Android가 Apple 시스템 브라우저 OAuth를
+사용하더라도, 서버가 검증한 뒤 앱에 일회성 인계 코드를 주는 3~6단계는 동일하게
+유지한다. 플랫폼별 credential을 클라이언트가 임의로 access/refresh token으로
+취급하지 않는다.
+
 인계 코드는 다음 조건을 만족해야 한다.
 
 - 한 번만 사용 가능
@@ -35,6 +44,11 @@
 - 환경, provider, state, PKCE 요청과 결합
 - 서버 로그와 분석 도구에서 마스킹
 - DEV/PROD callback scheme을 명시적으로 allowlist 처리
+
+Apple 회원 탈퇴는 제공자 토큰 폐기를 위한 재인증이 필요하다. 기존 웹의
+`GET /api/v1/oauth/withdraw-url`과 `DELETE /api/v1/members/me?code=...` 흐름도
+브라우저 세션에 의존하므로, 앱에서는 로그인과 같은 1회용 인계 방식으로 탈퇴용
+인가 코드를 전달하는 계약을 함께 확정해야 한다.
 
 ## Android에 준비된 범위
 

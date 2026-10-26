@@ -193,6 +193,20 @@ function withAccessToken(init: RequestInit, accessToken: string): RequestInit {
   return { ...init, headers };
 }
 
+async function expireSessionIfCurrent(expectedSession: AuthTokens): Promise<void> {
+  const currentSession = await readAuthTokens();
+
+  if (
+    currentSession?.accessToken !== expectedSession.accessToken ||
+    currentSession.refreshToken !== expectedSession.refreshToken
+  ) {
+    return;
+  }
+
+  await clearAuthTokens();
+  authenticationExpiredListener?.();
+}
+
 export async function authenticatedFetch(
   path: string,
   init: RequestInit = {},
@@ -216,18 +230,45 @@ export async function authenticatedFetch(
 
   const latestSession = await readAuthTokens();
 
-  if (latestSession && latestSession.accessToken !== session.accessToken) {
-    return fetch(url, withAccessToken(init, latestSession.accessToken));
+  if (!latestSession) {
+    throw new AuthApiError('로그인이 필요한 기능입니다.', 401);
+  }
+
+  if (latestSession.accessToken !== session.accessToken) {
+    const retryResponse = await fetch(
+      url,
+      withAccessToken(init, latestSession.accessToken),
+    );
+
+    if (retryResponse.status === 401) {
+      await expireSessionIfCurrent(latestSession);
+    }
+
+    return retryResponse;
   }
 
   try {
-    const refreshedTokens = await refreshAuthTokensOnce(session.refreshToken);
+    const refreshedTokens = await refreshAuthTokensOnce(latestSession.refreshToken);
+
+    const sessionBeforeStore = await readAuthTokens();
+    if (sessionBeforeStore?.refreshToken !== latestSession.refreshToken) {
+      throw new AuthApiError('로그인 상태가 변경되었습니다.', 401);
+    }
+
     await storeAuthTokens(refreshedTokens);
-    return fetch(url, withAccessToken(init, refreshedTokens.accessToken));
+    const retryResponse = await fetch(
+      url,
+      withAccessToken(init, refreshedTokens.accessToken),
+    );
+
+    if (retryResponse.status === 401) {
+      await expireSessionIfCurrent(refreshedTokens);
+    }
+
+    return retryResponse;
   } catch (error) {
     if (isUnauthorizedAuthError(error)) {
-      await clearAuthTokens();
-      authenticationExpiredListener?.();
+      await expireSessionIfCurrent(latestSession);
     }
 
     throw error;

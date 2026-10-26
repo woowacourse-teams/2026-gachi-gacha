@@ -1,3 +1,7 @@
+export const OAUTH_PROVIDERS = ['apple', 'kakao', 'naver'] as const;
+
+export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
