@@ -167,23 +167,20 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     storeAuthReturnPath('/trade/new');
     server.use(
-      http.post(
-        '/api/v1/oauth/login/apple/complete',
-        async ({ request }) => {
-          const body: unknown = await request.json();
+      http.post('/api/v1/oauth/login/apple/complete', async ({ request }) => {
+        const body: unknown = await request.json();
 
-          requestedTicket =
-            typeof body === 'object' && body !== null && 'ticket' in body
-              ? String(body.ticket)
-              : null;
+        requestedTicket =
+          typeof body === 'object' && body !== null && 'ticket' in body
+            ? String(body.ticket)
+            : null;
 
-          return HttpResponse.json({
-            code: 'C000',
-            message: '요청에 성공했습니다.',
-            data: { accessToken, refreshToken },
-          });
-        },
-      ),
+        return HttpResponse.json({
+          code: 'C000',
+          message: '요청에 성공했습니다.',
+          data: { accessToken, refreshToken },
+        });
+      }),
       http.get('/api/v1/members/me', () =>
         HttpResponse.json({
           code: 'C000',

@@ -10,10 +10,7 @@ import {
 
 import { syncAnalyticsUser } from '@/shared/analytics/analyticsClient';
 
-import {
-  AuthApiError,
-  isUnauthorizedAuthApiError,
-} from './api/AuthApiError';
+import { AuthApiError, isUnauthorizedAuthApiError } from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
 import { deleteCurrentMember } from './api/deleteCurrentMember';
 import { getAccountDeletionReauthenticationUrl } from './api/getAccountDeletionReauthenticationUrl';
@@ -297,8 +294,7 @@ export function AuthSessionProvider({
       ) {
         return {
           status: 'reauthentication-required' as const,
-          authorizationUrl:
-            await getAccountDeletionReauthenticationUrl(),
+          authorizationUrl: await getAccountDeletionReauthenticationUrl(),
         };
       }
 

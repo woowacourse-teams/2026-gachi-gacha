@@ -1,4 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -205,7 +212,10 @@ describe('외부 회원 탈퇴 페이지', () => {
     await user.click(
       await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
     );
-    await user.type(screen.getByRole('textbox', { name: /^확인 문구/ }), '탈퇴');
+    await user.type(
+      screen.getByRole('textbox', { name: /^확인 문구/ }),
+      '탈퇴',
+    );
     await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
 
     await waitFor(() => {
@@ -245,7 +255,10 @@ describe('외부 회원 탈퇴 페이지', () => {
     await user.click(
       await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
     );
-    await user.type(screen.getByRole('textbox', { name: /^확인 문구/ }), '탈퇴');
+    await user.type(
+      screen.getByRole('textbox', { name: /^확인 문구/ }),
+      '탈퇴',
+    );
     await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
 
     expect(

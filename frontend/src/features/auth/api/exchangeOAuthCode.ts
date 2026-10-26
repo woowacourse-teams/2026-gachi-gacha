@@ -6,8 +6,7 @@ import { AuthApiError } from './AuthApiError';
 import { parseAuthTokensResponse } from './parseAuthTokensResponse';
 
 const JSON_CONTENT_TYPE = 'application/json';
-const APPLE_LOGIN_COMPLETION_API_PATH =
-  '/api/v1/oauth/login/apple/complete';
+const APPLE_LOGIN_COMPLETION_API_PATH = '/api/v1/oauth/login/apple/complete';
 const CALLBACK_PARAMETER_NAMES = [
   'code',
   'state',
