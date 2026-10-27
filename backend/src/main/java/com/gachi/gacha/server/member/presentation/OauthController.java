@@ -11,6 +11,7 @@ import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.member.domain.exception.InvalidOauthStateException;
 import com.gachi.gacha.server.member.domain.exception.OauthAuthenticationDeniedException;
 import com.gachi.gacha.server.member.infra.apple.util.AppleUserNameExtractor;
+import com.gachi.gacha.server.member.presentation.dto.LoginResponse;
 import com.gachi.gacha.server.member.presentation.session.OauthNonceSessionManager;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,8 +20,6 @@ import jakarta.servlet.http.HttpSession;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.UriComponentsBuilder;
 
 @Slf4j
 @Tag(name = "소셜 로그인", description = "카카오·네이버 OAuth 로그인")
@@ -41,9 +39,6 @@ public class OauthController {
     private final TokenService tokenService;
     private final OauthNonceSessionManager oauthNonceSessionManager;
     private final AppleUserNameExtractor appleUserNameExtractor;
-
-    @Value("${oauth.frontend-callback-url}")
-    private String frontendCallbackUrl;
 
     @Operation(summary = "소셜 로그인 인가 페이지로 리다이렉트")
     @GetMapping("/{provider}")
@@ -70,7 +65,7 @@ public class OauthController {
 
     @Operation(summary = "소셜 로그인 콜백")
     @RequestMapping(value = "/login/{provider}", method = {RequestMethod.GET, RequestMethod.POST})
-    public ResponseEntity<Void> login(
+    public BaseResponse<LoginResponse> login(
             @Parameter(description = "소셜 로그인 제공자", example = "KAKAO")
             @PathVariable final OauthProviderType provider,
             @Parameter(description = "제공자가 발급한 인가 코드")
@@ -85,41 +80,20 @@ public class OauthController {
             final HttpSession session
     ) {
         String nonce = oauthNonceSessionManager.consume(session);
-        try {
-            if (error != null) {
-                log.warn("{} 로그인 인증 실패: {} - {}", provider, error, error_description);
-                throw new OauthAuthenticationDeniedException(ErrorCode.OAUTH_AUTHENTICATION_DENIED);
-            }
-            if ((provider.equals(OauthProviderType.NAVER) || provider.equals(OauthProviderType.APPLE))
-                    && (nonce == null || !nonce.equals(state))) {
-                throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
-            }
-            if (provider.equals(OauthProviderType.APPLE) && code == null) {
-                throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
-            }
-
-            String name = provider.equals(OauthProviderType.APPLE)
-                    ? appleUserNameExtractor.extract(user) : null;
-            LoginInfo info = oauthService.login(provider, code, nonce, name);
-            TokenInfo tokens = tokenService.issue(info.memberId());
-
-            return redirectToFrontend(
-                    "accessToken=" + tokens.accessToken() + "&refreshToken=" + tokens.refreshToken());
-        } catch (OauthAuthenticationDeniedException e) {
-            return redirectToFrontend("error=oauth_denied");
-        } catch (InvalidOauthStateException e) {
-            return redirectToFrontend("error=invalid_state");
-        } catch (RuntimeException e) {
-            log.error("{} 로그인 처리 중 오류", provider, e);
-            return redirectToFrontend("error=login_failed");
+        if (error != null) {
+            log.warn("{} 로그인 인증 실패: {} - {}", provider, error, error_description);
+            throw new OauthAuthenticationDeniedException(ErrorCode.OAUTH_AUTHENTICATION_DENIED);
         }
-    }
-
-    private ResponseEntity<Void> redirectToFrontend(final String fragment) {
-        URI target = UriComponentsBuilder.fromUriString(frontendCallbackUrl)
-                .fragment(fragment)
-                .build()
-                .toUri();
-        return ResponseEntity.status(HttpStatus.SEE_OTHER).location(target).build();
+        if ((provider.equals(OauthProviderType.NAVER) || provider.equals(OauthProviderType.APPLE))
+                && (nonce == null || !nonce.equals(state))) {
+            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
+        }
+        if (provider.equals(OauthProviderType.APPLE) && code == null) {
+            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
+        }
+        String name = provider.equals(OauthProviderType.APPLE) ? appleUserNameExtractor.extract(user): null;
+        LoginInfo info = oauthService.login(provider, code, nonce, name);
+        TokenInfo tokens = tokenService.issue(info.memberId());
+        return BaseResponse.ok(new LoginResponse(tokens.accessToken(), tokens.refreshToken()));
     }
 }
