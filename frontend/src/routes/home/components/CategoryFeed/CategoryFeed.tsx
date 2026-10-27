@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import { AffiliateCatalogSection } from '@/features/affiliateCatalog/AffiliateCatalogSection';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { DEFAULT_CATEGORY } from '../../model/categories';
@@ -72,6 +73,10 @@ function CategoryFeedContent({ categoryName }: CategoryFeedContentProps) {
         hasNextPage={hasNextPage}
         loadMoreStatus={loadMoreStatus}
         onEndReached={loadMore}
+      />
+      <AffiliateCatalogSection
+        categoryName={categoryName}
+        placementPath="/search"
       />
     </SectionList>
   );
