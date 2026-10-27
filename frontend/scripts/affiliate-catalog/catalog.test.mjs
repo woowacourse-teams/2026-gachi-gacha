@@ -31,6 +31,14 @@ test('비활성 행은 무시하고 복수 카테고리와 경로를 읽는다',
   assert.deepEqual(rows[0].placementPaths, ['/search', '/trade/12']);
 });
 
+test('노출 페이지를 비워 두면 검색 카테고리 화면을 기본값으로 사용한다', () => {
+  const rows = parseCatalogRows(
+    `${HEADERS}\n산리오 굿즈,https://image.example/a.jpg,https://naver.me/example,산리오,,,,TRUE`,
+  );
+
+  assert.deepEqual(rows[0].placementPaths, ['/search']);
+});
+
 test('카테고리 ID와 제휴 URL로 안정적인 ID를 생성하고 행 순서를 저장한다', async () => {
   const csvSource = `${HEADERS}\nA,https://image.example/a.jpg,https://naver.me/example-a,산리오,/search,2026-11-01,2026-11-30,TRUE\nB,https://image.example/b.jpg,https://naver.me/example-b,피규어,/search,,,TRUE`;
   const categories = new Map([

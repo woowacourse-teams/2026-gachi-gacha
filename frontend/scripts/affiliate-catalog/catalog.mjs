@@ -275,8 +275,11 @@ export function parseCatalogRows(csvSource) {
     const categoryNames = splitMultipleValues(
       getRequiredCell(record, SHEET_HEADERS.categoryNames, rowNumber),
     );
-    const placementPaths = splitMultipleValues(
-      getRequiredCell(record, SHEET_HEADERS.placementPaths, rowNumber),
+    const placementValues = splitMultipleValues(
+      record[SHEET_HEADERS.placementPaths] ?? '',
+    );
+    const placementPaths = (
+      placementValues.length > 0 ? placementValues : ['/search']
     ).map((path) => parsePlacementPath(path, rowNumber));
     const activeFrom = parseDate(
       record[SHEET_HEADERS.activeFrom] ?? '',
