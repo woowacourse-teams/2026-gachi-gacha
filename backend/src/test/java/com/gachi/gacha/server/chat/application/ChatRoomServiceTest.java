@@ -5,13 +5,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
+import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.exception.BlockedChatNotAllowedException;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,15 +43,111 @@ class ChatRoomServiceTest {
     @Autowired
     private ChatRoomJpaRepository chatRoomJpaRepository;
 
+    @Autowired
+    private ChatRoomMemberJpaRepository chatRoomMemberJpaRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
     private Member owner;
     private Member requester;
     private Member otherOwner;
 
     @BeforeEach
     void setUp() {
-        owner = memberJpaRepository.save(Member.builder().nickname("owner").build());
+        owner = memberJpaRepository.save(Member.builder()
+                .nickname("owner")
+                .profileImageUrl("owner-profile")
+                .build());
         requester = memberJpaRepository.save(Member.builder().nickname("requester").build());
         otherOwner = memberJpaRepository.save(Member.builder().nickname("otherOwner").build());
+    }
+
+    @Nested
+    @DisplayName("탈퇴 회원과의 채팅방 조회")
+    class GetRoomsWithDeletedMember {
+
+        @Test
+        @DisplayName("전용 조회는 탈퇴 회원을 포함하며 일반 회원 조회는 계속 제외한다")
+        void findOtherMemberIncludingDeleted() {
+            Long roomId = createRoom(requester, owner);
+            Long ownerId = owner.getId();
+            Long requesterId = requester.getId();
+            entityManager.flush();
+            entityManager.clear();
+            memberJpaRepository.delete(memberJpaRepository.getMemberById(ownerId));
+            memberJpaRepository.flush();
+            entityManager.clear();
+
+            assertThat(memberJpaRepository.findById(ownerId)).isEmpty();
+            assertThat(chatRoomMemberJpaRepository.findOtherMemberIncludingDeleted(roomId, requesterId))
+                    .hasValueSatisfying(member -> {
+                        assertThat(member.getRoomId()).isEqualTo(roomId);
+                        assertThat(member.getMemberId()).isEqualTo(ownerId);
+                        assertThat(member.getNickname()).isEqualTo("owner");
+                        assertThat(member.getProfileImageUrl()).isEqualTo("owner-profile");
+                        assertThat(member.getDeleted()).isTrue();
+                    });
+            assertThat(chatRoomMemberJpaRepository.findOtherMembersIncludingDeleted(
+                    List.of(roomId), requesterId
+            )).singleElement().satisfies(member -> assertThat(member.getMemberId()).isEqualTo(ownerId));
+        }
+
+        @Test
+        @DisplayName("탈퇴 회원이 있는 방과 정상 회원의 방을 목록에서 함께 반환하고 상세도 조회한다")
+        void getRoomsAndRoom_includeDeletedMember() {
+            Long deletedMemberRoomId = createRoom(requester, owner);
+            Long activeMemberRoomId = createRoom(requester, otherOwner);
+            Long ownerId = owner.getId();
+            Long requesterId = requester.getId();
+            entityManager.flush();
+            entityManager.clear();
+            memberJpaRepository.delete(memberJpaRepository.getMemberById(ownerId));
+            memberJpaRepository.flush();
+            entityManager.clear();
+
+            List<ChatRoomInfo> rooms = chatRoomService.getRooms(requesterId);
+            assertThat(rooms)
+                    .extracting(ChatRoomInfo::roomId)
+                    .containsExactly(activeMemberRoomId, deletedMemberRoomId);
+            assertThat(rooms)
+                    .filteredOn(room -> room.roomId().equals(deletedMemberRoomId))
+                    .singleElement()
+                    .satisfies(room -> {
+                        assertThat(room.otherMember().memberId()).isEqualTo(ownerId);
+                        assertThat(room.otherMember().nickname()).isEqualTo("탈퇴한 사용자");
+                        assertThat(room.otherMember().profileImageUrl()).isNull();
+                        assertThat(room.otherMember().withdrawn()).isTrue();
+                    });
+            assertThat(rooms)
+                    .filteredOn(room -> room.roomId().equals(activeMemberRoomId))
+                    .singleElement()
+                    .satisfies(room -> {
+                        assertThat(room.otherMember().nickname()).isEqualTo("otherOwner");
+                        assertThat(room.otherMember().withdrawn()).isFalse();
+                    });
+            ChatRoomInfo deletedMemberRoom = chatRoomService.getRoom(requesterId, deletedMemberRoomId);
+            assertThat(deletedMemberRoom.otherMember().memberId()).isEqualTo(ownerId);
+            assertThat(deletedMemberRoom.otherMember().nickname()).isEqualTo("탈퇴한 사용자");
+            assertThat(deletedMemberRoom.otherMember().profileImageUrl()).isNull();
+            assertThat(deletedMemberRoom.otherMember().withdrawn()).isTrue();
+        }
+
+        @Test
+        @DisplayName("닉네임이 탈퇴 표시 문구와 같아도 정상 회원이면 withdrawn은 false다")
+        void getRoom_activeMemberWithDeletedLikeNickname() {
+            Member lookalike = memberJpaRepository.save(Member.builder()
+                    .nickname("탈퇴한 사용자")
+                    .profileImageUrl("lookalike-profile")
+                    .build());
+            Long roomId = createRoom(requester, lookalike);
+
+            ChatRoomInfo room = chatRoomService.getRoom(requester.getId(), roomId);
+
+            assertThat(room.otherMember().nickname()).isEqualTo("탈퇴한 사용자");
+            assertThat(room.otherMember().profileImageUrl()).isEqualTo("lookalike-profile");
+            assertThat(room.otherMember().withdrawn()).isFalse();
+        }
     }
 
     @Nested
@@ -132,6 +232,45 @@ class ChatRoomServiceTest {
                     .isInstanceOf(BlockedChatNotAllowedException.class);
             assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(trade.getId(), requester.getId()))
                     .isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("탈퇴 회원과의 채팅 시작")
+    class StartChatWithDeletedMember {
+
+        @Test
+        @DisplayName("게시글 작성자가 탈퇴했으면 채팅방을 저장하지 않고 생성을 거절한다")
+        void createRoom_tradeOwnerDeleted() {
+            // given
+            Trade trade = saveTrade(owner);
+            Long tradeId = trade.getId();
+            Long requesterId = requester.getId();
+            entityManager.flush();
+            entityManager.clear();
+            memberJpaRepository.delete(memberJpaRepository.getMemberById(owner.getId()));
+            memberJpaRepository.flush();
+            entityManager.clear();
+
+            // when & then
+            assertThatThrownBy(() -> chatRoomService.createRoom(requesterId, tradeId))
+                    .isInstanceOf(ChatPartnerWithdrawnException.class);
+            assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(tradeId, requesterId))
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("게시글 작성자가 정상 회원이면 채팅방을 생성한다")
+        void createRoom_tradeOwnerActive() {
+            // given
+            Trade trade = saveTrade(owner);
+
+            // when
+            Long roomId = chatRoomService.createRoom(requester.getId(), trade.getId()).roomId();
+
+            // then
+            assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(trade.getId(), requester.getId()))
+                    .hasValueSatisfying(room -> assertThat(room.getId()).isEqualTo(roomId));
         }
     }
 

@@ -4,11 +4,13 @@ import com.gachi.gacha.server.chat.application.dto.ChatRoomCreateInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomExistenceInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomUpdateInfo;
+import com.gachi.gacha.server.chat.domain.ChatMemberSummary;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAlreadyExistException;
 import com.gachi.gacha.server.chat.domain.exception.SelfChatNotAllowedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
@@ -55,7 +57,7 @@ public class ChatRoomService {
                 .map(ChatRoom::getId)
                 .toList();
 
-        Map<Long, Member> otherMembersByRoomId =
+        Map<Long, ChatMemberSummary> otherMembersByRoomId =
                 findOtherMembersByRoomId(chatRoomIds, memberId);
 
         List<Long> tradeIds = myChatRoomMembers.stream()
@@ -94,7 +96,7 @@ public class ChatRoomService {
         ChatRoomMember myChatRoomMember =
                 chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
 
-        Member otherMember = chatRoomMemberJpaRepository.findOtherMember(roomId, memberId)
+        ChatMemberSummary otherMember = chatRoomMemberJpaRepository.findOtherMemberIncludingDeleted(roomId, memberId)
                 .orElseThrow(() -> new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
 
         Trade trade = tradeJpaRepository.getById(chatRoom.getTradeId());
@@ -144,6 +146,16 @@ public class ChatRoomService {
         memberBlockService.validateChatAllowed(memberId, trade.getMember().getId());
     }
 
+    /**
+     * 게시글은 작성자 탈퇴 후에도 남아 있고 trade.getMember()는 LAZY 프록시라 id만으로는 탈퇴 여부를 알 수 없다.
+     * existsById는 Member의 SQLRestriction이 적용되므로 탈퇴 회원이면 false를 반환한다.
+     */
+    private void validateTradeOwnerActive(final Trade trade) {
+        if (!memberJpaRepository.existsById(trade.getMember().getId())) {
+            throw new ChatPartnerWithdrawnException(ErrorCode.CHAT_PARTNER_WITHDRAWN);
+        }
+    }
+
     private void validateNotOwner(final Trade trade, final Long memberId) {
         if (trade.isOwnedBy(memberId)) {
             throw new SelfChatNotAllowedException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
@@ -176,7 +188,7 @@ public class ChatRoomService {
 
     private ChatRoomInfo toChatRoomInfo(
             final ChatRoomMember myChatRoomMember,
-            final Map<Long, Member> otherMembersByRoomId,
+            final Map<Long, ChatMemberSummary> otherMembersByRoomId,
             final Map<Long, Trade> tradesById,
             final Map<Long, String> tradeThumbnailUrlsByTradeId
     ) {
@@ -185,7 +197,7 @@ public class ChatRoomService {
         Long chatRoomId = chatRoom.getId();
         Long tradeId = chatRoom.getTradeId();
 
-        Member otherMember = findOtherMember(otherMembersByRoomId, chatRoomId);
+        ChatMemberSummary otherMember = findOtherMember(otherMembersByRoomId, chatRoomId);
         Trade trade = findTrade(tradesById, tradeId);
         String tradeThumbnail = tradeThumbnailUrlsByTradeId.get(tradeId);
         long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
@@ -199,8 +211,11 @@ public class ChatRoomService {
         );
     }
 
-    private Member findOtherMember(final Map<Long, Member> otherMembersByRoomId, final Long chatRoomId) {
-        Member otherMember = otherMembersByRoomId.get(chatRoomId);
+    private ChatMemberSummary findOtherMember(
+            final Map<Long, ChatMemberSummary> otherMembersByRoomId,
+            final Long chatRoomId
+    ) {
+        ChatMemberSummary otherMember = otherMembersByRoomId.get(chatRoomId);
         if (otherMember == null) {
             throw new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND);
         }
@@ -215,16 +230,16 @@ public class ChatRoomService {
         return trade;
     }
 
-    private Map<Long, Member> findOtherMembersByRoomId(
+    private Map<Long, ChatMemberSummary> findOtherMembersByRoomId(
             final List<Long> chatRoomIds,
             final Long memberId
     ) {
-        return chatRoomMemberJpaRepository.findOtherMembers(chatRoomIds, memberId)
+        return chatRoomMemberJpaRepository.findOtherMembersIncludingDeleted(chatRoomIds, memberId)
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                chatRoomMember -> chatRoomMember.getChatRoom().getId(),
-                                ChatRoomMember::getMember
+                                ChatMemberSummary::getRoomId,
+                                Function.identity()
                         )
                 );
 
@@ -234,6 +249,7 @@ public class ChatRoomService {
     public ChatRoomCreateInfo createRoom(final Long memberId, final Long tradeId) {
         Trade trade = tradeJpaRepository.getById(tradeId);
         validateChatStartable(trade, memberId);
+        validateTradeOwnerActive(trade);
 
         Member requester = memberJpaRepository.getMemberById(memberId);
         Member tradeOwner = trade.getMember();
