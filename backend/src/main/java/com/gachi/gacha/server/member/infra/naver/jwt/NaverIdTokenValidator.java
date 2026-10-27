@@ -41,6 +41,7 @@ public class NaverIdTokenValidator {
             DecodedJWT decoded = JWT.require(algorithm)
                     .withIssuer(ISSUER)
                     .withAudience(naverOauthConfig.clientId())
+                    .acceptLeeway(60)
                     .build()
                     .verify(idToken);
 
