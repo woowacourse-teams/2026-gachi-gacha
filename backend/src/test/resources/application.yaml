@@ -68,6 +68,8 @@ elasticsearch:
 firebase:
   push-enabled: false
 oauth:
+  frontend-callback-url: fron_callback_url
+  frontend-withdraw-callback-url: front_withdraw_callback_url
   apple:
     client-id: test
     team-id: test
