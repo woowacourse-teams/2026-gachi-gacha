@@ -1,0 +1,121 @@
+name: Affiliate Catalog Sync
+
+run-name: Sync affiliate catalog to frontend-dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      sheet_csv_url:
+        description: "Published Google Sheet CSV URL (empty: repository variable)"
+        required: false
+        type: string
+      category_api_url:
+        description: "Existing categories endpoint"
+        required: true
+        default: "https://gachigacha.kro.kr/api/v1/categories"
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: affiliate-catalog-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Validate sheet and open catalog PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      AFFILIATE_CATALOG_SHEET_CSV_URL: ${{ inputs.sheet_csv_url || vars.AFFILIATE_CATALOG_SHEET_CSV_URL }}
+      AFFILIATE_CATALOG_CATEGORY_API_URL: ${{ inputs.category_api_url }}
+      TZ: Asia/Seoul
+
+    steps:
+      - name: Checkout frontend-dev
+        uses: actions/checkout@v7
+        with:
+          ref: frontend-dev
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 11.9.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate synchronization logic
+        working-directory: frontend
+        run: pnpm catalog:test
+
+      - name: Validate input configuration
+        shell: bash
+        run: |
+          if [[ -z "${AFFILIATE_CATALOG_SHEET_CSV_URL}" ]]; then
+            echo "AFFILIATE_CATALOG_SHEET_CSV_URL repository variable or workflow input is required." >&2
+            exit 1
+          fi
+
+      - name: Generate catalog module
+        working-directory: frontend
+        run: pnpm catalog:sync
+
+      - name: Format and type-check generated catalog
+        working-directory: frontend
+        run: |
+          pnpm exec prettier src/features/affiliateCatalog/generatedCatalog.ts --write
+          pnpm typecheck
+
+      - name: Detect changes
+        id: changes
+        shell: bash
+        run: |
+          if git diff --quiet -- frontend/src/features/affiliateCatalog/generatedCatalog.ts; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+            echo "### Affiliate catalog" >> "${GITHUB_STEP_SUMMARY}"
+            echo "The published sheet matches the current catalog. No PR was created." >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Commit synchronized catalog
+        if: steps.changes.outputs.changed == 'true'
+        id: commit
+        shell: bash
+        run: |
+          branch="automation/affiliate-catalog-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${branch}"
+          git add frontend/src/features/affiliateCatalog/generatedCatalog.ts
+          git commit -m "chore(frontend): sync affiliate catalog"
+          git push origin "${branch}"
+          echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+      - name: Open frontend-dev pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ steps.commit.outputs.branch }}
+        shell: bash
+        run: |
+          pull_request_url="$(gh pr create \
+            --base frontend-dev \
+            --head "${HEAD_BRANCH}" \
+            --title "chore(frontend): 쇼핑 커넥트 카탈로그 동기화" \
+            --body $'Google Sheet의 활성 상품을 검증해 정적 카탈로그로 동기화합니다.\n\n- 한글 카테고리명을 운영 API의 정확한 categoryId로 변환\n- 노출 기간·페이지·시트 순서 반영\n- 자동 생성 변경만 포함')"
+          echo "### Affiliate catalog" >> "${GITHUB_STEP_SUMMARY}"
+          echo "Created PR: ${pull_request_url}" >> "${GITHUB_STEP_SUMMARY}"
