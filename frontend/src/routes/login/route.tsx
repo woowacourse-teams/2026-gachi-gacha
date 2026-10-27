@@ -17,6 +17,7 @@ import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
   Accent,
+  AppleProviderIcon,
   AppleProviderLogo,
   AppleProviderLink,
   Brand,
@@ -29,6 +30,7 @@ import {
   PrivacyLink,
   PrivacyNote,
   ProviderIcon,
+  ProviderLabel,
   ProviderLink,
   ProviderList,
   RetryButton,
@@ -38,15 +40,15 @@ import {
 const PROVIDERS = [
   {
     provider: 'kakao',
-    label: '카카오로 로그인',
+    name: '카카오',
   },
   {
     provider: 'naver',
-    label: '네이버로 로그인',
+    name: '네이버',
   },
 ] as const satisfies readonly {
   provider: OAuthProvider;
-  label: string;
+  name: string;
 }[];
 
 function ProviderBrandIcon({ provider }: { provider: 'kakao' | 'naver' }) {
@@ -141,7 +143,22 @@ export function LoginRoute() {
             </ErrorMessage>
           )}
 
-          <ProviderList aria-label="소셜 로그인">
+          <ProviderList role="group" aria-label="소셜 로그인">
+            {PROVIDERS.map(({ provider, name }) => (
+              <ProviderLink
+                key={provider}
+                href={`/api/v1/oauth/${provider}`}
+                aria-label={
+                  isAccountDeletionFlow
+                    ? `${name}로 본인 확인`
+                    : `${name}로 로그인`
+                }
+                onClick={() => prepareOAuthLogin(provider)}
+              >
+                <ProviderBrandIcon provider={provider} />
+                <ProviderLabel>{name}</ProviderLabel>
+              </ProviderLink>
+            ))}
             <AppleProviderLink
               href="/api/v1/oauth/apple"
               aria-label={
@@ -150,38 +167,17 @@ export function LoginRoute() {
               data-apple-sign-in
               onClick={() => prepareOAuthLogin('apple')}
             >
-              <AppleProviderLogo
-                src={appleSignInLogo}
-                alt=""
-                aria-hidden="true"
-                width={31}
-                height={44}
-                data-apple-logo
-              />
-              <span>
-                {isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'}
-              </span>
+              <AppleProviderIcon aria-hidden="true">
+                <AppleProviderLogo
+                  src={appleSignInLogo}
+                  alt=""
+                  width={31}
+                  height={44}
+                  data-apple-logo
+                />
+              </AppleProviderIcon>
+              <ProviderLabel>Apple</ProviderLabel>
             </AppleProviderLink>
-            {PROVIDERS.map(({ provider, label }) => (
-              <ProviderLink
-                key={provider}
-                href={`/api/v1/oauth/${provider}`}
-                aria-label={
-                  isAccountDeletionFlow
-                    ? `${provider === 'kakao' ? '카카오' : '네이버'}로 본인 확인`
-                    : label
-                }
-                $provider={provider}
-                onClick={() => prepareOAuthLogin(provider)}
-              >
-                <ProviderBrandIcon provider={provider} />
-                <span>
-                  {isAccountDeletionFlow
-                    ? `${provider === 'kakao' ? '카카오' : '네이버'}로 본인 확인`
-                    : label}
-                </span>
-              </ProviderLink>
-            ))}
           </ProviderList>
 
           <PrivacyNote>

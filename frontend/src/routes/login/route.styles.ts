@@ -88,34 +88,27 @@ export const Accent = styled.span`
 `;
 
 export const ProviderList = styled.div`
-  display: grid;
-  width: min(100%, 375px);
-  margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
-  gap: ${space.sm};
-`;
-
-const providerButtonLayout = css`
   display: flex;
   width: 100%;
-  min-width: 140px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0 ${space.xl};
-  align-items: center;
+  margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
+  align-items: flex-start;
   justify-content: center;
-  gap: ${space.xs};
-  border: 0;
-  border-radius: ${radius.card};
-  font-size: 19px;
-  font-weight: ${fontWeight.medium};
-  line-height: 1;
-  text-decoration: none;
+  gap: clamp(${space.sm}, 4vw, ${space.xl});
 `;
 
-export const AppleProviderLink = styled.a`
-  ${providerButtonLayout};
-  background: #000000;
-  color: #ffffff;
+const providerLinkLayout = css`
+  display: flex;
+  width: 64px;
+  min-width: 64px;
+  align-items: center;
+  justify-content: center;
+  gap: ${space.sm};
+  border-radius: ${radius.control};
+  color: ${color.text};
+  flex-direction: column;
+  font-size: ${fontSize.bodySmall};
+  line-height: ${lineHeight.body};
+  text-decoration: none;
   transition:
     transform 160ms ease,
     box-shadow 160ms ease;
@@ -131,6 +124,40 @@ export const AppleProviderLink = styled.a`
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+`;
+
+export const AppleProviderLink = styled.a`
+  ${providerLinkLayout};
+`;
+
+export const ProviderLink = styled.a`
+  ${providerLinkLayout};
+`;
+
+export const ProviderIcon = styled.span`
+  display: grid;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
+  place-items: center;
+
+  img {
+    display: block;
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+  }
+`;
+
+export const AppleProviderIcon = styled(ProviderIcon)`
+  overflow: hidden;
+  border-radius: 50%;
+  background: #000000;
+
+  > img {
+    width: auto;
+    height: 100%;
   }
 `;
 
@@ -138,45 +165,10 @@ export const AppleProviderLogo = styled.img`
   display: block;
   width: auto;
   height: 100%;
-  flex: 0 0 auto;
 `;
 
-export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
-  ${providerButtonLayout};
-  background: ${({ $provider }) =>
-    $provider === 'kakao' ? '#fee500' : '#03a94d'};
-  color: ${({ $provider }) => ($provider === 'kakao' ? '#191919' : '#ffffff')};
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
-
-  &:hover {
-    transform: translateY(-1px);
-  }
-
-  &:focus-visible {
-    box-shadow: ${focusRing};
-    outline: none;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-`;
-
-export const ProviderIcon = styled.span`
-  display: grid;
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  place-items: center;
-
-  img {
-    display: block;
-    width: 44px;
-    height: 44px;
-    object-fit: contain;
-  }
+export const ProviderLabel = styled.span`
+  white-space: nowrap;
 `;
 
 export const ErrorMessage = styled.p`
