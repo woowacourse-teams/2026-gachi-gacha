@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
-import { ACCOUNT_DELETION_URL, PRIVACY_POLICY_URL } from '../config/web';
+import { ACCOUNT_DELETION_URL } from '../config/web';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { colors } from '../theme/colors';
@@ -142,7 +142,9 @@ export function AccountScreen({ navigation }: Props) {
         <MenuRow
           description="수집하는 정보와 이용 기준을 확인해요."
           label="개인정보처리방침"
-          onPress={() => void openWebPage(PRIVACY_POLICY_URL, '개인정보처리방침')}
+          onPress={() =>
+            navigation.navigate('PublicWebFeature', { feature: 'privacyPolicy' })
+          }
         />
         <MenuRow
           description="앱에 접근하기 어려워도 웹에서 계정 삭제를 요청할 수 있어요."
