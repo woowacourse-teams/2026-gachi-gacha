@@ -9,6 +9,7 @@ import {
   storeAuthReturnPath,
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { storeOAuthLoginProvider } from '@/features/auth/oauthLoginProviderStorage';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
@@ -81,6 +82,7 @@ export function LoginRoute() {
 
   function prepareOAuthLogin(provider: OAuthProvider) {
     storeAuthReturnPath(returnPath);
+    storeOAuthLoginProvider(provider);
     captureAnalyticsEvent('oauth_login_started', {
       provider,
       return_pathname: new URL(returnPath, window.location.origin).pathname,

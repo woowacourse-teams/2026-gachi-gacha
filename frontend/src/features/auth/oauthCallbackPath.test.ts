@@ -26,6 +26,8 @@ describe('OAuth callback 경로', () => {
   });
 
   it.each([
+    ['/oauth/callback', true],
+    ['/oauth/withdraw-callback', true],
     ['/oauth/login', true],
     ['/oauth/login/kakao', true],
     ['/oauth/login/naver', true],

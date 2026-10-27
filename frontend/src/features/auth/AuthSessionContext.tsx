@@ -40,7 +40,8 @@ interface AuthSessionValue {
   errorMessage: string | null;
   authenticate: (tokens: AuthTokens) => Promise<void>;
   updateProfile: (input: UpdateCurrentMemberInput) => Promise<void>;
-  deleteAccount: (authorizationCode?: string) => Promise<AccountDeletionResult>;
+  deleteAccount: () => Promise<AccountDeletionResult>;
+  completeAccountDeletion: () => void;
   logout: () => void;
   retry: () => void;
 }
@@ -283,12 +284,16 @@ export function AuthSessionProvider({
     }));
   }, []);
 
-  const deleteAccount = useCallback(async (authorizationCode?: string) => {
+  const completeAccountDeletion = useCallback(() => {
+    clearAuthTokens();
+    setState(GUEST_STATE);
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
     try {
-      await deleteCurrentMember(authorizationCode);
+      await deleteCurrentMember();
     } catch (error) {
       if (
-        !authorizationCode &&
         error instanceof AuthApiError &&
         error.code === INVALID_OAUTH_STATE_CODE
       ) {
@@ -301,11 +306,10 @@ export function AuthSessionProvider({
       throw error;
     }
 
-    clearAuthTokens();
-    setState(GUEST_STATE);
+    completeAccountDeletion();
 
     return { status: 'deleted' as const };
-  }, []);
+  }, [completeAccountDeletion]);
 
   const logout = useCallback(() => {
     const refreshToken = readRefreshToken();
@@ -326,12 +330,21 @@ export function AuthSessionProvider({
     () => ({
       ...state,
       authenticate,
+      completeAccountDeletion,
       updateProfile,
       deleteAccount,
       logout,
       retry,
     }),
-    [authenticate, deleteAccount, logout, retry, state, updateProfile],
+    [
+      authenticate,
+      completeAccountDeletion,
+      deleteAccount,
+      logout,
+      retry,
+      state,
+      updateProfile,
+    ],
   );
 
   return (
