@@ -1,7 +1,6 @@
 import {
   Alert,
   Image,
-  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -10,7 +9,6 @@ import {
 import { type NavigationProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PRIVACY_POLICY_URL } from '../config/web';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { colors } from '../theme/colors';
@@ -24,17 +22,6 @@ export function AppHeader({ title }: AppHeaderProps) {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { status: authStatus } = useAuthSession();
 
-  async function openPrivacyPolicy() {
-    try {
-      await Linking.openURL(PRIVACY_POLICY_URL);
-    } catch {
-      Alert.alert(
-        '페이지를 열 수 없어요',
-        '잠시 후 다시 시도해 주세요.',
-      );
-    }
-  }
-
   function showServiceInformation() {
     Alert.alert(
       '서비스 정보',
@@ -43,7 +30,10 @@ export function AppHeader({ title }: AppHeaderProps) {
         { text: '닫기', style: 'cancel' },
         {
           text: '개인정보처리방침',
-          onPress: () => void openPrivacyPolicy(),
+          onPress: () =>
+            navigation.navigate('PublicWebFeature', {
+              feature: 'privacyPolicy',
+            }),
         },
       ],
     );
