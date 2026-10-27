@@ -10,6 +10,10 @@ class GachiKakaoMapModule : Module() {
     View(GachiKakaoMapView::class) {
       Events("onCameraMoveEnd", "onMapError", "onMapReady", "onMarkerPress")
 
+      OnViewDestroys { view ->
+        view.destroy()
+      }
+
       Prop("active") { view: GachiKakaoMapView, active: Boolean ->
         view.setActive(active)
       }

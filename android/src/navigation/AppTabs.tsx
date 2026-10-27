@@ -70,6 +70,7 @@ export function AppTabs() {
 
   return (
     <Tab.Navigator
+      detachInactiveScreens={false}
       initialRouteName={tradeFeaturesEnabled ? 'Trade' : 'Map'}
       safeAreaInsets={{ bottom: 0 }}
       screenOptions={({ route }) => ({

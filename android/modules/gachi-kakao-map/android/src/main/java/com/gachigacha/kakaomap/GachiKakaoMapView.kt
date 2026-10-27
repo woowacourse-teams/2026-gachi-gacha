@@ -79,16 +79,28 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
   override fun onDetachedFromWindow() {
     if (started) {
       mapView?.pause()
+    }
+    // React Navigation can detach and reattach an inactive screen. Finishing here would
+    // race the next MapView.start() and leave the reattached surface blank.
+    super.onDetachedFromWindow()
+  }
+
+  fun destroy() {
+    if (started) {
+      mapView?.pause()
       mapView?.finish()
     }
-    mapView?.let(::removeView)
+    mapView?.let { currentMapView ->
+      if (currentMapView.parent === this) {
+        removeView(currentMapView)
+      }
+    }
     mapView = null
     started = false
     kakaoMap = null
     storeMarkerStyle = null
     selectedStoreMarkerStyle = null
     userLocationStyle = null
-    super.onDetachedFromWindow()
   }
 
   override fun onWindowVisibilityChanged(visibility: Int) {

@@ -1,5 +1,5 @@
 import { useIsFocused } from '@react-navigation/native';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GachiKakaoMapView } from '../../../modules/gachi-kakao-map';
@@ -25,8 +25,7 @@ export function NearbyStoreMap({
 }: Props) {
   const isFocused = useIsFocused();
   const [hasMapError, setHasMapError] = useState(false);
-  const [focusSession, setFocusSession] = useState(0);
-  const wasFocusedRef = useRef(false);
+  const [recoverySession, setRecoverySession] = useState(0);
   const markers = useMemo(() => stores.map(({ storeId, latitude, longitude }) => ({
       id: storeId,
       latitude,
@@ -36,21 +35,13 @@ export function NearbyStoreMap({
     [selectedStoreId, stores],
   );
 
-  useEffect(() => {
-    if (isFocused && !wasFocusedRef.current) {
-      setHasMapError(false);
-      setFocusSession((session) => session + 1);
-    }
-    wasFocusedRef.current = isFocused;
-  }, [isFocused]);
-
   return (
     <View accessibilityLabel="주변 가챠 매장 지도" style={styles.mapFrame}>
-      {isFocused && !hasMapError ? (
+      {!hasMapError ? (
         <GachiKakaoMapView
-          active
+          active={isFocused}
           center={center}
-          key={focusSession}
+          key={recoverySession}
           markers={markers}
           onCameraMoveEnd={({ nativeEvent }) => onCameraMoveEnd(nativeEvent)}
           onMapError={() => setHasMapError(true)}
@@ -69,7 +60,10 @@ export function NearbyStoreMap({
               <Text style={styles.errorText}>지도를 불러오지 못했어요.</Text>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => setHasMapError(false)}
+                onPress={() => {
+                  setRecoverySession((session) => session + 1);
+                  setHasMapError(false);
+                }}
                 style={({ pressed }) => [
                   styles.retryButton,
                   pressed && styles.retryButtonPressed,
