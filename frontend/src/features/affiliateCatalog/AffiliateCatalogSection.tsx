@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import styled from '@emotion/styled';
 
+import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import {
+  breakpoint,
+  color,
+  fontSize,
+  fontWeight,
+  radius,
+  shadow,
+  space,
+} from '@/shared/styles/tokens';
 
 import type { AffiliateCatalog } from './affiliateCatalogType';
 import { AFFILIATE_CATALOG } from './generatedCatalog';
@@ -120,8 +130,8 @@ export function AffiliateCatalogSection({
               </Title>
             </TitleRow>
             <Disclosure>
-              이 포스팅은 네이버 쇼핑 커넥트 활동의 일환으로, 판매 발생 시
-              수수료를 제공받습니다.
+              이 굿즈들은 네이버 쇼핑 커넥트 제휴로, 판매 발생 시 수수료를
+              제공받습니다.
             </Disclosure>
           </Header>
 
@@ -141,18 +151,19 @@ export function AffiliateCatalogSection({
                   })
                 }
               >
-                <Thumbnail
-                  src={product.thumbnailUrl}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
-                  onError={() => updateImageStatus(product.id, 'failed')}
+                <GachaSummaryCard
+                  product={{
+                    name: product.title,
+                    thumbnailUrl: product.thumbnailUrl,
+                    categories: product.categories.map(({ name }) => name),
+                  }}
+                  imageAlt=""
+                  supportingContent={
+                    <ExternalHint aria-hidden="true">
+                      네이버에서 보기 ↗
+                    </ExternalHint>
+                  }
                 />
-                <ProductTitle>{product.title}</ProductTitle>
-                <ExternalHint aria-hidden="true">
-                  네이버에서 보기 ↗
-                </ExternalHint>
               </ProductLink>
             ))}
           </ProductList>
@@ -176,10 +187,15 @@ const Section = styled.section`
   width: 100%;
   max-width: 1184px;
   margin: 8px auto 0;
-  padding: 24px;
-  border: 1px solid #eeeaec;
-  border-radius: 20px;
-  background: #fbfafc;
+  padding: ${space.xl};
+  border: 1px solid ${color.border};
+  border-radius: ${radius.dialog};
+  background: ${color.surfaceMuted};
+
+  @media (max-width: ${breakpoint.mobile}) {
+    padding: ${space.md};
+    border-radius: ${radius.card};
+  }
 `;
 
 const Header = styled.header`
@@ -197,82 +213,74 @@ const TitleRow = styled.div`
 const PartnershipBadge = styled.span`
   flex: none;
   padding: 5px 9px;
-  border-radius: 7px;
+  border-radius: ${radius.small};
   background: #24253a;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
+  color: ${color.surface};
+  font-size: ${fontSize.caption};
+  font-weight: ${fontWeight.bold};
 `;
 
 const Title = styled.h2`
   margin: 0;
-  color: #2b2528;
-  font-size: 18px;
-  font-weight: 800;
+  color: ${color.text};
+  font-size: ${fontSize.subheading};
+  font-weight: ${fontWeight.extraBold};
 `;
 
 const Disclosure = styled.p`
   margin: 0;
-  color: #756b70;
-  font-size: 13px;
+  color: ${color.textMuted};
+  font-size: ${fontSize.label};
   line-height: 1.5;
 `;
 
 const ProductList = styled.div`
   display: flex;
-  margin-top: 18px;
-  gap: 14px;
+  margin-top: ${space.lg};
+  gap: ${space.md};
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  padding: 2px 2px 10px;
+  padding: 2px 2px ${space.sm};
   scroll-padding-inline: 2px;
   scroll-snap-type: inline mandatory;
   scrollbar-width: thin;
 `;
 
 const ProductLink = styled.a`
-  display: flex;
-  width: min(232px, 72vw);
-  flex: 0 0 min(232px, 72vw);
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid #ece8e9;
-  border-radius: 16px;
-  background: #ffffff;
-  box-shadow: 0 5px 16px rgb(36 33 34 / 8%);
+  display: block;
+  width: min(220px, 72vw);
+  flex: 0 0 min(220px, 72vw);
+  padding: ${space.xs};
+  border: 1px solid ${color.border};
+  border-radius: ${radius.card};
+  background: ${color.surface};
+  box-shadow: ${shadow.card};
   color: inherit;
   scroll-snap-align: start;
   text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+
+  &:hover {
+    border-color: rgb(217 59 84 / 30%);
+    box-shadow: 0 12px 28px rgb(36 33 34 / 14%);
+    transform: translateY(-2px);
+  }
 
   &:focus-visible {
-    outline: 3px solid #d93652;
+    outline: 3px solid rgb(217 59 84 / 24%);
     outline-offset: 3px;
   }
 `;
 
-const Thumbnail = styled.img`
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  background: #f6f3f4;
-`;
-
-const ProductTitle = styled.strong`
-  display: -webkit-box;
-  min-height: 42px;
-  margin: 14px 14px 6px;
-  overflow: hidden;
-  color: #2b2528;
-  font-size: 15px;
-  line-height: 1.4;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-`;
-
 const ExternalHint = styled.span`
-  margin: auto 14px 14px;
-  color: #8c8186;
-  font-size: 12px;
+  display: block;
+  margin-top: ${space.xs};
+  color: ${color.primary};
+  font-size: ${fontSize.caption};
+  font-weight: ${fontWeight.medium};
 `;
 
 export default AffiliateCatalogSection;

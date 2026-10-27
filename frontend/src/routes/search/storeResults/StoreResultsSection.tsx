@@ -25,6 +25,7 @@ import { useSelectedStore } from './useSelectedStore';
 export interface StoreResultsSectionProps {
   center: MapCoordinate;
   gachaId: number | null;
+  affiliateCategoryNames?: readonly string[];
   listHeader?: ReactNode;
   storesState: AsyncState<NearbyStoresResponseDto>;
   isSearchAreaChanged: boolean;
@@ -40,6 +41,7 @@ const EMPTY_STORES: readonly NearbyStoreResponseDto[] = [];
 export function StoreResultsSection({
   center,
   gachaId,
+  affiliateCategoryNames = [],
   listHeader,
   storesState,
   isSearchAreaChanged,
@@ -115,6 +117,7 @@ export function StoreResultsSection({
         <StoreListPanel
           storesState={storesState}
           isGachaSelected={gachaId !== null}
+          affiliateCategoryNames={affiliateCategoryNames}
           selectedStoreId={selectedStoreId}
           onOpenStore={openStoreFromList}
           onSelectStore={selectStoreFromList}

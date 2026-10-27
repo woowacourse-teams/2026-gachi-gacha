@@ -48,3 +48,13 @@ export const EmptyComments: Story = {
     onCommentAction: undefined,
   },
 };
+
+export const ChiikawaAffiliateCatalog: Story = {
+  args: {
+    detail: {
+      ...TRADE_DETAIL,
+      title: '미개봉 치이카와 키링 교환해요',
+      categories: ['치이카와', '키링'],
+    },
+  },
+};

@@ -16,6 +16,7 @@ const ALLOWED_PLACEMENT_HOSTS = new Set([
   'gachigacha.kro.kr',
   'dev.gachigacha.kro.kr',
 ]);
+const DEFAULT_PLACEMENT_PATHS = ['/search', '/map', '/trade'];
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 function normalizeCell(value) {
@@ -279,7 +280,7 @@ export function parseCatalogRows(csvSource) {
       record[SHEET_HEADERS.placementPaths] ?? '',
     );
     const placementPaths = (
-      placementValues.length > 0 ? placementValues : ['/search']
+      placementValues.length > 0 ? placementValues : DEFAULT_PLACEMENT_PATHS
     ).map((path) => parsePlacementPath(path, rowNumber));
     const activeFrom = parseDate(
       record[SHEET_HEADERS.activeFrom] ?? '',

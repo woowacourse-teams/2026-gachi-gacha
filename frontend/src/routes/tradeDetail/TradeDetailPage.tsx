@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetailType';
+import { AffiliateCatalogPlacement } from '@/features/affiliateCatalog/AffiliateCatalogPlacement';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
@@ -79,6 +80,12 @@ export default function TradeDetailPage({
           onRetryComments={onRetryComments}
           onCommentAction={onCommentAction}
           showSafetyActions={showSafetyActions}
+        />
+
+        <AffiliateCatalogPlacement
+          categoryNames={detail.categories}
+          title={detail.title}
+          placementPath="/trade"
         />
 
         {relatedItems.length > 0 && (

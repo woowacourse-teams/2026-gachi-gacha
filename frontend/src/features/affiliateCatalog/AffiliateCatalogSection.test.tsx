@@ -38,6 +38,11 @@ describe('AffiliateCatalogSection', () => {
     fireEvent.load(preloadedImage as HTMLImageElement);
 
     expect(screen.getByText('산리오 굿즈')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '이 굿즈들은 네이버 쇼핑 커넥트 제휴로, 판매 발생 시 수수료를 제공받습니다.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /산리오 굿즈/ })).toHaveAttribute(
       'rel',
       'sponsored noopener noreferrer',
