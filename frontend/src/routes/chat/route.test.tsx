@@ -210,6 +210,149 @@ describe('ChatRoute', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('선택한 채팅방 조회가 실패해도 다른 채팅방 목록을 유지하고 재시도한다', async () => {
+    const user = userEvent.setup();
+    let requests = 0;
+
+    server.use(
+      http.get('/api/v1/chat/rooms/1', () => {
+        requests += 1;
+
+        if (requests === 1) {
+          return HttpResponse.json(
+            { code: 'CHE001', message: '채팅 상대방 정보를 찾을 수 없습니다.' },
+            { status: 404 },
+          );
+        }
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            roomId: 1,
+            trade: {
+              tradeId: 1,
+              memberId: 3,
+              title: '쿠로미 미니 피규어 vol.2',
+              status: 'AVAILABLE',
+              thumbnailUrl: null,
+            },
+            otherMember: {
+              memberId: 8,
+              nickname: '가챠좋아',
+              profileImageUrl: null,
+            },
+            lastMessage: null,
+            unreadCount: 0,
+            createdAt: '2026-10-01T09:12:00',
+          },
+        });
+      }),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /가챠좋아/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '채팅 상대방 정보를 찾을 수 없습니다.',
+    );
+    expect(
+      screen.getByRole('button', { name: /피규어수집가/ }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(
+      await screen.findByRole('heading', { name: '가챠좋아' }),
+    ).toBeInTheDocument();
+    expect(requests).toBe(2);
+  });
+
+  it('선택한 방의 메시지 조회가 실패해도 채팅방 목록을 보여준다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/chat/rooms/1/messages', () =>
+        HttpResponse.json(
+          { code: 'S001', message: '메시지를 불러오지 못했습니다.' },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /가챠좋아/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '메시지를 불러오지 못했습니다.',
+    );
+    expect(
+      screen.getByRole('button', { name: /피규어수집가/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '가챠좋아' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /피규어수집가/ }));
+
+    expect(
+      await screen.findByRole('heading', { name: '피규어수집가' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('채팅방 목록 자체가 실패하면 전체 오류를 표시한다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json(
+          { code: 'CHE001', message: '채팅 상대방 정보를 찾을 수 없습니다.' },
+          { status: 404 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '채팅 상대방 정보를 찾을 수 없습니다.',
+    );
+    expect(
+      screen.queryByRole('button', { name: /가챠좋아/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('거래 상세 조회만 실패하면 채팅방 응답의 거래 정보로 대화를 표시한다', async () => {
+    server.use(
+      http.get('/api/v1/trades/1', () =>
+        HttpResponse.json(
+          { code: 'TE001', message: '존재하지 않는 교환 게시글입니다.' },
+          { status: 404 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: '가챠좋아' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('첫 메시지가 없는 방은 숨기고 첫 메시지 갱신 후 목록에 보여준다', async () => {
     const emptyRoom = {
       roomId: 3,

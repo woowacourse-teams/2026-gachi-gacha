@@ -45,6 +45,7 @@ interface ChatRouteState {
   selectedRoom: ChatRoomSummary | null;
   messages: ChatMessageData[];
   errorMessage: string;
+  roomLoadError: string;
   hasPreviousMessages: boolean;
   isLoadingPreviousMessages: boolean;
   nextLastSequence: number | null;
@@ -59,6 +60,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const [selectedListRoomId, setSelectedListRoomId] = useState<
     number | undefined
   >();
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const activeRoomId = roomId ?? selectedListRoomId;
   const [state, setState] = useState<ChatRouteState>({
     status: 'loading',
@@ -66,6 +68,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     selectedRoom: null,
     messages: [],
     errorMessage: '',
+    roomLoadError: '',
     hasPreviousMessages: false,
     isLoadingPreviousMessages: false,
     nextLastSequence: null,
@@ -208,9 +211,10 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     async function loadChat(): Promise<void> {
       setState((current) =>
         current.rooms.length === 0
-          ? { ...current, status: 'loading' }
+          ? { ...current, status: 'loading', roomLoadError: '' }
           : {
               ...current,
+              roomLoadError: '',
               selectedRoom: null,
               messages: [],
               hasPreviousMessages: false,
@@ -222,29 +226,53 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       );
 
       try {
-        const [rooms, selectedRoom, messagePage] = await Promise.all([
-          getChatRooms(controller.signal),
-          activeRoomId
-            ? getChatRoom(activeRoomId, controller.signal)
-            : Promise.resolve(null),
-          activeRoomId
-            ? getChatMessages(activeRoomId, { signal: controller.signal })
-            : Promise.resolve(null),
-        ]);
+        const [roomsResult, selectedRoomResult, messagePageResult] =
+          await Promise.allSettled([
+            getChatRooms(controller.signal),
+            activeRoomId
+              ? getChatRoom(activeRoomId, controller.signal)
+              : Promise.resolve(null),
+            activeRoomId
+              ? getChatMessages(activeRoomId, { signal: controller.signal })
+              : Promise.resolve(null),
+          ]);
 
         if (controller.signal.aborted) {
           return;
         }
 
+        if (roomsResult.status === 'rejected') {
+          throw roomsResult.reason;
+        }
+
+        const rooms = roomsResult.value;
+        const selectedRoom =
+          selectedRoomResult.status === 'fulfilled'
+            ? selectedRoomResult.value
+            : null;
+        const messagePage =
+          messagePageResult.status === 'fulfilled'
+            ? messagePageResult.value
+            : null;
+        const hasRoomLoadError =
+          selectedRoomResult.status === 'rejected' ||
+          messagePageResult.status === 'rejected';
+        const roomLoadError =
+          selectedRoomResult.status === 'rejected'
+            ? selectedRoomResult.reason
+            : messagePageResult.status === 'rejected'
+              ? messagePageResult.reason
+              : null;
         const messages = [...(messagePage?.messages ?? [])].sort(
           (first, second) => first.sequence - second.sequence,
         );
-        const selectedTradeDetail = selectedRoom
-          ? await getTradeDetail(
-              selectedRoom.trade.tradeId,
-              controller.signal,
-            ).catch(() => null)
-          : null;
+        const selectedTradeDetail =
+          selectedRoom && !hasRoomLoadError
+            ? await getTradeDetail(
+                selectedRoom.trade.tradeId,
+                controller.signal,
+              ).catch(() => null)
+            : null;
 
         if (controller.signal.aborted) {
           return;
@@ -276,17 +304,25 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
               )
             : visibleRooms,
           selectedRoom:
-            visibleSelectedRoom && selectedTradeDetail
+            visibleSelectedRoom && !hasRoomLoadError
               ? {
                   ...visibleSelectedRoom,
                   trade: {
                     ...visibleSelectedRoom.trade,
-                    status: selectedTradeDetail.status,
+                    status:
+                      selectedTradeDetail?.status ??
+                      visibleSelectedRoom.trade.status,
                   },
                 }
-              : visibleSelectedRoom,
-          messages,
+              : null,
+          messages: hasRoomLoadError ? [] : messages,
           errorMessage: '',
+          roomLoadError:
+            roomLoadError instanceof Error && roomLoadError.message
+              ? roomLoadError.message
+              : hasRoomLoadError
+                ? '채팅방을 불러오지 못했습니다.'
+                : '',
           hasPreviousMessages: messagePage?.hasNext === true,
           isLoadingPreviousMessages: false,
           nextLastSequence: messagePage?.nextLastSequence ?? null,
@@ -296,7 +332,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
 
         const lastMessage = messages.at(-1);
 
-        if (activeRoomId && lastMessage) {
+        if (activeRoomId && lastMessage && !hasRoomLoadError) {
           void markChatMessagesRead(activeRoomId, lastMessage.sequence).catch(
             () => {
               // 읽음 처리 실패가 대화 열람을 막지 않도록 다음 진입 때 재시도합니다.
@@ -324,7 +360,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     return () => {
       controller.abort();
     };
-  }, [activeRoomId, isMemberBlocked]);
+  }, [activeRoomId, isMemberBlocked, loadAttempt]);
 
   const conversations = useMemo(
     () =>
@@ -558,6 +594,8 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     <ChatPage
       conversations={conversations}
       selectedRoom={selectedRoom}
+      roomLoadError={state.roomLoadError}
+      onRetryRoom={() => setLoadAttempt((current) => current + 1)}
       socketStatus={socketStatus}
       socketErrorMessage={socketErrorMessage}
       onSendMessage={sendTextMessage}
