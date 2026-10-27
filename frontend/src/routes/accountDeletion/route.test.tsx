@@ -84,6 +84,9 @@ describe('외부 회원 탈퇴 페이지', () => {
     expect(
       screen.getByRole('link', { name: '네이버로 본인 확인' }),
     ).toHaveAttribute('href', '/api/v1/oauth/naver');
+    expect(
+      screen.getByRole('link', { name: 'Apple로 본인 확인' }),
+    ).toHaveAttribute('href', '/api/v1/oauth/apple');
   });
 
   it('로그인 사용자가 확인 문구를 입력하면 OAuth 회원 탈퇴 API로 계정을 삭제한다', async () => {
