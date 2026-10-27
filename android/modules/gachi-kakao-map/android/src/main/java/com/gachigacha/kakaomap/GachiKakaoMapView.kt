@@ -121,7 +121,7 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
       // KakaoMapSdk must be initialized before MapView is constructed.
       initializeSdk(context.applicationContext, nativeAppKey)
       val currentMapView = MapView(context).apply {
-        setFinishManually(true)
+        setPreserveOnDetachFromWindow(true)
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
       }
       mapView = currentMapView
@@ -168,6 +168,8 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
           override fun getZoomLevel(): Int = DEFAULT_ZOOM_LEVEL
         },
       )
+      // Kakao Maps SDK 2.13.5+ requires this after start() to preserve a detached map.
+      currentMapView.setFinishManually(true)
     } catch (_: Exception) {
       mapView?.let(::removeView)
       mapView = null
