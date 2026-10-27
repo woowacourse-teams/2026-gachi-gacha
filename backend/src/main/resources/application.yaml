@@ -71,6 +71,7 @@ management:
         http.server.requests: true # HTTP API 요청 P95/P99 활성화 (권장)
 
 oauth:
+  frontend-callback-url: ${FRONT_CALLBACK_URL}
   kakao:
     redirect-uri: ${KAKAO_REDIRECT_URL}
     client-id: ${KAKAO_CLIENT_ID}
