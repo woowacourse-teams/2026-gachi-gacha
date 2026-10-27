@@ -72,6 +72,7 @@ management:
 
 oauth:
   frontend-callback-url: ${FRONT_CALLBACK_URL}
+  frontend-withdraw-callback-url: ${FRONT_WITHDRAW_CALLBACK_URL}
   kakao:
     redirect-uri: ${KAKAO_REDIRECT_URL}
     client-id: ${KAKAO_CLIENT_ID}

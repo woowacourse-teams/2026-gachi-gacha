@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class MemberService {
 
     private final MemberJpaRepository memberJpaRepository;
-    private final TokenService tokenService;
     private final PushTokenJpaRepository pushTokenJpaRepository;
+    private final TokenService tokenService;
 
     public MemberInfo getMemberInfo(final Long memberId) {
         Member member = memberJpaRepository.getMemberById(memberId);

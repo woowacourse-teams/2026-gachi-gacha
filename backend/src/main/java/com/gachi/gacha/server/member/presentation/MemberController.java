@@ -4,25 +4,18 @@ import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.config.SwaggerConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.member.application.MemberService;
-import com.gachi.gacha.server.member.application.OauthService;
-import com.gachi.gacha.server.member.application.dto.MemberDeleteResult;
 import com.gachi.gacha.server.member.application.dto.MemberInfo;
-import com.gachi.gacha.server.member.presentation.dto.MemberDeleteResponse;
 import com.gachi.gacha.server.member.presentation.dto.MemberRequest;
 import com.gachi.gacha.server.member.presentation.dto.MemberResponse;
-import com.gachi.gacha.server.member.presentation.session.OauthNonceSessionManager;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "회원", description = "내 정보 조회·수정·탈퇴")
@@ -32,9 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MemberController {
 
-    private final OauthNonceSessionManager oauthNonceSessionManager;
     private final MemberService memberService;
-    private final OauthService oauthService;
 
     @Operation(summary = "내 정보 조회")
     @GetMapping("/me")
@@ -51,18 +42,5 @@ public class MemberController {
     ) {
         MemberInfo memberInfo = memberService.modifyMember(memberId, memberRequest.toCommand());
         return BaseResponse.updated(MemberResponse.from(memberInfo));
-    }
-
-    @Operation(summary = "회원 탈퇴 (Apple 회원은 재인증 code 필요)")
-    @DeleteMapping("/me")
-    public BaseResponse<MemberDeleteResponse> deleteMember(
-            @Auth final Long memberId,
-            @RequestParam(required = false) final String code,
-            final HttpSession session
-    ) {
-        String nonce = oauthNonceSessionManager.consume(session);
-        oauthService.revokeIfNeeded(memberId, code, nonce);
-        MemberDeleteResult result = memberService.removeMember(memberId);
-        return BaseResponse.deleted(MemberDeleteResponse.from(result));
     }
 }

@@ -2,6 +2,7 @@ package com.gachi.gacha.server.member.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.application.dto.LoginInfo;
+import com.gachi.gacha.server.member.application.dto.MemberDeleteResult;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
@@ -10,6 +11,7 @@ import com.gachi.gacha.server.member.domain.auth.authcode.AuthCodeRequestUrlProv
 import com.gachi.gacha.server.member.domain.auth.client.OauthMemberClientComposite;
 import com.gachi.gacha.server.member.domain.exception.InvalidOauthStateException;
 import com.gachi.gacha.server.member.domain.exception.MemberNotFoundException;
+import com.gachi.gacha.server.member.domain.exception.UnSupportedProviderTypeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ public class OauthService {
     private final AuthCodeRequestUrlProviderComposite authCodeRequestUrlProviderComposite;
     private final OauthMemberClientComposite oauthMemberClientComposite;
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberService memberService;
 
     public String getAuthCodeRequestUrl(final OauthProviderType provider, final String nonce) {
         return authCodeRequestUrlProviderComposite.provide(provider, nonce);
@@ -50,17 +53,25 @@ public class OauthService {
         }
     }
 
-    public void revokeIfNeeded(final Long memberId, final String authCode, final String nonce) {
-        Member member = memberJpaRepository.findById(memberId)
-                .orElseThrow(() -> new MemberNotFoundException(ErrorCode.MEMBER_NOT_FOUND));
-        OauthId oauthId = member.getOauthId();
-
-        if (oauthId.getOauthProvider() == OauthProviderType.APPLE) {
-            if (authCode == null || nonce == null) {
-                throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
-            }
-            oauthMemberClientComposite.revokeByAuthCode(
-                    OauthProviderType.APPLE, authCode, nonce, oauthId.getOauthId());
+    public MemberDeleteResult withdrawWithoutReauth(final Long memberId) {
+        Member member = memberJpaRepository.getMemberById(memberId);
+        if (member.getOauthId().getOauthProvider() == OauthProviderType.APPLE) {
+            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
         }
+        return memberService.removeMember(memberId);
+    }
+
+    public void withdraw(final Long memberId, final String authCode, final String nonce) {
+        Member member = memberJpaRepository.getMemberById(memberId);
+        OauthId oauthId = member.getOauthId();
+        if (oauthId.getOauthProvider() != OauthProviderType.APPLE) {
+            throw new UnSupportedProviderTypeException(ErrorCode.UNSUPPORTED_TYPE_ERROR);
+        }
+        if (authCode == null || nonce == null) {
+            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
+        }
+        oauthMemberClientComposite.revokeByAuthCode(
+                OauthProviderType.APPLE, authCode, nonce, oauthId.getOauthId());
+        memberService.removeMember(memberId);
     }
 }
