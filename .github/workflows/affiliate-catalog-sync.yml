@@ -96,12 +96,12 @@ jobs:
         id: commit
         shell: bash
         run: |
-          branch="automation/affiliate-catalog-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          branch="automation/434-affiliate-catalog-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "${branch}"
           git add frontend/src/features/affiliateCatalog/generatedCatalog.ts
-          git commit -m "chore(frontend): sync affiliate catalog"
+          git commit -m "chore(frontend): 제휴 상품 카탈로그를 동기화한다"
           git push origin "${branch}"
           echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
 
@@ -115,7 +115,7 @@ jobs:
           pull_request_url="$(gh pr create \
             --base frontend-dev \
             --head "${HEAD_BRANCH}" \
-            --title "chore(frontend): 쇼핑 커넥트 카탈로그 동기화" \
-            --body $'Google Sheet의 활성 상품을 검증해 정적 카탈로그로 동기화합니다.\n\n- 한글 카테고리명을 운영 API의 정확한 categoryId로 변환\n- 노출 기간·페이지·시트 순서 반영\n- 자동 생성 변경만 포함')"
+            --title "[CHORE] 쇼핑 커넥트 카탈로그를 동기화한다" \
+            --body $'## 작업 내용\n- Google Sheet의 활성 상품을 검증해 정적 카탈로그로 동기화합니다.\n- 한글 카테고리명을 운영 API의 정확한 categoryId로 변환합니다.\n- 노출 기간·페이지·시트 순서를 반영합니다.\n\n## 관련 이슈\nRefs #434\n\n## 스크린샷 (프론트엔드 변경 시)\n- 데이터 동기화 PR로 UI 구조 변경은 없습니다.\n\n## 리뷰 포인트\n- 자동 생성된 `generatedCatalog.ts` 변경만 포함하는지 확인해 주세요.\n\n## 체크리스트\n- [x] 작업전에 pull.. 하셨나요?\n- [x] 브랜치명에 이슈 번호가 들어갔다\n- [x] 내 포지션 폴더(`frontend/` 또는 `backend/`)만 수정했다\n- [ ] 로컬에서 실행·빌드·테스트가 정상 동작한다\n- [ ] 포매터·린터를 통과했다\n- [x] 디버깅용 코드를 지웠다 (`console.log`, `System.out.println`)\n- [x] 커밋 메시지가 컨벤션에 맞다')"
           echo "### Affiliate catalog" >> "${GITHUB_STEP_SUMMARY}"
           echo "Created PR: ${pull_request_url}" >> "${GITHUB_STEP_SUMMARY}"
