@@ -18,6 +18,8 @@ const POSTHOG_API_HOST =
   process.env.POSTHOG_API_HOST ?? 'https://us.i.posthog.com';
 const EVENT_APPLICATION_ENABLED =
   process.env.EVENT_APPLICATION_ENABLED === 'true';
+const AFFILIATE_CATALOG_ENABLED =
+  process.env.AFFILIATE_CATALOG_ENABLED !== 'false';
 const EVENT_APPLICATION_ENDPOINT = process.env.EVENT_APPLICATION_ENDPOINT ?? '';
 const EVENT_APPLICATION_START_AT = process.env.EVENT_APPLICATION_START_AT ?? '';
 const EVENT_APPLICATION_END_AT = process.env.EVENT_APPLICATION_END_AT ?? '';
@@ -140,6 +142,9 @@ module.exports = (_env, argv) => {
         __EVENT_APPLICATION_ENABLED__: JSON.stringify(
           EVENT_APPLICATION_ENABLED,
         ),
+        __AFFILIATE_CATALOG_ENABLED__: JSON.stringify(
+          AFFILIATE_CATALOG_ENABLED,
+        ),
         __EVENT_APPLICATION_ENDPOINT__: JSON.stringify(
           EVENT_APPLICATION_ENDPOINT,
         ),
@@ -151,6 +156,15 @@ module.exports = (_env, argv) => {
         __APP_ENV__: JSON.stringify(appEnvironment),
         __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),
+
+      ...(!AFFILIATE_CATALOG_ENABLED
+        ? [
+            new webpack.IgnorePlugin({
+              resourceRegExp: /^\.\/AffiliateCatalogRuntime$/,
+              contextRegExp: /features[\\/]affiliateCatalog$/,
+            }),
+          ]
+        : []),
     ],
 
     devtool: isProduction ? 'source-map' : 'eval-cheap-module-source-map',

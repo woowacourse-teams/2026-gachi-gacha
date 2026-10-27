@@ -1,6 +1,6 @@
 import styled from '@emotion/styled';
 
-import { AffiliateCatalogPlacement } from '@/features/affiliateCatalog/AffiliateCatalogPlacement';
+import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import { breakpoint } from '@/shared/styles/tokens';
 
@@ -141,7 +141,8 @@ export function StoreListPanel({
 
       {isGachaSelected && affiliateCategoryNames.length > 0 && (
         <DesktopAffiliateSlot>
-          <AffiliateCatalogPlacement
+          <AffiliateCatalogSlot
+            matchBy="content"
             categoryNames={affiliateCategoryNames}
             placementPath="/map"
           />

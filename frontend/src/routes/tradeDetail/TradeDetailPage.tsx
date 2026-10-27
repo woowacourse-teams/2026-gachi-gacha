@@ -1,7 +1,7 @@
 import styled from '@emotion/styled';
 
 import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetailType';
-import { AffiliateCatalogPlacement } from '@/features/affiliateCatalog/AffiliateCatalogPlacement';
+import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
@@ -82,7 +82,8 @@ export default function TradeDetailPage({
           showSafetyActions={showSafetyActions}
         />
 
-        <AffiliateCatalogPlacement
+        <AffiliateCatalogSlot
+          matchBy="content"
           categoryNames={detail.categories}
           title={detail.title}
           placementPath="/trade"
