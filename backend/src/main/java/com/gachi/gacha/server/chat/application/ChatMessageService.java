@@ -10,10 +10,12 @@ import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.InvalidReadSequenceException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import com.gachi.gacha.server.member.application.MemberBlockService;
+import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class ChatMessageService {
     private final ChatRoomMemberJpaRepository chatRoomMemberJpaRepository;
     private final ChatMessageMongoRepository chatMessageMongoRepository;
     private final MemberBlockService memberBlockService;
+    private final MemberJpaRepository memberJpaRepository;
     private final ApplicationEventPublisher publisher;
 
     public ChatMessagePageInfo getMessages(
@@ -113,7 +116,9 @@ public class ChatMessageService {
 
         ChatRoom chatRoom = chatRoomJpaRepository.getByIdForUpdate(roomId);
         ChatRoomMember sender = chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, senderId);
-        validateNotBlockedWithReceivers(roomId, senderId);
+        List<Long> receiverIds = findReceiverIds(roomId, senderId);
+        validateNotBlockedWithReceivers(senderId, receiverIds);
+        validateReceiversActive(receiverIds);
 
         String preview = ChatMessage.preview(command.type(), command.content());
         long sequence = chatRoom.appendMessage(preview, LocalDateTime.now());
@@ -127,14 +132,30 @@ public class ChatMessageService {
         return ChatMessageInfo.from(savedMessage);
     }
 
+    private List<Long> findReceiverIds(final Long roomId, final Long senderId) {
+        return chatRoomMemberJpaRepository.findMemberIdsByRoomId(roomId)
+                .stream()
+                .filter(memberId -> !memberId.equals(senderId))
+                .toList();
+    }
+
     /**
      * sequence 증가·메시지 저장·브로드캐스트보다 먼저 거절해 차단 이후의 메시지가 남지 않게 한다.
      */
-    private void validateNotBlockedWithReceivers(final Long roomId, final Long senderId) {
-        chatRoomMemberJpaRepository.findMemberIdsByRoomId(roomId)
-                .stream()
-                .filter(memberId -> !memberId.equals(senderId))
-                .forEach(receiverId -> memberBlockService.validateChatAllowed(senderId, receiverId));
+    private void validateNotBlockedWithReceivers(final Long senderId, final List<Long> receiverIds) {
+        receiverIds.forEach(receiverId -> memberBlockService.validateChatAllowed(senderId, receiverId));
+    }
+
+    /**
+     * 채팅방 참여 기록은 탈퇴 후에도 남으므로 수신자 id만으로는 탈퇴 여부를 알 수 없다.
+     * existsById는 Member의 SQLRestriction이 적용되므로 탈퇴 회원이면 false를 반환한다.
+     */
+    private void validateReceiversActive(final List<Long> receiverIds) {
+        boolean hasWithdrawnReceiver = receiverIds.stream()
+                .anyMatch(receiverId -> !memberJpaRepository.existsById(receiverId));
+        if (hasWithdrawnReceiver) {
+            throw new ChatPartnerWithdrawnException(ErrorCode.CHAT_PARTNER_WITHDRAWN);
+        }
     }
 
     /**

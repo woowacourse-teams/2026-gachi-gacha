@@ -19,11 +19,13 @@ import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.MessageType;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
 import com.gachi.gacha.server.chat.domain.exception.InvalidChatMessageException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.exception.BlockedChatNotAllowedException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,6 +56,9 @@ class ChatMessageServiceTest {
 
     @Mock
     private MemberBlockService memberBlockService;
+
+    @Mock
+    private MemberJpaRepository memberJpaRepository;
 
     @Mock
     private ApplicationEventPublisher publisher;
@@ -162,6 +167,38 @@ class ChatMessageServiceTest {
             verify(publisher, never()).publishEvent(any(Object.class));
             assertThat(chatRoom.getLastMessageSequence()).isZero();
             assertThat(sender.getLastReadMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("상대가 탈퇴했으면 메시지를 저장하지 않고 sequence도 증가하지 않는다")
+        void sendMessage_withdrawnReceiver() {
+            given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
+            given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
+                    .willReturn(List.of(SENDER_ID, RECEIVER_ID));
+            given(memberJpaRepository.existsById(RECEIVER_ID)).willReturn(false);
+
+            assertThatThrownBy(() -> chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요")))
+                    .isInstanceOf(ChatPartnerWithdrawnException.class);
+
+            verify(chatMessageMongoRepository, never()).save(any());
+            verify(publisher, never()).publishEvent(any(Object.class));
+            assertThat(chatRoom.getLastMessageSequence()).isZero();
+            assertThat(sender.getLastReadMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("상대가 정상 회원이면 메시지를 전송한다")
+        void sendMessage_activeReceiver() {
+            givenRoomAndSender();
+            given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
+                    .willReturn(List.of(SENDER_ID, RECEIVER_ID));
+            given(memberJpaRepository.existsById(RECEIVER_ID)).willReturn(true);
+
+            ChatMessageInfo info = chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요"));
+
+            assertThat(info.sequence()).isEqualTo(1L);
+            verify(memberBlockService).validateChatAllowed(SENDER_ID, RECEIVER_ID);
         }
 
         @Test
