@@ -9,10 +9,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthSessionProvider } from './src/domains/auth/AuthSessionContext';
 import { MemberSafetyProvider } from './src/domains/memberSafety/MemberSafetyContext';
-import { AppTabs, type AppTabParamList } from './src/navigation/AppTabs';
+import { RootStack, type RootStackParamList } from './src/navigation/RootStack';
 import { navigationTheme } from './src/theme/navigationTheme';
 
-const navigationRef = createNavigationContainerRef<AppTabParamList>();
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 const EXIT_CONFIRMATION_WINDOW_MS = 2_000;
 
 export default function App() {
@@ -47,7 +47,7 @@ export default function App() {
         <MemberSafetyProvider>
           <NavigationContainer ref={navigationRef} theme={navigationTheme}>
             <StatusBar style="dark" />
-            <AppTabs />
+            <RootStack />
           </NavigationContainer>
         </MemberSafetyProvider>
       </AuthSessionProvider>
