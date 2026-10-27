@@ -9,6 +9,7 @@ import {
   readAccessToken,
   readRefreshToken,
 } from '@/features/auth/authTokenStorage';
+import { storeOAuthLoginProvider } from '@/features/auth/oauthLoginProviderStorage';
 import {
   hasSeenCurrentLandingTour,
   LANDING_TOUR_VERSION,
@@ -160,6 +161,62 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(readRefreshToken()).toBe(refreshToken);
     expect(requestedAuthorization).toBe(`Bearer ${accessToken}`);
     expect(hasSeenCurrentLandingTour()).toBe(true);
+  });
+
+  it('백엔드 OAuth 리다이렉트의 해시 토큰을 저장하고 주소에서 즉시 제거한다', async () => {
+    let requestedAuthorization: string | null = null;
+
+    storeAuthReturnPath('/mypage?tab=stores');
+    storeOAuthLoginProvider('apple');
+    server.use(
+      http.get('/api/v1/members/me', ({ request }) => {
+        requestedAuthorization = request.headers.get('Authorization');
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        });
+      }),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: `/oauth/callback#accessToken=${accessToken}&refreshToken=${refreshToken}`,
+    });
+
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
+        '/mypage?tab=stores',
+      );
+    });
+    expect(window.location.hash).toBe('');
+    expect(readAccessToken()).toBe(accessToken);
+    expect(readRefreshToken()).toBe(refreshToken);
+    expect(requestedAuthorization).toBe(`Bearer ${accessToken}`);
+  });
+
+  it('백엔드 OAuth 리다이렉트 오류를 안내하고 해시를 제거한다', async () => {
+    storeAuthReturnPath('/notifications');
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/oauth/callback#error=invalid_state',
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '로그인 요청이 유효하지 않습니다',
+    );
+    expect(window.location.hash).toBe('');
+    expect(screen.getByRole('link', { name: '다시 로그인' })).toHaveAttribute(
+      'href',
+      '/login?returnTo=%2Fnotifications',
+    );
   });
 
   it('OAuth API 오류가 발생하면 오류 안내와 다시 로그인 링크를 보여준다', async () => {

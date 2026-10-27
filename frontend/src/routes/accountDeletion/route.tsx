@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { OAUTH_WITHDRAW_CALLBACK_PATH } from '@/features/auth/oauthCallbackPath';
 import { AccountDeletionDialog } from '@/routes/mypage/components/AccountDeletionDialog';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
@@ -33,12 +34,61 @@ import {
 } from './route.styles';
 
 const ACCOUNT_DELETION_PATH = '/account-deletion';
+const WITHDRAW_ERROR_MESSAGES: Record<string, string> = {
+  oauth_denied: 'Apple 본인 확인이 취소되었거나 실패했습니다.',
+  invalid_state: '본인 확인 요청이 유효하지 않습니다. 다시 시도해주세요.',
+  withdraw_failed: '회원 탈퇴를 완료하지 못했습니다. 다시 시도해주세요.',
+};
 
 export function AccountDeletionRoute() {
-  const { search } = useLocation();
-  const { status, member, deleteAccount, retry } = useAuthSession();
+  const { pathname, search, hash } = useLocation();
+  const { status, member, deleteAccount, completeAccountDeletion, retry } =
+    useAuthSession();
   const [isDeletionDialogOpen, setIsDeletionDialogOpen] = useState(false);
   const [isDeletionComplete, setIsDeletionComplete] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+  const callbackHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (status === 'loading' || callbackHandledRef.current || !hash) {
+      return;
+    }
+
+    const isWithdrawPath =
+      pathname === ACCOUNT_DELETION_PATH ||
+      pathname === OAUTH_WITHDRAW_CALLBACK_PATH;
+
+    if (!isWithdrawPath) {
+      return;
+    }
+
+    const params = new URLSearchParams(hash.slice(1));
+    const result = params.get('result');
+    const error = params.get('error');
+
+    if (!result && !error) {
+      return;
+    }
+
+    callbackHandledRef.current = true;
+    window.history.replaceState(
+      window.history.state,
+      '',
+      `${pathname}${search}`,
+    );
+
+    if (result === 'success') {
+      completeAccountDeletion();
+      setIsDeletionComplete(true);
+      return;
+    }
+
+    setWithdrawError(
+      error
+        ? (WITHDRAW_ERROR_MESSAGES[error] ?? '회원 탈퇴를 완료하지 못했습니다.')
+        : '회원 탈퇴 결과가 올바르지 않습니다.',
+    );
+  }, [completeAccountDeletion, hash, pathname, search, status]);
 
   if (status === 'loading') {
     return <PageLoadingFallback label="회원 정보를 확인하고 있어요." />;
@@ -46,9 +96,7 @@ export function AccountDeletionRoute() {
 
   async function handleDeleteAccount() {
     try {
-      const authorizationCode =
-        new URLSearchParams(search).get('code')?.trim() || undefined;
-      const result = await deleteAccount(authorizationCode);
+      const result = await deleteAccount();
 
       if (result.status === 'reauthentication-required') {
         assignBrowserLocation(result.authorizationUrl);
@@ -111,6 +159,10 @@ export function AccountDeletionRoute() {
             앱을 삭제했거나 앱에 접근하기 어려운 경우에도 이 페이지에서 본인
             확인 후 계정 삭제를 요청할 수 있습니다.
           </Description>
+
+          {withdrawError && (
+            <ErrorMessage role="alert">{withdrawError}</ErrorMessage>
+          )}
 
           <Information>
             <InformationTitle>탈퇴 전에 확인해 주세요</InformationTitle>
