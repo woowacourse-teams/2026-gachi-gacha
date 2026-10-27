@@ -80,7 +80,7 @@ public class OauthController {
         return BaseResponse.ok(oauthService.getWithdrawAuthCodeRequestUrl(memberId, nonce));
     }
 
-    @Operation(summary = "애플 회원 탈퇴")
+    @Operation(summary = "회원 탈퇴 (애플)")
     @PostMapping("/withdraw/apple")
     public ResponseEntity<Void> appleWithdraw(
             @RequestParam(required = false) final String code,
@@ -100,7 +100,7 @@ public class OauthController {
             if (memberId == null || nonce == null || code == null || !nonce.equals(state)) {
                 throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
             }
-            oauthService.withdraw(memberId, code, nonce);   // 검증 + 연동 해제 + 삭제
+            oauthService.withdraw(memberId, code, nonce);
             return redirectToFrontend(frontendWithdrawCallbackUrl, "result=success");
         } catch (OauthAuthenticationDeniedException e) {
             return redirectToFrontend(frontendWithdrawCallbackUrl, "error=oauth_denied");
@@ -112,7 +112,7 @@ public class OauthController {
         }
     }
 
-    @Operation(summary = "일반 회원 탈퇴")
+    @Operation(summary = "회원 탈퇴 (카카오·네이버)")
     @DeleteMapping("/withdraw")
     public BaseResponse<MemberDeleteResponse> withdraw(
             @Auth final Long memberId
@@ -120,7 +120,6 @@ public class OauthController {
         MemberDeleteResult result = oauthService.withdrawWithoutReauth(memberId);
         return BaseResponse.deleted(MemberDeleteResponse.from(result));
     }
-
 
     @Operation(summary = "소셜 로그인 콜백")
     @RequestMapping(value = "/login/{provider}", method = {RequestMethod.GET, RequestMethod.POST})
