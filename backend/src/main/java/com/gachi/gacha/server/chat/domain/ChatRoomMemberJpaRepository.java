@@ -48,7 +48,7 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
             WHERE chat_room_member.chat_room_id IN (:roomIds)
               AND chat_room_member.member_id <> :memberId
             """, nativeQuery = true)
-    List<ChatMemberSummary> findOtherMembersIncludingDeleted(List<Long> roomIds, Long memberId);
+    List<ChatMemberSummary> findOtherMembersIncludingDeleted(final List<Long> roomIds, final Long memberId);
 
     @Query("""
             SELECT chatRoomMember
@@ -74,7 +74,7 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
             WHERE chat_room_member.chat_room_id = :roomId
               AND chat_room_member.member_id <> :memberId
             """, nativeQuery = true)
-    Optional<ChatMemberSummary> findOtherMemberIncludingDeleted(Long roomId, Long memberId);
+    Optional<ChatMemberSummary> findOtherMemberIncludingDeleted(final Long roomId, final Long memberId);
 
     /**
      * 목록에서 숨긴 차단 관계의 채팅방은 전체 안 읽은 수에서도 제외한다.
