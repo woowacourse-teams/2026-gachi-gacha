@@ -7,9 +7,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import { type NavigationProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PRIVACY_POLICY_URL } from '../config/web';
+import { useAuthSession } from '../domains/auth/AuthSessionContext';
+import type { RootStackParamList } from '../navigation/RootStack';
 import { colors } from '../theme/colors';
 
 type AppHeaderProps = {
@@ -18,6 +21,8 @@ type AppHeaderProps = {
 
 export function AppHeader({ title }: AppHeaderProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { status: authStatus } = useAuthSession();
 
   async function openPrivacyPolicy() {
     try {
@@ -55,6 +60,22 @@ export function AppHeader({ title }: AppHeaderProps) {
       />
       <View style={styles.actionGroup}>
         <Text style={styles.title}>{title}</Text>
+        <Pressable
+          accessibilityLabel={
+            authStatus === 'authenticated' ? '내 정보 열기' : '계정 안내 열기'
+          }
+          accessibilityRole="button"
+          hitSlop={6}
+          onPress={() => navigation.navigate('Account')}
+          style={({ pressed }) => [
+            styles.accountButton,
+            pressed && styles.infoButtonPressed,
+          ]}
+        >
+          <Text style={styles.accountButtonText}>
+            {authStatus === 'authenticated' ? '내 정보' : '계정'}
+          </Text>
+        </Pressable>
         <Pressable
           accessibilityLabel="서비스 정보 열기"
           accessibilityRole="button"
@@ -107,6 +128,22 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 18,
     backgroundColor: colors.background,
+  },
+  accountButton: {
+    minWidth: 52,
+    height: 36,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    backgroundColor: colors.background,
+  },
+  accountButtonText: {
+    color: colors.text,
+    fontSize: 12,
+    fontWeight: '800',
   },
   infoButtonPressed: {
     backgroundColor: colors.primarySoft,

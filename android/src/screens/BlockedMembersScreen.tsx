@@ -1,13 +1,9 @@
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Alert, ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import type { BlockedMember } from '../domains/memberSafety/memberSafetyApi';
-import type { TradeStackParamList } from '../navigation/TradeStack';
 import { colors } from '../theme/colors';
-
-type Props = NativeStackScreenProps<TradeStackParamList, 'BlockedMembers'>;
 
 function formatBlockedAt(value: string): string {
   const date = new Date(value);
@@ -16,7 +12,7 @@ function formatBlockedAt(value: string): string {
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 차단`;
 }
 
-export function BlockedMembersScreen({}: Props) {
+export function BlockedMembersScreen() {
   const { status: authStatus } = useAuthSession();
   const {
     blockedMembers,
