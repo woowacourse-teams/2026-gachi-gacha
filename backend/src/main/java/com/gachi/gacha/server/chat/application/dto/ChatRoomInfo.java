@@ -1,7 +1,7 @@
 package com.gachi.gacha.server.chat.application.dto;
 
 import com.gachi.gacha.server.chat.domain.ChatRoom;
-import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.chat.domain.ChatMemberSummary;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import java.time.LocalDateTime;
@@ -17,11 +17,13 @@ public record ChatRoomInfo(
         long unreadCount,
         LocalDateTime createdAt
 ) {
+    private static final String DELETED_MEMBER_NAME = "탈퇴한 사용자";
+
     public static ChatRoomInfo of(
             final ChatRoom chatRoom,
             final Trade trade,
             @Nullable final String tradeThumbnailUrl,
-            final Member otherMember,
+            final ChatMemberSummary otherMember,
             final long unreadCount
     ) {
         TradeSummary tradeSummary = TradeSummary.builder()
@@ -32,9 +34,11 @@ public record ChatRoomInfo(
                 .build();
 
         MemberSummary otherMemberSummary = MemberSummary.builder()
-                .memberId(otherMember.getId())
-                .nickname(otherMember.getNickname())
-                .profileImageUrl(otherMember.getProfileImageUrl())
+                .memberId(otherMember.getMemberId())
+                .nickname(Boolean.TRUE.equals(otherMember.getDeleted())
+                        ? DELETED_MEMBER_NAME : otherMember.getNickname())
+                .profileImageUrl(Boolean.TRUE.equals(otherMember.getDeleted())
+                        ? null : otherMember.getProfileImageUrl())
                 .build();
 
         LastMessageSummary lastMessageSummary = getLastMessageSummary(chatRoom);

@@ -4,6 +4,7 @@ import com.gachi.gacha.server.chat.application.dto.ChatRoomCreateInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomExistenceInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomUpdateInfo;
+import com.gachi.gacha.server.chat.domain.ChatMemberSummary;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
@@ -55,7 +56,7 @@ public class ChatRoomService {
                 .map(ChatRoom::getId)
                 .toList();
 
-        Map<Long, Member> otherMembersByRoomId =
+        Map<Long, ChatMemberSummary> otherMembersByRoomId =
                 findOtherMembersByRoomId(chatRoomIds, memberId);
 
         List<Long> tradeIds = myChatRoomMembers.stream()
@@ -94,7 +95,7 @@ public class ChatRoomService {
         ChatRoomMember myChatRoomMember =
                 chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
 
-        Member otherMember = chatRoomMemberJpaRepository.findOtherMember(roomId, memberId)
+        ChatMemberSummary otherMember = chatRoomMemberJpaRepository.findOtherMemberIncludingDeleted(roomId, memberId)
                 .orElseThrow(() -> new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
 
         Trade trade = tradeJpaRepository.getById(chatRoom.getTradeId());
@@ -176,7 +177,7 @@ public class ChatRoomService {
 
     private ChatRoomInfo toChatRoomInfo(
             final ChatRoomMember myChatRoomMember,
-            final Map<Long, Member> otherMembersByRoomId,
+            final Map<Long, ChatMemberSummary> otherMembersByRoomId,
             final Map<Long, Trade> tradesById,
             final Map<Long, String> tradeThumbnailUrlsByTradeId
     ) {
@@ -185,7 +186,7 @@ public class ChatRoomService {
         Long chatRoomId = chatRoom.getId();
         Long tradeId = chatRoom.getTradeId();
 
-        Member otherMember = findOtherMember(otherMembersByRoomId, chatRoomId);
+        ChatMemberSummary otherMember = findOtherMember(otherMembersByRoomId, chatRoomId);
         Trade trade = findTrade(tradesById, tradeId);
         String tradeThumbnail = tradeThumbnailUrlsByTradeId.get(tradeId);
         long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
@@ -199,8 +200,11 @@ public class ChatRoomService {
         );
     }
 
-    private Member findOtherMember(final Map<Long, Member> otherMembersByRoomId, final Long chatRoomId) {
-        Member otherMember = otherMembersByRoomId.get(chatRoomId);
+    private ChatMemberSummary findOtherMember(
+            final Map<Long, ChatMemberSummary> otherMembersByRoomId,
+            final Long chatRoomId
+    ) {
+        ChatMemberSummary otherMember = otherMembersByRoomId.get(chatRoomId);
         if (otherMember == null) {
             throw new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND);
         }
@@ -215,16 +219,16 @@ public class ChatRoomService {
         return trade;
     }
 
-    private Map<Long, Member> findOtherMembersByRoomId(
+    private Map<Long, ChatMemberSummary> findOtherMembersByRoomId(
             final List<Long> chatRoomIds,
             final Long memberId
     ) {
-        return chatRoomMemberJpaRepository.findOtherMembers(chatRoomIds, memberId)
+        return chatRoomMemberJpaRepository.findOtherMembersIncludingDeleted(chatRoomIds, memberId)
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                chatRoomMember -> chatRoomMember.getChatRoom().getId(),
-                                ChatRoomMember::getMember
+                                ChatMemberSummary::getRoomId,
+                                Function.identity()
                         )
                 );
 
