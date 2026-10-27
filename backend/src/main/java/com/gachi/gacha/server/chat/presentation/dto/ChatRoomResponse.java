@@ -49,7 +49,8 @@ public record ChatRoomResponse(
     public record MemberSummaryResponse(
             Long memberId,
             String nickname,
-            @Nullable String profileImageUrl
+            @Nullable String profileImageUrl,
+            boolean withdrawn
     ) {
 
         private static MemberSummaryResponse from(final ChatRoomInfo.MemberSummary info) {
@@ -57,6 +58,7 @@ public record ChatRoomResponse(
                     .memberId(info.memberId())
                     .nickname(info.nickname())
                     .profileImageUrl(info.profileImageUrl())
+                    .withdrawn(info.withdrawn())
                     .build();
         }
     }

@@ -33,12 +33,12 @@ public record ChatRoomInfo(
                 .status(trade.getStatus())
                 .build();
 
+        boolean withdrawn = otherMember.isWithdrawn();
         MemberSummary otherMemberSummary = MemberSummary.builder()
                 .memberId(otherMember.getMemberId())
-                .nickname(Boolean.TRUE.equals(otherMember.getDeleted())
-                        ? DELETED_MEMBER_NAME : otherMember.getNickname())
-                .profileImageUrl(Boolean.TRUE.equals(otherMember.getDeleted())
-                        ? null : otherMember.getProfileImageUrl())
+                .nickname(withdrawn ? DELETED_MEMBER_NAME : otherMember.getNickname())
+                .profileImageUrl(withdrawn ? null : otherMember.getProfileImageUrl())
+                .withdrawn(withdrawn)
                 .build();
 
         LastMessageSummary lastMessageSummary = getLastMessageSummary(chatRoom);
@@ -77,7 +77,8 @@ public record ChatRoomInfo(
     public record MemberSummary(
             Long memberId,
             String nickname,
-            @Nullable String profileImageUrl
+            @Nullable String profileImageUrl,
+            boolean withdrawn
     ) {
 
     }

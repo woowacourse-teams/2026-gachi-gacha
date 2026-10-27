@@ -117,15 +117,36 @@ class ChatRoomServiceTest {
                         assertThat(room.otherMember().memberId()).isEqualTo(ownerId);
                         assertThat(room.otherMember().nickname()).isEqualTo("탈퇴한 사용자");
                         assertThat(room.otherMember().profileImageUrl()).isNull();
+                        assertThat(room.otherMember().withdrawn()).isTrue();
                     });
             assertThat(rooms)
                     .filteredOn(room -> room.roomId().equals(activeMemberRoomId))
                     .singleElement()
-                    .satisfies(room -> assertThat(room.otherMember().nickname()).isEqualTo("otherOwner"));
+                    .satisfies(room -> {
+                        assertThat(room.otherMember().nickname()).isEqualTo("otherOwner");
+                        assertThat(room.otherMember().withdrawn()).isFalse();
+                    });
             ChatRoomInfo deletedMemberRoom = chatRoomService.getRoom(requesterId, deletedMemberRoomId);
             assertThat(deletedMemberRoom.otherMember().memberId()).isEqualTo(ownerId);
             assertThat(deletedMemberRoom.otherMember().nickname()).isEqualTo("탈퇴한 사용자");
             assertThat(deletedMemberRoom.otherMember().profileImageUrl()).isNull();
+            assertThat(deletedMemberRoom.otherMember().withdrawn()).isTrue();
+        }
+
+        @Test
+        @DisplayName("닉네임이 탈퇴 표시 문구와 같아도 정상 회원이면 withdrawn은 false다")
+        void getRoom_activeMemberWithDeletedLikeNickname() {
+            Member lookalike = memberJpaRepository.save(Member.builder()
+                    .nickname("탈퇴한 사용자")
+                    .profileImageUrl("lookalike-profile")
+                    .build());
+            Long roomId = createRoom(requester, lookalike);
+
+            ChatRoomInfo room = chatRoomService.getRoom(requester.getId(), roomId);
+
+            assertThat(room.otherMember().nickname()).isEqualTo("탈퇴한 사용자");
+            assertThat(room.otherMember().profileImageUrl()).isEqualTo("lookalike-profile");
+            assertThat(room.otherMember().withdrawn()).isFalse();
         }
     }
 

@@ -13,4 +13,8 @@ public interface ChatMemberSummary {
     @Nullable String getProfileImageUrl();
 
     Boolean getDeleted();
+
+    default boolean isWithdrawn() {
+        return Boolean.TRUE.equals(getDeleted());
+    }
 }

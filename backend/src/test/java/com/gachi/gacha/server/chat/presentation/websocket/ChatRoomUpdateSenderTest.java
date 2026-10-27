@@ -115,7 +115,7 @@ class ChatRoomUpdateSenderTest {
         ChatRoomInfo room = ChatRoomInfo.builder()
                 .roomId(ROOM_ID)
                 .trade(new ChatRoomInfo.TradeSummary(1L, "교환 게시글", null, TradeStatus.AVAILABLE))
-                .otherMember(new ChatRoomInfo.MemberSummary(FIRST_MEMBER_ID, "상대방", null))
+                .otherMember(new ChatRoomInfo.MemberSummary(FIRST_MEMBER_ID, "상대방", null, false))
                 .lastMessage(new ChatRoomInfo.LastMessageSummary("안녕하세요", LocalDateTime.of(2026, 9, 29, 12, 0)))
                 .unreadCount(1L)
                 .createdAt(LocalDateTime.of(2026, 9, 28, 12, 0))
