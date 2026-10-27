@@ -19,6 +19,7 @@ module.exports = {
     __POSTHOG_API_KEY__: '',
     __POSTHOG_ENABLED__: false,
     __EVENT_APPLICATION_ENABLED__: false,
+    __AFFILIATE_CATALOG_ENABLED__: false,
     __EVENT_APPLICATION_ENDPOINT__: '',
     __EVENT_APPLICATION_START_AT__: '',
     __EVENT_APPLICATION_END_AT__: '',

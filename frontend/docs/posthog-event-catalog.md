@@ -44,25 +44,27 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 가챠 검색·지도·매장 이벤트
 
-| 이벤트                         | 발생 시점                 | 주요 속성                                                    |
-| ------------------------------ | ------------------------- | ------------------------------------------------------------ |
-| `category_selected`            | 카테고리 탭 선택          | `category_name`                                              |
-| `category_gacha_selected`      | 카테고리 가챠 선택        | `category_name`, `gacha_id`, `result_position`               |
-| `category_feed_more_requested` | 다음 카테고리 페이지 요청 | `category_name`, `loaded_item_count`                         |
-| `gacha_search_submitted`       | 가챠 검색 제출            | `query_length`                                               |
-| `gacha_search_results_viewed`  | 검색 결과 수신            | `query_length`, `result_count`                               |
-| `gacha_search_failed`          | 가챠 검색 실패            | `query_length`                                               |
-| `gacha_selected`               | 검색 결과의 가챠 선택     | `gacha_id`, `result_position`, `source`                      |
-| `store_results_loaded`         | 지도 매장 조회 성공       | `gacha_id`, `store_count`, `trigger`, `search_radius_meters` |
-| `store_discovery_succeeded`    | 매장이 한 곳 이상 조회됨  | `gacha_id`, `store_count`, `trigger`, `search_radius_meters` |
-| `store_results_failed`         | 지도 매장 조회 실패       | `gacha_id`, `trigger`, `search_radius_meters`                |
-| `store_selected`               | 목록·마커에서 매장 선택   | `gacha_id`, `store_id`, `source`                             |
-| `store_opened`                 | 매장 상세 진입            | `gacha_id`, `store_id`, `source`                             |
-| `map_area_researched`          | 현재 지도 영역 재검색     | `gacha_id`, `search_radius_meters`                           |
-| `store_detail_load_completed`  | 매장 상세 조회 완료       | `store_id`, `outcome`                                        |
-| `store_photo_viewed`           | 매장 사진 열기·이동       | `store_id`, `photo_index`, `photo_count`, `source`           |
-| `store_catalog_load_completed` | 매장 보유 가챠 조회 완료  | `store_id`, `outcome`, `item_count`                          |
-| `store_catalog_more_requested` | 매장 보유 가챠 더 보기    | `store_id`, `loaded_item_count`                              |
+| 이벤트                         | 발생 시점                 | 주요 속성                                                          |
+| ------------------------------ | ------------------------- | ------------------------------------------------------------------ |
+| `category_selected`            | 카테고리 탭 선택          | `category_name`                                                    |
+| `category_gacha_selected`      | 카테고리 가챠 선택        | `category_name`, `gacha_id`, `result_position`                     |
+| `category_feed_more_requested` | 다음 카테고리 페이지 요청 | `category_name`, `loaded_item_count`                               |
+| `affiliate_catalog_viewed`     | 제휴 상품 카탈로그 노출   | `category_name`, `placement_path`, `product_count`                 |
+| `affiliate_product_selected`   | 제휴 상품 링크 선택       | `product_id`, `category_name`, `placement_path`, `result_position` |
+| `gacha_search_submitted`       | 가챠 검색 제출            | `query_length`                                                     |
+| `gacha_search_results_viewed`  | 검색 결과 수신            | `query_length`, `result_count`                                     |
+| `gacha_search_failed`          | 가챠 검색 실패            | `query_length`                                                     |
+| `gacha_selected`               | 검색 결과의 가챠 선택     | `gacha_id`, `result_position`, `source`                            |
+| `store_results_loaded`         | 지도 매장 조회 성공       | `gacha_id`, `store_count`, `trigger`, `search_radius_meters`       |
+| `store_discovery_succeeded`    | 매장이 한 곳 이상 조회됨  | `gacha_id`, `store_count`, `trigger`, `search_radius_meters`       |
+| `store_results_failed`         | 지도 매장 조회 실패       | `gacha_id`, `trigger`, `search_radius_meters`                      |
+| `store_selected`               | 목록·마커에서 매장 선택   | `gacha_id`, `store_id`, `source`                                   |
+| `store_opened`                 | 매장 상세 진입            | `gacha_id`, `store_id`, `source`                                   |
+| `map_area_researched`          | 현재 지도 영역 재검색     | `gacha_id`, `search_radius_meters`                                 |
+| `store_detail_load_completed`  | 매장 상세 조회 완료       | `store_id`, `outcome`                                              |
+| `store_photo_viewed`           | 매장 사진 열기·이동       | `store_id`, `photo_index`, `photo_count`, `source`                 |
+| `store_catalog_load_completed` | 매장 보유 가챠 조회 완료  | `store_id`, `outcome`, `item_count`                                |
+| `store_catalog_more_requested` | 매장 보유 가챠 더 보기    | `store_id`, `loaded_item_count`                                    |
 
 `gacha_id = null`이면 특정 가챠를 고르지 않은 홍대 전체 매장 탐색이다.
 

@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import styled from '@emotion/styled';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
@@ -15,28 +14,6 @@ interface Props {
 }
 
 export default function CardListSection(props: Props) {
-  const endMarkerRef = useRef<HTMLDivElement>(null);
-  const { hasNextPage, loadMoreStatus = 'idle', onEndReached } = props;
-
-  useEffect(() => {
-    const marker = endMarkerRef.current;
-
-    if (!marker || !hasNextPage || loadMoreStatus !== 'idle' || !onEndReached) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) onEndReached();
-      },
-      { rootMargin: '240px 0px' },
-    );
-
-    observer.observe(marker);
-
-    return () => observer.disconnect();
-  }, [hasNextPage, loadMoreStatus, onEndReached]);
-
   if (props.items.length === 0) {
     return (
       <Wrapper>
@@ -60,6 +37,12 @@ export default function CardListSection(props: Props) {
         ))}
       </List>
 
+      {props.hasNextPage && props.loadMoreStatus === 'idle' && (
+        <MoreButton type="button" onClick={props.onEndReached}>
+          가챠 더보기
+        </MoreButton>
+      )}
+
       {props.loadMoreStatus === 'loading' && (
         <PageMessage role="status">
           다음 페이지를 불러오는 중이에요.
@@ -71,8 +54,6 @@ export default function CardListSection(props: Props) {
           다음 페이지 다시 불러오기
         </RetryButton>
       )}
-
-      <EndMarker ref={endMarkerRef} aria-hidden="true" />
     </Wrapper>
   );
 }
@@ -120,10 +101,6 @@ const List = styled.div`
   }
 `;
 
-const EndMarker = styled.div`
-  height: 1px;
-`;
-
 const PageMessage = styled.p`
   margin: 12px 0;
   font-size: 14px;
@@ -139,6 +116,23 @@ const RetryButton = styled.button`
   background: #ffffff;
   color: #6f6469;
   cursor: pointer;
+`;
+
+const MoreButton = styled(RetryButton)`
+  min-width: 132px;
+  border-color: #d93652;
+  background: #ffffff;
+  color: #c82f49;
+  font-weight: 700;
+
+  &:hover {
+    background: #fff4f6;
+  }
+
+  &:focus-visible {
+    outline: 3px solid #f3a4b2;
+    outline-offset: 3px;
+  }
 `;
 
 const EmptyMessage = styled.p`

@@ -88,6 +88,11 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
       <StoreResultsSection
         center={searchCenter}
         gachaId={selectedGachaId}
+        affiliateCategoryNames={
+          selectedGacha.status === 'success'
+            ? selectedGacha.data.categories
+            : []
+        }
         storesState={storesState}
         isSearchAreaChanged={isSearchAreaChanged}
         onOpenStore={openStoreDetail}

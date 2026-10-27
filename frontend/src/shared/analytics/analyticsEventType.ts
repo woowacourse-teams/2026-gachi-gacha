@@ -73,6 +73,17 @@ export interface AnalyticsEventPropertiesMap {
     category_name: string;
     loaded_item_count: number;
   };
+  affiliate_catalog_viewed: {
+    category_name: string;
+    placement_path: string;
+    product_count: number;
+  };
+  affiliate_product_selected: {
+    product_id: string;
+    category_name: string;
+    placement_path: string;
+    result_position: number;
+  };
   gacha_search_submitted: {
     query_length: number;
   };

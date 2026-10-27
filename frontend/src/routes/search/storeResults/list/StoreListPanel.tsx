@@ -1,4 +1,8 @@
+import styled from '@emotion/styled';
+
+import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
+import { breakpoint } from '@/shared/styles/tokens';
 
 import { StoreCard } from './StoreCard';
 import {
@@ -26,6 +30,7 @@ import type { NearbyStoresResponseDto } from '../../api/nearbyStoresResponseType
 export interface StoreListPanelProps {
   storesState: AsyncState<NearbyStoresResponseDto>;
   isGachaSelected: boolean;
+  affiliateCategoryNames?: readonly string[];
   selectedStoreId: number | null;
   onOpenStore: (storeId: number) => void;
   onSelectStore: (storeId: number) => void;
@@ -45,6 +50,7 @@ function StoreListLoading() {
 export function StoreListPanel({
   storesState,
   isGachaSelected,
+  affiliateCategoryNames = [],
   selectedStoreId,
   onOpenStore,
   onSelectStore,
@@ -132,6 +138,28 @@ export function StoreListPanel({
             ))}
           </List>
         ))}
+
+      {isGachaSelected && affiliateCategoryNames.length > 0 && (
+        <DesktopAffiliateSlot>
+          <AffiliateCatalogSlot
+            matchBy="content"
+            categoryNames={affiliateCategoryNames}
+            placementPath="/map"
+          />
+        </DesktopAffiliateSlot>
+      )}
     </Panel>
   );
 }
+
+const DesktopAffiliateSlot = styled.div`
+  padding: 24px 0 8px;
+
+  &:empty {
+    display: none;
+  }
+
+  @media (max-width: ${breakpoint.mobile}) {
+    display: none;
+  }
+`;
