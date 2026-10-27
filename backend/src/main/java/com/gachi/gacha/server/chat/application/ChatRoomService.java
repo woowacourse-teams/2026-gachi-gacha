@@ -10,6 +10,7 @@ import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAlreadyExistException;
 import com.gachi.gacha.server.chat.domain.exception.SelfChatNotAllowedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
@@ -145,6 +146,16 @@ public class ChatRoomService {
         memberBlockService.validateChatAllowed(memberId, trade.getMember().getId());
     }
 
+    /**
+     * 게시글은 작성자 탈퇴 후에도 남아 있고 trade.getMember()는 LAZY 프록시라 id만으로는 탈퇴 여부를 알 수 없다.
+     * existsById는 Member의 SQLRestriction이 적용되므로 탈퇴 회원이면 false를 반환한다.
+     */
+    private void validateTradeOwnerActive(final Trade trade) {
+        if (!memberJpaRepository.existsById(trade.getMember().getId())) {
+            throw new ChatPartnerWithdrawnException(ErrorCode.CHAT_PARTNER_WITHDRAWN);
+        }
+    }
+
     private void validateNotOwner(final Trade trade, final Long memberId) {
         if (trade.isOwnedBy(memberId)) {
             throw new SelfChatNotAllowedException(ErrorCode.SELF_CHAT_NOT_ALLOWED);
@@ -238,6 +249,7 @@ public class ChatRoomService {
     public ChatRoomCreateInfo createRoom(final Long memberId, final Long tradeId) {
         Trade trade = tradeJpaRepository.getById(tradeId);
         validateChatStartable(trade, memberId);
+        validateTradeOwnerActive(trade);
 
         Member requester = memberJpaRepository.getMemberById(memberId);
         Member tradeOwner = trade.getMember();

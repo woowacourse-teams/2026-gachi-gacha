@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.gachi.gacha.server.chat.application.dto.ChatRoomInfo;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
@@ -210,6 +211,45 @@ class ChatRoomServiceTest {
                     .isInstanceOf(BlockedChatNotAllowedException.class);
             assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(trade.getId(), requester.getId()))
                     .isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("탈퇴 회원과의 채팅 시작")
+    class StartChatWithDeletedMember {
+
+        @Test
+        @DisplayName("게시글 작성자가 탈퇴했으면 채팅방을 저장하지 않고 생성을 거절한다")
+        void createRoom_tradeOwnerDeleted() {
+            // given
+            Trade trade = saveTrade(owner);
+            Long tradeId = trade.getId();
+            Long requesterId = requester.getId();
+            entityManager.flush();
+            entityManager.clear();
+            memberJpaRepository.delete(memberJpaRepository.getMemberById(owner.getId()));
+            memberJpaRepository.flush();
+            entityManager.clear();
+
+            // when & then
+            assertThatThrownBy(() -> chatRoomService.createRoom(requesterId, tradeId))
+                    .isInstanceOf(ChatPartnerWithdrawnException.class);
+            assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(tradeId, requesterId))
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("게시글 작성자가 정상 회원이면 채팅방을 생성한다")
+        void createRoom_tradeOwnerActive() {
+            // given
+            Trade trade = saveTrade(owner);
+
+            // when
+            Long roomId = chatRoomService.createRoom(requester.getId(), trade.getId()).roomId();
+
+            // then
+            assertThat(chatRoomJpaRepository.findByTradeIdAndRequesterId(trade.getId(), requester.getId()))
+                    .hasValueSatisfying(room -> assertThat(room.getId()).isEqualTo(roomId));
         }
     }
 
