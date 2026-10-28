@@ -1,9 +1,24 @@
 import { useState } from 'react';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
+import {
+  DEFAULT_GACHA_CATEGORY,
+  FEATURED_GACHA_CATEGORIES,
+} from '../domains/gacha/gachaCategories';
 import { GachaSearchCard } from '../domains/gacha/GachaSearchCard';
+import { useCategoryGachas } from '../domains/gacha/useCategoryGachas';
 import { useGachaSearch } from '../domains/gacha/useGachaSearch';
 import type { AppTabParamList } from '../navigation/AppTabs';
 import { colors } from '../theme/colors';
@@ -16,19 +31,29 @@ const CARD_GAP = 12;
 export function SearchScreen({ navigation }: Props) {
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(DEFAULT_GACHA_CATEGORY);
   const search = useGachaSearch(keyword);
+  const categoryFeed = useCategoryGachas(selectedCategory);
   const { width } = useWindowDimensions();
   const cardWidth = (width - CONTENT_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
+  const isSearching = keyword.length > 0;
+  const activeFeed = isSearching ? search : categoryFeed;
 
   function submitSearch() {
     setKeyword(input.trim());
+  }
+
+  function selectCategory(category: string) {
+    setSelectedCategory(category);
+    setInput('');
+    setKeyword('');
   }
 
   return (
     <View style={styles.screen}>
       <AppHeader title="검색" />
       <FlatList
-        data={search.items}
+        data={activeFeed.items}
         keyExtractor={({ gachaId }) => String(gachaId)}
         numColumns={2}
         keyboardShouldPersistTaps="handled"
@@ -46,7 +71,7 @@ export function SearchScreen({ navigation }: Props) {
             />
           </View>
         )}
-        onEndReached={() => void search.loadMore()}
+        onEndReached={() => void activeFeed.loadMore()}
         onEndReachedThreshold={0.35}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -58,7 +83,7 @@ export function SearchScreen({ navigation }: Props) {
                 onSubmitEditing={submitSearch}
                 returnKeyType="search"
                 autoCorrect={false}
-                placeholder="캐릭터나 가챠 이름을 검색"
+                placeholder="카테고리나 가챠 이름을 검색"
                 placeholderTextColor="#a1a1a8"
                 style={styles.input}
               />
@@ -75,41 +100,85 @@ export function SearchScreen({ navigation }: Props) {
                 <Text style={styles.searchButtonText}>검색</Text>
               </Pressable>
             </View>
-            {search.status === 'success' && (
-              <Text style={styles.resultTitle}>‘{keyword}’ 검색 결과 {search.totalCount}개</Text>
+            <ScrollView
+              accessibilityRole="tablist"
+              contentContainerStyle={styles.categoryList}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryScroll}
+            >
+              {FEATURED_GACHA_CATEGORIES.map((category) => {
+                const isSelected = !isSearching && category === selectedCategory;
+
+                return (
+                  <Pressable
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: isSelected }}
+                    key={category}
+                    onPress={() => selectCategory(category)}
+                    style={({ pressed }) => [
+                      styles.categoryButton,
+                      isSelected && styles.categoryButtonSelected,
+                      pressed && styles.categoryButtonPressed,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryLabel,
+                        isSelected && styles.categoryLabelSelected,
+                      ]}
+                    >
+                      {category}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            {isSearching ? (
+              activeFeed.status === 'success' && (
+                <Text style={styles.resultTitle}>
+                  ‘{keyword}’ 검색 결과 {activeFeed.totalCount}개
+                </Text>
+              )
+            ) : (
+              <Text style={styles.resultTitle}>{selectedCategory}</Text>
             )}
           </View>
         }
         ListEmptyComponent={
-          search.status === 'idle' ? (
-            <Text style={styles.emptyText}>찾고 싶은 캐릭터나 카테고리를 입력해 주세요.</Text>
-          ) : search.status === 'loading' ? (
+          activeFeed.status === 'loading' ? (
             <View style={styles.stateBox}>
               <ActivityIndicator color={colors.primary} size="large" />
-              <Text style={styles.stateText}>가챠를 찾고 있어요...</Text>
+              <Text style={styles.stateText}>
+                {isSearching ? '가챠를 찾고 있어요...' : `${selectedCategory} 가챠를 불러오고 있어요...`}
+              </Text>
             </View>
-          ) : search.status === 'error' ? (
+          ) : activeFeed.status === 'error' ? (
             <View style={styles.stateBox}>
-              <Text style={styles.stateText}>{search.errorMessage}</Text>
-              <Pressable onPress={search.retry} style={styles.retryButton}>
+              <Text style={styles.stateText}>{activeFeed.errorMessage}</Text>
+              <Pressable onPress={activeFeed.retry} style={styles.retryButton}>
                 <Text style={styles.retryText}>다시 시도</Text>
               </Pressable>
             </View>
           ) : (
-            <Text style={styles.emptyText}>검색어와 관련된 가챠가 없어요.</Text>
+            <Text style={styles.emptyText}>
+              {isSearching ? '검색어와 관련된 가챠가 없어요.' : '상품 조사 중이에요.'}
+            </Text>
           )
         }
         ListFooterComponent={
           <View>
-            {search.loadMoreErrorMessage && search.items.length > 0 && (
+            {activeFeed.loadMoreErrorMessage && activeFeed.items.length > 0 && (
               <View style={styles.loadMoreError}>
-                <Text style={styles.stateText}>{search.loadMoreErrorMessage}</Text>
-                <Pressable onPress={() => void search.retryLoadMore()} style={styles.loadMoreRetry}>
+                <Text style={styles.stateText}>{activeFeed.loadMoreErrorMessage}</Text>
+                <Pressable onPress={() => void activeFeed.retryLoadMore()} style={styles.loadMoreRetry}>
                   <Text style={styles.loadMoreRetryText}>다시 불러오기</Text>
                 </Pressable>
               </View>
             )}
-            {search.isLoadingMore && <ActivityIndicator color={colors.primary} style={styles.footerLoader} />}
+            {activeFeed.isLoadingMore && (
+              <ActivityIndicator color={colors.primary} style={styles.footerLoader} />
+            )}
           </View>
         }
       />
@@ -165,6 +234,31 @@ const styles = StyleSheet.create({
   searchButtonDisabled: { opacity: 0.45 },
   searchButtonPressed: { backgroundColor: colors.primaryPressed },
   searchButtonText: { color: colors.background, fontSize: 14, fontWeight: '700' },
+  categoryScroll: {
+    marginTop: 22,
+    marginHorizontal: -CONTENT_HORIZONTAL_PADDING,
+  },
+  categoryList: {
+    paddingHorizontal: CONTENT_HORIZONTAL_PADDING,
+    gap: 10,
+  },
+  categoryButton: {
+    minHeight: 40,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 999,
+    backgroundColor: colors.background,
+  },
+  categoryButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  categoryButtonPressed: { opacity: 0.72 },
+  categoryLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  categoryLabelSelected: { color: colors.primary, fontWeight: '800' },
   resultTitle: { marginTop: 26, color: colors.text, fontSize: 18, fontWeight: '800' },
   row: { gap: 12, marginBottom: 12 },
   stateBox: { paddingVertical: 72, alignItems: 'center', gap: 16 },

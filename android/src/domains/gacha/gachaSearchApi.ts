@@ -1,6 +1,11 @@
 import { getApiBaseUrl } from '../../config/api';
 import type { GachaSearchItem, GachaSearchPage } from './gachaTypes';
 
+export type GachaCategory = {
+  categoryId: number;
+  name: string;
+};
+
 const DEFAULT_ERROR_MESSAGE = '가챠 검색 결과를 불러오지 못했습니다.';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -23,7 +28,7 @@ async function readJsonResponse(response: Response): Promise<unknown> {
   return response.json() as Promise<unknown>;
 }
 
-function parseCategoryIds(value: unknown): number[] {
+function parseCategories(value: unknown): GachaCategory[] {
   if (!isRecord(value) || value.code !== 'C000') {
     throw new Error(readMessage(value));
   }
@@ -33,14 +38,20 @@ function parseCategoryIds(value: unknown): number[] {
     throw new Error('카테고리 검색 응답 형식이 올바르지 않습니다.');
   }
 
-  const categoryIds = data.items.map((item) => {
-    if (!isRecord(item) || !isNonNegativeInteger(item.categoryId) || item.categoryId === 0) {
+  const categories = data.items.map((item) => {
+    if (
+      !isRecord(item) ||
+      !isNonNegativeInteger(item.categoryId) ||
+      item.categoryId === 0 ||
+      typeof item.name !== 'string'
+    ) {
       throw new Error('카테고리 검색 결과 형식이 올바르지 않습니다.');
     }
-    return item.categoryId;
+
+    return { categoryId: item.categoryId, name: item.name };
   });
 
-  return [...new Set(categoryIds)];
+  return [...new Map(categories.map((category) => [category.categoryId, category])).values()];
 }
 
 function isGachaSearchItem(value: unknown): value is GachaSearchItem {
@@ -81,20 +92,43 @@ function parseGachaPage(value: unknown): GachaSearchPage {
   };
 }
 
-export async function getMatchingCategoryIds(
-  keyword: string,
+export async function getGachaCategories(
+  keyword = '',
   signal?: AbortSignal,
-): Promise<number[]> {
+): Promise<GachaCategory[]> {
   const apiBaseUrl = getApiBaseUrl();
-  const params = new URLSearchParams({ keyword: keyword.trim() });
-  const response = await fetch(`${apiBaseUrl}/api/v1/categories?${params}`, { signal });
+  const normalizedKeyword = keyword.trim();
+  const params = normalizedKeyword
+    ? `?${new URLSearchParams({ keyword: normalizedKeyword })}`
+    : '';
+  const response = await fetch(`${apiBaseUrl}/api/v1/categories${params}`, { signal });
   const body = await readJsonResponse(response);
 
   if (!response.ok) {
     throw new Error(readMessage(body));
   }
 
-  return parseCategoryIds(body);
+  return parseCategories(body);
+}
+
+export async function getMatchingCategoryIds(
+  keyword: string,
+  signal?: AbortSignal,
+): Promise<number[]> {
+  const categories = await getGachaCategories(keyword, signal);
+  return categories.map(({ categoryId }) => categoryId);
+}
+
+export async function getExactCategoryId(
+  categoryName: string,
+  signal?: AbortSignal,
+): Promise<number | null> {
+  const categories = await getGachaCategories(categoryName, signal);
+  const normalizedCategoryName = categoryName.trim().toLocaleLowerCase('ko-KR');
+
+  return categories.find(
+    ({ name }) => name.trim().toLocaleLowerCase('ko-KR') === normalizedCategoryName,
+  )?.categoryId ?? null;
 }
 
 export async function getGachasByCategoryIds({
