@@ -79,16 +79,28 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
   override fun onDetachedFromWindow() {
     if (started) {
       mapView?.pause()
+    }
+    // React Navigation can detach and reattach an inactive screen. Finishing here would
+    // race the next MapView.start() and leave the reattached surface blank.
+    super.onDetachedFromWindow()
+  }
+
+  fun destroy() {
+    if (started) {
+      mapView?.pause()
       mapView?.finish()
     }
-    mapView?.let(::removeView)
+    mapView?.let { currentMapView ->
+      if (currentMapView.parent === this) {
+        removeView(currentMapView)
+      }
+    }
     mapView = null
     started = false
     kakaoMap = null
     storeMarkerStyle = null
     selectedStoreMarkerStyle = null
     userLocationStyle = null
-    super.onDetachedFromWindow()
   }
 
   override fun onWindowVisibilityChanged(visibility: Int) {
@@ -109,7 +121,6 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
       // KakaoMapSdk must be initialized before MapView is constructed.
       initializeSdk(context.applicationContext, nativeAppKey)
       val currentMapView = MapView(context).apply {
-        setFinishManually(true)
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
       }
       mapView = currentMapView
@@ -156,6 +167,9 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
           override fun getZoomLevel(): Int = DEFAULT_ZOOM_LEVEL
         },
       )
+      // Kakao Maps SDK 2.13.5+ requires this after start() so an incidental view
+      // detachment does not finish the SDK before React Native actually destroys it.
+      currentMapView.setFinishManually(true)
     } catch (_: Exception) {
       mapView?.let(::removeView)
       mapView = null
