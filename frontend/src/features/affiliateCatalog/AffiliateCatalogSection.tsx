@@ -16,6 +16,7 @@ import {
 import type { AffiliateCatalog } from './affiliateCatalogType';
 import { AFFILIATE_CATALOG } from './generatedCatalog';
 import { getVisibleAffiliateProducts } from './getVisibleAffiliateProducts';
+import { useMouseDragScroll } from './useMouseDragScroll';
 
 const IMAGE_LOAD_TIMEOUT_MS = 8_000;
 
@@ -37,6 +38,7 @@ export function AffiliateCatalogSection({
   placementPath,
   catalog = AFFILIATE_CATALOG,
 }: AffiliateCatalogSectionProps) {
+  const { dragHandlers, isDragging } = useMouseDragScroll();
   const candidates = useMemo(
     () =>
       getVisibleAffiliateProducts({
@@ -133,7 +135,12 @@ export function AffiliateCatalogSection({
             </Disclosure>
           </Header>
 
-          <ProductList>
+          <ProductList
+            {...dragHandlers}
+            $isDragging={isDragging}
+            role="group"
+            aria-label={`${categoryName} 제휴 상품 목록`}
+          >
             {products.map((product, index) => (
               <ProductLink
                 key={product.id}
@@ -232,7 +239,7 @@ const Disclosure = styled.p`
   line-height: 1.5;
 `;
 
-const ProductList = styled.div`
+const ProductList = styled.div<{ $isDragging: boolean }>`
   display: flex;
   margin-top: ${space.lg};
   gap: ${space.md};
@@ -242,6 +249,8 @@ const ProductList = styled.div`
   scroll-padding-inline: 2px;
   scroll-snap-type: inline mandatory;
   scrollbar-width: thin;
+  cursor: ${({ $isDragging }) => ($isDragging ? 'grabbing' : 'grab')};
+  user-select: ${({ $isDragging }) => ($isDragging ? 'none' : 'auto')};
 `;
 
 const ProductLink = styled.a`
