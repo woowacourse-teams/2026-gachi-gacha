@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthSessionProvider } from './src/domains/auth/AuthSessionContext';
 import { MemberSafetyProvider } from './src/domains/memberSafety/MemberSafetyContext';
+import { NotificationProvider } from './src/domains/notification/NotificationContext';
 import { RootStack, type RootStackParamList } from './src/navigation/RootStack';
 import { navigationTheme } from './src/theme/navigationTheme';
 
@@ -44,12 +45,14 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthSessionProvider>
-        <MemberSafetyProvider>
-          <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-            <StatusBar style="dark" />
-            <RootStack />
-          </NavigationContainer>
-        </MemberSafetyProvider>
+        <NotificationProvider>
+          <MemberSafetyProvider>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+              <StatusBar style="dark" />
+              <RootStack />
+            </NavigationContainer>
+          </MemberSafetyProvider>
+        </NotificationProvider>
       </AuthSessionProvider>
     </SafeAreaProvider>
   );
