@@ -39,7 +39,7 @@ export function RemoteImageWithFallback({
         accessibilityLabel={uri ? undefined : accessibilityLabel}
         resizeMode="contain"
         source={logo}
-        style={styles.logo}
+        style={[styles.logo, isLoaded && styles.hidden]}
       />
       {uri ? (
         <Image

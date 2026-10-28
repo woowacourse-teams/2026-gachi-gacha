@@ -108,6 +108,7 @@ export function useGachaSearch(keyword: string) {
     errorMessage,
     isLoadingMore,
     loadMoreErrorMessage,
+    hasMore: Boolean(page && page.pageNumber + 1 < page.totalPages),
     retry: () => setAttempt((value) => value + 1),
     loadMore,
     retryLoadMore: () => loadMore(true),

@@ -34,27 +34,32 @@ export function RelatedTradesSection({ onSelectTrade, tradeId }: Props) {
               />
             </View>
           ))}
+          {hasMore && (
+            <Pressable
+              accessibilityLabel="다른 교환 물품 더보기"
+              accessibilityRole="button"
+              disabled={isLoading}
+              onPress={loadMore}
+              style={({ pressed }) => [
+                styles.moreCard,
+                (pressed || isLoading) && styles.moreButtonPressed,
+              ]}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={colors.primary} size="small" />
+              ) : (
+                <Text style={styles.moreArrow}>→</Text>
+              )}
+              <Text style={styles.moreButtonText}>
+                {isLoading ? '불러오는 중...' : '더보기'}
+              </Text>
+            </Pressable>
+          )}
         </ScrollView>
       ) : (
         <View style={styles.loadingArea}>
           <ActivityIndicator color={colors.primary} />
         </View>
-      )}
-      {hasMore && (
-        <Pressable
-          accessibilityRole="button"
-          disabled={isLoading}
-          onPress={loadMore}
-          style={({ pressed }) => [
-            styles.moreButton,
-            (pressed || isLoading) && styles.moreButtonPressed,
-          ]}
-        >
-          {isLoading && <ActivityIndicator color={colors.primary} size="small" />}
-          <Text style={styles.moreButtonText}>
-            {isLoading ? '불러오는 중...' : '더보기'}
-          </Text>
-        </Pressable>
       )}
     </View>
   );
@@ -75,6 +80,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: 16,
     paddingBottom: 4,
+    alignItems: 'stretch',
     gap: 12,
   },
   cardFrame: {
@@ -85,21 +91,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  moreButton: {
-    minHeight: 46,
-    marginTop: 16,
-    paddingHorizontal: 18,
-    alignSelf: 'center',
-    flexDirection: 'row',
+  moreCard: {
+    width: 112,
+    minHeight: 340,
+    paddingHorizontal: 14,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 23,
+    borderRadius: 18,
     backgroundColor: colors.background,
   },
   moreButtonPressed: { opacity: 0.65 },
+  moreArrow: { color: colors.primary, fontSize: 24, fontWeight: '800' },
   moreButtonText: {
     color: colors.primary,
     fontSize: 13,
