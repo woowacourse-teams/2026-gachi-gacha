@@ -1,17 +1,24 @@
 # GachiGacha iOS
 
-`ios/GachiGacha.xcodeproj`는 웹 화면을 재사용하는 iOS 앱의 첫 WKWebView 셸입니다. 현재는 화면 탐색, 로딩/오류 표시, 다시 시도, 웹 히스토리 스와이프만 구현했습니다. 로그인·사진 업로드·푸시·딥링크는 이슈 #507의 후속 작업이며 아직 완료되지 않았습니다.
+`ios/`는 Expo·React Native 기반의 iOS 앱입니다. 기존 웹 화면은 `react-native-webview`로 표시합니다. Android 앱의 Expo SDK 및 React Native 버전과 맞추되, iOS 앱은 별도 폴더와 빌드 설정을 사용합니다.
 
 ## 실행
 
-1. Xcode에서 `GachiGacha.xcodeproj`를 엽니다.
-2. `GachiGacha` 스킴과 iPhone 시뮬레이터를 선택해 실행합니다.
-3. Debug는 `https://dev.gachigacha.kro.kr/trade`, Release는 `https://gachigacha.kro.kr/trade`를 엽니다. 주소와 Bundle ID는 `Config/*.xcconfig`에 정의되어 있습니다.
+```bash
+cd ios
+nvm use
+npm ci
+npm run config:test
+npm run typecheck
+npm run ios:dev
+```
 
-실기기 빌드에는 Apple 개발팀과 서명 설정이 필요합니다. 시뮬레이터 빌드는 `xcodebuild -project ios/GachiGacha.xcodeproj -scheme GachiGacha -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath /tmp/gachigacha-ios-derived-data CODE_SIGNING_ALLOWED=NO build`로 확인할 수 있습니다.
+`npm run ios:dev`는 Expo가 `ios/ios/` 네이티브 프로젝트를 재생성한 뒤 Xcode 시뮬레이터에서 실행합니다. `ios:prod`도 운영 설정으로 재생성하므로, 생성된 네이티브 폴더를 직접 수정하거나 보관하지 마세요. 실기기에는 Apple 개발팀 및 서명 설정이 필요합니다.
+
+`APP_VARIANT=development`는 `https://dev.gachigacha.kro.kr/trade`와 `com.dev.gachigacha.app`을, `APP_VARIANT=production`은 `https://gachigacha.kro.kr/trade`와 `com.gachigacha.app`을 사용합니다. 기본값은 development입니다.
 
 ## 현재 경계
 
-- 웹 콘텐츠의 쿠키와 세션은 `WKWebsiteDataStore.default()`에 유지합니다. 네이티브 코드가 웹 토큰을 읽거나 전달하지 않습니다.
-- HTTP(S) 이동과 새 창 요청은 같은 WebView에서 엽니다. 다른 URL 스킴은 iOS에 전달합니다. OAuth 제공자가 WKWebView를 허용하는지, 콜백 후 세션이 유지되는지는 실기기에서 확인해야 합니다.
-- 카메라/사진 선택, 압축, 푸시, 딥링크, 외부 링크 정책은 아직 실기기 검증과 설계가 필요합니다.
+- 웹 화면의 쿠키와 세션은 WebView가 유지합니다. 네이티브 코드는 웹 토큰을 읽거나 전달하지 않습니다.
+- HTTPS 이동은 WebView에 남기고 HTTP·전화·문자·이메일 링크는 OS에 넘깁니다. OAuth 제공자의 WKWebView 지원과 콜백 복귀는 실기기에서 검증해야 합니다.
+- 사진 선택·압축, 푸시, 딥링크, 새 창 및 외부 링크 정책은 이슈 #507의 후속 작업입니다. 현재 구현을 완료된 iOS 앱으로 간주하지 않습니다.

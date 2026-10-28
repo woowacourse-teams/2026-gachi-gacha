@@ -1,0 +1,33 @@
+{
+  "name": "@gachi-gacha/ios",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "engines": {
+    "node": ">=22.13 <25"
+  },
+  "scripts": {
+    "start": "npm run start:dev",
+    "start:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo start",
+    "ios:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo prebuild --platform ios --clean --no-install && cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo run:ios",
+    "ios:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo prebuild --platform ios --clean --no-install && cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo run:ios --configuration Release",
+    "config:test": "node --test scripts/app-config.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "export:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo export --platform ios --output-dir dist/development",
+    "export:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo export --platform ios --output-dir dist/production"
+  },
+  "dependencies": {
+    "expo": "~57.0.30",
+    "expo-constants": "~57.0.22",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-webview": "13.16.1"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "cross-env": "^10.1.0",
+    "typescript": "~6.0.3"
+  }
+}

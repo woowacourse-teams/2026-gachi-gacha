@@ -2,3 +2,7 @@ DerivedData/
 build/
 *.xcuserstate
 xcuserdata/
+node_modules/
+.expo/
+dist/
+ios/
