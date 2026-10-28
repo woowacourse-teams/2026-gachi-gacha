@@ -356,6 +356,15 @@ function PlaceField({ label, onClear, onOpen, value }: { label: string; onClear:
 }
 
 export function TradeCreateScreen({ navigation }: CreateProps) {
+  const { status } = useAuthSession();
+
+  if (status === 'loading') {
+    return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /><Text style={styles.help}>로그인 상태를 확인하고 있어요.</Text></View>;
+  }
+  if (status !== 'authenticated') {
+    return <View style={styles.center}><Text style={styles.stateTitle}>로그인이 필요해요</Text><Text style={styles.help}>안전한 앱 로그인 인계가 연결되면 교환글을 작성할 수 있어요.</Text></View>;
+  }
+
   return (
     <TradeWriteForm
       mode="create"
@@ -365,7 +374,7 @@ export function TradeCreateScreen({ navigation }: CreateProps) {
 }
 
 export function TradeEditScreen({ navigation, route }: EditProps) {
-  const { memberId } = useAuthSession();
+  const { memberId, status: authStatus } = useAuthSession();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<
     | { status: 'loading' }
@@ -374,6 +383,7 @@ export function TradeEditScreen({ navigation, route }: EditProps) {
   >({ status: 'loading' });
 
   useEffect(() => {
+    if (authStatus !== 'authenticated') return;
     const controller = new AbortController();
     setState({ status: 'loading' });
     Promise.all([
@@ -395,8 +405,10 @@ export function TradeEditScreen({ navigation, route }: EditProps) {
         if (!controller.signal.aborted) setState({ status: 'error', message: error instanceof Error ? error.message : '수정할 교환글을 불러오지 못했습니다.' });
       });
     return () => controller.abort();
-  }, [attempt, route.params.tradeId]);
+  }, [attempt, authStatus, route.params.tradeId]);
 
+  if (authStatus === 'loading') return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /><Text style={styles.help}>로그인 상태를 확인하고 있어요.</Text></View>;
+  if (authStatus !== 'authenticated') return <View style={styles.center}><Text style={styles.stateTitle}>로그인이 필요해요</Text><Text style={styles.help}>로그인한 작성자만 교환글을 수정할 수 있어요.</Text></View>;
   if (state.status === 'loading') return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /><Text style={styles.help}>수정할 교환글을 불러오고 있어요.</Text></View>;
   if (state.status === 'error') return <View style={styles.center}><Text style={styles.submitError}>{state.message}</Text><Pressable onPress={() => setAttempt((value) => value + 1)} style={styles.submitButton}><Text style={styles.submitText}>다시 시도</Text></Pressable></View>;
   if (memberId === null || memberId !== state.detail.memberId) return <View style={styles.center}><Text style={styles.submitError}>작성자만 교환글을 수정할 수 있어요.</Text></View>;
@@ -464,4 +476,5 @@ const styles = StyleSheet.create({
   submitText: { color: colors.background, fontSize: 15, fontWeight: '800' },
   pressed: { opacity: 0.72 },
   center: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 16, backgroundColor: colors.surface },
+  stateTitle: { color: colors.text, fontSize: 19, fontWeight: '800', textAlign: 'center' },
 });
