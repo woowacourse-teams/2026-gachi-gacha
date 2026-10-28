@@ -109,3 +109,104 @@ jobs:
           path: android/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 7
+
+  affiliate-catalog-sync:
+    name: Sync Android affiliate catalog
+    needs: quality
+    if: github.event_name != 'pull_request' && vars.AFFILIATE_CATALOG_SHEET_CSV_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      AFFILIATE_CATALOG_SHEET_CSV_URL: ${{ vars.AFFILIATE_CATALOG_SHEET_CSV_URL }}
+      AFFILIATE_CATALOG_CATEGORY_API_URL: https://gachigacha.kro.kr/api/v1/categories
+      TZ: Asia/Seoul
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - name: Checkout Android branch
+        uses: actions/checkout@v7
+        with:
+          ref: android
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.1
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate and generate catalog
+        run: npm run catalog:test && npm run catalog:sync && npm run typecheck
+
+      - name: Detect catalog changes
+        id: changes
+        working-directory: .
+        shell: bash
+        run: |
+          if git diff --quiet -- android/src/domains/affiliate/generatedCatalog.ts; then
+            echo "changed=false" >> "${GITHUB_OUTPUT}"
+            {
+              echo '### Android affiliate catalog'
+              echo ''
+              echo 'The published sheet matches the Android static catalog. No PR was created.'
+            } >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Commit synchronized catalog
+        if: steps.changes.outputs.changed == 'true'
+        id: commit
+        working-directory: .
+        shell: bash
+        run: |
+          branch="automation/486-android-affiliate-catalog-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "${branch}"
+          git add android/src/domains/affiliate/generatedCatalog.ts
+          git commit -m "chore(android): 제휴 상품 카탈로그를 동기화한다"
+          git push origin "${branch}"
+          echo "branch=${branch}" >> "${GITHUB_OUTPUT}"
+
+      - name: Open Android pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ steps.commit.outputs.branch }}
+        working-directory: .
+        shell: bash
+        run: |
+          body_file="${RUNNER_TEMP}/android-affiliate-catalog-pr.md"
+          {
+            echo '## 작업 내용'
+            echo '- Google Sheet의 활성 상품을 검증해 Android 정적 카탈로그로 동기화합니다.'
+            echo '- 웹과 같은 카테고리, 노출 기간, placement, revision 계약을 적용합니다.'
+            echo ''
+            echo '## 관련 이슈'
+            echo 'Refs #486'
+            echo ''
+            echo '## 스크린샷'
+            echo '- 정적 데이터 동기화로 UI 구조 변경은 없습니다.'
+            echo ''
+            echo '## 리뷰 포인트'
+            echo '- 자동 생성된 `generatedCatalog.ts` 변경만 포함하는지 확인해 주세요.'
+          } > "${body_file}"
+          pull_request_url="$(gh pr create \
+            --base android \
+            --head "${HEAD_BRANCH}" \
+            --title "[CHORE] Android 쇼핑 커넥트 카탈로그를 동기화한다" \
+            --body-file "${body_file}")"
+          {
+            echo '### Android affiliate catalog'
+            echo ''
+            echo "Created PR: ${pull_request_url}"
+          } >> "${GITHUB_STEP_SUMMARY}"

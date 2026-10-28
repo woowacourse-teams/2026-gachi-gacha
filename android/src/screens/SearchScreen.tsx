@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import {
   ActivityIndicator,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
+import { AffiliateCatalogPlacement } from '../domains/affiliate/AffiliateCatalogPlacement';
 import {
   DEFAULT_GACHA_CATEGORY,
   FEATURED_GACHA_CATEGORIES,
@@ -38,6 +39,12 @@ export function SearchScreen({ navigation }: Props) {
   const cardWidth = (width - CONTENT_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
   const isSearching = keyword.length > 0;
   const activeFeed = isSearching ? search : categoryFeed;
+  const affiliateCategoryNames = useMemo(
+    () => isSearching
+      ? [...new Set(activeFeed.items.flatMap(({ categories }) => categories))]
+      : [selectedCategory],
+    [activeFeed.items, isSearching, selectedCategory],
+  );
 
   function submitSearch() {
     setKeyword(input.trim());
@@ -66,7 +73,11 @@ export function SearchScreen({ navigation }: Props) {
               gacha={item}
               onPress={() => navigation.navigate('Map', {
                 screen: 'MapHome',
-                params: { gachaId: item.gachaId, gachaName: item.name },
+                params: {
+                  gachaCategories: item.categories,
+                  gachaId: item.gachaId,
+                  gachaName: item.name,
+                },
               })}
             />
           </View>
@@ -178,6 +189,13 @@ export function SearchScreen({ navigation }: Props) {
             )}
             {activeFeed.isLoadingMore && (
               <ActivityIndicator color={colors.primary} style={styles.footerLoader} />
+            )}
+            {activeFeed.status === 'success' && (
+              <AffiliateCatalogPlacement
+                categoryNames={affiliateCategoryNames}
+                placementPath="/search"
+                title={isSearching ? keyword : undefined}
+              />
             )}
           </View>
         }

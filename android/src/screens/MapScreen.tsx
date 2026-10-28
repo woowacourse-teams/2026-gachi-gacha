@@ -14,6 +14,7 @@ import {
 
 import { AppHeader } from '../components/AppHeader';
 import { isKakaoMapConfigured } from '../config/maps';
+import { MapAffiliateCatalogButton } from '../domains/affiliate/AffiliateCatalogPlacement';
 import { NearbyStoreCard } from '../domains/store/NearbyStoreCard';
 import { NearbyStoreMap } from '../domains/store/NearbyStoreMap';
 import type { MapCoordinate, NearbyStore } from '../domains/store/storeTypes';
@@ -53,6 +54,7 @@ function calculateDistanceInMeters(first: MapCoordinate, second: MapCoordinate):
 export function MapScreen({ navigation, route }: Props) {
   const gachaId = route.params?.gachaId ?? null;
   const gachaName = route.params?.gachaName;
+  const gachaCategories = route.params?.gachaCategories ?? [];
   const [isMapAwayFromHongdae, setIsMapAwayFromHongdae] = useState(false);
   const [recenterRequestId, setRecenterRequestId] = useState(0);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
@@ -103,7 +105,11 @@ export function MapScreen({ navigation, route }: Props) {
 
   function clearGachaSelection() {
     setSelectedStoreId(null);
-    navigation.setParams({ gachaId: undefined, gachaName: undefined });
+    navigation.setParams({
+      gachaCategories: undefined,
+      gachaId: undefined,
+      gachaName: undefined,
+    });
   }
 
   function selectStore(store: NearbyStore) {
@@ -184,18 +190,25 @@ export function MapScreen({ navigation, route }: Props) {
             )}
           </View>
           {gachaId !== null && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={clearGachaSelection}
-              style={({ pressed }) => [
-                styles.clearConditionButton,
-                pressed && styles.buttonPressed,
-              ]}
-            >
-              <Text numberOfLines={1} style={styles.clearConditionText}>
-                가챠 조건 지우기 ×
-              </Text>
-            </Pressable>
+            <View style={styles.summaryActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={clearGachaSelection}
+                style={({ pressed }) => [
+                  styles.clearConditionButton,
+                  pressed && styles.buttonPressed,
+                ]}
+              >
+                <Text numberOfLines={1} style={styles.clearConditionText}>
+                  가챠 조건 지우기 ×
+                </Text>
+              </Pressable>
+              <MapAffiliateCatalogButton
+                categoryNames={gachaCategories}
+                placementPath="/map"
+                title={gachaName}
+              />
+            </View>
           )}
         </View>
 
@@ -349,7 +362,6 @@ const styles = StyleSheet.create({
   countText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   clearConditionButton: {
     minHeight: 34,
-    marginTop: 11,
     paddingHorizontal: 12,
     alignSelf: 'flex-start',
     justifyContent: 'center',
@@ -357,6 +369,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
   clearConditionText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  summaryActions: { marginTop: 11, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   returnButton: {
     position: 'absolute',
     right: 16,

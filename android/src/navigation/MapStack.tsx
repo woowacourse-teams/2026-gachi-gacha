@@ -5,7 +5,11 @@ import { StoreDetailScreen } from '../screens/StoreDetailScreen';
 import { colors } from '../theme/colors';
 
 export type MapStackParamList = {
-  MapHome: { gachaId?: number; gachaName?: string } | undefined;
+  MapHome: {
+    gachaCategories?: string[];
+    gachaId?: number;
+    gachaName?: string;
+  } | undefined;
   StoreDetail: {
     storeId: number;
     storeName?: string;
