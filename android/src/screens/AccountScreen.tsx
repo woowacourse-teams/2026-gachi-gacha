@@ -242,11 +242,18 @@ export function AccountScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>계정 관리</Text>
           <View style={styles.menuSection}>
             {status === 'authenticated' && (
-              <MenuRow
-                description="차단 목록을 확인하고 해제할 수 있어요."
-                label="차단한 사용자"
-                onPress={() => navigation.navigate('BlockedMembers')}
-              />
+              <>
+                <MenuRow
+                  description="내 교환글에 달린 새 댓글을 확인해요."
+                  label="알림"
+                  onPress={() => navigation.navigate('Notifications')}
+                />
+                <MenuRow
+                  description="차단 목록을 확인하고 해제할 수 있어요."
+                  label="차단한 사용자"
+                  onPress={() => navigation.navigate('BlockedMembers')}
+                />
+              </>
             )}
             <MenuRow
               description="개인정보 처리와 보관 기준을 확인해요."

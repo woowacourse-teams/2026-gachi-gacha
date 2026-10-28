@@ -5,6 +5,7 @@ import { getPublicWebFeature, type PublicWebFeature } from '../config/web';
 import { AccountScreen } from '../screens/AccountScreen';
 import { BlockedMembersScreen } from '../screens/BlockedMembersScreen';
 import { MyTradesScreen } from '../screens/MyTradesScreen';
+import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PublicWebFeatureScreen } from '../screens/PublicWebFeatureScreen';
 import { colors } from '../theme/colors';
 import { AppTabs, type AppTabParamList } from './AppTabs';
@@ -14,6 +15,7 @@ export type RootStackParamList = {
   Account: undefined;
   BlockedMembers: undefined;
   MyTrades: undefined;
+  Notifications: undefined;
   PublicWebFeature: { feature: PublicWebFeature };
 };
 
@@ -50,6 +52,15 @@ export function RootStack() {
         name="MyTrades"
         options={{
           title: '내 교환글',
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+        }}
+      />
+      <Stack.Screen
+        component={NotificationsScreen}
+        name="Notifications"
+        options={{
+          title: '알림',
           headerShadowVisible: false,
           headerTintColor: colors.text,
         }}

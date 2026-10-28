@@ -11,6 +11,7 @@ import { type NavigationProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
+import { useNotifications } from '../domains/notification/NotificationContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { colors } from '../theme/colors';
 import { RemoteImageWithFallback } from './RemoteImageWithFallback';
@@ -19,6 +20,7 @@ export function AppHeader() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { member, status: authStatus } = useAuthSession();
+  const { unreadCount } = useNotifications();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const isAuthenticated = authStatus === 'authenticated';
 
@@ -34,6 +36,11 @@ export function AppHeader() {
   function openMyPage() {
     setIsAccountMenuOpen(false);
     navigation.navigate('Account');
+  }
+
+  function openNotifications() {
+    setIsAccountMenuOpen(false);
+    navigation.navigate('Notifications');
   }
 
   return (
@@ -95,6 +102,24 @@ export function AppHeader() {
             onStartShouldSetResponder={() => true}
             style={[styles.accountMenu, { top: insets.top + 62 }]}
           >
+            <Pressable
+              accessibilityRole="menuitem"
+              onPress={openNotifications}
+              style={({ pressed }) => [
+                styles.menuItem,
+                pressed && styles.menuItemPressed,
+              ]}
+            >
+              <Text style={styles.menuItemText}>알림</Text>
+              {unreadCount > 0 && (
+                <View style={styles.menuBadge}>
+                  <Text style={styles.menuBadgeText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+              <Text aria-hidden style={styles.menuItemArrow}>›</Text>
+            </Pressable>
             <Pressable
               accessibilityRole="menuitem"
               onPress={openMyPage}
@@ -198,6 +223,17 @@ const styles = StyleSheet.create({
     borderRadius: 11,
   },
   menuItemPressed: { backgroundColor: colors.primarySoft },
+  menuBadge: {
+    minWidth: 22,
+    height: 20,
+    marginRight: 5,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+  },
+  menuBadgeText: { color: colors.background, fontSize: 10, fontWeight: '800' },
   menuItemText: {
     flex: 1,
     color: colors.text,
