@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 
 readonly SERVICE_NAME="gachigacha-backend.service"
-readonly HEALTH_URL="http://localhost:8080/api/v1/stores"
+readonly HEALTH_URL="http://localhost:8080/api/v1/actuator/health"
 readonly MAX_ATTEMPTS=25
 readonly WAIT_SECONDS=4
 
