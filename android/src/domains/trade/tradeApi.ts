@@ -93,16 +93,23 @@ export async function getTrades({
   keyword = '',
   page = 0,
   signal,
+  size = 20,
   status,
 }: {
   keyword?: string;
   page?: number;
   signal?: AbortSignal;
+  size?: number;
   status?: TradeStatus;
 } = {}): Promise<TradeSummaryPage> {
   const apiBaseUrl = getApiBaseUrl();
+  const pageSize = Number.isSafeInteger(size) && size > 0 ? size : 20;
 
-  const params = new URLSearchParams({ page: String(page), size: '20', sort: 'createdAt,desc' });
+  const params = new URLSearchParams({
+    page: String(page),
+    size: String(pageSize),
+    sort: 'createdAt,desc',
+  });
   if (keyword.trim()) params.set('keyword', keyword.trim());
   if (status) params.set('status', status);
 

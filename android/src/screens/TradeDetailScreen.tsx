@@ -16,6 +16,7 @@ import { ImageViewerModal } from '../components/ImageViewerModal';
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
 import { ShareIcon } from '../components/ShareIcon';
 import { TradeCommentsSection } from '../domains/trade/TradeCommentsSection';
+import { RelatedTradesSection } from '../domains/trade/RelatedTradesSection';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import { UserSafetyMenu } from '../domains/memberSafety/UserSafetyMenu';
@@ -197,6 +198,10 @@ export function TradeDetailScreen({ navigation, route }: Props) {
       </View>
       <TradeCommentsSection
         onComposerFocus={revealCommentComposer}
+        tradeId={trade.tradeId}
+      />
+      <RelatedTradesSection
+        onSelectTrade={(tradeId) => navigation.push('TradeDetail', { tradeId })}
         tradeId={trade.tradeId}
       />
       <ImageViewerModal
