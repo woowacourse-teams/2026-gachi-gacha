@@ -244,6 +244,11 @@ export function AccountScreen({ navigation }: Props) {
             {status === 'authenticated' && (
               <>
                 <MenuRow
+                  description="교환 상대와 나눈 대화를 확인해요."
+                  label="채팅"
+                  onPress={() => navigation.navigate('ChatRooms')}
+                />
+                <MenuRow
                   description="내 교환글에 달린 새 댓글을 확인해요."
                   label="알림"
                   onPress={() => navigation.navigate('Notifications')}

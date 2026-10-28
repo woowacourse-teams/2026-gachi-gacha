@@ -11,6 +11,7 @@ import { type NavigationProp, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
+import { useChatUnread } from '../domains/chat/ChatUnreadContext';
 import { useNotifications } from '../domains/notification/NotificationContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { colors } from '../theme/colors';
@@ -20,13 +21,18 @@ export function AppHeader() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const { member, status: authStatus } = useAuthSession();
-  const { unreadCount } = useNotifications();
+  const {
+    refreshUnreadCount: refreshUnreadChatCount,
+    unreadCount: unreadChatCount,
+  } = useChatUnread();
+  const { refreshUnreadCount: refreshNotificationCount, unreadCount } = useNotifications();
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const isAuthenticated = authStatus === 'authenticated';
 
   function openAccount() {
     if (isAuthenticated) {
       setIsAccountMenuOpen(true);
+      void Promise.all([refreshUnreadChatCount(), refreshNotificationCount()]);
       return;
     }
 
@@ -41,6 +47,11 @@ export function AppHeader() {
   function openNotifications() {
     setIsAccountMenuOpen(false);
     navigation.navigate('Notifications');
+  }
+
+  function openChat() {
+    setIsAccountMenuOpen(false);
+    navigation.navigate('ChatRooms');
   }
 
   return (
@@ -102,6 +113,24 @@ export function AppHeader() {
             onStartShouldSetResponder={() => true}
             style={[styles.accountMenu, { top: insets.top + 62 }]}
           >
+            <Pressable
+              accessibilityRole="menuitem"
+              onPress={openChat}
+              style={({ pressed }) => [
+                styles.menuItem,
+                pressed && styles.menuItemPressed,
+              ]}
+            >
+              <Text style={styles.menuItemText}>채팅</Text>
+              {unreadChatCount > 0 && (
+                <View style={styles.menuBadge}>
+                  <Text style={styles.menuBadgeText}>
+                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                  </Text>
+                </View>
+              )}
+              <Text aria-hidden style={styles.menuItemArrow}>›</Text>
+            </Pressable>
             <Pressable
               accessibilityRole="menuitem"
               onPress={openNotifications}

@@ -4,6 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getPublicWebFeature, type PublicWebFeature } from '../config/web';
 import { AccountScreen } from '../screens/AccountScreen';
 import { BlockedMembersScreen } from '../screens/BlockedMembersScreen';
+import { ChatRoomScreen } from '../screens/ChatRoomScreen';
+import { ChatRoomsScreen } from '../screens/ChatRoomsScreen';
 import { MyTradesScreen } from '../screens/MyTradesScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PublicWebFeatureScreen } from '../screens/PublicWebFeatureScreen';
@@ -14,6 +16,8 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<AppTabParamList> | undefined;
   Account: undefined;
   BlockedMembers: undefined;
+  ChatRoom: { roomId: number };
+  ChatRooms: undefined;
   MyTrades: undefined;
   Notifications: undefined;
   PublicWebFeature: { feature: PublicWebFeature };
@@ -43,6 +47,24 @@ export function RootStack() {
         name="BlockedMembers"
         options={{
           title: '차단한 사용자',
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+        }}
+      />
+      <Stack.Screen
+        component={ChatRoomsScreen}
+        name="ChatRooms"
+        options={{
+          title: '채팅',
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+        }}
+      />
+      <Stack.Screen
+        component={ChatRoomScreen}
+        name="ChatRoom"
+        options={{
+          title: '채팅',
           headerShadowVisible: false,
           headerTintColor: colors.text,
         }}

@@ -8,6 +8,7 @@ import { BackHandler, ToastAndroid } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthSessionProvider } from './src/domains/auth/AuthSessionContext';
+import { ChatUnreadProvider } from './src/domains/chat/ChatUnreadContext';
 import { MemberSafetyProvider } from './src/domains/memberSafety/MemberSafetyContext';
 import { NotificationProvider } from './src/domains/notification/NotificationContext';
 import { RootStack, type RootStackParamList } from './src/navigation/RootStack';
@@ -45,14 +46,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthSessionProvider>
-        <NotificationProvider>
-          <MemberSafetyProvider>
-            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-              <StatusBar style="dark" />
-              <RootStack />
-            </NavigationContainer>
-          </MemberSafetyProvider>
-        </NotificationProvider>
+        <ChatUnreadProvider>
+          <NotificationProvider>
+            <MemberSafetyProvider>
+              <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+                <StatusBar style="dark" />
+                <RootStack />
+              </NavigationContainer>
+            </MemberSafetyProvider>
+          </NotificationProvider>
+        </ChatUnreadProvider>
       </AuthSessionProvider>
     </SafeAreaProvider>
   );
