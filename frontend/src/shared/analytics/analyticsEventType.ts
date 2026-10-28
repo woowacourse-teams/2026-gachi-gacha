@@ -51,11 +51,11 @@ export interface AnalyticsEventPropertiesMap {
     is_authenticated: boolean | null;
   };
   oauth_login_started: {
-    provider: 'kakao' | 'naver';
+    provider: 'apple' | 'kakao' | 'naver';
     return_pathname: string;
   };
   oauth_login_completed: {
-    provider: 'kakao' | 'naver';
+    provider: 'apple' | 'kakao' | 'naver';
     outcome: AnalyticsOutcome;
   };
   auth_required_redirected: {
@@ -72,6 +72,17 @@ export interface AnalyticsEventPropertiesMap {
   category_feed_more_requested: {
     category_name: string;
     loaded_item_count: number;
+  };
+  affiliate_catalog_viewed: {
+    category_name: string;
+    placement_path: string;
+    product_count: number;
+  };
+  affiliate_product_selected: {
+    product_id: string;
+    category_name: string;
+    placement_path: string;
+    result_position: number;
   };
   gacha_search_submitted: {
     query_length: number;

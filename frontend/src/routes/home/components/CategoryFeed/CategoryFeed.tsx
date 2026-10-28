@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled from '@emotion/styled';
 
+import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { DEFAULT_CATEGORY } from '../../model/categories';
@@ -72,6 +73,11 @@ function CategoryFeedContent({ categoryName }: CategoryFeedContentProps) {
         hasNextPage={hasNextPage}
         loadMoreStatus={loadMoreStatus}
         onEndReached={loadMore}
+      />
+      <AffiliateCatalogSlot
+        matchBy="category"
+        categoryName={categoryName}
+        placementPath="/search"
       />
     </SectionList>
   );

@@ -1,11 +1,15 @@
 import { useEffect, useMemo } from 'react';
 
+import appleSignInLogo from '@/assets/apple-sign-in-logo-white.svg';
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import kakaoLoginSymbol from '@/assets/kakao-login-symbol.svg';
+import naverLoginSymbol from '@/assets/naver-login-symbol.png';
 import {
   readLoginReturnPath,
   storeAuthReturnPath,
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { storeOAuthLoginProvider } from '@/features/auth/oauthLoginProviderStorage';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
@@ -13,6 +17,9 @@ import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
   Accent,
+  AppleProviderIcon,
+  AppleProviderLogo,
+  AppleProviderLink,
   Brand,
   BrandLogo,
   BrandName,
@@ -23,6 +30,7 @@ import {
   PrivacyLink,
   PrivacyNote,
   ProviderIcon,
+  ProviderLabel,
   ProviderLink,
   ProviderList,
   RetryButton,
@@ -32,30 +40,24 @@ import {
 const PROVIDERS = [
   {
     provider: 'kakao',
-    label: '카카오로 시작하기',
+    name: '카카오',
   },
   {
     provider: 'naver',
-    label: '네이버로 시작하기',
+    name: '네이버',
   },
 ] as const satisfies readonly {
   provider: OAuthProvider;
-  label: string;
+  name: string;
 }[];
 
-function ProviderBrandIcon({ provider }: { provider: OAuthProvider }) {
-  if (provider === 'naver') {
-    return <ProviderIcon aria-hidden="true">N</ProviderIcon>;
-  }
-
+function ProviderBrandIcon({ provider }: { provider: 'kakao' | 'naver' }) {
   return (
     <ProviderIcon aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path
-          d="M12 4C6.9 4 3 7.1 3 11c0 2.5 1.6 4.7 4.1 5.9l-.8 3 3.5-2.2c.7.1 1.4.2 2.2.2 5.1 0 9-3.1 9-6.9S17.1 4 12 4Z"
-          fill="currentColor"
-        />
-      </svg>
+      <img
+        src={provider === 'kakao' ? kakaoLoginSymbol : naverLoginSymbol}
+        alt=""
+      />
     </ProviderIcon>
   );
 }
@@ -82,6 +84,7 @@ export function LoginRoute() {
 
   function prepareOAuthLogin(provider: OAuthProvider) {
     storeAuthReturnPath(returnPath);
+    storeOAuthLoginProvider(provider);
     captureAnalyticsEvent('oauth_login_started', {
       provider,
       return_pathname: new URL(returnPath, window.location.origin).pathname,
@@ -140,27 +143,41 @@ export function LoginRoute() {
             </ErrorMessage>
           )}
 
-          <ProviderList aria-label="소셜 로그인">
-            {PROVIDERS.map(({ provider, label }) => (
+          <ProviderList role="group" aria-label="소셜 로그인">
+            {PROVIDERS.map(({ provider, name }) => (
               <ProviderLink
                 key={provider}
                 href={`/api/v1/oauth/${provider}`}
                 aria-label={
                   isAccountDeletionFlow
-                    ? `${provider === 'kakao' ? '카카오' : '네이버'}로 본인 확인`
-                    : label
+                    ? `${name}로 본인 확인`
+                    : `${name}로 로그인`
                 }
-                $provider={provider}
                 onClick={() => prepareOAuthLogin(provider)}
               >
                 <ProviderBrandIcon provider={provider} />
-                <span>
-                  {isAccountDeletionFlow
-                    ? `${provider === 'kakao' ? '카카오' : '네이버'}로 본인 확인`
-                    : label}
-                </span>
+                <ProviderLabel>{name}</ProviderLabel>
               </ProviderLink>
             ))}
+            <AppleProviderLink
+              href="/api/v1/oauth/apple"
+              aria-label={
+                isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'
+              }
+              data-apple-sign-in
+              onClick={() => prepareOAuthLogin('apple')}
+            >
+              <AppleProviderIcon aria-hidden="true">
+                <AppleProviderLogo
+                  src={appleSignInLogo}
+                  alt=""
+                  width={31}
+                  height={44}
+                  data-apple-logo
+                />
+              </AppleProviderIcon>
+              <ProviderLabel>Apple</ProviderLabel>
+            </AppleProviderLink>
           </ProviderList>
 
           <PrivacyNote>

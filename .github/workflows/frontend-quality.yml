@@ -58,6 +58,9 @@ jobs:
       - name: Run unit and integration tests
         run: pnpm test --runInBand --coverage
 
+      - name: Test affiliate catalog synchronization
+        run: pnpm catalog:test
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
@@ -74,4 +77,5 @@ jobs:
           APP_ENV: ci
           KAKAO_MAP_KEY: ci-placeholder
           POSTHOG_ENABLED: "false"
+          AFFILIATE_CATALOG_ENABLED: "false"
         run: pnpm build

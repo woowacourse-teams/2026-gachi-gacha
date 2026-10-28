@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { exchangeOAuthCodeOnce } from '@/features/auth/api/exchangeOAuthCode';
@@ -8,7 +8,12 @@ import {
   peekAuthReturnPath,
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import {
+  clearOAuthLoginProvider,
+  readOAuthLoginProvider,
+} from '@/features/auth/oauthLoginProviderStorage';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
+import { parseOAuthLoginFragment } from '@/features/auth/parseOAuthLoginFragment';
 import { markCurrentLandingTourAsSeen } from '@/features/onboarding/landingTourSeenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
@@ -24,17 +29,34 @@ import {
 } from './route.styles';
 
 export interface AuthCallbackRouteProps {
-  provider: OAuthProvider;
+  provider?: OAuthProvider;
 }
 
 export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
   const { authenticate } = useAuthSession();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const redirectFragmentRef = useRef<string | null>(null);
 
   useEffect(() => {
     let isCurrent = true;
+    const completionProvider = provider ?? readOAuthLoginProvider();
 
-    void exchangeOAuthCodeOnce(provider, window.location.search)
+    if (!provider && redirectFragmentRef.current === null) {
+      redirectFragmentRef.current = window.location.hash;
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${window.location.pathname}${window.location.search}`,
+      );
+    }
+
+    const authTokensPromise = provider
+      ? exchangeOAuthCodeOnce(provider, window.location.search)
+      : Promise.resolve().then(() =>
+          parseOAuthLoginFragment(redirectFragmentRef.current ?? ''),
+        );
+
+    void authTokensPromise
       .then(async (authTokens) => {
         if (!isCurrent) {
           return;
@@ -43,11 +65,14 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         await authenticate(authTokens);
 
         if (isCurrent) {
+          clearOAuthLoginProvider();
           markCurrentLandingTourAsSeen();
-          captureAnalyticsEvent('oauth_login_completed', {
-            provider,
-            outcome: 'success',
-          });
+          if (completionProvider) {
+            captureAnalyticsEvent('oauth_login_completed', {
+              provider: completionProvider,
+              outcome: 'success',
+            });
+          }
           replaceBrowserLocation(consumeAuthReturnPath());
         }
       })
@@ -56,10 +81,13 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
           return;
         }
 
-        captureAnalyticsEvent('oauth_login_completed', {
-          provider,
-          outcome: 'failure',
-        });
+        clearOAuthLoginProvider();
+        if (completionProvider) {
+          captureAnalyticsEvent('oauth_login_completed', {
+            provider: completionProvider,
+            outcome: 'failure',
+          });
+        }
 
         setErrorMessage(
           error instanceof Error

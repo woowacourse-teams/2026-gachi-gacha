@@ -27,6 +27,25 @@ describe('로그인 후 복귀 주소', () => {
     );
   });
 
+  it('복귀 경로의 인증 파라미터만 제거한다', () => {
+    expect(
+      normalizeAuthReturnPath('/trade?category=1&accessToken=secret#saved'),
+    ).toBe('/trade?category=1#saved');
+  });
+
+  it('해시의 인증 파라미터를 로그인 복귀 주소에 포함하지 않는다', () => {
+    expect(
+      normalizeAuthReturnPath(
+        '/trade#accessToken=secret&refreshToken=refresh-secret',
+      ),
+    ).toBe('/trade');
+    expect(
+      normalizeAuthReturnPath(
+        '/trade#tab=comments&AccessToken=secret&refresh_token=refresh-secret',
+      ),
+    ).toBe('/trade#tab=comments');
+  });
+
   it('로그인 URL에 검증된 복귀 주소를 기록한다', () => {
     const loginUrl = createLoginUrl('/mypage?tab=stores#saved');
 
@@ -34,5 +53,14 @@ describe('로그인 후 복귀 주소', () => {
     expect(
       readLoginReturnPath(new URL(loginUrl, window.location.origin).search),
     ).toBe('/mypage?tab=stores#saved');
+  });
+
+  it('로그인 URL에 인증 토큰을 기록하지 않는다', () => {
+    const loginUrl = createLoginUrl(
+      '/trade#accessToken=secret&refreshToken=refresh-secret',
+    );
+
+    expect(loginUrl).toBe('/login?returnTo=%2Ftrade');
+    expect(loginUrl).not.toContain('secret');
   });
 });

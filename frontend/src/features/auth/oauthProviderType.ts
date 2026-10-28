@@ -1,4 +1,4 @@
-export const OAUTH_PROVIDERS = ['kakao', 'naver'] as const;
+export const OAUTH_PROVIDERS = ['apple', 'kakao', 'naver'] as const;
 
 export type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
 

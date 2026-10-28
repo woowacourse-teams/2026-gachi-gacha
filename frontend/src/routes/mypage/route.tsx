@@ -120,7 +120,13 @@ export function MyPageRoute() {
 
   async function handleDeleteAccount() {
     try {
-      await deleteAccount();
+      const result = await deleteAccount();
+
+      if (result.status === 'reauthentication-required') {
+        assignBrowserLocation(result.authorizationUrl);
+        return;
+      }
+
       captureAnalyticsEvent('account_deletion_completed', {
         outcome: 'success',
       });

@@ -1,3 +1,4 @@
+import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import {
@@ -29,7 +30,7 @@ export const Brand = styled.a`
   width: fit-content;
   align-items: center;
   justify-content: center;
-  gap: ${space.sm};
+  gap: ${space.xs};
   color: ${color.primary};
   font-size: clamp(20px, 3vw, 24px);
   font-weight: ${fontWeight.extraBold};
@@ -87,37 +88,32 @@ export const Accent = styled.span`
 `;
 
 export const ProviderList = styled.div`
-  display: grid;
-  width: 100%;
-  margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
-  gap: ${space.sm};
-`;
-
-export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
   display: flex;
   width: 100%;
-  height: 56px;
-  padding: 0 ${space.xl};
+  margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(${space.sm}, 4vw, ${space.xl});
+`;
+
+const providerLinkLayout = css`
+  display: flex;
+  width: 64px;
+  min-width: 64px;
   align-items: center;
   justify-content: center;
   gap: ${space.sm};
-  border: 1px solid
-    ${({ $provider }) => ($provider === 'kakao' ? '#dbc600' : '#009f49')};
-  border-radius: ${radius.card};
-  background: ${({ $provider }) =>
-    $provider === 'kakao' ? '#f1da19' : '#08b957'};
-  color: ${({ $provider }) => ($provider === 'kakao' ? '#191919' : '#ffffff')};
-  font-size: ${fontSize.subheading};
-  font-weight: ${fontWeight.bold};
+  border-radius: ${radius.control};
+  color: ${color.text};
+  flex-direction: column;
+  font-size: ${fontSize.bodySmall};
+  line-height: ${lineHeight.body};
   text-decoration: none;
   transition:
-    background 160ms ease,
     transform 160ms ease,
     box-shadow 160ms ease;
 
   &:hover {
-    background: ${({ $provider }) =>
-      $provider === 'kakao' ? '#e6cf08' : '#00a94e'};
     transform: translateY(-1px);
   }
 
@@ -131,21 +127,48 @@ export const ProviderLink = styled.a<{ $provider: 'kakao' | 'naver' }>`
   }
 `;
 
+export const AppleProviderLink = styled.a`
+  ${providerLinkLayout};
+`;
+
+export const ProviderLink = styled.a`
+  ${providerLinkLayout};
+`;
+
 export const ProviderIcon = styled.span`
   display: grid;
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
-  font-size: 21px;
-  font-weight: 900;
-  line-height: 1;
+  width: 64px;
+  height: 64px;
+  flex: 0 0 64px;
   place-items: center;
 
-  svg {
+  img {
     display: block;
-    width: 24px;
-    height: 24px;
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
   }
+`;
+
+export const AppleProviderIcon = styled(ProviderIcon)`
+  overflow: hidden;
+  border-radius: 50%;
+  background: #000000;
+
+  > img {
+    width: auto;
+    height: 100%;
+  }
+`;
+
+export const AppleProviderLogo = styled.img`
+  display: block;
+  width: auto;
+  height: 100%;
+`;
+
+export const ProviderLabel = styled.span`
+  white-space: nowrap;
 `;
 
 export const ErrorMessage = styled.p`

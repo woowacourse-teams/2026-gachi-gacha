@@ -9,7 +9,12 @@ import {
   useParams,
 } from 'react-router';
 
-import { OAUTH_CALLBACK_PATH_PREFIX } from '@/features/auth/oauthCallbackPath';
+import { normalizeAuthReturnPath } from '@/features/auth/authReturnPath';
+import {
+  OAUTH_CALLBACK_PATH_PREFIX,
+  OAUTH_REDIRECT_CALLBACK_PATH,
+  OAUTH_WITHDRAW_CALLBACK_PATH,
+} from '@/features/auth/oauthCallbackPath';
 import { isOAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
 import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
@@ -136,17 +141,11 @@ const TRADE_ID_PATTERN = /^[1-9]\d*$/;
 
 function RedirectToEntry() {
   const { search, hash } = useLocation();
-
-  return (
-    <Navigate
-      replace
-      to={{
-        pathname: ENTRY_PATH,
-        search,
-        hash,
-      }}
-    />
+  const safeEntryPath = normalizeAuthReturnPath(
+    `${ENTRY_PATH}${search}${hash}`,
   );
+
+  return <Navigate replace to={safeEntryPath} />;
 }
 
 function CategorySearchRoute() {
@@ -198,10 +197,18 @@ function CanonicalRoutes() {
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/privacy" element={<PrivacyRoute />} />
         <Route path="/account-deletion" element={<AccountDeletionRoute />} />
+        <Route
+          path={OAUTH_WITHDRAW_CALLBACK_PATH}
+          element={<AccountDeletionRoute />}
+        />
         <Route path="/updates" element={<UpdatesRoute />} />
         <Route
           path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}
           element={<AuthCallbackRouteElement />}
+        />
+        <Route
+          path={OAUTH_REDIRECT_CALLBACK_PATH}
+          element={<AuthCallbackRoute />}
         />
         <Route element={<ProtectedRoutes />}>
           <Route path="/trade/new" element={<TradeCreatePage />} />
