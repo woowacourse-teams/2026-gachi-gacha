@@ -31,6 +31,7 @@ export interface StoreListPanelProps {
   storesState: AsyncState<NearbyStoresResponseDto>;
   isGachaSelected: boolean;
   affiliateCategoryNames?: readonly string[];
+  affiliateTitle?: string;
   selectedStoreId: number | null;
   onOpenStore: (storeId: number) => void;
   onSelectStore: (storeId: number) => void;
@@ -51,6 +52,7 @@ export function StoreListPanel({
   storesState,
   isGachaSelected,
   affiliateCategoryNames = [],
+  affiliateTitle = '',
   selectedStoreId,
   onOpenStore,
   onSelectStore,
@@ -139,15 +141,17 @@ export function StoreListPanel({
           </List>
         ))}
 
-      {isGachaSelected && affiliateCategoryNames.length > 0 && (
-        <DesktopAffiliateSlot>
-          <AffiliateCatalogSlot
-            matchBy="content"
-            categoryNames={affiliateCategoryNames}
-            placementPath="/map"
-          />
-        </DesktopAffiliateSlot>
-      )}
+      {isGachaSelected &&
+        (affiliateCategoryNames.length > 0 || affiliateTitle) && (
+          <DesktopAffiliateSlot>
+            <AffiliateCatalogSlot
+              matchBy="content"
+              categoryNames={affiliateCategoryNames}
+              title={affiliateTitle}
+              placementPath="/map"
+            />
+          </DesktopAffiliateSlot>
+        )}
     </Panel>
   );
 }

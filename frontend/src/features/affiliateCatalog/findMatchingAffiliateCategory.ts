@@ -13,18 +13,10 @@ function normalizeCategoryName(name: string): string {
   return name.trim().toLocaleLowerCase('ko-KR');
 }
 
-function escapeRegularExpression(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function containsExactCategory(title: string, categoryName: string): boolean {
-  const separator = String.raw`[\s·,./#()[\]{}<>|:+_-]`;
-  const pattern = new RegExp(
-    `(^|${separator})${escapeRegularExpression(categoryName)}(?=$|${separator})`,
-    'iu',
+function containsCategoryName(title: string, categoryName: string): boolean {
+  return normalizeCategoryName(title).includes(
+    normalizeCategoryName(categoryName),
   );
-
-  return pattern.test(title);
 }
 
 export function findMatchingAffiliateCategory({
@@ -58,7 +50,7 @@ export function findMatchingAffiliateCategory({
     )
     .filter((categoryName): categoryName is string => Boolean(categoryName));
   const titleCategoryMatches = availableCategoryNames.filter((categoryName) =>
-    containsExactCategory(title, categoryName),
+    containsCategoryName(title, categoryName),
   );
   const categoryCandidates = [
     ...new Set([...exactCategoryMatches, ...titleCategoryMatches]),
