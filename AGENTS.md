@@ -21,14 +21,16 @@ These rules apply to every agent working in this repository.
 ## Mandatory skill usage
 
 - For any Sentry setup, implementation, filtering, grouping, alerting, quota, privacy, or incident-triage work, use `$gachigacha-sentry-operations` first.
-- Read the skill's required references before changing Sentry code, GitHub variables/secrets, dashboard settings, alerts, or operating policy.
+- Follow the skill's task-based routing and read only the reference needed for the current Sentry decision. Do not load every Sentry reference by default.
 
 ## Naming conventions
 
 - Issue titles use the repository templates, such as `[FEAT] ...`, `[BUG] ...`, and `[REFACTOR] ...`.
 - Branch names use lowercase type and issue number, for example `feat/123-affiliate-drag`, `fix/124-auth-callback`, or `docs/125-pr-rules`.
-- Commit messages are written in English Conventional Commit form, preferably with a scope: `feat(frontend): add mouse drag scrolling`.
-- Normal pull request titles use a lowercase Conventional Commit type and a concise Korean description, for example `feat: 제휴 카탈로그에 마우스 드래그 탐색을 추가한다` or `fix: 연속 탐색 후 카탈로그가 사라지는 문제를 수정한다`.
+- Commit messages follow Angular commit syntax. Keep the lowercase English type and optional scope, then write the description in Korean: `feat(frontend): 제휴 카탈로그에 마우스 드래그 탐색을 추가한다`, `fix(auth): OAuth 반환 경로에서 토큰을 제거한다`, or `docs: Sentry 운영 절차를 문서화한다`.
+- Use an Angular type appropriate to the change: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `perf`, `ci`, `build`, `style`, or `revert`.
+- Normal pull request titles use an uppercase type in square brackets followed by a concise Korean description, for example `[FEAT] 제휴 카탈로그에 마우스 드래그 탐색을 추가한다` or `[FIX] 연속 탐색 후 카탈로그가 사라지는 문제를 수정한다`.
+- Use `[FEAT]`, `[FIX]`, `[DOCS]`, `[REFACTOR]`, `[TEST]`, `[CHORE]`, `[PERF]`, `[CI]`, `[BUILD]`, `[STYLE]`, or `[REVERT]` according to the change. Pull requests that implement a `[BUG]` issue use `[FIX]`.
 - Release pull request titles use `[RELEASE] frontend vX.Y.Z과 서비스 vA.B.C 공지를 갱신한다`.
 
 ## Pull request body
