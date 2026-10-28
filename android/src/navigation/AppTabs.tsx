@@ -10,10 +10,10 @@ import { areTradeFeaturesEnabled } from '../config/features';
 import { SearchScreen } from '../screens/SearchScreen';
 import { colors } from '../theme/colors';
 import { MapStack, type MapStackParamList } from './MapStack';
-import { TradeStack } from './TradeStack';
+import { TradeStack, type TradeStackParamList } from './TradeStack';
 
 export type AppTabParamList = {
-  Trade: undefined;
+  Trade: NavigatorScreenParams<TradeStackParamList> | undefined;
   Map: NavigatorScreenParams<MapStackParamList> | undefined;
   Search: undefined;
 };

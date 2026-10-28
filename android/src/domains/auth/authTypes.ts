@@ -14,4 +14,16 @@ export interface AuthMember {
   desireTradeLocation: string | null;
 }
 
+export interface UpdateAuthMemberInput {
+  nickname: string;
+  profileImageUrl: string | null;
+  desireTradeLocation: string | null;
+}
+
+export interface ProfileImageUpload {
+  uri: string;
+  fileName: string;
+  mimeType: string;
+}
+
 export type AuthStatus = 'loading' | 'guest' | 'authenticated' | 'error';

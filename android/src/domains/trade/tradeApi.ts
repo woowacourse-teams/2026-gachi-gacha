@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../../config/api';
+import { authenticatedFetch } from '../auth/authApi';
 import {
   TRADE_STATUSES,
   type TradeStatus,
@@ -9,6 +10,7 @@ import {
 } from './tradeTypes';
 
 const DEFAULT_ERROR_MESSAGE = '교환 게시글을 불러오지 못했습니다.';
+const JSON_CONTENT_TYPE = 'application/json';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -139,4 +141,34 @@ export async function getTradeDetail(tradeId: number, signal?: AbortSignal): Pro
     throw new Error('교환 게시글 응답 형식이 올바르지 않습니다.');
   }
   return body.data;
+}
+
+export async function getMyTrades({
+  page = 0,
+  signal,
+  size = 20,
+  status,
+}: {
+  page?: number;
+  signal?: AbortSignal;
+  size?: number;
+  status?: TradeStatus;
+} = {}): Promise<TradeSummaryPage> {
+  const params = new URLSearchParams({ page: String(page), size: String(size) });
+  if (status) params.set('status', status);
+
+  const response = await authenticatedFetch(`/api/v1/trades/me?${params}`, { signal });
+  const body: unknown = response.headers.get('content-type')?.includes(JSON_CONTENT_TYPE)
+    ? await response.json()
+    : null;
+
+  if (!response.ok) {
+    throw new Error(
+      isRecord(body) && typeof body.message === 'string'
+        ? body.message
+        : '내 교환글을 불러오지 못했습니다.',
+    );
+  }
+  if (body === null) throw new Error('내 교환글을 불러오지 못했습니다.');
+  return parseResponse(body);
 }
