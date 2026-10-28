@@ -18,6 +18,17 @@ const CATALOG: AffiliateCatalog = {
       activeUntil: null,
       order: 1,
     },
+    {
+      id: 'affiliate-5621-test',
+      title: '치이카와 굿즈',
+      thumbnailUrl: 'https://image.example/chiikawa.jpg',
+      affiliateUrl: 'https://naver.me/chiikawa',
+      categories: [{ categoryId: 5621, name: '치이카와' }],
+      placementPaths: ['/search'],
+      activeFrom: null,
+      activeUntil: null,
+      order: 2,
+    },
   ],
 };
 
@@ -63,5 +74,50 @@ describe('AffiliateCatalogSection', () => {
 
     expect(screen.queryByText(/네이버 쇼핑에서 파는/)).not.toBeInTheDocument();
     expect(screen.queryByText('산리오 굿즈')).not.toBeInTheDocument();
+  });
+
+  it('카테고리를 연속으로 변경해도 현재 상품을 노출한다', () => {
+    const { container, rerender } = render(
+      <AffiliateCatalogSection
+        categoryName="산리오"
+        placementPath="/search"
+        catalog={CATALOG}
+      />,
+    );
+
+    fireEvent.load(
+      container.querySelector(
+        'img[src="https://image.example/sanrio.jpg"]',
+      ) as HTMLImageElement,
+    );
+    expect(screen.getByText('산리오 굿즈')).toBeInTheDocument();
+
+    rerender(
+      <AffiliateCatalogSection
+        categoryName="치이카와"
+        placementPath="/search"
+        catalog={CATALOG}
+      />,
+    );
+    fireEvent.load(
+      container.querySelector(
+        'img[src="https://image.example/chiikawa.jpg"]',
+      ) as HTMLImageElement,
+    );
+    expect(screen.getByText('치이카와 굿즈')).toBeInTheDocument();
+
+    rerender(
+      <AffiliateCatalogSection
+        categoryName="산리오"
+        placementPath="/search"
+        catalog={CATALOG}
+      />,
+    );
+    fireEvent.load(
+      container.querySelector(
+        'img[src="https://image.example/sanrio.jpg"]',
+      ) as HTMLImageElement,
+    );
+    expect(screen.getByText('산리오 굿즈')).toBeInTheDocument();
   });
 });
