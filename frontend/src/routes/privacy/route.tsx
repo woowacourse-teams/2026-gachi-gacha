@@ -66,7 +66,7 @@ export function PrivacyRoute() {
             개인정보처리방침을 공개합니다.
           </Introduction>
           <EffectiveDate>
-            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 19일
+            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 28일
           </EffectiveDate>
 
           {__APP_ENV__ !== 'production' && (
@@ -100,6 +100,13 @@ export function PrivacyRoute() {
                     <td>네이버 OAuth 로그인 과정</td>
                   </tr>
                   <tr>
+                    <th>Apple 로그인</th>
+                    <td>
+                      Apple 회원 식별값, 이름·이메일(Apple이 제공하는 범위)
+                    </td>
+                    <td>Apple OAuth 로그인 및 회원 탈퇴 본인 확인 과정</td>
+                  </tr>
+                  <tr>
                     <th>회원 설정</th>
                     <td>닉네임, 프로필 이미지, 선호 거래 지역</td>
                     <td>회원이 직접 입력하거나 수정</td>
@@ -111,6 +118,15 @@ export function PrivacyRoute() {
                       시간·사진, 채팅 내용·이미지·파일과 전송 시각
                     </td>
                     <td>해당 기능 이용 시 회원이 직접 입력</td>
+                  </tr>
+                  <tr>
+                    <th>회원 신고</th>
+                    <td>
+                      신고자·신고 대상 회원 식별값, 신고 대상 닉네임, 신고
+                      유형·상세내용, 신고 위치·참조 식별값, 페이지 경로, 접수
+                      시각, 앱 버전·실행 환경
+                    </td>
+                    <td>회원이 신고 폼을 통해 직접 제출</td>
                   </tr>
                   <tr>
                     <th>고객센터 문의</th>
@@ -130,7 +146,7 @@ export function PrivacyRoute() {
                     <td>
                       접속 기록, IP 주소, 브라우저·기기 정보, 페이지 방문·클릭,
                       오류 및 기능 이용 기록, PostHog 익명 식별값과 세션
-                      리플레이
+                      리플레이, Sentry 내부 회원 식별값·오류 스택·현재 경로
                     </td>
                     <td>서비스 이용 과정에서 자동 생성</td>
                   </tr>
@@ -143,19 +159,20 @@ export function PrivacyRoute() {
               </Table>
             </TableScroll>
             <p>
-              현재 소셜 로그인에서 이메일과 비밀번호를 직접 요청하거나 저장하지
-              않습니다. 소셜 제공자의 토큰은 로그인 처리에 사용하며 회원 프로필
-              정보로 별도 노출하지 않습니다.
+              현재 소셜 로그인 비밀번호를 직접 요청하거나 저장하지 않습니다.
+              Apple의 이메일·이름은 Apple이 제공하는 범위에서만 처리하며, 소셜
+              제공자의 토큰은 로그인과 본인 확인 처리에 사용합니다.
             </p>
           </Section>
 
           <Section>
             <SectionTitle>2. 개인정보 이용 목적</SectionTitle>
             <ul>
-              <li>회원 식별과 카카오·네이버 소셜 로그인 제공</li>
+              <li>회원 식별과 카카오·네이버·Apple 소셜 로그인 제공</li>
               <li>회원 프로필과 선호 거래 지역 관리</li>
               <li>가챠 매장·상품 검색과 맞춤형 서비스 제공</li>
               <li>교환글, 이미지 업로드, 채팅 등 회원 기능 제공</li>
+              <li>회원 신고 접수, 서비스 안전 유지 및 부정 이용 대응</li>
               <li>고객센터 문의 접수, 답변 및 서비스 개선</li>
               <li>이벤트 응모 자격 확인, 추첨, 당첨 안내 및 경품 전달</li>
               <li>부정 이용 방지, 보안 유지, 오류 확인과 서비스 개선</li>
@@ -176,12 +193,17 @@ export function PrivacyRoute() {
                 </thead>
                 <tbody>
                   <tr>
-                    <th>회원정보</th>
+                    <th>프로필·소셜 로그인 연결정보</th>
                     <td>회원 탈퇴 처리 시까지</td>
                   </tr>
                   <tr>
-                    <th>교환글·사진</th>
-                    <td>회원이 삭제하거나 회원 탈퇴를 처리할 때까지</td>
+                    <th>교환글·댓글·사진</th>
+                    <td>
+                      회원이 삭제하거나 서비스 제공 목적을 달성할 때까지. 회원
+                      탈퇴 후 관계 법령 또는 다른 이용자의 거래 내역·분쟁 대응을
+                      위해 필요한 정보는 회원 식별정보와 분리하여 해당 목적 달성
+                      시까지
+                    </td>
                   </tr>
                   <tr>
                     <th>채팅 내용·파일</th>
@@ -203,10 +225,21 @@ export function PrivacyRoute() {
                     <td>수집일로부터 최대 12개월</td>
                   </tr>
                   <tr>
+                    <th>Sentry 오류 정보</th>
+                    <td>수집일로부터 최대 3개월</td>
+                  </tr>
+                  <tr>
                     <th>고객센터 문의</th>
                     <td>
                       문의 처리 완료 후 30일까지. 분쟁 대응이 필요한 경우 해당
                       목적 달성 시까지
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>회원 신고정보</th>
+                    <td>
+                      신고 처리 완료 후 1년까지. 관련 분쟁이나 조사가 진행 중인
+                      경우 해당 절차 종료 시까지
                     </td>
                   </tr>
                   <tr>
@@ -252,8 +285,15 @@ export function PrivacyRoute() {
                     <td>서비스 이용 분석, 오류 확인 및 세션 리플레이</td>
                   </tr>
                   <tr>
+                    <th>Functional Software, Inc. (Sentry)</th>
+                    <td>프론트엔드 오류 수집, 스택 추적 및 배포 릴리스 분석</td>
+                  </tr>
+                  <tr>
                     <th>Google LLC</th>
-                    <td>Google Sheets를 이용한 이벤트 응모정보 보관·관리</td>
+                    <td>
+                      Google Sheets를 이용한 이벤트 응모정보 및 회원 신고정보
+                      보관·관리
+                    </td>
                   </tr>
                 </tbody>
               </Table>
@@ -267,8 +307,8 @@ export function PrivacyRoute() {
           <Section>
             <SectionTitle>6. 개인정보의 국외 이전</SectionTitle>
             <p>
-              Google Sheets를 통한 이벤트 운영과 PostHog를 통한 서비스 분석
-              과정에서 정보가 국외로 이전될 수 있습니다.
+              Google Sheets를 통한 이벤트·신고 운영, PostHog를 통한 서비스 분석,
+              Sentry를 통한 오류 추적 과정에서 정보가 국외로 이전될 수 있습니다.
             </p>
             <SubsectionTitle>Google Sheets</SubsectionTitle>
             <TableScroll>
@@ -281,32 +321,42 @@ export function PrivacyRoute() {
                   <tr>
                     <th>이전 항목</th>
                     <td>
-                      회원 식별값, 희망 트랙, Instagram ID, 작성·완료 교환글
-                      링크와 식별값, 응모 시각, 동의 여부
+                      이벤트 응모 시 회원 식별값, 희망 트랙, Instagram ID,
+                      작성·완료 교환글 링크와 식별값, 응모 시각, 동의 여부. 회원
+                      신고 시 신고자·대상 회원 식별값, 대상 닉네임, 신고
+                      유형·상세내용, 신고 위치·참조 식별값, 페이지 경로, 접수
+                      시각, 앱 버전·실행 환경
                     </td>
                   </tr>
                   <tr>
                     <th>목적</th>
-                    <td>이벤트 응모 자격 확인, 추첨 및 당첨자 관리</td>
+                    <td>
+                      이벤트 응모 자격 확인·추첨·당첨자 관리 및 회원 신고
+                      접수·부정 이용 대응
+                    </td>
                   </tr>
                   <tr>
                     <th>국가·시기·방법</th>
                     <td>
                       미국 등 Google이 데이터 처리 시설을 운영하는 국가, 이벤트
-                      응모 시 암호화된 통신으로 전송
+                      응모 또는 회원 신고 시 암호화된 통신으로 전송
                     </td>
                   </tr>
                   <tr>
                     <th>보유기간</th>
-                    <td>이벤트 당첨자 경품 전달 완료 후 지체 없이 삭제</td>
+                    <td>
+                      이벤트 정보는 경품 전달 완료 후 지체 없이 삭제. 신고정보는
+                      신고 처리 완료 후 1년까지 보관하되 관련 분쟁·조사가 진행
+                      중이면 해당 절차 종료 시까지
+                    </td>
                   </tr>
                 </tbody>
               </Table>
             </TableScroll>
             <p>
-              이벤트 응모정보의 국외 이전을 원하지 않으면 응모하지 않을 수
-              있으며, 이 경우 서비스의 다른 기능은 그대로 이용할 수 있지만
-              이벤트에는 참여할 수 없습니다.
+              이벤트 응모 또는 회원 신고를 하지 않으면 해당 정보는 Google
+              Sheets로 전송되지 않습니다. 이 경우 이벤트 참여나 신고 접수는 할
+              수 없지만 서비스의 다른 기능은 그대로 이용할 수 있습니다.
             </p>
             <SubsectionTitle>PostHog</SubsectionTitle>
             <TableScroll>
@@ -343,6 +393,36 @@ export function PrivacyRoute() {
               있습니다. 처리를 거부하더라도 지도 검색 등 핵심 기능은 이용할 수
               있습니다.
             </p>
+            <SubsectionTitle>Sentry</SubsectionTitle>
+            <TableScroll>
+              <Table>
+                <tbody>
+                  <tr>
+                    <th>이전받는 자</th>
+                    <td>Functional Software, Inc.</td>
+                  </tr>
+                  <tr>
+                    <th>이전 항목</th>
+                    <td>
+                      숫자형 내부 회원 식별값, 오류 스택, 현재 경로,
+                      브라우저·기기 정보, 배포 릴리스
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>목적</th>
+                    <td>서비스 오류 감지, 재현 및 품질 개선</td>
+                  </tr>
+                  <tr>
+                    <th>국가·시기·방법</th>
+                    <td>미국, 오류 발생 시 암호화된 통신을 통한 전송</td>
+                  </tr>
+                  <tr>
+                    <th>보유기간</th>
+                    <td>수집일로부터 최대 3개월</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </TableScroll>
           </Section>
 
           <Section>
@@ -365,6 +445,14 @@ export function PrivacyRoute() {
               <li>
                 현재 access token은 탭 단위 sessionStorage에 저장되며 로그아웃
                 또는 탭 종료 시 삭제됩니다.
+              </li>
+              <li>
+                OAuth 제공자와 로그인 후 복귀 경로는 인증 절차 동안
+                sessionStorage에 임시 저장됩니다.
+              </li>
+              <li>
+                랜딩 안내 확인 버전과 차단한 회원 식별값은 반복 안내 방지와 차단
+                상태 유지를 위해 localStorage에 저장됩니다.
               </li>
               <li>
                 PostHog는 방문·클릭 이벤트와 세션 리플레이를 위해 쿠키 및
@@ -499,6 +587,13 @@ export function PrivacyRoute() {
                 추가
               </li>
               <li>2026년 10월 19일: 외부 회원 탈퇴 요청 경로 안내 추가</li>
+              <li>
+                2026년 10월 28일: Sentry 오류 추적 처리 및 국외 이전 안내 추가
+              </li>
+              <li>
+                2026년 10월 28일: Apple 로그인, 회원 신고 처리, 회원 탈퇴 및
+                브라우저 저장소 안내 최신화
+              </li>
             </ul>
           </Section>
         </Document>

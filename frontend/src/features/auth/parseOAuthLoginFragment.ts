@@ -6,12 +6,19 @@ const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   login_failed: '소셜 로그인을 완료하지 못했습니다. 다시 시도해주세요.',
 };
 
+export class ExpectedOAuthLoginError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ExpectedOAuthLoginError';
+  }
+}
+
 export function parseOAuthLoginFragment(fragment: string): AuthTokens {
   const params = new URLSearchParams(fragment.replace(/^#/, ''));
   const error = params.get('error');
 
   if (error) {
-    throw new Error(
+    throw new ExpectedOAuthLoginError(
       OAUTH_ERROR_MESSAGES[error] ?? '소셜 로그인을 완료하지 못했습니다.',
     );
   }

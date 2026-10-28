@@ -27,6 +27,7 @@ export const SERVICE_RELEASE_NOTES = [
       '로그인하지 않은 상태에서도 공개 회원탈퇴 페이지에서 소셜 계정으로 본인을 확인하고 계정 삭제를 요청할 수 있어요.',
       '댓글과 채팅 소식을 헤더의 알림 목록에서 확인하고 읽음 처리할 수 있어요.',
       'iPhone Safari에서 사진 압축이 실패할 때 PNG로 다시 처리해 등록 안정성을 높였어요.',
+      '예상치 못한 화면 오류가 발생해도 안내 화면에서 다시 불러와 이용을 이어갈 수 있어요.',
     ],
     releaseUrl:
       'https://github.com/woowacourse-teams/2026-gachi-gacha/releases/tag/v1.6.0',

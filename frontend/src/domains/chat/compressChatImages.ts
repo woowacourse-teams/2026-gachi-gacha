@@ -1,5 +1,7 @@
 import imageCompression from 'browser-image-compression';
 
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
+
 const WEBP_MIME_TYPE = 'image/webp';
 const PNG_MIME_TYPE = 'image/png';
 const MAX_COMPRESSED_SIZE_MB = 1;
@@ -73,6 +75,7 @@ export async function compressChatImages(files: File[]): Promise<File[]> {
 
     return compressedFiles;
   } catch (error: unknown) {
+    captureCoreFeatureFailure('chat_image_compression');
     throw new Error(CHAT_IMAGE_COMPRESSION_ERROR_MESSAGE, { cause: error });
   }
 }
