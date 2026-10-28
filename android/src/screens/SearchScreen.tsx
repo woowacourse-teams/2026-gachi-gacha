@@ -51,7 +51,7 @@ export function SearchScreen({ navigation }: Props) {
 
   return (
     <View style={styles.screen}>
-      <AppHeader title="검색" />
+      <AppHeader />
       <FlatList
         data={activeFeed.items}
         keyExtractor={({ gachaId }) => String(gachaId)}
