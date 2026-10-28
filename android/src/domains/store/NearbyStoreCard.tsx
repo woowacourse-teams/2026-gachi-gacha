@@ -4,11 +4,6 @@ import { RemoteImageWithFallback } from '../../components/RemoteImageWithFallbac
 import { colors } from '../../theme/colors';
 import type { NearbyStore } from './storeTypes';
 
-function formatDistance(distance: number): string {
-  if (distance < 1000) return `${Math.round(distance)}m`;
-  return `${(distance / 1000).toFixed(1)}km`;
-}
-
 export function NearbyStoreCard({
   selected = false,
   store,
@@ -35,10 +30,7 @@ export function NearbyStoreCard({
         uri={store.thumbnailUrl}
       />
       <View style={styles.information}>
-        <View style={styles.titleRow}>
-          <Text numberOfLines={1} style={styles.name}>{store.name}</Text>
-          <Text style={styles.distance}>{formatDistance(store.distance)}</Text>
-        </View>
+        <Text numberOfLines={1} style={styles.name}>{store.name}</Text>
         <Text numberOfLines={2} style={styles.address}>{store.address}</Text>
         {store.gachaCount !== undefined && (
           <Text style={styles.gachaCount}>보유 가챠 {store.gachaCount}개</Text>
@@ -72,9 +64,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f1f3',
   },
   information: { flex: 1, paddingVertical: 4 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  name: { flex: 1, color: colors.text, fontSize: 16, fontWeight: '800' },
-  distance: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  name: { color: colors.text, fontSize: 16, fontWeight: '800' },
   address: { marginTop: 9, color: colors.textMuted, fontSize: 13, lineHeight: 18 },
   gachaCount: { marginTop: 'auto', color: colors.primary, fontSize: 12, fontWeight: '700' },
 });

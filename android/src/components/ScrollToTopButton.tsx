@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '../theme/colors';
 
@@ -8,6 +9,8 @@ type Props = {
 };
 
 export function ScrollToTopButton({ onPress, visible }: Props) {
+  const insets = useSafeAreaInsets();
+
   if (!visible) return null;
 
   return (
@@ -15,7 +18,11 @@ export function ScrollToTopButton({ onPress, visible }: Props) {
       accessibilityLabel="목록 맨 위로 이동"
       accessibilityRole="button"
       onPress={onPress}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.button,
+        { top: insets.top + 74 },
+        pressed && styles.pressed,
+      ]}
     >
       <Text style={styles.arrow}>↑</Text>
     </Pressable>
@@ -26,7 +33,6 @@ const styles = StyleSheet.create({
   button: {
     position: 'absolute',
     right: 18,
-    bottom: 18,
     zIndex: 20,
     width: 48,
     height: 48,
