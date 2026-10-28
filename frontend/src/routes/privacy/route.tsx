@@ -66,7 +66,7 @@ export function PrivacyRoute() {
             개인정보처리방침을 공개합니다.
           </Introduction>
           <EffectiveDate>
-            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 19일
+            최초 제정일: 2026년 9월 25일 · 최근 변경 및 시행일: 2026년 10월 28일
           </EffectiveDate>
 
           {__APP_ENV__ !== 'production' && (
@@ -130,7 +130,7 @@ export function PrivacyRoute() {
                     <td>
                       접속 기록, IP 주소, 브라우저·기기 정보, 페이지 방문·클릭,
                       오류 및 기능 이용 기록, PostHog 익명 식별값과 세션
-                      리플레이
+                      리플레이, Sentry 내부 회원 식별값·오류 스택·현재 경로
                     </td>
                     <td>서비스 이용 과정에서 자동 생성</td>
                   </tr>
@@ -203,6 +203,10 @@ export function PrivacyRoute() {
                     <td>수집일로부터 최대 12개월</td>
                   </tr>
                   <tr>
+                    <th>Sentry 오류 정보</th>
+                    <td>수집일로부터 최대 3개월</td>
+                  </tr>
+                  <tr>
                     <th>고객센터 문의</th>
                     <td>
                       문의 처리 완료 후 30일까지. 분쟁 대응이 필요한 경우 해당
@@ -252,6 +256,10 @@ export function PrivacyRoute() {
                     <td>서비스 이용 분석, 오류 확인 및 세션 리플레이</td>
                   </tr>
                   <tr>
+                    <th>Functional Software, Inc. (Sentry)</th>
+                    <td>프론트엔드 오류 수집, 스택 추적 및 배포 릴리스 분석</td>
+                  </tr>
+                  <tr>
                     <th>Google LLC</th>
                     <td>Google Sheets를 이용한 이벤트 응모정보 보관·관리</td>
                   </tr>
@@ -267,8 +275,8 @@ export function PrivacyRoute() {
           <Section>
             <SectionTitle>6. 개인정보의 국외 이전</SectionTitle>
             <p>
-              Google Sheets를 통한 이벤트 운영과 PostHog를 통한 서비스 분석
-              과정에서 정보가 국외로 이전될 수 있습니다.
+              Google Sheets를 통한 이벤트 운영, PostHog를 통한 서비스 분석,
+              Sentry를 통한 오류 추적 과정에서 정보가 국외로 이전될 수 있습니다.
             </p>
             <SubsectionTitle>Google Sheets</SubsectionTitle>
             <TableScroll>
@@ -343,6 +351,36 @@ export function PrivacyRoute() {
               있습니다. 처리를 거부하더라도 지도 검색 등 핵심 기능은 이용할 수
               있습니다.
             </p>
+            <SubsectionTitle>Sentry</SubsectionTitle>
+            <TableScroll>
+              <Table>
+                <tbody>
+                  <tr>
+                    <th>이전받는 자</th>
+                    <td>Functional Software, Inc.</td>
+                  </tr>
+                  <tr>
+                    <th>이전 항목</th>
+                    <td>
+                      숫자형 내부 회원 식별값, 오류 스택, 현재 경로,
+                      브라우저·기기 정보, 배포 릴리스
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>목적</th>
+                    <td>서비스 오류 감지, 재현 및 품질 개선</td>
+                  </tr>
+                  <tr>
+                    <th>국가·시기·방법</th>
+                    <td>미국, 오류 발생 시 암호화된 통신을 통한 전송</td>
+                  </tr>
+                  <tr>
+                    <th>보유기간</th>
+                    <td>수집일로부터 최대 3개월</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </TableScroll>
           </Section>
 
           <Section>
@@ -499,6 +537,9 @@ export function PrivacyRoute() {
                 추가
               </li>
               <li>2026년 10월 19일: 외부 회원 탈퇴 요청 경로 안내 추가</li>
+              <li>
+                2026년 10월 28일: Sentry 오류 추적 처리 및 국외 이전 안내 추가
+              </li>
             </ul>
           </Section>
         </Document>
