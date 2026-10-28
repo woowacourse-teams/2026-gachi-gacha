@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import {
-  Alert,
   Image,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -12,142 +13,200 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { colors } from '../theme/colors';
+import { RemoteImageWithFallback } from './RemoteImageWithFallback';
 
-type AppHeaderProps = {
-  title: string;
-};
-
-export function AppHeader({ title }: AppHeaderProps) {
+export function AppHeader() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const { status: authStatus } = useAuthSession();
+  const { member, status: authStatus } = useAuthSession();
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const isAuthenticated = authStatus === 'authenticated';
 
-  function showServiceInformation() {
-    Alert.alert(
-      '서비스 정보',
-      '가치가챠의 개인정보 처리 기준을 운영 웹페이지에서 확인할 수 있어요.',
-      [
-        { text: '닫기', style: 'cancel' },
-        {
-          text: '개인정보처리방침',
-          onPress: () =>
-            navigation.navigate('PublicWebFeature', {
-              feature: 'privacyPolicy',
-            }),
-        },
-      ],
-    );
+  function openAccount() {
+    if (isAuthenticated) {
+      setIsAccountMenuOpen(true);
+      return;
+    }
+
+    navigation.navigate('Account');
+  }
+
+  function openMyPage() {
+    setIsAccountMenuOpen(false);
+    navigation.navigate('Account');
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
-      <Image
-        accessibilityIgnoresInvertColors
-        accessibilityLabel="가치가챠"
-        resizeMode="contain"
-        source={require('../../assets/gachigacha-wordmark.png')}
-        style={styles.logo}
-      />
-      <View style={styles.actionGroup}>
-        <Text style={styles.title}>{title}</Text>
+    <>
+      <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
+        <View accessibilityLabel="가치가챠" style={styles.brand}>
+          <Image
+            accessibilityIgnoresInvertColors
+            resizeMode="contain"
+            source={require('../../assets/gacha-logo.png')}
+            style={styles.brandSymbol}
+          />
+          <Image
+            accessibilityIgnoresInvertColors
+            resizeMode="contain"
+            source={require('../../assets/gachigacha-wordmark.png')}
+            style={styles.wordmark}
+          />
+        </View>
+
         <Pressable
-          accessibilityLabel={
-            authStatus === 'authenticated' ? '내 정보 열기' : '계정 안내 열기'
-          }
+          accessibilityLabel={isAuthenticated ? '사용자 메뉴 열기' : '로그인'}
           accessibilityRole="button"
           hitSlop={6}
-          onPress={() => navigation.navigate('Account')}
+          onPress={openAccount}
           style={({ pressed }) => [
-            styles.accountButton,
-            pressed && styles.infoButtonPressed,
+            isAuthenticated ? styles.profileButton : styles.loginButton,
+            pressed && styles.buttonPressed,
           ]}
         >
-          <Text style={styles.accountButtonText}>
-            {authStatus === 'authenticated' ? '내 정보' : '계정'}
-          </Text>
-        </Pressable>
-        <Pressable
-          accessibilityLabel="서비스 정보 열기"
-          accessibilityRole="button"
-          hitSlop={6}
-          onPress={showServiceInformation}
-          style={({ pressed }) => [
-            styles.infoButton,
-            pressed && styles.infoButtonPressed,
-          ]}
-        >
-          <Text aria-hidden style={styles.infoIcon}>i</Text>
+          {isAuthenticated ? (
+            <RemoteImageWithFallback
+              accessibilityLabel={`${member?.nickname ?? '사용자'} 프로필`}
+              style={styles.profileImage}
+              uri={member?.profileImageUrl}
+            />
+          ) : (
+            <Text style={styles.loginButtonText}>
+              {authStatus === 'loading' ? '확인 중' : '로그인'}
+            </Text>
+          )}
         </Pressable>
       </View>
-    </View>
+
+      <Modal
+        animationType="fade"
+        onRequestClose={() => setIsAccountMenuOpen(false)}
+        statusBarTranslucent
+        transparent
+        visible={isAccountMenuOpen}
+      >
+        <Pressable
+          accessibilityLabel="사용자 메뉴 닫기"
+          onPress={() => setIsAccountMenuOpen(false)}
+          style={styles.menuBackdrop}
+        >
+          <View
+            accessibilityRole="menu"
+            onStartShouldSetResponder={() => true}
+            style={[styles.accountMenu, { top: insets.top + 62 }]}
+          >
+            <Pressable
+              accessibilityRole="menuitem"
+              onPress={openMyPage}
+              style={({ pressed }) => [
+                styles.menuItem,
+                pressed && styles.menuItemPressed,
+              ]}
+            >
+              <Text style={styles.menuItemText}>마이페이지</Text>
+              <Text aria-hidden style={styles.menuItemArrow}>›</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     minHeight: 68,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
     backgroundColor: colors.background,
   },
-  logo: {
-    width: 128,
-    height: 19,
-  },
-  title: {
-    color: colors.textMuted,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  actionGroup: {
-    marginLeft: 'auto',
+  brand: {
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 7,
   },
-  infoButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 18,
-    backgroundColor: colors.background,
+  brandSymbol: {
+    width: 31,
+    height: 31,
   },
-  accountButton: {
-    minWidth: 52,
-    height: 36,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 18,
-    backgroundColor: colors.background,
-  },
-  accountButtonText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  infoButtonPressed: {
-    backgroundColor: colors.primarySoft,
-  },
-  infoIcon: {
-    width: 18,
+  wordmark: {
+    width: 112,
     height: 18,
-    borderWidth: 1.5,
-    borderColor: colors.textMuted,
-    borderRadius: 9,
-    color: colors.textMuted,
-    fontSize: 12,
+  },
+  loginButton: {
+    minWidth: 62,
+    height: 36,
+    marginLeft: 'auto',
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 18,
+    backgroundColor: colors.background,
+  },
+  loginButtonText: {
+    color: colors.text,
+    fontSize: 13,
     fontWeight: '800',
-    lineHeight: 17,
-    textAlign: 'center',
+  },
+  profileButton: {
+    width: 38,
+    height: 38,
+    marginLeft: 'auto',
+    padding: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 19,
+    backgroundColor: colors.background,
+  },
+  profileImage: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  buttonPressed: { backgroundColor: colors.primarySoft },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(36, 33, 34, 0.14)',
+  },
+  accountMenu: {
+    position: 'absolute',
+    right: 16,
+    width: 170,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    elevation: 10,
+    shadowColor: '#242122',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+  },
+  menuItem: {
+    minHeight: 46,
+    paddingHorizontal: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 11,
+  },
+  menuItemPressed: { backgroundColor: colors.primarySoft },
+  menuItemText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  menuItemArrow: {
+    color: colors.textMuted,
+    fontSize: 23,
+    lineHeight: 24,
   },
 });

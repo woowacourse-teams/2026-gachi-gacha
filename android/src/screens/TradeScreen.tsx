@@ -37,7 +37,7 @@ export function TradeScreen({ navigation }: Props) {
 
   return (
     <View style={styles.screen}>
-      <AppHeader title="거래/교환" />
+      <AppHeader />
       <FlatList
         data={visibleTrades}
         keyExtractor={({ tradeId }) => String(tradeId)}

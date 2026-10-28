@@ -12,7 +12,8 @@ import kotlin.math.roundToInt
 
 internal object CapsuleMarkerBitmapFactory {
   private const val STORE_MARKER_SIZE_DP = 34f
-  private const val SELECTED_STORE_MARKER_SIZE_DP = 44f
+  private const val SELECTED_STORE_MARKER_WIDTH_DP = 44f
+  private const val SELECTED_STORE_MARKER_HEIGHT_DP = 56f
   private const val USER_MARKER_SIZE_DP = 20f
 
   private val storeMarkers = ConcurrentHashMap<Int, Bitmap>()
@@ -110,37 +111,68 @@ internal object CapsuleMarkerBitmapFactory {
   }
 
   private fun drawSelectedStoreMarker(density: Float): Bitmap {
-    val size = (SELECTED_STORE_MARKER_SIZE_DP * density).roundToInt()
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val width = (SELECTED_STORE_MARKER_WIDTH_DP * density).roundToInt()
+    val height = (SELECTED_STORE_MARKER_HEIGHT_DP * density).roundToInt()
+    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    val center = size / 2f
-    val selectionRadius = 20f * density
+    val artScale = 1.06f * density
+    val artWidth = 38.09f * artScale
+    val offsetX = (width - artWidth) / 2f - 2.3f * artScale
+    val offsetY = 3f * density + 2.44f * artScale
+    val circleBounds = RectF(3f, 11f, 37f, 45f)
+    val seamRightX = 36.7084f
+    val seamRightY = 24.8647f
 
-    val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-      style = Paint.Style.FILL
-      color = Color.argb(52, 36, 33, 34)
+    val bowlPath = Path().apply {
+      moveTo(seamRightX, seamRightY)
+      arcTo(circleBounds, -10.63f, 173.26f)
+      close()
     }
-    canvas.drawCircle(center, center + 1.4f * density, selectionRadius, shadowPaint)
-
-    val selectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+    val lidPath = Path().apply {
+      moveTo(3.7755f, 33.0758f)
+      arcTo(circleBounds, 162.63f, 186.74f)
+      close()
+    }
+    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
       style = Paint.Style.FILL
+      color = Color.parseColor("#D85A30")
+    }
+    val outlinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      style = Paint.Style.STROKE
+      strokeJoin = Paint.Join.ROUND
+      strokeWidth = 1.4f
+      color = Color.parseColor("#111111")
+    }
+    val highlightPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+      style = Paint.Style.STROKE
+      strokeCap = Paint.Cap.ROUND
+      strokeWidth = 2.6f
       color = Color.WHITE
+      alpha = 230
     }
-    canvas.drawCircle(center, center, selectionRadius, selectionPaint)
 
-    selectionPaint.style = Paint.Style.STROKE
-    selectionPaint.strokeWidth = 2.4f * density
-    selectionPaint.color = Color.parseColor("#D1495B")
-    canvas.drawCircle(center, center, selectionRadius - 1.2f * density, selectionPaint)
+    canvas.save()
+    canvas.translate(offsetX, offsetY)
+    canvas.scale(artScale, artScale)
 
-    val capsule = drawStoreMarker(density)
-    canvas.drawBitmap(
-      capsule,
-      center - capsule.width / 2f,
-      center - capsule.height / 2f,
-      null,
+    canvas.drawPath(bowlPath, fillPaint)
+    canvas.drawPath(bowlPath, outlinePaint)
+
+    canvas.save()
+    canvas.rotate(45f, seamRightX, seamRightY)
+    fillPaint.color = Color.parseColor("#DCE9F2")
+    canvas.drawPath(lidPath, fillPaint)
+    canvas.drawPath(lidPath, outlinePaint)
+    canvas.clipPath(lidPath)
+    canvas.drawArc(
+      RectF(6.4f, 14.4f, 33.6f, 41.6f),
+      210f,
+      55f,
+      false,
+      highlightPaint,
     )
-    capsule.recycle()
+    canvas.restore()
+    canvas.restore()
 
     return bitmap
   }

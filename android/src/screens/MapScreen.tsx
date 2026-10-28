@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   Pressable,
   StyleSheet,
   Text,
@@ -29,6 +31,10 @@ const CAROUSEL_GAP = 10;
 const STORE_CARD_HEIGHT = 124;
 const HONGDAE_RETURN_DISTANCE_METERS = 700;
 
+function CarouselSeparator() {
+  return <View style={styles.carouselSeparator} />;
+}
+
 function calculateDistanceInMeters(first: MapCoordinate, second: MapCoordinate): number {
   const earthRadius = 6_371_000;
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -50,6 +56,7 @@ export function MapScreen({ navigation, route }: Props) {
   const [isMapAwayFromHongdae, setIsMapAwayFromHongdae] = useState(false);
   const [recenterRequestId, setRecenterRequestId] = useState(0);
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(null);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const carouselRef = useRef<FlatList<NearbyStore>>(null);
   const { width } = useWindowDimensions();
   const result = useNearbyStores(gachaId, HONGDAE_SEARCH_CENTER);
@@ -62,6 +69,7 @@ export function MapScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     setSelectedStoreId(null);
+    setCurrentCarouselIndex(0);
     setIsMapAwayFromHongdae(false);
     setRecenterRequestId((requestId) => requestId + 1);
   }, [gachaId]);
@@ -77,12 +85,12 @@ export function MapScreen({ navigation, route }: Props) {
       return;
     }
 
-    carouselRef.current?.scrollToIndex({
+    setCurrentCarouselIndex(selectedIndex);
+    carouselRef.current?.scrollToOffset({
       animated: true,
-      index: selectedIndex,
-      viewPosition: 0,
+      offset: selectedIndex * (storeCardWidth + CAROUSEL_GAP),
     });
-  }, [result.stores, selectedStoreId]);
+  }, [result.stores, selectedStoreId, storeCardWidth]);
 
   function openStoreDetail(store: NearbyStore) {
     navigation.navigate('StoreDetail', {
@@ -98,13 +106,29 @@ export function MapScreen({ navigation, route }: Props) {
     navigation.setParams({ gachaId: undefined, gachaName: undefined });
   }
 
-  function selectStoreFromMarker(store: NearbyStore) {
+  function selectStore(store: NearbyStore) {
     if (selectedStoreId === store.storeId) {
       openStoreDetail(store);
       return;
     }
 
     setSelectedStoreId(store.storeId);
+  }
+
+  function syncCarouselSelection(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    if (result.status !== 'success' || result.stores.length === 0) return;
+
+    const interval = storeCardWidth + CAROUSEL_GAP;
+    const index = Math.min(
+      result.stores.length - 1,
+      Math.max(0, Math.round(event.nativeEvent.contentOffset.x / interval)),
+    );
+    const store = result.stores[index];
+
+    setCurrentCarouselIndex(index);
+    if (store && store.storeId !== selectedStoreId) {
+      setSelectedStoreId(store.storeId);
+    }
   }
 
   function handleCameraMoveEnd(center: MapCoordinate) {
@@ -128,13 +152,13 @@ export function MapScreen({ navigation, route }: Props) {
 
   return (
     <View style={styles.screen}>
-      <AppHeader title="지도" />
+      <AppHeader />
       <View style={styles.mapStage}>
         {canShowMap ? (
           <NearbyStoreMap
             center={HONGDAE_SEARCH_CENTER}
             onCameraMoveEnd={handleCameraMoveEnd}
-            onSelectStore={selectStoreFromMarker}
+            onSelectStore={selectStore}
             recenterRequestId={recenterRequestId}
             selectedStoreId={selectedStoreId}
             stores={result.stores}
@@ -223,24 +247,32 @@ export function MapScreen({ navigation, route }: Props) {
 
         {hasStoreCarousel && (
           <View style={styles.carouselArea}>
+            <View accessibilityLiveRegion="polite" style={styles.carouselPosition}>
+              <Text style={styles.carouselPositionText}>
+                {currentCarouselIndex + 1}/{result.stores.length}
+              </Text>
+            </View>
             <FlatList
               contentContainerStyle={styles.carouselContent}
               data={result.stores}
               decelerationRate="fast"
+              disableIntervalMomentum
               getItemLayout={(_, index) => ({
                 index,
                 length: storeCardWidth + CAROUSEL_GAP,
                 offset: (storeCardWidth + CAROUSEL_GAP) * index,
               })}
               horizontal
+              ItemSeparatorComponent={CarouselSeparator}
               keyExtractor={({ storeId }) => String(storeId)}
+              onMomentumScrollEnd={syncCarouselSelection}
               ref={carouselRef}
               renderItem={({ item }) => (
                 <View style={{ width: storeCardWidth }}>
                   <NearbyStoreCard
                     selected={item.storeId === selectedStoreId}
                     store={item}
-                    onPress={() => openStoreDetail(item)}
+                    onPress={() => selectStore(item)}
                   />
                 </View>
               )}
@@ -395,6 +427,24 @@ const styles = StyleSheet.create({
   },
   carouselContent: {
     paddingHorizontal: CAROUSEL_HORIZONTAL_INSET,
-    gap: CAROUSEL_GAP,
+  },
+  carouselSeparator: { width: CAROUSEL_GAP },
+  carouselPosition: {
+    minWidth: 44,
+    height: 26,
+    marginRight: CAROUSEL_HORIZONTAL_INSET,
+    marginBottom: 7,
+    paddingHorizontal: 10,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 13,
+    backgroundColor: 'rgba(36, 33, 34, 0.72)',
+  },
+  carouselPositionText: {
+    color: colors.background,
+    fontSize: 11,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
 });

@@ -10,6 +10,7 @@ import com.kakao.vectormap.LatLng
 import com.kakao.vectormap.MapLifeCycleCallback
 import com.kakao.vectormap.MapView
 import com.kakao.vectormap.camera.CameraUpdateFactory
+import com.kakao.vectormap.label.Label
 import com.kakao.vectormap.label.LabelOptions
 import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
@@ -31,9 +32,12 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
   private var recenterRequestId = 0
   private var showsUserLocation = false
   private var started = false
+  private val storeLabels = mutableMapOf<Double, Label>()
+  private val renderedMarkers = mutableMapOf<Double, Marker>()
   private var storeMarkerStyle: LabelStyles? = null
   private var selectedStoreMarkerStyle: LabelStyles? = null
   private var userLocationStyle: LabelStyles? = null
+  private var userLocationLabel: Label? = null
 
   fun setActive(value: Boolean) {
     active = value
@@ -98,6 +102,9 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     mapView = null
     started = false
     kakaoMap = null
+    storeLabels.clear()
+    renderedMarkers.clear()
+    userLocationLabel = null
     storeMarkerStyle = null
     selectedStoreMarkerStyle = null
     userLocationStyle = null
@@ -130,6 +137,12 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
         object : MapLifeCycleCallback() {
           override fun onMapDestroy() {
             kakaoMap = null
+            storeLabels.clear()
+            renderedMarkers.clear()
+            userLocationLabel = null
+            storeMarkerStyle = null
+            selectedStoreMarkerStyle = null
+            userLocationStyle = null
           }
 
           override fun onMapError(error: Exception) {
@@ -201,15 +214,13 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     val map = kakaoMap ?: return
     val labelManager = map.labelManager ?: return
     val layer = labelManager.layer ?: return
-    layer.removeAll()
-
     val markerStyle = storeMarkerStyle ?: labelManager
       .addLabelStyles(
         LabelStyles.from(
           STORE_MARKER_STYLE_ID,
           LabelStyle.from(CapsuleMarkerBitmapFactory.storeMarker(context))
             .setApplyDpScale(false)
-            .setAnchorPoint(0.5f, 1f),
+            .setAnchorPoint(0.5f, 0.5f),
         ),
       )
       .also { storeMarkerStyle = it }
@@ -220,21 +231,51 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
           SELECTED_STORE_MARKER_STYLE_ID,
           LabelStyle.from(CapsuleMarkerBitmapFactory.selectedStoreMarker(context))
             .setApplyDpScale(false)
-            .setAnchorPoint(0.5f, 1f),
+            .setAnchorPoint(0.5f, SELECTED_MARKER_ANCHOR_Y),
         ),
       )
       .also { selectedStoreMarkerStyle = it }
 
-    markers.sortedBy { it.selected }.forEach { marker ->
-      layer.addLabel(
+    val incomingMarkers = markers.associateBy(Marker::id)
+    val removedMarkerIds = storeLabels.keys.filterNot(incomingMarkers::containsKey)
+    removedMarkerIds.forEach { markerId ->
+      storeLabels.remove(markerId)?.remove()
+      renderedMarkers.remove(markerId)
+    }
+
+    markers.forEach { marker ->
+      val previousMarker = renderedMarkers[marker.id]
+      val existingLabel = storeLabels[marker.id]
+      val targetStyle = if (marker.selected) selectedMarkerStyle else markerStyle
+      val targetRank = if (marker.selected) SELECTED_MARKER_RANK else STORE_MARKER_RANK
+
+      if (existingLabel == null) {
+        val label = layer.addLabel(
         LabelOptions.from(
           "store-${marker.id.toLong()}",
           LatLng.from(marker.latitude, marker.longitude),
         )
-          .setStyles(if (marker.selected) selectedMarkerStyle else markerStyle)
+          .setStyles(targetStyle)
           .setClickable(true)
           .setTag(marker.id),
-      )
+        )
+        label.changeRank(targetRank)
+        storeLabels[marker.id] = label
+      } else {
+        if (
+          previousMarker == null ||
+          previousMarker.latitude != marker.latitude ||
+          previousMarker.longitude != marker.longitude
+        ) {
+          existingLabel.moveTo(LatLng.from(marker.latitude, marker.longitude))
+        }
+        if (previousMarker == null || previousMarker.selected != marker.selected) {
+          existingLabel.changeStyles(targetStyle, false)
+          existingLabel.changeRank(targetRank)
+        }
+      }
+
+      renderedMarkers[marker.id] = marker
     }
 
     if (showsUserLocation) {
@@ -249,14 +290,20 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
         )
         .also { userLocationStyle = it }
 
-      layer.addLabel(
-        LabelOptions.from(
-          USER_LOCATION_LABEL_ID,
-          LatLng.from(center.latitude, center.longitude),
+      val position = LatLng.from(center.latitude, center.longitude)
+      val currentUserLocationLabel = userLocationLabel
+      if (currentUserLocationLabel == null) {
+        userLocationLabel = layer.addLabel(
+          LabelOptions.from(USER_LOCATION_LABEL_ID, position)
+            .setStyles(currentLocationStyle)
+            .setClickable(false),
         )
-          .setStyles(currentLocationStyle)
-          .setClickable(false),
-      )
+      } else {
+        currentUserLocationLabel.moveTo(position)
+      }
+    } else {
+      userLocationLabel?.remove()
+      userLocationLabel = null
     }
   }
 
@@ -288,6 +335,9 @@ class GachiKakaoMapView(context: Context, appContext: AppContext) : ExpoView(con
     private const val SELECTED_STORE_MARKER_STYLE_ID = "gachi-selected-store-marker"
     private const val USER_LOCATION_STYLE_ID = "gachi-user-location-marker"
     private const val USER_LOCATION_LABEL_ID = "current-user-location"
+    private const val STORE_MARKER_RANK = 0L
+    private const val SELECTED_MARKER_RANK = 1L
+    private const val SELECTED_MARKER_ANCHOR_Y = 0.63f
 
     @Volatile
     private var sdkInitialized = false
