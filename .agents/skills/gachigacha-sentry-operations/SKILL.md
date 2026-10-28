@@ -7,11 +7,14 @@ description: Plan, implement, review, or operate Sentry for the GachiGacha front
 
 Use this workflow to keep frontend error monitoring actionable, privacy-safe, and sustainable.
 
-## Required reading
+## Load only the context the task needs
 
-1. Read [references/monitoring-policy.md](references/monitoring-policy.md) completely before any Sentry task.
-2. Read [`frontend/docs/error-tracking.md`](../../../frontend/docs/error-tracking.md) before changing code, build settings, GitHub Environment values, or alerts.
-3. For initial account or project connection, also read [references/setup-runbook.md](references/setup-runbook.md) completely.
+Do not read every Sentry document by default. Route the task first, then read the selected reference completely.
+
+- Initial project connection, DSN, auth token, GitHub Environment, or first verification: read [references/setup-runbook.md](references/setup-runbook.md).
+- SDK code, build settings, source maps, capture helpers, or repository privacy implementation: read [`frontend/docs/error-tracking.md`](../../../frontend/docs/error-tracking.md).
+- Filtering, grouping, fingerprints, alerts, quota, severity, incident triage, or dashboard operation: read [references/monitoring-policy.md](references/monitoring-policy.md).
+- A task that spans multiple categories may require multiple references. A small capture-site fix or explanation does not require unrelated setup or dashboard documents.
 
 ## Workflow
 
