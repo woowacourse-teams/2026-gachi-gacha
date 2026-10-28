@@ -9,6 +9,7 @@ import {
   useParams,
 } from 'react-router';
 
+import { normalizeAuthReturnPath } from '@/features/auth/authReturnPath';
 import {
   OAUTH_CALLBACK_PATH_PREFIX,
   OAUTH_REDIRECT_CALLBACK_PATH,
@@ -140,17 +141,11 @@ const TRADE_ID_PATTERN = /^[1-9]\d*$/;
 
 function RedirectToEntry() {
   const { search, hash } = useLocation();
-
-  return (
-    <Navigate
-      replace
-      to={{
-        pathname: ENTRY_PATH,
-        search,
-        hash,
-      }}
-    />
+  const safeEntryPath = normalizeAuthReturnPath(
+    `${ENTRY_PATH}${search}${hash}`,
   );
+
+  return <Navigate replace to={safeEntryPath} />;
 }
 
 function CategorySearchRoute() {
