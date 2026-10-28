@@ -74,9 +74,12 @@ export function useTrades(keyword: string, tradeStatus: TradeStatus | null) {
     }
   }, [isLoadingMore, keyword, loadMoreErrorMessage, page, status, tradeStatus]);
 
+  const refresh = useCallback(() => loadFirstPage(true), [loadFirstPage]);
+  const retry = useCallback(() => loadFirstPage(), [loadFirstPage]);
+  const retryLoadMore = useCallback(() => loadMore(true), [loadMore]);
+
   return {
     status, items, errorMessage, isRefreshing, isLoadingMore, loadMoreErrorMessage,
-    refresh: () => loadFirstPage(true), retry: () => loadFirstPage(), loadMore,
-    retryLoadMore: () => loadMore(true),
+    refresh, retry, loadMore, retryLoadMore,
   };
 }

@@ -1,5 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { type NavigationProp, useNavigation } from '@react-navigation/native';
+import { type NavigationProp, useIsFocused, useNavigation } from '@react-navigation/native';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -23,7 +23,11 @@ import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import { UserSafetyMenu } from '../domains/memberSafety/UserSafetyMenu';
 import { RelatedTradesSection } from '../domains/trade/RelatedTradesSection';
 import { TradeCommentsSection } from '../domains/trade/TradeCommentsSection';
-import { getTradeDetail } from '../domains/trade/tradeApi';
+import {
+  deleteTrade,
+  getTradeDetail,
+  updateTradeStatus,
+} from '../domains/trade/tradeApi';
 import type { TradeDetail, TradePlace } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
 import type { RootStackParamList } from '../navigation/RootStack';
@@ -37,15 +41,18 @@ const statusLabel = { AVAILABLE: '교환 가능', IN_PROGRESS: '교환 진행 �
 
 export function TradeDetailScreen({ navigation, route }: Props) {
   const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const isFocused = useIsFocused();
   const scrollRef = useRef<ScrollView>(null);
   const { memberId, status: authStatus } = useAuthSession();
   const { isMemberBlocked } = useMemberSafety();
   const [attempt, setAttempt] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isUpdatingOwnerAction, setIsUpdatingOwnerAction] = useState(false);
   const [state, setState] = useState<State>({ status: 'loading', data: null, message: null });
 
   useEffect(() => {
+    if (!isFocused) return;
     const controller = new AbortController();
     setState({ status: 'loading', data: null, message: null });
     getTradeDetail(route.params.tradeId, controller.signal)
@@ -54,7 +61,7 @@ export function TradeDetailScreen({ navigation, route }: Props) {
         if (!controller.signal.aborted) setState({ status: 'error', data: null, message: error instanceof Error ? error.message : '교환글을 불러오지 못했습니다.' });
       });
     return () => controller.abort();
-  }, [attempt, route.params.tradeId]);
+  }, [attempt, isFocused, route.params.tradeId]);
 
   if (state.status === 'loading') return <View style={styles.center}><ActivityIndicator color={colors.primary} size="large" /></View>;
   if (state.status === 'error' || !state.data) return <View style={styles.center}><Text style={styles.muted}>{state.message}</Text><Pressable style={styles.retry} onPress={() => setAttempt((value) => value + 1)}><Text style={styles.retryText}>다시 시도</Text></Pressable></View>;
@@ -125,6 +132,42 @@ export function TradeDetailScreen({ navigation, route }: Props) {
     } finally {
       setIsStartingChat(false);
     }
+  }
+
+  async function changeStatus(status: TradeDetail['status']) {
+    if (isUpdatingOwnerAction || trade.status === status) return;
+    setIsUpdatingOwnerAction(true);
+    try {
+      const updated = await updateTradeStatus(trade.tradeId, status);
+      setState({ status: 'success', data: updated, message: null });
+    } catch (error) {
+      Alert.alert(
+        '교환 상태를 바꾸지 못했어요',
+        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsUpdatingOwnerAction(false);
+    }
+  }
+
+  function confirmDelete() {
+    Alert.alert('교환글을 삭제할까요?', '삭제한 글은 복구할 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '삭제',
+        style: 'destructive',
+        onPress: () => {
+          setIsUpdatingOwnerAction(true);
+          void deleteTrade(trade.tradeId)
+            .then(() => navigation.goBack())
+            .catch((error: unknown) => Alert.alert(
+              '교환글을 삭제하지 못했어요',
+              error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+            ))
+            .finally(() => setIsUpdatingOwnerAction(false));
+        },
+      },
+    ]);
   }
 
   return (
@@ -219,6 +262,30 @@ export function TradeDetailScreen({ navigation, route }: Props) {
           </View>
         ))}
       </View>
+      {authStatus === 'authenticated' && memberId === trade.memberId && (
+        <View style={styles.ownerPanel}>
+          <Text style={styles.ownerTitle}>내 교환글 관리</Text>
+          <Text style={styles.currentStatus}>현재 상태 · {statusLabel[trade.status]}</Text>
+          {trade.status !== 'COMPLETED' && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isUpdatingOwnerAction}
+              onPress={() => void changeStatus(
+                trade.status === 'AVAILABLE' ? 'IN_PROGRESS' : 'COMPLETED',
+              )}
+              style={styles.statusButton}
+            >
+              <Text style={styles.statusButtonText}>
+                {trade.status === 'AVAILABLE' ? '예약 확정' : '거래 완료'}
+              </Text>
+            </Pressable>
+          )}
+          <View style={styles.ownerButtonRow}>
+            <Pressable accessibilityRole="button" disabled={isUpdatingOwnerAction} onPress={() => navigation.navigate('TradeEdit', { tradeId: trade.tradeId })} style={styles.editTradeButton}><Text style={styles.editTradeText}>수정</Text></Pressable>
+            <Pressable accessibilityRole="button" disabled={isUpdatingOwnerAction} onPress={confirmDelete} style={styles.deleteTradeButton}><Text style={styles.deleteTradeText}>삭제</Text></Pressable>
+          </View>
+        </View>
+      )}
       {authStatus === 'authenticated' && memberId !== null && memberId !== trade.memberId && (
         <Pressable
           accessibilityRole="button"
@@ -290,4 +357,14 @@ const styles = StyleSheet.create({
   mapButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
   chatButton: { minHeight: 50, marginTop: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, backgroundColor: colors.primary },
   chatButtonText: { color: colors.background, fontSize: 15, fontWeight: '800' },
+  ownerPanel: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.background },
+  ownerTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  currentStatus: { marginTop: 10, color: colors.textMuted, fontSize: 12, fontWeight: '700' },
+  statusButton: { minHeight: 42, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary },
+  statusButtonText: { color: colors.background, fontSize: 13, fontWeight: '800' },
+  ownerButtonRow: { marginTop: 14, flexDirection: 'row', gap: 10 },
+  editTradeButton: { minHeight: 42, flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 13 },
+  editTradeText: { color: colors.primary, fontWeight: '800' },
+  deleteTradeButton: { minHeight: 42, flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primarySoft },
+  deleteTradeText: { color: colors.primary, fontWeight: '800' },
 });
