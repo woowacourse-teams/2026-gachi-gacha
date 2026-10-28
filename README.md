@@ -63,7 +63,8 @@
 평균 가격도 참고할 수 있어요.
 
 ### 원하는 가챠를 사용자끼리 교환해보세요 📦
-<img width="1510" height="819" alt="image" src="https://github.com/user-attachments/assets/cf7412c6-f436-40c2-bdca-bb38869095e1" />
+<img width="1374" height="746" alt="스마트 업무 개선 프로젝트" src="https://github.com/user-attachments/assets/05b61e82-f194-44e7-8415-bf6091991fb9" />
+
 
 다른 사람이 뽑은 가챠를 확인하고,
 내가 가지고 있는 가챠와 교환해보세요.
