@@ -452,6 +452,39 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(window.location.hash).toBe('#results');
   });
 
+  it('잘못된 URL의 인증 파라미터는 거래/교환 화면으로 전달하지 않는다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route:
+        '/unknown-page?from=shared-link&code=secret#accessToken=secret&refreshToken=refresh-secret',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 거래글을 찾아볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+    expect(window.location.search).toBe('?from=shared-link');
+    expect(window.location.hash).toBe('');
+  });
+
   it('검색 URL에서 카테고리별 가챠 탐색 화면을 보여준다', async () => {
     server.use(
       http.get('/api/v1/categories', () =>
