@@ -16,6 +16,7 @@ import {
 import { ImageViewerModal } from '../components/ImageViewerModal';
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
 import { ShareIcon } from '../components/ShareIcon';
+import { AffiliateCatalogPlacement } from '../domains/affiliate/AffiliateCatalogPlacement';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import { createChatRoom, findChatRoomByTrade } from '../domains/chat/chatApi';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
@@ -235,6 +236,11 @@ export function TradeDetailScreen({ navigation, route }: Props) {
       <TradeCommentsSection
         onComposerFocus={revealCommentComposer}
         tradeId={trade.tradeId}
+      />
+      <AffiliateCatalogPlacement
+        categoryNames={trade.categories}
+        placementPath="/trade"
+        title={trade.title}
       />
       <RelatedTradesSection
         onSelectTrade={(tradeId) => navigation.push('TradeDetail', { tradeId })}
