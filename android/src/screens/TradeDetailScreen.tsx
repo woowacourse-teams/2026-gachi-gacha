@@ -265,23 +265,21 @@ export function TradeDetailScreen({ navigation, route }: Props) {
       {authStatus === 'authenticated' && memberId === trade.memberId && (
         <View style={styles.ownerPanel}>
           <Text style={styles.ownerTitle}>내 교환글 관리</Text>
-          <View style={styles.statusActions}>
-            {Object.entries(statusLabel).map(([status, label]) => {
-              const selected = trade.status === status;
-              return (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  disabled={isUpdatingOwnerAction}
-                  key={status}
-                  onPress={() => void changeStatus(status as TradeDetail['status'])}
-                  style={[styles.statusButton, selected && styles.statusButtonSelected]}
-                >
-                  <Text style={[styles.statusButtonText, selected && styles.statusButtonTextSelected]}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Text style={styles.currentStatus}>현재 상태 · {statusLabel[trade.status]}</Text>
+          {trade.status !== 'COMPLETED' && (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isUpdatingOwnerAction}
+              onPress={() => void changeStatus(
+                trade.status === 'AVAILABLE' ? 'IN_PROGRESS' : 'COMPLETED',
+              )}
+              style={styles.statusButton}
+            >
+              <Text style={styles.statusButtonText}>
+                {trade.status === 'AVAILABLE' ? '예약 확정' : '거래 완료'}
+              </Text>
+            </Pressable>
+          )}
           <View style={styles.ownerButtonRow}>
             <Pressable accessibilityRole="button" disabled={isUpdatingOwnerAction} onPress={() => navigation.navigate('TradeEdit', { tradeId: trade.tradeId })} style={styles.editTradeButton}><Text style={styles.editTradeText}>수정</Text></Pressable>
             <Pressable accessibilityRole="button" disabled={isUpdatingOwnerAction} onPress={confirmDelete} style={styles.deleteTradeButton}><Text style={styles.deleteTradeText}>삭제</Text></Pressable>
@@ -361,11 +359,9 @@ const styles = StyleSheet.create({
   chatButtonText: { color: colors.background, fontSize: 15, fontWeight: '800' },
   ownerPanel: { marginTop: 22, padding: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 18, backgroundColor: colors.background },
   ownerTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
-  statusActions: { marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  statusButton: { minHeight: 38, paddingHorizontal: 12, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 19 },
-  statusButtonSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
-  statusButtonText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
-  statusButtonTextSelected: { color: colors.background },
+  currentStatus: { marginTop: 10, color: colors.textMuted, fontSize: 12, fontWeight: '700' },
+  statusButton: { minHeight: 42, marginTop: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: colors.primary },
+  statusButtonText: { color: colors.background, fontSize: 13, fontWeight: '800' },
   ownerButtonRow: { marginTop: 14, flexDirection: 'row', gap: 10 },
   editTradeButton: { minHeight: 42, flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 13 },
   editTradeText: { color: colors.primary, fontWeight: '800' },
