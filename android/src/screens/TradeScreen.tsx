@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
@@ -30,10 +31,21 @@ export function TradeScreen({ navigation }: Props) {
   const { status: authStatus } = useAuthSession();
   const { blockedMemberIds } = useMemberSafety();
   const trades = useTrades(keyword, tradeStatus);
+  const hasFocusedOnce = useRef(false);
+  const refreshTradesRef = useRef(trades.refresh);
+  refreshTradesRef.current = trades.refresh;
   const { width } = useWindowDimensions();
   const cardWidth = (width - CONTENT_HORIZONTAL_PADDING * 2 - CARD_GAP) / 2;
   const selectedStatusLabel = statusFilters.find(({ value }) => value === tradeStatus)?.label ?? '전체';
   const visibleTrades = trades.items.filter(({ memberId }) => !blockedMemberIds.has(memberId));
+
+  useFocusEffect(useCallback(() => {
+    if (hasFocusedOnce.current) {
+      void refreshTradesRef.current();
+    } else {
+      hasFocusedOnce.current = true;
+    }
+  }, []));
 
   return (
     <View style={styles.screen}>
@@ -61,13 +73,22 @@ export function TradeScreen({ navigation }: Props) {
           <View style={styles.header}>
             <Text style={styles.heading}>어떤 거래글을 찾아볼까요?</Text>
             {authStatus === 'authenticated' && (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => navigation.navigate('BlockedMembers')}
-                style={({ pressed }) => [styles.blockManagementButton, pressed && styles.blockManagementPressed]}
-              >
-                <Text style={styles.blockManagementText}>차단 관리</Text>
-              </Pressable>
+              <View style={styles.memberActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => navigation.navigate('BlockedMembers')}
+                  style={({ pressed }) => [styles.blockManagementButton, pressed && styles.blockManagementPressed]}
+                >
+                  <Text style={styles.blockManagementText}>차단 관리</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => navigation.navigate('TradeCreate')}
+                  style={({ pressed }) => [styles.createButton, pressed && styles.searchPressed]}
+                >
+                  <Text style={styles.createButtonText}>교환글 쓰기</Text>
+                </Pressable>
+              </View>
             )}
             <View style={styles.searchRow}>
               <TextInput
@@ -171,9 +192,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
   },
-  blockManagementButton: { minHeight: 40, marginTop: 8, alignSelf: 'flex-end', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
+  memberActions: { marginTop: 10, flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
+  blockManagementButton: { minHeight: 40, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
   blockManagementPressed: { backgroundColor: colors.primarySoft },
   blockManagementText: { color: colors.textMuted, fontSize: 13, fontWeight: '700' },
+  createButton: { minHeight: 40, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.primary },
+  createButtonText: { color: colors.background, fontSize: 13, fontWeight: '800' },
   searchRow: { marginTop: 18, flexDirection: 'row', gap: 8 },
   searchInput: { flex: 1, minHeight: 48, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.border, borderRadius: 16, backgroundColor: colors.background, color: colors.text, fontSize: 14 },
   searchButton: { minWidth: 64, minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: colors.primary },
