@@ -87,13 +87,13 @@ describe('Sentry 오류 수집 클라이언트', () => {
     mockedWithScope.mockImplementation(((
       callback: (currentScope: Sentry.Scope) => unknown,
     ) => callback(scope)) as never);
-    setErrorMonitoringRoute('/mypage');
+    setErrorMonitoringRoute('/trade/37');
     captureHandledError(new Error('회원 조회 실패'), {
       feature: 'auth',
       operation: 'restore_session',
       level: 'warning',
     });
-    expect(mockedSetTag).toHaveBeenCalledWith('route', '/mypage');
+    expect(mockedSetTag).toHaveBeenCalledWith('route', '/trade/:tradeId');
     expect(scope.setTag).toHaveBeenCalledWith('feature', 'auth');
     expect(mockedCaptureException).toHaveBeenCalledWith(expect.any(Error));
   });
