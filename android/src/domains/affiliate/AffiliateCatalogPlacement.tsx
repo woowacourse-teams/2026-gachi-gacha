@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RemoteImageWithFallback } from '../../components/RemoteImageWithFallback';
 import { colors } from '../../theme/colors';
@@ -64,9 +65,13 @@ function AffiliateProductCard({ product }: { product: AffiliateCatalogProduct })
 
 function AffiliateCatalogSection({
   categoryName,
+  horizontalInset = 0,
+  modal = false,
   placementPath,
 }: {
   categoryName: string;
+  horizontalInset?: number;
+  modal?: boolean;
   placementPath: PlacementProps['placementPath'];
 }) {
   const products = useMemo(
@@ -81,14 +86,17 @@ function AffiliateCatalogSection({
   if (products.length === 0) return null;
 
   return (
-    <View accessibilityLabel="네이버 쇼핑 커넥트 제휴 상품" style={styles.section}>
-      <View style={styles.titleRow}>
+    <View
+      accessibilityLabel="네이버 쇼핑 커넥트 제휴 상품"
+      style={[styles.section, modal && styles.modalSection]}
+    >
+      <View style={[styles.titleRow, { paddingHorizontal: horizontalInset }]}>
         <View style={styles.badge}><Text style={styles.badgeText}>제휴</Text></View>
         <Text style={styles.sectionTitle}>네이버 쇼핑에서 파는 {categoryName} 굿즈</Text>
       </View>
-      <Text style={styles.disclosure}>{DISCLOSURE}</Text>
+      <Text style={[styles.disclosure, { paddingHorizontal: horizontalInset }]}>{DISCLOSURE}</Text>
       <FlatList
-        contentContainerStyle={styles.productList}
+        contentContainerStyle={[styles.productList, { paddingHorizontal: horizontalInset }]}
         data={products}
         horizontal
         keyExtractor={({ id }) => id}
@@ -125,6 +133,7 @@ export function AffiliateCatalogPlacement(props: PlacementProps) {
 
 export function MapAffiliateCatalogButton(props: PlacementProps) {
   const [visible, setVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   const categoryName = useMatchingCategory(props);
   if (!categoryName) return null;
 
@@ -144,18 +153,21 @@ export function MapAffiliateCatalogButton(props: PlacementProps) {
         visible={visible}
       >
         <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
-            <Pressable
-              accessibilityLabel="제휴 상품 닫기"
-              accessibilityRole="button"
-              onPress={() => setVisible(false)}
-              style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
-            >
-              <Text style={styles.closeButtonText}>닫기</Text>
-            </Pressable>
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <View style={styles.modalHeader}>
+              <Pressable
+                accessibilityLabel="제휴 상품 닫기"
+                accessibilityRole="button"
+                onPress={() => setVisible(false)}
+                style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.closeButtonText}>닫기</Text>
+              </Pressable>
+            </View>
             <AffiliateCatalogSection
               categoryName={categoryName}
+              horizontalInset={16}
+              modal
               placementPath={props.placementPath}
             />
           </View>
@@ -174,12 +186,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  titleRow: { paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  modalSection: { marginTop: 0, borderTopWidth: 0, borderBottomWidth: 0 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   badge: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, backgroundColor: '#24253a' },
   badgeText: { color: colors.background, fontSize: 11, fontWeight: '800' },
   sectionTitle: { flex: 1, color: colors.text, fontSize: 17, fontWeight: '800', lineHeight: 23 },
-  disclosure: { marginTop: 8, paddingHorizontal: 16, color: colors.textMuted, fontSize: 12, lineHeight: 18 },
-  productList: { paddingTop: 16, paddingHorizontal: 16, gap: 12 },
+  disclosure: { marginTop: 8, color: colors.textMuted, fontSize: 12, lineHeight: 18 },
+  productList: { paddingTop: 16, gap: 12 },
   productCard: {
     width: 190,
     padding: 8,
@@ -204,8 +217,8 @@ const styles = StyleSheet.create({
   },
   mapButtonText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(20, 18, 19, 0.42)' },
-  modalSheet: { maxHeight: '72%', paddingTop: 10, paddingBottom: 28, borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.background },
-  modalHandle: { width: 42, height: 5, alignSelf: 'center', borderRadius: 3, backgroundColor: '#d5d5d8' },
-  closeButton: { minHeight: 44, paddingHorizontal: 18, alignSelf: 'flex-end', justifyContent: 'center' },
+  modalSheet: { maxHeight: '72%', overflow: 'hidden', borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: colors.background },
+  modalHeader: { height: 44, alignItems: 'flex-end', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
+  closeButton: { minHeight: 36, paddingHorizontal: 18, justifyContent: 'center' },
   closeButtonText: { color: colors.primary, fontWeight: '800' },
 });

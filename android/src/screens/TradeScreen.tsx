@@ -4,11 +4,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
+import { ScrollToTopButton } from '../components/ScrollToTopButton';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import { TradeCard } from '../domains/trade/TradeCard';
 import { useTrades } from '../domains/trade/useTrades';
-import type { TradeStatus } from '../domains/trade/tradeTypes';
+import type { TradeStatus, TradeSummary } from '../domains/trade/tradeTypes';
 import { colors } from '../theme/colors';
 import type { TradeStackParamList } from '../navigation/TradeStack';
 
@@ -25,9 +26,11 @@ const CONTENT_HORIZONTAL_PADDING = 14;
 const CARD_GAP = 12;
 
 export function TradeScreen({ navigation }: Props) {
+  const listRef = useRef<FlatList<TradeSummary>>(null);
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [tradeStatus, setTradeStatus] = useState<TradeStatus | null>(null);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
   const { status: authStatus } = useAuthSession();
   const { blockedMemberIds } = useMemberSafety();
   const trades = useTrades(keyword, tradeStatus);
@@ -51,6 +54,7 @@ export function TradeScreen({ navigation }: Props) {
     <View style={styles.screen}>
       <AppHeader />
       <FlatList
+        ref={listRef}
         data={visibleTrades}
         keyExtractor={({ tradeId }) => String(tradeId)}
         numColumns={2}
@@ -68,6 +72,10 @@ export function TradeScreen({ navigation }: Props) {
         )}
         onEndReached={() => void trades.loadMore()}
         onEndReachedThreshold={0.35}
+        onScroll={({ nativeEvent }) => {
+          setShowScrollToTop(nativeEvent.contentOffset.y > 520);
+        }}
+        scrollEventThrottle={16}
         refreshControl={<RefreshControl refreshing={trades.isRefreshing} onRefresh={() => void trades.refresh()} colors={[colors.primary]} />}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -167,6 +175,10 @@ export function TradeScreen({ navigation }: Props) {
             {trades.isLoadingMore && <ActivityIndicator color={colors.primary} style={styles.footerLoader} />}
           </View>
         }
+      />
+      <ScrollToTopButton
+        onPress={() => listRef.current?.scrollToOffset({ animated: true, offset: 0 })}
+        visible={showScrollToTop}
       />
     </View>
   );

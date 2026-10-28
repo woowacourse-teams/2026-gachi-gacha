@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import {
   ActivityIndicator,
@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 
 import { AppHeader } from '../components/AppHeader';
+import { ScrollToTopButton } from '../components/ScrollToTopButton';
 import { AffiliateCatalogPlacement } from '../domains/affiliate/AffiliateCatalogPlacement';
 import {
   DEFAULT_GACHA_CATEGORY,
   FEATURED_GACHA_CATEGORIES,
 } from '../domains/gacha/gachaCategories';
 import { GachaSearchCard } from '../domains/gacha/GachaSearchCard';
+import type { GachaSearchItem } from '../domains/gacha/gachaTypes';
 import { useCategoryGachas } from '../domains/gacha/useCategoryGachas';
 import { useGachaSearch } from '../domains/gacha/useGachaSearch';
 import type { AppTabParamList } from '../navigation/AppTabs';
@@ -30,9 +32,11 @@ const CONTENT_HORIZONTAL_PADDING = 14;
 const CARD_GAP = 12;
 
 export function SearchScreen({ navigation }: Props) {
+  const listRef = useRef<FlatList<GachaSearchItem>>(null);
   const [input, setInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(DEFAULT_GACHA_CATEGORY);
+  const [showScrollToTop, setShowScrollToTop] = useState(false);
   const search = useGachaSearch(keyword);
   const categoryFeed = useCategoryGachas(selectedCategory);
   const { width } = useWindowDimensions();
@@ -60,6 +64,7 @@ export function SearchScreen({ navigation }: Props) {
     <View style={styles.screen}>
       <AppHeader />
       <FlatList
+        ref={listRef}
         data={activeFeed.items}
         keyExtractor={({ gachaId }) => String(gachaId)}
         numColumns={2}
@@ -82,8 +87,10 @@ export function SearchScreen({ navigation }: Props) {
             />
           </View>
         )}
-        onEndReached={() => void activeFeed.loadMore()}
-        onEndReachedThreshold={0.35}
+        onScroll={({ nativeEvent }) => {
+          setShowScrollToTop(nativeEvent.contentOffset.y > 520);
+        }}
+        scrollEventThrottle={16}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.heading}>오늘은 어떤 가챠를 찾아볼까요?</Text>
@@ -179,17 +186,6 @@ export function SearchScreen({ navigation }: Props) {
         }
         ListFooterComponent={
           <View>
-            {activeFeed.loadMoreErrorMessage && activeFeed.items.length > 0 && (
-              <View style={styles.loadMoreError}>
-                <Text style={styles.stateText}>{activeFeed.loadMoreErrorMessage}</Text>
-                <Pressable onPress={() => void activeFeed.retryLoadMore()} style={styles.loadMoreRetry}>
-                  <Text style={styles.loadMoreRetryText}>다시 불러오기</Text>
-                </Pressable>
-              </View>
-            )}
-            {activeFeed.isLoadingMore && (
-              <ActivityIndicator color={colors.primary} style={styles.footerLoader} />
-            )}
             {activeFeed.status === 'success' && (
               <AffiliateCatalogPlacement
                 categoryNames={affiliateCategoryNames}
@@ -197,8 +193,43 @@ export function SearchScreen({ navigation }: Props) {
                 title={isSearching ? keyword : undefined}
               />
             )}
+            {activeFeed.loadMoreErrorMessage && activeFeed.items.length > 0 && (
+              <View style={styles.loadMoreError}>
+                <Text style={styles.stateText}>{activeFeed.loadMoreErrorMessage}</Text>
+              </View>
+            )}
+            {activeFeed.hasMore && (
+              <Pressable
+                accessibilityRole="button"
+                disabled={activeFeed.isLoadingMore}
+                onPress={() => void (
+                  activeFeed.loadMoreErrorMessage
+                    ? activeFeed.retryLoadMore()
+                    : activeFeed.loadMore()
+                )}
+                style={({ pressed }) => [
+                  styles.moreButton,
+                  (pressed || activeFeed.isLoadingMore) && styles.moreButtonPressed,
+                ]}
+              >
+                {activeFeed.isLoadingMore && (
+                  <ActivityIndicator color={colors.primary} size="small" />
+                )}
+                <Text style={styles.moreButtonText}>
+                  {activeFeed.isLoadingMore
+                    ? '불러오는 중...'
+                    : activeFeed.loadMoreErrorMessage
+                      ? '가챠 다시 불러오기'
+                      : '가챠 더보기'}
+                </Text>
+              </Pressable>
+            )}
           </View>
         }
+      />
+      <ScrollToTopButton
+        onPress={() => listRef.current?.scrollToOffset({ animated: true, offset: 0 })}
+        visible={showScrollToTop}
       />
     </View>
   );
@@ -284,8 +315,21 @@ const styles = StyleSheet.create({
   retryButton: { minHeight: 44, paddingHorizontal: 20, justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },
   retryText: { color: colors.background, fontWeight: '700' },
   emptyText: { paddingVertical: 72, color: colors.textMuted, textAlign: 'center', lineHeight: 22 },
-  footerLoader: { marginVertical: 20 },
   loadMoreError: { marginVertical: 20, alignItems: 'center', gap: 10 },
-  loadMoreRetry: { minHeight: 40, paddingHorizontal: 16, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.primary },
-  loadMoreRetryText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  moreButton: {
+    minHeight: 46,
+    marginTop: 18,
+    paddingHorizontal: 18,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 23,
+    backgroundColor: colors.background,
+  },
+  moreButtonPressed: { backgroundColor: colors.primarySoft },
+  moreButtonText: { color: colors.primary, fontSize: 13, fontWeight: '800' },
 });
