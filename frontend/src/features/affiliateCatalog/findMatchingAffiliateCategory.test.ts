@@ -52,7 +52,7 @@ describe('findMatchingAffiliateCategory', () => {
     ).toBe('치이카와');
   });
 
-  it('카테고리 배열에 없어도 제목의 독립된 단어와 정확히 일치하면 찾는다', () => {
+  it('카테고리 배열에 없어도 제목에 카테고리명이 포함되면 찾는다', () => {
     expect(
       findMatchingAffiliateCategory({
         catalog: CATALOG,
@@ -63,12 +63,23 @@ describe('findMatchingAffiliateCategory', () => {
     ).toBe('치이카와');
   });
 
-  it('제목 일부에만 포함되거나 해당 위치에 상품이 없으면 노출하지 않는다', () => {
+  it('카테고리명이 제목의 합성어에 포함되어도 찾는다', () => {
     expect(
       findMatchingAffiliateCategory({
         catalog: CATALOG,
         categoryNames: [],
         title: '치이카와풍 키링 교환해요',
+        placementPath: '/trade',
+      }),
+    ).toBe('치이카와');
+  });
+
+  it('제목과 카테고리가 무관하거나 해당 위치에 상품이 없으면 노출하지 않는다', () => {
+    expect(
+      findMatchingAffiliateCategory({
+        catalog: CATALOG,
+        categoryNames: [],
+        title: '포켓몬 키링 교환해요',
         placementPath: '/trade',
       }),
     ).toBeNull();

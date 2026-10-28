@@ -93,6 +93,9 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
             ? selectedGacha.data.categories
             : []
         }
+        affiliateTitle={
+          selectedGacha.status === 'success' ? selectedGacha.data.name : ''
+        }
         storesState={storesState}
         isSearchAreaChanged={isSearchAreaChanged}
         onOpenStore={openStoreDetail}
