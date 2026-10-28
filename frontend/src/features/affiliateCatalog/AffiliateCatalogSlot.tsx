@@ -43,7 +43,7 @@ function loadAffiliateCatalogRuntime() {
  */
 export function AffiliateCatalogSlot(props: AffiliateCatalogSlotProps) {
   const [Runtime, setRuntime] =
-    useState<AffiliateCatalogRuntimeComponent | null>(loadedRuntime);
+    useState<AffiliateCatalogRuntimeComponent | null>(() => loadedRuntime);
 
   useEffect(() => {
     if (!__AFFILIATE_CATALOG_ENABLED__ || Runtime) return;
