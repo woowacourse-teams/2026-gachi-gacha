@@ -1,4 +1,5 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { type NavigationProp, useNavigation } from '@react-navigation/native';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,14 +16,16 @@ import {
 import { ImageViewerModal } from '../components/ImageViewerModal';
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
 import { ShareIcon } from '../components/ShareIcon';
-import { TradeCommentsSection } from '../domains/trade/TradeCommentsSection';
-import { RelatedTradesSection } from '../domains/trade/RelatedTradesSection';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
+import { createChatRoom, findChatRoomByTrade } from '../domains/chat/chatApi';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import { UserSafetyMenu } from '../domains/memberSafety/UserSafetyMenu';
+import { RelatedTradesSection } from '../domains/trade/RelatedTradesSection';
+import { TradeCommentsSection } from '../domains/trade/TradeCommentsSection';
 import { getTradeDetail } from '../domains/trade/tradeApi';
 import type { TradeDetail, TradePlace } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
+import type { RootStackParamList } from '../navigation/RootStack';
 import { openDirections, sharePublicPage } from '../shared/nativeActions';
 import { colors } from '../theme/colors';
 
@@ -32,11 +35,13 @@ type State = { status: 'loading' | 'error' | 'success'; data: TradeDetail | null
 const statusLabel = { AVAILABLE: '교환 가능', IN_PROGRESS: '교환 진행 중', COMPLETED: '교환 완료' } as const;
 
 export function TradeDetailScreen({ navigation, route }: Props) {
+  const rootNavigation = useNavigation<NavigationProp<RootStackParamList>>();
   const scrollRef = useRef<ScrollView>(null);
   const { memberId, status: authStatus } = useAuthSession();
   const { isMemberBlocked } = useMemberSafety();
   const [attempt, setAttempt] = useState(0);
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  const [isStartingChat, setIsStartingChat] = useState(false);
   const [state, setState] = useState<State>({ status: 'loading', data: null, message: null });
 
   useEffect(() => {
@@ -102,6 +107,23 @@ export function TradeDetailScreen({ navigation, route }: Props) {
   function revealCommentComposer() {
     scrollRef.current?.scrollToEnd({ animated: true });
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220);
+  }
+
+  async function enterChat() {
+    if (isStartingChat) return;
+    setIsStartingChat(true);
+    try {
+      const existingRoomId = await findChatRoomByTrade(trade.tradeId);
+      const roomId = existingRoomId ?? await createChatRoom(trade.tradeId);
+      rootNavigation.navigate('ChatRoom', { roomId });
+    } catch (error) {
+      Alert.alert(
+        '채팅방에 입장하지 못했어요',
+        error instanceof Error ? error.message : '잠시 후 다시 시도해 주세요.',
+      );
+    } finally {
+      setIsStartingChat(false);
+    }
   }
 
   return (
@@ -196,6 +218,20 @@ export function TradeDetailScreen({ navigation, route }: Props) {
           </View>
         ))}
       </View>
+      {authStatus === 'authenticated' && memberId !== null && memberId !== trade.memberId && (
+        <Pressable
+          accessibilityRole="button"
+          disabled={isStartingChat}
+          onPress={() => void enterChat()}
+          style={({ pressed }) => [
+            styles.chatButton,
+            (pressed || isStartingChat) && styles.shareButtonPressed,
+          ]}
+        >
+          {isStartingChat && <ActivityIndicator color={colors.background} size="small" />}
+          <Text style={styles.chatButtonText}>{isStartingChat ? '채팅방 확인 중...' : '채팅하기'}</Text>
+        </Pressable>
+      )}
       <TradeCommentsSection
         onComposerFocus={revealCommentComposer}
         tradeId={trade.tradeId}
@@ -246,4 +282,6 @@ const styles = StyleSheet.create({
   mapButton: { minHeight: 40, marginTop: 4, alignSelf: 'flex-start', paddingHorizontal: 15, justifyContent: 'center', borderWidth: 1, borderColor: colors.primary, borderRadius: 12, backgroundColor: colors.background },
   mapButtonPressed: { backgroundColor: colors.primarySoft },
   mapButtonText: { color: colors.primary, fontSize: 13, fontWeight: '700' },
+  chatButton: { minHeight: 50, marginTop: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 16, backgroundColor: colors.primary },
+  chatButtonText: { color: colors.background, fontSize: 15, fontWeight: '800' },
 });
