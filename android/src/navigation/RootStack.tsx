@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { getPublicWebFeature, type PublicWebFeature } from '../config/web';
 import { AccountScreen } from '../screens/AccountScreen';
 import { BlockedMembersScreen } from '../screens/BlockedMembersScreen';
+import { MyTradesScreen } from '../screens/MyTradesScreen';
 import { PublicWebFeatureScreen } from '../screens/PublicWebFeatureScreen';
 import { colors } from '../theme/colors';
 import { AppTabs, type AppTabParamList } from './AppTabs';
@@ -12,6 +13,7 @@ export type RootStackParamList = {
   Main: NavigatorScreenParams<AppTabParamList> | undefined;
   Account: undefined;
   BlockedMembers: undefined;
+  MyTrades: undefined;
   PublicWebFeature: { feature: PublicWebFeature };
 };
 
@@ -29,7 +31,7 @@ export function RootStack() {
         component={AccountScreen}
         name="Account"
         options={{
-          title: '내 정보',
+          title: '마이페이지',
           headerShadowVisible: false,
           headerTintColor: colors.text,
         }}
@@ -39,6 +41,15 @@ export function RootStack() {
         name="BlockedMembers"
         options={{
           title: '차단한 사용자',
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+        }}
+      />
+      <Stack.Screen
+        component={MyTradesScreen}
+        name="MyTrades"
+        options={{
+          title: '내 교환글',
           headerShadowVisible: false,
           headerTintColor: colors.text,
         }}

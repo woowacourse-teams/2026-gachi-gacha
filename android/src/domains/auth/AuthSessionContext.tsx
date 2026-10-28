@@ -14,9 +14,15 @@ import {
   logoutAuthSession,
   refreshAuthTokensOnce,
   subscribeToAuthenticationExpired,
+  updateCurrentMember,
 } from './authApi';
 import { clearAuthTokens, readAuthTokens, storeAuthTokens } from './authTokenStorage';
-import type { AuthMember, AuthStatus, AuthTokens } from './authTypes';
+import type {
+  AuthMember,
+  AuthStatus,
+  AuthTokens,
+  UpdateAuthMemberInput,
+} from './authTypes';
 
 interface AuthSessionState {
   status: AuthStatus;
@@ -29,6 +35,7 @@ interface AuthSessionValue extends AuthSessionState {
   authenticate: (tokens: AuthTokens) => Promise<void>;
   logout: () => Promise<void>;
   retry: () => void;
+  updateProfile: (input: UpdateAuthMemberInput) => Promise<void>;
 }
 
 const GUEST_STATE: AuthSessionState = {
@@ -192,9 +199,17 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
     void restoreSession();
   }, [restoreSession]);
 
+  const updateProfile = useCallback(async (input: UpdateAuthMemberInput) => {
+    const member = await updateCurrentMember(input);
+    setState((current) => {
+      if (current.status !== 'authenticated') return current;
+      return { ...current, member };
+    });
+  }, []);
+
   const value = useMemo<AuthSessionValue>(
-    () => ({ ...state, authenticate, logout, retry }),
-    [authenticate, logout, retry, state],
+    () => ({ ...state, authenticate, logout, retry, updateProfile }),
+    [authenticate, logout, retry, state, updateProfile],
   );
 
   return (

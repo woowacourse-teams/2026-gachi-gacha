@@ -7,8 +7,10 @@ const MAX_ANDROID_VERSION_CODE = 2_100_000_000;
 const PRODUCTION_BLOCKED_PERMISSIONS = [
   'android.permission.ACCESS_COARSE_LOCATION',
   'android.permission.ACCESS_FINE_LOCATION',
+  'android.permission.CAMERA',
   'android.permission.READ_EXTERNAL_STORAGE',
   'android.permission.READ_MEDIA_IMAGES',
+  'android.permission.RECORD_AUDIO',
   'android.permission.SYSTEM_ALERT_WINDOW',
   'android.permission.VIBRATE',
   'android.permission.WRITE_EXTERNAL_STORAGE',
@@ -120,6 +122,10 @@ function createConfig({ config }) {
       predictiveBackGestureEnabled: true,
     },
     plugins: [
+      [
+        'expo-image-picker',
+        { microphonePermission: false },
+      ],
       [
         'expo-secure-store',
         { configureAndroidBackup: true },

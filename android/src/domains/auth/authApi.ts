@@ -1,6 +1,11 @@
 import { getApiBaseUrl } from '../../config/api';
 import { clearAuthTokens, readAuthTokens, storeAuthTokens } from './authTokenStorage';
-import type { AuthMember, AuthTokens } from './authTypes';
+import type {
+  AuthMember,
+  AuthTokens,
+  ProfileImageUpload,
+  UpdateAuthMemberInput,
+} from './authTypes';
 
 const JSON_CONTENT_TYPE = 'application/json';
 
@@ -61,7 +66,11 @@ function parseTokens(value: unknown): AuthTokens {
 }
 
 function parseMember(value: unknown): AuthMember {
-  if (!isRecord(value) || value.code !== 'C000' || !isRecord(value.data)) {
+  if (
+    !isRecord(value) ||
+    (value.code !== 'C000' && value.code !== 'C002') ||
+    !isRecord(value.data)
+  ) {
     throw new Error(readApiMessage(value, '사용자 정보 응답 형식이 올바르지 않습니다.'));
   }
 
@@ -82,6 +91,22 @@ function parseMember(value: unknown): AuthMember {
     profileImageUrl: value.data.profileImageUrl,
     desireTradeLocation: value.data.desireTradeLocation,
   };
+}
+
+function parseUploadedProfileImageUrl(value: unknown): string {
+  if (
+    !isRecord(value) ||
+    value.code !== 'C000' ||
+    !isRecord(value.data) ||
+    !Array.isArray(value.data.files) ||
+    value.data.files.length !== 1 ||
+    !isRecord(value.data.files[0]) ||
+    !isNonBlankString(value.data.files[0].url)
+  ) {
+    throw new Error('프로필 사진 업로드 응답 형식이 올바르지 않습니다.');
+  }
+
+  return value.data.files[0].url.trim();
 }
 
 export function isUnauthorizedAuthError(error: unknown): boolean {
@@ -106,6 +131,54 @@ export async function getCurrentMember(
   }
 
   return parseMember(body);
+}
+
+export async function updateCurrentMember(
+  input: UpdateAuthMemberInput,
+): Promise<AuthMember> {
+  const response = await authenticatedFetch('/api/v1/members/me', {
+    method: 'PATCH',
+    headers: { 'Content-Type': JSON_CONTENT_TYPE },
+    body: JSON.stringify(input),
+  });
+  const body = await readJsonResponse(response, '회원 정보를 수정하지 못했습니다.');
+
+  if (!response.ok) {
+    throw new AuthApiError(
+      readApiMessage(body, '회원 정보를 수정하지 못했습니다.'),
+      response.status,
+    );
+  }
+
+  return parseMember(body);
+}
+
+export async function uploadProfileImage(
+  image: ProfileImageUpload,
+): Promise<string> {
+  const formData = new FormData();
+  formData.append(
+    'files',
+    {
+      uri: image.uri,
+      name: image.fileName,
+      type: image.mimeType,
+    } as unknown as Blob,
+  );
+  const response = await authenticatedFetch('/api/v1/files', {
+    method: 'POST',
+    body: formData,
+  });
+  const body = await readJsonResponse(response, '프로필 사진을 업로드하지 못했습니다.');
+
+  if (!response.ok) {
+    throw new AuthApiError(
+      readApiMessage(body, '프로필 사진을 업로드하지 못했습니다.'),
+      response.status,
+    );
+  }
+
+  return parseUploadedProfileImageUrl(body);
 }
 
 const pendingRefreshes = new Map<string, Promise<AuthTokens>>();

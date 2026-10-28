@@ -1,6 +1,7 @@
 export const PUBLIC_WEB_BASE_URL = 'https://gachigacha.kro.kr';
 export const PRIVACY_POLICY_URL = `${PUBLIC_WEB_BASE_URL}/privacy`;
 export const ACCOUNT_DELETION_URL = `${PUBLIC_WEB_BASE_URL}/account-deletion`;
+export const SUPPORT_INSTAGRAM_URL = 'https://www.instagram.com/gachi__.gacha/';
 
 export type PublicWebFeature = 'privacyPolicy';
 
