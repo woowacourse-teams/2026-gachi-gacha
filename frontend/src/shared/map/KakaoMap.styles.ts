@@ -1,0 +1,120 @@
+import { keyframes } from '@emotion/react';
+import styled from '@emotion/styled';
+
+const pulse = keyframes`
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.88);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+`;
+
+export const MapFrame = styled.section`
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  min-height: 360px;
+  height: 100%;
+  border: 1px solid rgb(36 33 34 / 10%);
+  border-radius: 20px;
+  background: var(--color-surface-muted, #f3f1ed);
+  box-shadow: 0 8px 28px rgb(36 33 34 / 9%);
+
+  @media (max-width: 767px) {
+    min-height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+`;
+
+export const MapCanvas = styled.div`
+  position: absolute;
+  inset: 0;
+`;
+
+export const MapControls = styled.div`
+  position: absolute;
+  right: 18px;
+  bottom: var(--map-controls-bottom, 18px);
+  z-index: 2;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+`;
+
+export const LocationErrorMessage = styled.p`
+  max-width: min(280px, calc(100vw - 72px));
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid rgb(217 59 84 / 18%);
+  border-radius: 12px;
+  background: var(--color-surface, #ffffff);
+  box-shadow: 0 5px 16px rgb(36 33 34 / 12%);
+  color: var(--color-primary, #d93b54);
+  font-size: 13px;
+  line-height: 1.5;
+`;
+
+export const StatusLayer = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgb(243 241 237 / 88%);
+  color: var(--color-text-muted, #777173);
+  text-align: center;
+`;
+
+export const StatusContent = styled.div`
+  display: grid;
+  max-width: 320px;
+  justify-items: center;
+  gap: 14px;
+`;
+
+export const LoadingDot = styled.span`
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary, #d93b54);
+  animation: ${pulse} 1.1s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
+export const StatusMessage = styled.p`
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+`;
+
+export const RetryButton = styled.button`
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--color-primary, #d93b54);
+  border-radius: 999px;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-primary, #d93b54);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-primary-soft, #fbf0f2);
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(217 59 84 / 24%);
+    outline-offset: 2px;
+  }
+`;

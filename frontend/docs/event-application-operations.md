@@ -1,0 +1,207 @@
+# 이벤트 응모 운영 가이드
+
+## 현재 프론트 계약
+
+응모 페이지는 다음 JSON을 `EVENT_APPLICATION_ENDPOINT`에 `POST`합니다.
+
+```json
+{
+  "eventId": "popular-goods-giveaway-2026",
+  "memberId": "37",
+  "desiredTrack": "BOTH",
+  "instagramId": "gachi__.gacha",
+  "tradeId": 153,
+  "tradeUrl": "https://gachigacha.kro.kr/trade/153",
+  "completedTradeId": 207,
+  "completedTradeUrl": "https://gachigacha.kro.kr/trade/207",
+  "privacyConsent": true
+}
+```
+
+`desiredTrack`은 화면의 이벤트 A/B 트랙을 각각 `BASIC`, `COMPLETED`로,
+두 트랙 모두 응모는 `BOTH`로 전송합니다. Apps Script의 허용 목록도 이 세
+값과 일치해야 합니다. 프론트는
+Google Apps Script의 CORS 사전 요청을 피하기 위해 `Content-Type:
+text/plain;charset=UTF-8`로 JSON 문자열을 전송합니다.
+
+`completedTradeId`와 `completedTradeUrl`은 모든 트랙에서 선택입니다. 거래 완료
+1건으로 B 트랙 자격을 증빙할 때 입력하며, 본인 거래글 10건 이상으로 참여하거나
+A 트랙에만 응모할 때는 두 값을 `null`로 전송할 수 있습니다. 완료 거래글은
+응모자 본인이 작성한 글이 아니어도 됩니다.
+
+## 스프레드시트 준비
+
+시트 탭 이름은 `응모`로 지정하고 첫 번째 행에 다음 열을 순서대로 만듭니다.
+현재 Apps Script는 헤더 문자열 자체가 아니라 열 순서로 값을 기록하므로 아래
+한국어 이름을 그대로 사용할 수 있습니다.
+
+```text
+제출시기 | eventId | memberId | 지원트랙 | 인스타Id | 거래Id | 거래글Url | 완료거래Id | 완료거래글Url | 개인정보사용동의
+```
+
+기존 시트에는 현재 H열인 `개인정보사용동의` 앞에 열 2개를 삽입한 뒤, 새 H열을
+`완료거래Id`, 새 I열을 `완료거래글Url`로 지정합니다. 열을 삽입하면 기존 동의
+데이터는 J열로 함께 이동하므로 기존 응모 데이터가 어긋나지 않습니다.
+
+스프레드시트의 `확장 프로그램 > Apps Script`에서 아래 예시를 사용할 수
+있습니다. 같은 이벤트와 회원의 재제출은 새 행을 만들지 않고 기존 행을 최신
+내용으로 교체합니다.
+
+```javascript
+const SHEET_NAME = '응모';
+
+function json(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(
+    ContentService.MimeType.JSON,
+  );
+}
+
+function doPost(event) {
+  const lock = LockService.getScriptLock();
+
+  try {
+    const input = JSON.parse(event.postData.contents);
+    const required = [
+      'eventId',
+      'memberId',
+      'desiredTrack',
+      'instagramId',
+      'tradeId',
+      'tradeUrl',
+      'privacyConsent',
+    ];
+
+    const isMissing = (value) =>
+      value === undefined || value === null || value === '';
+
+    if (required.some((key) => isMissing(input[key]))) {
+      return json({ ok: false, message: '필수 응모 정보가 없습니다.' });
+    }
+
+    if (!['BASIC', 'COMPLETED', 'BOTH'].includes(input.desiredTrack)) {
+      return json({ ok: false, message: '희망 트랙이 올바르지 않습니다.' });
+    }
+
+    if (input.privacyConsent !== true) {
+      return json({ ok: false, message: '개인정보 수집 동의가 필요합니다.' });
+    }
+
+    lock.waitLock(10000);
+
+    const sheet =
+      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+
+    if (!sheet) {
+      return json({ ok: false, message: '응모 시트를 찾지 못했습니다.' });
+    }
+
+    const row = [
+      new Date(),
+      input.eventId,
+      String(input.memberId),
+      input.desiredTrack,
+      input.instagramId,
+      Number(input.tradeId),
+      input.tradeUrl,
+      isMissing(input.completedTradeId) ? '' : Number(input.completedTradeId),
+      isMissing(input.completedTradeUrl) ? '' : input.completedTradeUrl,
+      input.privacyConsent === true,
+    ];
+    const values = sheet.getDataRange().getValues();
+    const existingIndex = values.findIndex(
+      (current, index) =>
+        index > 0 &&
+        current[1] === input.eventId &&
+        String(current[2]) === String(input.memberId),
+    );
+
+    if (existingIndex >= 0) {
+      sheet.getRange(existingIndex + 1, 1, 1, row.length).setValues([row]);
+    } else {
+      sheet.appendRow(row);
+    }
+
+    return json({ ok: true });
+  } catch (error) {
+    return json({ ok: false, message: '응모 정보를 저장하지 못했습니다.' });
+  } finally {
+    lock.releaseLock();
+  }
+}
+```
+
+Apps Script에서 `배포 > 새 배포 > 웹 앱`을 선택하고 실행 계정과 접근 범위를
+설정한 뒤 `/exec`로 끝나는 웹 앱 URL을 사용합니다. 개발 도메인에서 실제 POST를
+한 번 보내 리디렉션과 CORS 동작까지 확인해야 합니다.
+
+기존 웹 앱이 `BASIC`, `COMPLETED`만 허용하고 있다면 위 허용 목록에 `BOTH`를
+추가한 뒤 반드시 새 버전으로 다시 배포해야 합니다. 코드를 저장하기만 하면 현재
+`/exec` 배포에는 반영되지 않습니다.
+
+기존 스크립트에 B 트랙과 `BOTH`의 완료 거래글을 필수로 검사하는
+`requiresCompletedTrade` 블록이 있다면 위 예시처럼 제거해야 합니다. 완료 거래글
+열은 그대로 유지하고, 입력이 없을 때 빈 셀로 기록합니다. 수정 후에는 반드시
+웹 앱을 새 버전으로 다시 배포합니다.
+
+## 프론트 배포 환경변수
+
+```dotenv
+EVENT_APPLICATION_ENABLED=true
+EVENT_APPLICATION_START_AT=2026-10-10T00:00:00+09:00
+EVENT_APPLICATION_END_AT=2026-10-26T00:00:00+09:00
+EVENT_APPLICATION_ENDPOINT=https://script.google.com/macros/s/AKfycbwELCsvRhWcSHC9ecFZLFLX3xgDVApke_PyhbEj0SqHnETYxVPMC0qJsbv-4bj1Uqc/exec
+```
+
+시작·종료 시각, 제출 URL 중 하나라도 없거나 잘못되면 마이페이지 버튼은
+노출되지 않고 직접 접근한 페이지에서도 제출 폼을 열지 않습니다.
+
+### 운영 변경 이력
+
+- 2026-10-17: 연장된 응모 일정이 운영 빌드에 반영되도록
+  `frontend-production`의 `EVENT_APPLICATION_END_AT`을
+  `2026-10-26T00:00:00+09:00`으로 갱신했다. 종료 시각은 미포함이므로
+  응모 버튼은 10월 25일 23:59:59까지 노출된다.
+
+## 확정된 운영 정책
+
+- 응모 기간은 2026년 10월 10일 00:00부터 10월 25일 23:59:59까지다.
+- 당첨자는 2026년 10월 26일 발표한다.
+- 같은 이벤트에 같은 회원이 다시 제출하면 마지막 제출 내용으로 덮어쓴다.
+- 응모정보는 당첨자 경품 전달 완료 후 삭제한다.
+- 이벤트 A 트랙은 회원가입, 공식 Instagram 팔로우, 본인 거래글 1건을
+  요구한다.
+- 이벤트 B 트랙은 A 트랙 조건을 포함하고 실제 거래 완료 1건 또는 본인이 작성한
+  거래 게시글 10건 이상을 요구한다. 본인 거래글은 대표 링크 1개만 제출하고
+  운영진이 회원 ID로 전체 작성 수를 확인한다. 완료 거래글은 응모자가 작성한
+  글이 아니어도 인정하며, 완료 실적으로 응모할 때만 완료 거래글 링크를
+  제출한다. 운영진이 당첨 후보의 회원 ID, 작성 거래글, 완료 거래글 및 채팅
+  기록을 서버 데이터와 대조해 자격을 확인한다.
+- 두 트랙 모두를 선택한 응모는 `BOTH`로 저장하며 A 트랙과 B 트랙 추첨 대상에
+  각각 한 번씩 포함한다. 동일 회원의 당첨은 최대 1개로 제한한다. B 트랙 당첨자
+  2명을 먼저 추첨하고 해당 회원을 제외한 뒤 A 트랙 당첨자 3명을 추첨한다.
+
+## 운영 전 필수 확인
+
+- 개인정보처리방침에 `memberId`, Instagram ID, 작성·완료 거래글 링크, 희망 트랙,
+  Google Sheets 사용 목적과 경품 전달 완료 후 파기 기준이 반영되었는지
+  확인합니다.
+- 스프레드시트 열람 권한은 이벤트 담당자에게만 부여합니다.
+- 추첨 전 당첨 후보의 응모 회원·대표 거래글 소유권·B 트랙의 완료 거래 또는
+  본인 거래글 10건 이상 충족 여부를 서버 데이터로 재검증합니다.
+- 운영 Apps Script가 `BASIC`, `COMPLETED`, `BOTH`를 모두 허용하도록 새 버전으로
+  배포되었는지 확인합니다.
+
+## 보안상 권장 구조
+
+Apps Script URL은 브라우저에 공개되며, 브라우저가 보내는 `memberId`는 위조할 수
+있습니다. 따라서 직접 시트 전송 방식은 참가 후보를 모으는 임시 수단으로만
+사용하고 모든 당첨 후보를 서버 데이터로 다시 검증해야 합니다.
+
+경품과 중복 응모를 정확히 통제하려면 다음 구조가 권장됩니다.
+
+1. 프론트가 가치가챠 백엔드의 인증 필요 응모 API를 호출합니다.
+2. 백엔드는 access token으로 `memberId`를 결정합니다.
+3. 백엔드가 거래글 소유권, 완료 상태, 중복 응모를 검증합니다.
+4. 검증된 응모를 DB에 저장하고 Google Sheets에는 운영용으로 동기화합니다.
+
+이 구조에서는 프론트 요청 본문에 `memberId`를 포함할 필요가 없습니다.

@@ -1,0 +1,154 @@
+name: Android Play Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Verified Android source branch, tag, or SHA'
+        required: true
+        default: 'android'
+        type: string
+      version_name:
+        description: 'Public app version (for example 0.1.0)'
+        required: true
+        default: '0.1.0'
+        type: string
+      version_code:
+        description: 'Google Play version code (must increase for every upload)'
+        required: true
+        default: '1'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-play-release
+  cancel-in-progress: false
+
+jobs:
+  build-production-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: android
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      APP_VARIANT: production
+      APP_VERSION: ${{ inputs.version_name }}
+      ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+      KAKAO_MAP_NATIVE_APP_KEY_PROD: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD }}
+      ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+      ANDROID_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+      ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+      ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+    steps:
+      - name: Checkout verified Android source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Record release source
+        shell: bash
+        run: |
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          {
+            echo '### Android release source'
+            echo ''
+            echo "- Requested ref: \`${{ inputs.source_ref }}\`"
+            echo "- Commit: \`$SOURCE_SHA\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.13.1
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate release inputs and credentials
+        shell: bash
+        run: |
+          if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo 'version_name must be a semantic version such as 0.1.0.' >&2
+            exit 1
+          fi
+          if [[ ! "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]] || (( ANDROID_VERSION_CODE > 2100000000 )); then
+            echo 'version_code must be an integer between 1 and 2100000000.' >&2
+            exit 1
+          fi
+          for required_name in \
+            KAKAO_MAP_NATIVE_APP_KEY_PROD \
+            ANDROID_UPLOAD_KEYSTORE_BASE64 \
+            ANDROID_UPLOAD_KEYSTORE_PASSWORD \
+            ANDROID_UPLOAD_KEY_ALIAS \
+            ANDROID_UPLOAD_KEY_PASSWORD
+          do
+            if [[ -z "${!required_name}" ]]; then
+              echo "Missing required GitHub Actions secret: $required_name" >&2
+              exit 1
+            fi
+          done
+
+      - name: Validate TypeScript and production bundle
+        run: npm run check
+
+      - name: Generate clean production Android project
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Restore upload keystore
+        working-directory: android/android/app
+        shell: bash
+        run: printf '%s' "$ANDROID_UPLOAD_KEYSTORE_BASE64" | base64 --decode > gachigacha-upload.jks
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+          cache-dependency-path: |
+            android/android/**/*.gradle*
+            android/android/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Build signed production AAB
+        working-directory: android/android
+        env:
+          ORG_GRADLE_PROJECT_GACHI_REQUIRE_UPLOAD_SIGNING: 'true'
+          ORG_GRADLE_PROJECT_GACHI_UPLOAD_STORE_FILE: gachigacha-upload.jks
+          ORG_GRADLE_PROJECT_GACHI_UPLOAD_STORE_PASSWORD: ${{ env.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_GACHI_UPLOAD_KEY_ALIAS: ${{ env.ANDROID_UPLOAD_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_GACHI_UPLOAD_KEY_PASSWORD: ${{ env.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease
+
+      - name: Verify signed AAB
+        working-directory: android/android
+        shell: bash
+        run: |
+          AAB_PATH='app/build/outputs/bundle/release/app-release.aab'
+          # Android upload keys are self-signed certificates. `-strict` turns
+          # that expected trust-chain warning into exit code 4 even when the
+          # bundle signature itself is valid. Without `-strict`, jarsigner
+          # still exits non-zero when signature verification actually fails.
+          jarsigner -verify "$AAB_PATH"
+          AAB_SHA256="$(sha256sum "$AAB_PATH" | cut -d ' ' -f 1)"
+          {
+            echo '### Google Play production AAB'
+            echo ''
+            echo '- Package: `com.gachigacha.app`'
+            echo "- Version: \`$APP_VERSION ($ANDROID_VERSION_CODE)\`"
+            echo "- SHA-256: \`$AAB_SHA256\`"
+            echo '- Signing: upload key verified'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload production AAB
+        uses: actions/upload-artifact@v7
+        with:
+          name: gachi-gacha-android-production-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: android/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14

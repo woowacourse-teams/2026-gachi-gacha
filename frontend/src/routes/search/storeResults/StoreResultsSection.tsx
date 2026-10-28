@@ -1,0 +1,140 @@
+import { useCallback, useRef } from 'react';
+import type { ReactNode } from 'react';
+
+import type { AsyncState } from '@/shared/hooks/asyncStateType';
+import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
+
+import type {
+  NearbyStoreResponseDto,
+  NearbyStoresResponseDto,
+} from '../api/nearbyStoresResponseType';
+import {
+  captureStoreOpened,
+  captureStoreSelected,
+} from './analytics/storeResultsAnalytics';
+import { StoreListPanel } from './list/StoreListPanel';
+import { StoreMapPanel } from './map/StoreMapPanel';
+import {
+  ListArea,
+  ListHeaderArea,
+  MapArea,
+  Section,
+} from './StoreResultsSection.styles';
+import { useSelectedStore } from './useSelectedStore';
+
+export interface StoreResultsSectionProps {
+  center: MapCoordinate;
+  gachaId: number | null;
+  listHeader?: ReactNode;
+  storesState: AsyncState<NearbyStoresResponseDto>;
+  isSearchAreaChanged: boolean;
+  onOpenStore: (storeId: number) => void;
+  onRetry: () => void;
+  onRevealHeader: () => void;
+  onSearchArea: () => void;
+  onViewportCenterChange: (center: MapCoordinate) => void;
+}
+
+const EMPTY_STORES: readonly NearbyStoreResponseDto[] = [];
+
+export function StoreResultsSection({
+  center,
+  gachaId,
+  listHeader,
+  storesState,
+  isSearchAreaChanged,
+  onOpenStore,
+  onRetry,
+  onRevealHeader,
+  onSearchArea,
+  onViewportCenterChange,
+}: StoreResultsSectionProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const stores =
+    storesState.status === 'success' ? storesState.data.stores : EMPTY_STORES;
+  const { selectedStoreId, selectStore } = useSelectedStore(stores);
+  const showMapAsMainContent = useCallback(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) {
+      return;
+    }
+
+    sectionRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, []);
+  const selectStoreFromList = useCallback(
+    (storeId: number) => {
+      captureStoreSelected(gachaId, storeId, 'list');
+
+      selectStore(storeId);
+      window.requestAnimationFrame(showMapAsMainContent);
+    },
+    [gachaId, selectStore, showMapAsMainContent],
+  );
+  const selectStoreFromMapMarker = useCallback(
+    (storeId: number) => {
+      captureStoreSelected(gachaId, storeId, 'map_marker');
+
+      selectStore(storeId);
+      window.requestAnimationFrame(showMapAsMainContent);
+    },
+    [gachaId, selectStore, showMapAsMainContent],
+  );
+  const openStoreFromList = useCallback(
+    (storeId: number) => {
+      captureStoreOpened(gachaId, storeId, 'list');
+      onOpenStore(storeId);
+    },
+    [gachaId, onOpenStore],
+  );
+  const toggleMobileHeader = useCallback(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) {
+      return;
+    }
+
+    const mapTop = sectionRef.current?.getBoundingClientRect().top;
+
+    if (mapTop !== undefined && mapTop > 1) {
+      showMapAsMainContent();
+      return;
+    }
+
+    onRevealHeader();
+  }, [onRevealHeader, showMapAsMainContent]);
+
+  return (
+    <Section
+      ref={sectionRef}
+      aria-label={
+        gachaId === null ? '홍대 가챠 매장' : '가챠 보유 매장 검색 결과'
+      }
+    >
+      {listHeader && <ListHeaderArea>{listHeader}</ListHeaderArea>}
+      <ListArea>
+        <StoreListPanel
+          storesState={storesState}
+          isGachaSelected={gachaId !== null}
+          selectedStoreId={selectedStoreId}
+          onOpenStore={openStoreFromList}
+          onSelectStore={selectStoreFromList}
+          onRetry={onRetry}
+        />
+      </ListArea>
+      <MapArea>
+        <StoreMapPanel
+          center={center}
+          isGachaSelected={gachaId !== null}
+          storesState={storesState}
+          selectedStoreId={selectedStoreId}
+          isSearchAreaChanged={isSearchAreaChanged}
+          onBackgroundClick={toggleMobileHeader}
+          onMapDragEnd={showMapAsMainContent}
+          onSelectStore={selectStoreFromMapMarker}
+          onSearchArea={onSearchArea}
+          onViewportCenterChange={onViewportCenterChange}
+        />
+      </MapArea>
+    </Section>
+  );
+}

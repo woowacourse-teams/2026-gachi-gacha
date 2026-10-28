@@ -1,0 +1,31 @@
+import { describe, expect, it, jest } from '@jest/globals';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+
+import SearchHero from './SearchHero';
+
+describe('교환 검색 히어로', () => {
+  it('공백을 정리한 게시글 검색어를 전달한다', async () => {
+    const onSearch = jest.fn();
+    const user = userEvent.setup();
+
+    render(
+      <SearchHero title="어떤 거래글을 찾아볼까요?" onSearch={onSearch} />,
+    );
+
+    expect(
+      screen.getByRole('heading', { name: '어떤 거래글을 찾아볼까요?' }),
+    ).toBeInTheDocument();
+
+    await user.type(
+      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
+      '  쿠로미 키링  ',
+    );
+    await user.click(screen.getByRole('button', { name: '검색' }));
+
+    expect(onSearch).toHaveBeenCalledWith('쿠로미 키링');
+    expect(
+      screen.getByPlaceholderText('찾고 싶은 게시글을 검색'),
+    ).toBeInTheDocument();
+  });
+});
