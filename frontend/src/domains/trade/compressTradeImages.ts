@@ -1,5 +1,7 @@
 import imageCompression from 'browser-image-compression';
 
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
+
 const WEBP_MIME_TYPE = 'image/webp';
 const PNG_MIME_TYPE = 'image/png';
 const MAX_COMPRESSED_SIZE_MB = 1;
@@ -155,6 +157,8 @@ export async function compressTradeImages(
 
     return results;
   } catch (error: unknown) {
+    captureCoreFeatureFailure('trade_image_compression');
+
     if (__APP_ENV__ === 'development') {
       console.error(
         '교환 글 이미지 압축 실패',

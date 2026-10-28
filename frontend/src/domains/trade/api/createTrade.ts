@@ -1,5 +1,6 @@
 import { authenticatedFetch } from '@/features/auth/api/authenticatedFetch';
 import { isApiResponse } from '@/shared/api/isApiResponse';
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 
 import type { CreateTradeRequest } from '../tradeCreateType';
 import type { TradeDetail } from '../tradeDetailType';
@@ -44,6 +45,10 @@ export async function createTrade({
     ...(signal ? { signal } : {}),
   });
   const contentType = response.headers.get('content-type');
+
+  if (response.status >= 500) {
+    captureCoreFeatureFailure('trade_create_server');
+  }
 
   if (!contentType?.includes(JSON_CONTENT_TYPE)) {
     throw new Error(

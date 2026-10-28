@@ -1,5 +1,6 @@
 import { authenticatedFetch } from '@/features/auth/api/authenticatedFetch';
 import { isApiResponse } from '@/shared/api/isApiResponse';
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 
 import { MAX_CHAT_IMAGE_COUNT } from '../chatImagePolicy';
 import type {
@@ -208,7 +209,14 @@ export async function uploadChatImages(
     body: formData,
   });
 
+  if (response.status >= 500) {
+    captureCoreFeatureFailure('chat_image_upload');
+  }
+
   if (!response.headers.get('content-type')?.includes(JSON_CONTENT_TYPE)) {
+    if (response.ok) {
+      captureCoreFeatureFailure('chat_image_upload');
+    }
     throw new Error('사진 업로드 응답을 확인하지 못했습니다.');
   }
 
@@ -219,6 +227,7 @@ export async function uploadChatImages(
   }
 
   if (!isApiResponse(body) || !isRecord(body.data)) {
+    captureCoreFeatureFailure('chat_image_upload');
     throw new Error('사진 업로드 응답 형식이 올바르지 않습니다.');
   }
 
@@ -227,6 +236,7 @@ export async function uploadChatImages(
     : [];
 
   if (uploadedFiles.length !== files.length) {
+    captureCoreFeatureFailure('chat_image_upload');
     throw new Error('업로드된 사진 정보를 확인하지 못했습니다.');
   }
 

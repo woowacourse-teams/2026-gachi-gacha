@@ -1,6 +1,7 @@
 import type { RootOptions } from 'react-dom/client';
 import * as Sentry from '@sentry/react';
 
+import { normalizeErrorMonitoringRoute } from './normalizeErrorMonitoringRoute';
 import {
   sanitizeErrorBreadcrumb,
   sanitizeErrorEvent,
@@ -81,7 +82,9 @@ export function getReactRootErrorHandlers(): RootOptions | undefined {
 }
 
 export function setErrorMonitoringRoute(pathname: string): void {
-  if (Sentry.isInitialized()) Sentry.setTag('route', pathname);
+  if (Sentry.isInitialized()) {
+    Sentry.setTag('route', normalizeErrorMonitoringRoute(pathname));
+  }
 }
 
 export function setErrorMonitoringUser(memberId: string | null): void {

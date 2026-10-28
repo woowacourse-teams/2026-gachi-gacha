@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { StoreSearchTrigger } from '@/shared/analytics/analyticsEventType';
+import { isApiResponseParseError } from '@/shared/api/ApiResponseParseError';
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { getNearbyStores } from '../api/getNearbyStores';
@@ -77,6 +79,10 @@ async function loadSearchStores(
 
     return { status: 'success', data, errorMessage: null };
   } catch (error: unknown) {
+    if (isApiResponseParseError(error)) {
+      captureCoreFeatureFailure('store_response_parsing');
+    }
+
     return {
       status: 'error',
       data: null,

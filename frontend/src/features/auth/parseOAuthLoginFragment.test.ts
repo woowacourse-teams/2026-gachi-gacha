@@ -1,6 +1,9 @@
 import { describe, expect, it } from '@jest/globals';
 
-import { parseOAuthLoginFragment } from './parseOAuthLoginFragment';
+import {
+  ExpectedOAuthLoginError,
+  parseOAuthLoginFragment,
+} from './parseOAuthLoginFragment';
 
 describe('백엔드 OAuth 로그인 리다이렉트', () => {
   it('해시에서 서비스 토큰을 읽는다', () => {
@@ -11,7 +14,7 @@ describe('백엔드 OAuth 로그인 리다이렉트', () => {
 
   it('오류 코드가 있으면 로그인 실패로 처리한다', () => {
     expect(() => parseOAuthLoginFragment('#error=invalid_state')).toThrow(
-      '로그인 요청이 유효하지 않습니다',
+      ExpectedOAuthLoginError,
     );
   });
 
