@@ -3,9 +3,11 @@ import {
   type BottomTabBarButtonProps,
 } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { NavigationTabIconName } from '../../assets/navigation/tabIcons';
+import { NavigationTabIcon } from '../components/NavigationTabIcon';
 import { areTradeFeaturesEnabled } from '../config/features';
 import { SearchScreen } from '../screens/SearchScreen';
 import { colors } from '../theme/colors';
@@ -28,13 +30,11 @@ const tabLabels = {
   Search: '검색',
 } as const;
 
-function TabIcon({ focused, label }: { focused: boolean; label: string }) {
-  return (
-    <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>
-      {label.slice(0, 1)}
-    </Text>
-  );
-}
+const tabIcons: Record<keyof AppTabParamList, NavigationTabIconName> = {
+  Trade: 'trade',
+  Map: 'map',
+  Search: 'search',
+};
 
 function TabBarButton({
   accessibilityLabel,
@@ -96,8 +96,8 @@ export function AppTabs() {
           },
         ],
         tabBarHideOnKeyboard: true,
-        tabBarIcon: ({ focused }) => (
-          <TabIcon focused={focused} label={tabLabels[route.name]} />
+        tabBarIcon: ({ color }) => (
+          <NavigationTabIcon color={color} name={tabIcons[route.name]} />
         ),
       })}
     >
@@ -149,20 +149,5 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 12,
     fontWeight: '700',
-  },
-  tabIcon: {
-    width: 25,
-    height: 25,
-    borderRadius: 8,
-    color: colors.textMuted,
-    backgroundColor: colors.surface,
-    fontSize: 13,
-    fontWeight: '800',
-    lineHeight: 25,
-    textAlign: 'center',
-  },
-  tabIconFocused: {
-    color: colors.background,
-    backgroundColor: colors.primary,
   },
 });
