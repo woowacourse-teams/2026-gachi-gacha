@@ -62,8 +62,6 @@ export function AffiliateCatalogSection({
   const productSignature = products.map(({ id }) => id).join('|');
 
   useEffect(() => {
-    setImageState({ signature, statusByProductId: {} });
-
     if (!signature) return;
 
     const timeoutId = window.setTimeout(() => {
