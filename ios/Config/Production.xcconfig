@@ -1,0 +1,3 @@
+APP_HOST = gachigacha.kro.kr
+APP_BUNDLE_IDENTIFIER = com.gachigacha.app
+APP_DISPLAY_NAME = 가치가챠

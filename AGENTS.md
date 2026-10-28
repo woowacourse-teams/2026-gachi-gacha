@@ -4,10 +4,10 @@ These rules apply to every agent working in this repository.
 
 ## Scope and safety
 
-- Work only in `frontend/`, `android/`, or repository-level documentation and workflow files required by an authorized frontend or Android task.
+- Work only in `frontend/`, `android/`, `ios/`, or repository-level documentation and workflow files required by an authorized frontend, Android, or iOS task.
 - Never modify `backend/`, create commits for backend code, or comment on/review backend pull requests.
 - Do not discard or overwrite another contributor's uncommitted changes. Use an isolated worktree when the current workspace is dirty or on another task.
-- Do not merge into `main` unless the user explicitly requests that specific merge. Frontend feature and fix work targets `frontend-dev`; Android work targets `android`.
+- Do not merge into `main` unless the user explicitly requests that specific merge. Frontend feature and fix work targets `frontend-dev`; Android work targets `android`; iOS work targets `iosdev`.
 
 ## Standard workflow
 
