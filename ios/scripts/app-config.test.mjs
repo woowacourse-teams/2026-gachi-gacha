@@ -17,6 +17,7 @@ test('development uses the dev site and bundle ID', () => {
   assert.equal(config.extra.webBaseUrl, 'https://dev.gachigacha.kro.kr');
   assert.equal(config.ios.bundleIdentifier, 'com.dev.gachigacha.app');
   assert.deepEqual(config.platforms, ['ios']);
+  assert.deepEqual(config.plugins, ['./plugins/withPodfileUtf8Paths']);
 });
 
 test('production uses the production site and bundle ID', () => {

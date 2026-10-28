@@ -32,6 +32,7 @@ function createConfig({ config }) {
     orientation: 'portrait',
     userInterfaceStyle: 'light',
     platforms: ['ios'],
+    plugins: ['./plugins/withPodfileUtf8Paths'],
     ios: {
       bundleIdentifier: settings.bundleIdentifier,
       supportsTablet: false,
