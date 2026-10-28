@@ -1,10 +1,12 @@
 package com.gachi.gacha.server.trade.application;
 
+import com.gachi.gacha.server.category.domain.Category;
+import com.gachi.gacha.server.category.domain.CategoryJpaRepository;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.infra.application.MultipartUploader;
 import com.gachi.gacha.server.common.infra.domain.DomainType;
 import com.gachi.gacha.server.common.util.S3TransactionManager;
-import com.gachi.gacha.server.category.domain.Category;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.dto.TradeCreateCommand;
@@ -12,7 +14,7 @@ import com.gachi.gacha.server.trade.application.dto.TradeInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.application.dto.TradeUpdateCommand;
-import com.gachi.gacha.server.category.domain.CategoryJpaRepository;
+import com.gachi.gacha.server.trade.application.event.TradeChangedEvent;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeImage;
 import com.gachi.gacha.server.trade.domain.TradeImageJpaRepository;
@@ -21,6 +23,7 @@ import com.gachi.gacha.server.trade.domain.TradeSpecifications;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import com.gachi.gacha.server.trade.domain.exception.CategoryNotFoundException;
 import com.gachi.gacha.server.trade.domain.exception.TradeAccessDeniedException;
+import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,6 +31,8 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -44,8 +49,10 @@ public class TradeService {
     private final TradeImageJpaRepository tradeImageRepository;
     private final CategoryJpaRepository categoryRepository;
     private final MemberJpaRepository memberJpaRepository;
+    private final MemberBlockService memberBlockService;
     private final MultipartUploader multipartUploader;
     private final S3TransactionManager s3TransactionManager;
+    private final ApplicationEventPublisher publisher;
 
     @Transactional
     public TradeInfo createTrade(
@@ -66,14 +73,15 @@ public class TradeService {
                 .status(TradeStatus.AVAILABLE)
                 .build();
         trade.replaceCategories(findCategories(command.categoryIds()));
-        tradeJpaRepository.save(trade);
+        Trade saved = tradeJpaRepository.save(trade);
 
         List<String> imageUrls = uploadImages(trade, images);
-
+        publisher.publishEvent(new TradeChangedEvent(saved.getId()));
         return TradeInfo.of(trade, imageUrls);
     }
 
-    public Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status, final Pageable pageable) {
+    public Page<TradeSummaryInfo> findAllByMemberId(final Long memberId, final TradeStatus status,
+                                                    final Pageable pageable) {
         if (status == null) {
             return findAllByMemberId(memberId, pageable);
         }
@@ -84,7 +92,11 @@ public class TradeService {
         // 1단계: 필터와 페이징만 적용한다. 컬렉션을 건드리지 않으므로 페이징이 DB에서 정상적으로 끝난다.
         Page<Trade> tradePage = tradeJpaRepository.findAll(
                 TradeSpecifications.search(
-                        normalizeKeyword(condition.keyword()), condition.categoryIds(), condition.status()),
+                        normalizeKeyword(condition.keyword()),
+                        condition.categoryIds(),
+                        condition.status(),
+                        condition.viewerId()
+                ),
                 pageable
         );
 
@@ -93,8 +105,9 @@ public class TradeService {
         return getTradeSummaryInfos(pageable, tradePage);
     }
 
-    public TradeInfo findTrade(final Long tradeId) {
+    public TradeInfo findTrade(@Nullable final Long viewerId, final Long tradeId) {
         Trade trade = tradeJpaRepository.getByIdWithCategories(tradeId);
+        validateAuthorNotBlocked(trade, viewerId);
 
         return TradeInfo.of(trade, findImageUrls(tradeId));
     }
@@ -120,7 +133,7 @@ public class TradeService {
         trade.replaceCategories(findCategories(command.categoryIds()));
 
         List<String> imageUrls = replaceImages(trade, images);
-
+        publisher.publishEvent(new TradeChangedEvent(tradeId));
         return TradeInfo.of(trade, imageUrls);
     }
 
@@ -130,7 +143,7 @@ public class TradeService {
         validateOwner(trade, memberId);
 
         trade.changeStatus(status);
-
+        publisher.publishEvent(new TradeChangedEvent(tradeId));
         return TradeInfo.of(trade, findImageUrls(tradeId));
     }
 
@@ -146,7 +159,7 @@ public class TradeService {
 
         tradeImageRepository.deleteAll(tradeImages);
         tradeJpaRepository.delete(trade);
-
+        publisher.publishEvent(new TradeChangedEvent(tradeId));
         // 사용자가 올린 콘텐츠라 오삭제·신고 대응 여지를 남기기 위해 완전 삭제가 아닌 휴지통으로 옮긴다.
         s3TransactionManager.trashImagesAfterRemoved(DomainType.TRADE, tradeId, imageUrls);
     }
@@ -159,6 +172,15 @@ public class TradeService {
             return null;
         }
         return keyword.trim();
+    }
+
+    /**
+     * 차단한 작성자의 글은 목록에서 제외하므로 상세 조회도 없는 게시글과 같은 응답을 준다.
+     */
+    private void validateAuthorNotBlocked(final Trade trade, @Nullable final Long viewerId) {
+        if (memberBlockService.hasBlocked(viewerId, trade.getMember().getId())) {
+            throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
+        }
     }
 
     private Member getMember(final Long memberId) {
@@ -188,8 +210,8 @@ public class TradeService {
     }
 
     /**
-     * 업로드는 지금 일어나지만 DB 저장은 커밋 시점에야 확정된다. 그래서 업로드를 시작하기 전에 롤백 훅을
-     * 먼저 걸어 두고, 훅이 바라보는 리스트에 업로드한 URL을 누적한다. 중간에 실패해도 그때까지 올라간 파일이 정리된다.
+     * 업로드는 지금 일어나지만 DB 저장은 커밋 시점에야 확정된다. 그래서 업로드를 시작하기 전에 롤백 훅을 먼저 걸어 두고, 훅이 바라보는 리스트에 업로드한 URL을 누적한다. 중간에 실패해도 그때까지
+     * 올라간 파일이 정리된다.
      */
     private List<String> uploadImages(final Trade trade, final List<MultipartFile> images) {
         if (images == null || images.isEmpty()) {
@@ -248,7 +270,8 @@ public class TradeService {
         return getTradeSummaryInfos(pageable, tradePage);
     }
 
-    private Page<TradeSummaryInfo> findAllByMemberIdAndStatus(final Long memberId, final TradeStatus status, final Pageable pageable) {
+    private Page<TradeSummaryInfo> findAllByMemberIdAndStatus(final Long memberId, final TradeStatus status,
+                                                              final Pageable pageable) {
         Page<Trade> tradePage = tradeJpaRepository.findAllByMemberIdAndStatus(memberId, status, pageable);
         return getTradeSummaryInfos(pageable, tradePage);
     }

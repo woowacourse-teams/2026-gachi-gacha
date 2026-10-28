@@ -50,6 +50,10 @@ public enum ErrorCode {
     INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE05", "유효하지 않은 refresh token입니다."),
     EXPIRED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE06", "만료된 refresh token입니다."),
     REUSED_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "AUE07", "이미 사용된 refresh token입니다. 다시 로그인해 주세요."),
+
+    // Member Block
+    SELF_BLOCK_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "BLE001", "자기 자신은 차단할 수 없습니다."),
+    BLOCKED_CHAT_NOT_ALLOWED(HttpStatus.FORBIDDEN, "BLE002", "대화를 진행할 수 없습니다."),
     
     // Chat
     CHAT_MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "CHE001", "채팅 상대방 정보를 찾을 수 없습니다."),
@@ -59,6 +63,10 @@ public enum ErrorCode {
     CHAT_ROOM_ACCESS_DENIED(HttpStatus.FORBIDDEN, "CHE005", "채팅방에 접근할 권한이 없습니다."),
     INVALID_READ_SEQUENCE(HttpStatus.BAD_REQUEST, "CHE006", "유효하지 않은 읽음 메시지 sequence 입니다"),
     INVALID_CHAT_MESSAGE(HttpStatus.BAD_REQUEST, "CHE007", "유효하지 않은 채팅 메시지입니다."),
+    CHAT_PARTNER_WITHDRAWN(HttpStatus.FORBIDDEN, "CHE008", "탈퇴한 사용자와는 채팅할 수 없습니다."),
+
+    // Notification
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NTE001", "존재하지 않는 알림입니다."),
 
     // Category
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CAE01", "존재하지 않는 카테고리입니다."),
@@ -77,11 +85,21 @@ public enum ErrorCode {
 
     //kakao
     KAKAO_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "KE01", "카카오 인증에 실패했습니다. 다시 로그인해주세요."),
-    KAKAO_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "KE02", "카카오 서버와 통신 중 오류가 발생했습니다."),
+    KAKAO_API_CALL_FAILED(HttpStatus.BAD_REQUEST, "KE02", "카카오 서버와 통신 중 오류가 발생했습니다."),
+    KAKAO_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "KE03", "카카오 서버와 통신에 실패햇습니다."),
 
     //naver
     NAVER_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "NE01", "네이버 인증에 실패했습니다. 다시 로그인해주세요."),
-    NAVER_API_CALL_FAILED(HttpStatus.BAD_GATEWAY, "NE02", "네이버 서버와 통신 중 오류가 발생했습니다.");
+    NAVER_API_CALL_FAILED(HttpStatus.BAD_REQUEST, "NE02", "네이버 서버와 통신 중 오류가 발생했습니다."),
+    NAVER_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "NE03", "네이버 서버와 통신에 실패했습니다."),
+    //apple
+    APPLE_TOKEN_REQUEST_FAILED(HttpStatus.UNAUTHORIZED, "APE01", "애플 인증에 실패했습니다. 다시 로그인해주세요."),
+    APPLE_API_CALL_FAILED(HttpStatus.BAD_REQUEST, "APE02", "애플 서버와 통신 중 오류가 발생했습니다."),
+    APPLE_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "APE03", "애플 서버와 통신에 실패했습니다."),
+
+    //elastic search
+    ELASTICSEARCH_INDEX_FAILED(HttpStatus.BAD_GATEWAY, "ES001", "검색 색인 처리에 실패했습니다.")
+    ;
 
     private final HttpStatus status;
     private final String code;

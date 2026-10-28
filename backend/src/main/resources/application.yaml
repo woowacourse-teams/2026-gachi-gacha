@@ -1,6 +1,10 @@
 server:
   servlet:
     context-path: /api/v1
+    session:
+      cookie:
+        same-site: none
+        secure: true
   forward-headers-strategy: framework
   tomcat:
     threads:
@@ -10,6 +14,11 @@ server:
 spring:
   application:
     name: backend
+  task:
+    execution:
+      # 알림 전용 실행기(notificationExecutor)를 Bean 으로 등록해도 기본 applicationTaskExecutor 가
+      # 물러나지 않게 한다. 기존 @Async 작업과 WebSocket 은 계속 기본 실행기를 쓴다.
+      mode: force
   servlet:
     multipart:
       max-file-size: 10MB
@@ -62,6 +71,8 @@ management:
         http.server.requests: true # HTTP API 요청 P95/P99 활성화 (권장)
 
 oauth:
+  frontend-callback-url: ${FRONT_CALLBACK_URL}
+  frontend-withdraw-callback-url: ${FRONT_WITHDRAW_CALLBACK_URL}
   kakao:
     redirect-uri: ${KAKAO_REDIRECT_URL}
     client-id: ${KAKAO_CLIENT_ID}
@@ -76,6 +87,16 @@ oauth:
     client-secret: ${NAVER_CLIENT_SECRET}
     scope:
       - openid
+  apple:
+    client-id: ${APPLE_CLIENT_ID}
+    team-id: ${APPLE_TEAM_ID}
+    key-id: ${APPLE_KEY_ID}
+    private-key: ${APPLE_PRIVATE_KEY}
+    redirect-uri: ${APPLE_REDIRECT_URI}
+    withdraw-redirect-uri: ${APPLE_WITHDRAW_REDIRECT_URI}
+    scope:
+      - name
+      - email
 jwt:
   access-token-expiration-minutes: ${JWT_EXPIRATION_MINUTES}
   refresh-token-expirationDay: ${JWT_REFRESH_EXPIRATION_DAY}
@@ -98,3 +119,18 @@ springdoc:
   ai:
     mcp:
       enabled: false
+
+firebase:
+  # 꺼져 있으면 푸시를 FCM 으로 보내지 않고 로그만 남긴다. 서버에서는 반드시 true 로 둔다.
+  push-enabled: ${FCM_PUSH_ENABLED:false}
+  # Firebase 콘솔 > 프로젝트 설정 > 서비스 계정에서 받은 비공개 키(JSON) 파일 내용을 Base64 로 인코딩한 값.
+  # dev 서버에는 gachi-gacha-dev, prod 서버에는 gachi-gacha-prod 프로젝트의 키를 넣는다.
+  service-account-key-base64: ${FIREBASE_SERVICE_ACCOUNT_KEY_BASE64:}
+
+elasticsearch:
+  url: ${ELASTIC_SEARCH_URL}
+  api-key: ${ELASTIC_SEARCH_API_KEY}
+  index:
+    gacha: ${ELASTIC_GACHA_INDEX}
+    trade: ${ELASTIC_TRADE_INDEX}
+

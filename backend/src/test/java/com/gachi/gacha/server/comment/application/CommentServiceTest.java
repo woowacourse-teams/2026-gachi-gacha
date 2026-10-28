@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 
 import com.gachi.gacha.server.comment.application.dto.CommentCreateCommand;
 import com.gachi.gacha.server.comment.application.dto.CommentInfo;
+import com.gachi.gacha.server.comment.application.event.CommentCreatedEvent;
 import com.gachi.gacha.server.comment.domain.Comment;
 import com.gachi.gacha.server.comment.domain.CommentJpaRepository;
 import com.gachi.gacha.server.member.domain.Member;
@@ -24,6 +25,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceTest {
@@ -41,6 +43,9 @@ class CommentServiceTest {
 
     @Mock
     private MemberJpaRepository memberJpaRepository;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     @InjectMocks
     private CommentService commentService;
@@ -100,6 +105,23 @@ class CommentServiceTest {
         }
 
         @Test
+        @DisplayName("댓글을 저장하면 알림에 필요한 값을 담아 댓글 작성 이벤트를 발행한다.")
+        void publishesCommentCreatedEvent() {
+            givenTradeExists();
+            captureSavedComment();
+            ArgumentCaptor<CommentCreatedEvent> eventCaptor = ArgumentCaptor.forClass(CommentCreatedEvent.class);
+
+            commentService.createComment(TRADE_ID, null, MASKED_IP, new CommentCreateCommand(null, CONTENT));
+
+            verify(publisher).publishEvent(eventCaptor.capture());
+            CommentCreatedEvent event = eventCaptor.getValue();
+            assertThat(event.tradeId()).isEqualTo(TRADE_ID);
+            assertThat(event.writerId()).isNull();
+            assertThat(event.writerName()).isEqualTo("루챠-118.44");
+            assertThat(event.content()).isEqualTo(CONTENT);
+        }
+
+        @Test
         @DisplayName("없는 게시글이면 저장하지 않는다.")
         void rejectsMissingTrade() {
             given(tradeJpaRepository.existsById(TRADE_ID)).willReturn(false);
@@ -109,6 +131,7 @@ class CommentServiceTest {
                     .isInstanceOf(TradeNotFoundException.class);
 
             verify(commentJpaRepository, never()).save(any());
+            verify(publisher, never()).publishEvent(any(Object.class));
         }
     }
 
@@ -120,12 +143,12 @@ class CommentServiceTest {
         @DisplayName("등록순으로 반환하며 회원·비회원 표시 이름이 각각 적용된다.")
         void returnsCommentsInOrder() {
             givenTradeExists();
-            given(commentJpaRepository.findAllByTradeIdOrderByIdAsc(TRADE_ID)).willReturn(List.of(
+            given(commentJpaRepository.findAllVisibleByTradeId(TRADE_ID, null)).willReturn(List.of(
                     Comment.ofAnonymous(TRADE_ID, null, MASKED_IP, "첫 댓글"),
                     Comment.ofMember(TRADE_ID, MEMBER_ID, "가챠러버", null, "둘째 댓글")
             ));
 
-            List<CommentInfo> infos = commentService.findComments(TRADE_ID);
+            List<CommentInfo> infos = commentService.findComments(null, TRADE_ID);
 
             assertThat(infos).extracting(CommentInfo::nickname)
                     .containsExactly("루챠-118.44", "가챠러버");
@@ -136,7 +159,7 @@ class CommentServiceTest {
         void rejectsMissingTrade() {
             given(tradeJpaRepository.existsById(TRADE_ID)).willReturn(false);
 
-            assertThatThrownBy(() -> commentService.findComments(TRADE_ID))
+            assertThatThrownBy(() -> commentService.findComments(null, TRADE_ID))
                     .isInstanceOf(TradeNotFoundException.class);
         }
     }

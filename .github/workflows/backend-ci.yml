@@ -23,7 +23,7 @@ permissions:
 jobs:
   backend-ci:
     name: Backend Build and Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     services:
       postgres:

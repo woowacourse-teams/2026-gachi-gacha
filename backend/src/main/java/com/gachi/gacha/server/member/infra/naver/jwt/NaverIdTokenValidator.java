@@ -10,6 +10,7 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.infra.naver.NaverOauthConfig;
+import com.gachi.gacha.server.member.infra.naver.exception.NaverPublickeyFetchException;
 import com.gachi.gacha.server.member.infra.naver.exception.UnAuthorizationNaverTokenException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -40,11 +41,16 @@ public class NaverIdTokenValidator {
             DecodedJWT decoded = JWT.require(algorithm)
                     .withIssuer(ISSUER)
                     .withAudience(naverOauthConfig.clientId())
+                    .acceptLeeway(60)
                     .build()
                     .verify(idToken);
 
             return NaverIdTokenClaims.from(decoded);
-        } catch (JwkException | JWTVerificationException e) {
+        } catch (JwkException e) {
+            log.error("Naver 공개키 조회 중 네트워크 또는 서버 오류 발생: {}", e.getMessage(), e);
+            throw new NaverPublickeyFetchException(ErrorCode.NAVER_SERVER_ERROR);
+        } catch (JWTVerificationException e) {
+            log.warn("Naver ID Token 검증 실패: {} - {}", e.getClass().getSimpleName(), e.getMessage());
             throw new UnAuthorizationNaverTokenException(ErrorCode.UNAUTHORIZATION_TOKEN);
         }
     }

@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.gachi.gacha.server.chat.application.dto.ChatMessageInfo;
 import com.gachi.gacha.server.chat.application.dto.ChatMessageSendCommand;
+import com.gachi.gacha.server.chat.application.event.ChatMessageSentEvent;
 import com.gachi.gacha.server.chat.domain.ChatMessage;
 import com.gachi.gacha.server.chat.domain.ChatMessageMongoRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoom;
@@ -17,10 +19,14 @@ import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.MessageType;
+import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
 import com.gachi.gacha.server.chat.domain.exception.InvalidChatMessageException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
+import com.gachi.gacha.server.member.domain.MemberJpaRepository;
+import com.gachi.gacha.server.member.domain.exception.BlockedChatNotAllowedException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,12 +36,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ChatMessageServiceTest {
 
     private static final Long ROOM_ID = 1L;
     private static final Long SENDER_ID = 2L;
+    private static final Long RECEIVER_ID = 3L;
 
     @Mock
     private ChatRoomJpaRepository chatRoomJpaRepository;
@@ -45,6 +53,15 @@ class ChatMessageServiceTest {
 
     @Mock
     private ChatMessageMongoRepository chatMessageMongoRepository;
+
+    @Mock
+    private MemberBlockService memberBlockService;
+
+    @Mock
+    private MemberJpaRepository memberJpaRepository;
+
+    @Mock
+    private ApplicationEventPublisher publisher;
 
     @InjectMocks
     private ChatMessageService chatMessageService;
@@ -131,6 +148,67 @@ class ChatMessageServiceTest {
 
             verify(chatMessageMongoRepository, never()).save(any());
             assertThat(chatRoom.getLastMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("상대와 차단 관계면 메시지를 저장하지 않고 sequence도 증가하지 않는다")
+        void sendMessage_blockedReceiver() {
+            given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
+            given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
+                    .willReturn(List.of(SENDER_ID, RECEIVER_ID));
+            doThrow(new BlockedChatNotAllowedException(ErrorCode.BLOCKED_CHAT_NOT_ALLOWED))
+                    .when(memberBlockService).validateChatAllowed(SENDER_ID, RECEIVER_ID);
+
+            assertThatThrownBy(() -> chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요")))
+                    .isInstanceOf(BlockedChatNotAllowedException.class);
+
+            verify(chatMessageMongoRepository, never()).save(any());
+            verify(publisher, never()).publishEvent(any(Object.class));
+            assertThat(chatRoom.getLastMessageSequence()).isZero();
+            assertThat(sender.getLastReadMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("상대가 탈퇴했으면 메시지를 저장하지 않고 sequence도 증가하지 않는다")
+        void sendMessage_withdrawnReceiver() {
+            given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
+            given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
+                    .willReturn(List.of(SENDER_ID, RECEIVER_ID));
+            given(memberJpaRepository.existsById(RECEIVER_ID)).willReturn(false);
+
+            assertThatThrownBy(() -> chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요")))
+                    .isInstanceOf(ChatPartnerWithdrawnException.class);
+
+            verify(chatMessageMongoRepository, never()).save(any());
+            verify(publisher, never()).publishEvent(any(Object.class));
+            assertThat(chatRoom.getLastMessageSequence()).isZero();
+            assertThat(sender.getLastReadMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("상대가 정상 회원이면 메시지를 전송한다")
+        void sendMessage_activeReceiver() {
+            givenRoomAndSender();
+            given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
+                    .willReturn(List.of(SENDER_ID, RECEIVER_ID));
+            given(memberJpaRepository.existsById(RECEIVER_ID)).willReturn(true);
+
+            ChatMessageInfo info = chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요"));
+
+            assertThat(info.sequence()).isEqualTo(1L);
+            verify(memberBlockService).validateChatAllowed(SENDER_ID, RECEIVER_ID);
+        }
+
+        @Test
+        @DisplayName("메시지를 저장하면 푸시에 필요한 값을 담아 메시지 전송 이벤트를 발행한다")
+        void sendMessage_publishesEvent() {
+            givenRoomAndSender();
+
+            chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요"));
+
+            verify(publisher).publishEvent(new ChatMessageSentEvent(ROOM_ID, SENDER_ID, "안녕하세요"));
         }
 
         @Test

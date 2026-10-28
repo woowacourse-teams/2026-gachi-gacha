@@ -2,7 +2,6 @@ package com.gachi.gacha.server.chat.domain;
 
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.member.domain.Member;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,25 +11,44 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMember, Long> {
 
+    /**
+     * 내가 참여한 채팅방 중 상대와 어느 한쪽이라도 차단한 방은 제외한다.
+     */
     @Query("""
             SELECT chatRoomMember
             FROM ChatRoomMember chatRoomMember
             JOIN FETCH chatRoomMember.chatRoom chatRoom
             WHERE chatRoomMember.member.id = :memberId
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM ChatRoomMember otherChatRoomMember, MemberBlock memberBlock
+                  WHERE otherChatRoomMember.chatRoom = chatRoom
+                    AND otherChatRoomMember.member.id <> :memberId
+                    AND (
+                        (memberBlock.blockerId = :memberId
+                            AND memberBlock.blockedId = otherChatRoomMember.member.id)
+                        OR (memberBlock.blockerId = otherChatRoomMember.member.id
+                            AND memberBlock.blockedId = :memberId)
+                    )
+              )
             ORDER BY COALESCE(chatRoom.lastMessageAt, chatRoom.createdAt) DESC,
                      chatRoom.id DESC
             """)
     List<ChatRoomMember> findMyChatRooms(Long memberId);
 
-    @Query("""
-            SELECT chatRoomMember
-            FROM ChatRoomMember chatRoomMember
-            JOIN FETCH chatRoomMember.chatRoom chatRoom
-            JOIN FETCH chatRoomMember.member member
-            WHERE chatRoom.id IN :roomIds
-              AND member.id <> :memberId
-            """)
-    List<ChatRoomMember> findOtherMembers(List<Long> roomIds, Long memberId);
+    /** Member의 SQLRestriction을 적용하지 않고 탈퇴 회원의 채팅 표시 정보까지 조회한다. */
+    @Query(value = """
+            SELECT chat_room_member.chat_room_id AS "roomId",
+                   member.id AS "memberId",
+                   member.nickname AS "nickname",
+                   member.profile_image_url AS "profileImageUrl",
+                   member.is_deleted AS "deleted"
+            FROM chat_room_member
+            JOIN member ON member.id = chat_room_member.member_id
+            WHERE chat_room_member.chat_room_id IN (:roomIds)
+              AND chat_room_member.member_id <> :memberId
+            """, nativeQuery = true)
+    List<ChatMemberSummary> findOtherMembersIncludingDeleted(final List<Long> roomIds, final Long memberId);
 
     @Query("""
             SELECT chatRoomMember
@@ -45,14 +63,22 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
                 .orElseThrow(() -> new ChatRoomAccessDeniedException(ErrorCode.CHAT_ROOM_ACCESS_DENIED));
     }
 
-    @Query("""
-            SELECT chatRoomMember.member
-            FROM ChatRoomMember chatRoomMember
-            WHERE chatRoomMember.chatRoom.id = :roomId
-              AND chatRoomMember.member.id <> :memberId
-            """)
-    Optional<Member> findOtherMember(Long roomId, Long memberId);
+    @Query(value = """
+            SELECT chat_room_member.chat_room_id AS "roomId",
+                   member.id AS "memberId",
+                   member.nickname AS "nickname",
+                   member.profile_image_url AS "profileImageUrl",
+                   member.is_deleted AS "deleted"
+            FROM chat_room_member
+            JOIN member ON member.id = chat_room_member.member_id
+            WHERE chat_room_member.chat_room_id = :roomId
+              AND chat_room_member.member_id <> :memberId
+            """, nativeQuery = true)
+    Optional<ChatMemberSummary> findOtherMemberIncludingDeleted(final Long roomId, final Long memberId);
 
+    /**
+     * 목록에서 숨긴 차단 관계의 채팅방은 전체 안 읽은 수에서도 제외한다.
+     */
     @Query("""
             SELECT COALESCE(
                 SUM(
@@ -69,6 +95,18 @@ public interface ChatRoomMemberJpaRepository extends JpaRepository<ChatRoomMembe
             FROM ChatRoomMember chatRoomMember
             JOIN chatRoomMember.chatRoom chatRoom
             WHERE chatRoomMember.member.id = :memberId
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM ChatRoomMember otherChatRoomMember, MemberBlock memberBlock
+                  WHERE otherChatRoomMember.chatRoom = chatRoom
+                    AND otherChatRoomMember.member.id <> :memberId
+                    AND (
+                        (memberBlock.blockerId = :memberId
+                            AND memberBlock.blockedId = otherChatRoomMember.member.id)
+                        OR (memberBlock.blockerId = otherChatRoomMember.member.id
+                            AND memberBlock.blockedId = :memberId)
+                    )
+              )
             """)
     long countUnreadMessage(Long memberId);
 

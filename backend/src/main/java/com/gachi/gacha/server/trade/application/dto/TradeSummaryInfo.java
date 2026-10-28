@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.trade.application.dto;
 
+import com.gachi.gacha.server.category.domain.Category;
 import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeCategory;
@@ -26,7 +27,7 @@ public record TradeSummaryInfo(
     public static TradeSummaryInfo of(final Trade trade, final List<String> imageUrls) {
         List<String> categories = trade.getTradeCategories().stream()
                 .map(TradeCategory::getCategory)
-                .map(category -> category.getName())
+                .map(Category::getName)
                 .toList();
 
         String thumbnailUrl = imageUrls.isEmpty() ? null : imageUrls.getFirst();

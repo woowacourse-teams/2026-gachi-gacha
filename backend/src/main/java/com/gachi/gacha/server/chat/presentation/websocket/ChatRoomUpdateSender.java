@@ -22,20 +22,8 @@ public class ChatRoomUpdateSender {
 
     public void sendToMember(final Long memberId, final Long roomId) {
         try {
-            ChatRoomUpdateInfo info =
-                    chatRoomService.getRoomWithTotalUnreadCount(memberId, roomId);
-
-            ChatRoomUpdateResponse response =
-                    new ChatRoomUpdateResponse(
-                            ChatRoomResponse.from(info.room()),
-                            info.totalUnreadCount()
-                    );
-
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(memberId),
-                    DESTINATION,
-                    response
-            );
+            chatRoomService.findRoomUpdate(memberId, roomId)
+                    .ifPresent(info -> send(memberId, info));
         } catch (Exception e) {
             log.error("채팅방 갱신 정보 전송 실패. memberId = {}, roomId = {}", memberId, roomId, e);
         }
@@ -53,5 +41,19 @@ public class ChatRoomUpdateSender {
         for (Long memberId : memberIds) {
             sendToMember(memberId, roomId);
         }
+    }
+
+    private void send(final Long memberId, final ChatRoomUpdateInfo info) {
+        ChatRoomUpdateResponse response =
+                new ChatRoomUpdateResponse(
+                        ChatRoomResponse.from(info.room()),
+                        info.totalUnreadCount()
+                );
+
+        messagingTemplate.convertAndSendToUser(
+                String.valueOf(memberId),
+                DESTINATION,
+                response
+        );
     }
 }

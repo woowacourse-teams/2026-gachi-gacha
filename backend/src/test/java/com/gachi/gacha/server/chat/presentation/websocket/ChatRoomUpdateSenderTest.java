@@ -16,6 +16,7 @@ import com.gachi.gacha.server.chat.presentation.dto.ChatRoomUpdateResponse;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +46,7 @@ class ChatRoomUpdateSenderTest {
     @Test
     @DisplayName("갱신 정보 조회가 실패해도 이미 완료된 요청에 예외를 전파하지 않는다")
     void sendToMember_queryFailureDoesNotPropagate() {
-        given(chatRoomService.getRoomWithTotalUnreadCount(FIRST_MEMBER_ID, ROOM_ID))
+        given(chatRoomService.findRoomUpdate(FIRST_MEMBER_ID, ROOM_ID))
                 .willThrow(new IllegalStateException("조회 실패"));
 
         assertThatCode(() -> sender.sendToMember(FIRST_MEMBER_ID, ROOM_ID))
@@ -63,7 +64,7 @@ class ChatRoomUpdateSenderTest {
         assertThatCode(() -> sender.sendToRoomMembers(ROOM_ID))
                 .doesNotThrowAnyException();
 
-        verify(chatRoomService, never()).getRoomWithTotalUnreadCount(any(), any());
+        verify(chatRoomService, never()).findRoomUpdate(any(), any());
         verifyNoInteractions(messagingTemplate);
     }
 
@@ -72,9 +73,9 @@ class ChatRoomUpdateSenderTest {
     void sendToRoomMembers_continuesAfterMemberQueryFailure() {
         given(chatRoomService.getMemberIds(ROOM_ID))
                 .willReturn(List.of(FIRST_MEMBER_ID, SECOND_MEMBER_ID));
-        given(chatRoomService.getRoomWithTotalUnreadCount(FIRST_MEMBER_ID, ROOM_ID))
+        given(chatRoomService.findRoomUpdate(FIRST_MEMBER_ID, ROOM_ID))
                 .willThrow(new IllegalStateException("첫 참여자 조회 실패"));
-        given(chatRoomService.getRoomWithTotalUnreadCount(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
+        given(chatRoomService.findRoomUpdate(SECOND_MEMBER_ID, ROOM_ID)).willReturn(Optional.of(updateInfo()));
 
         assertThatCode(() -> sender.sendToRoomMembers(ROOM_ID)).doesNotThrowAnyException();
 
@@ -89,8 +90,8 @@ class ChatRoomUpdateSenderTest {
     void sendToRoomMembers_continuesAfterDeliveryFailure() {
         given(chatRoomService.getMemberIds(ROOM_ID))
                 .willReturn(List.of(FIRST_MEMBER_ID, SECOND_MEMBER_ID));
-        given(chatRoomService.getRoomWithTotalUnreadCount(FIRST_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
-        given(chatRoomService.getRoomWithTotalUnreadCount(SECOND_MEMBER_ID, ROOM_ID)).willReturn(updateInfo());
+        given(chatRoomService.findRoomUpdate(FIRST_MEMBER_ID, ROOM_ID)).willReturn(Optional.of(updateInfo()));
+        given(chatRoomService.findRoomUpdate(SECOND_MEMBER_ID, ROOM_ID)).willReturn(Optional.of(updateInfo()));
         doThrow(new MessageDeliveryException("전송 실패")).when(messagingTemplate).convertAndSendToUser(
                 eq(String.valueOf(FIRST_MEMBER_ID)), eq(DESTINATION), any(ChatRoomUpdateResponse.class));
 
@@ -100,11 +101,21 @@ class ChatRoomUpdateSenderTest {
                 eq(String.valueOf(SECOND_MEMBER_ID)), eq(DESTINATION), any(ChatRoomUpdateResponse.class));
     }
 
+    @Test
+    @DisplayName("차단 관계로 숨긴 채팅방이면 갱신 정보를 보내지 않는다")
+    void sendToMember_hiddenRoomDoesNotSend() {
+        given(chatRoomService.findRoomUpdate(FIRST_MEMBER_ID, ROOM_ID)).willReturn(Optional.empty());
+
+        sender.sendToMember(FIRST_MEMBER_ID, ROOM_ID);
+
+        verifyNoInteractions(messagingTemplate);
+    }
+
     private ChatRoomUpdateInfo updateInfo() {
         ChatRoomInfo room = ChatRoomInfo.builder()
                 .roomId(ROOM_ID)
                 .trade(new ChatRoomInfo.TradeSummary(1L, "교환 게시글", null, TradeStatus.AVAILABLE))
-                .otherMember(new ChatRoomInfo.MemberSummary(FIRST_MEMBER_ID, "상대방", null))
+                .otherMember(new ChatRoomInfo.MemberSummary(FIRST_MEMBER_ID, "상대방", null, false))
                 .lastMessage(new ChatRoomInfo.LastMessageSummary("안녕하세요", LocalDateTime.of(2026, 9, 29, 12, 0)))
                 .unreadCount(1L)
                 .createdAt(LocalDateTime.of(2026, 9, 28, 12, 0))
