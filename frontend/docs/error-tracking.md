@@ -2,6 +2,8 @@
 
 PostHog는 이용 흐름·세션 리플레이, Sentry는 오류 스택·발생 환경·배포 릴리스를 담당한다. Sentry Replay와 성능 추적은 중복 수집과 비용을 피하기 위해 사용하지 않는다.
 
+Sentry 관련 작업 전에는 저장소 스킬인 [`$gachigacha-sentry-operations`](../../.agents/skills/gachigacha-sentry-operations/SKILL.md)를 사용한다. 최초 계정·프로젝트 연결은 [설정 런북](../../.agents/skills/gachigacha-sentry-operations/references/setup-runbook.md), 이벤트 정보 고도화·필터링·알림·운영 판단은 [최적화 원칙](../../.agents/skills/gachigacha-sentry-operations/references/monitoring-policy.md)을 따른다.
+
 ## 수집 범위
 
 - 미처리 JavaScript 오류와 Promise rejection

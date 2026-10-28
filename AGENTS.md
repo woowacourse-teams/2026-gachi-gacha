@@ -18,6 +18,11 @@ These rules apply to every agent working in this repository.
 5. Run formatting, lint, type checking, focused tests, and a production build when relevant.
 6. Open a pull request against the requested development branch and merge only when explicitly authorized.
 
+## Mandatory skill usage
+
+- For any Sentry setup, implementation, filtering, grouping, alerting, quota, privacy, or incident-triage work, use `$gachigacha-sentry-operations` first.
+- Read the skill's required references before changing Sentry code, GitHub variables/secrets, dashboard settings, alerts, or operating policy.
+
 ## Naming conventions
 
 - Issue titles use the repository templates, such as `[FEAT] ...`, `[BUG] ...`, and `[REFACTOR] ...`.
