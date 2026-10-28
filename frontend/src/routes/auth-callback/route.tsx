@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
+import { AuthApiError } from '@/features/auth/api/AuthApiError';
 import { exchangeOAuthCodeOnce } from '@/features/auth/api/exchangeOAuthCode';
 import {
   consumeAuthReturnPath,
@@ -13,10 +14,14 @@ import {
   readOAuthLoginProvider,
 } from '@/features/auth/oauthLoginProviderStorage';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
-import { parseOAuthLoginFragment } from '@/features/auth/parseOAuthLoginFragment';
+import {
+  ExpectedOAuthLoginError,
+  parseOAuthLoginFragment,
+} from '@/features/auth/parseOAuthLoginFragment';
 import { markCurrentLandingTourAsSeen } from '@/features/onboarding/landingTourSeenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
@@ -82,6 +87,9 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
         }
 
         clearOAuthLoginProvider();
+        if (shouldCaptureOAuthCallbackFailure(error)) {
+          captureCoreFeatureFailure('oauth_callback');
+        }
         if (completionProvider) {
           captureAnalyticsEvent('oauth_login_completed', {
             provider: completionProvider,
@@ -117,4 +125,16 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
       </Card>
     </Page>
   );
+}
+
+function shouldCaptureOAuthCallbackFailure(error: unknown): boolean {
+  if (error instanceof ExpectedOAuthLoginError || error instanceof TypeError) {
+    return false;
+  }
+
+  if (error instanceof AuthApiError) {
+    return error.status >= 500;
+  }
+
+  return true;
 }

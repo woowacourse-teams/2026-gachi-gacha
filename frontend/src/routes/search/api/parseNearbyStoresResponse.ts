@@ -1,3 +1,4 @@
+import { ApiResponseParseError } from '@/shared/api/ApiResponseParseError';
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
 import type {
@@ -68,7 +69,9 @@ export function parseNearbyStoresResponse(
   value: unknown,
 ): NearbyStoresResponseDto {
   if (!isApiResponse(value)) {
-    throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
+    throw new ApiResponseParseError(
+      '백엔드 공통 응답 형식이 올바르지 않습니다.',
+    );
   }
 
   if (value.code !== 'C000') {
@@ -76,7 +79,7 @@ export function parseNearbyStoresResponse(
   }
 
   if (!isNearbyStoresResponse(value.data)) {
-    throw new Error('주변 매장 응답 형식이 올바르지 않습니다.');
+    throw new ApiResponseParseError('주변 매장 응답 형식이 올바르지 않습니다.');
   }
 
   return value.data;

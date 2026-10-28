@@ -61,6 +61,12 @@ jobs:
           POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST }}
           POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
           POSTHOG_ENABLED: ${{ vars.POSTHOG_ENABLED }}
+          SENTRY_ENABLED: ${{ vars.SENTRY_ENABLED }}
+          SENTRY_DSN: ${{ vars.SENTRY_DSN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_RELEASE: ${{ github.sha }}
           AFFILIATE_CATALOG_ENABLED: ${{ vars.AFFILIATE_CATALOG_ENABLED || 'true' }}
           EVENT_APPLICATION_ENABLED: ${{ vars.EVENT_APPLICATION_ENABLED }}
           EVENT_APPLICATION_ENDPOINT: ${{ vars.EVENT_APPLICATION_ENDPOINT }}
@@ -68,6 +74,9 @@ jobs:
           EVENT_APPLICATION_END_AT: ${{ vars.EVENT_APPLICATION_END_AT }}
           MEMBER_REPORT_ENDPOINT: ${{ vars.MEMBER_REPORT_ENDPOINT }}
         run: pnpm build
+
+      - name: Remove source maps from deployment artifact
+        run: find dist -type f -name '*.map' -delete
 
       - name: Deploy to Nginx Directory
         shell: bash

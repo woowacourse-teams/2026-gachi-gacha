@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Client, type IMessage } from '@stomp/stompjs';
 
 import { readAccessToken } from '@/features/auth/authTokenStorage';
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 
 import type {
   ChatLastMessage,
@@ -32,6 +33,7 @@ interface UseChatSocketResult {
 
 const RECONNECT_DELAY = 5_000;
 const HEARTBEAT_INTERVAL = 10_000;
+const RECONNECT_FAILURE_CAPTURE_THRESHOLD = 3;
 
 export function useChatSocket({
   roomId,
@@ -65,6 +67,25 @@ export function useChatSocket({
       return;
     }
 
+    let isActive = true;
+    let consecutiveConnectionFailures = 0;
+    let hasCapturedReconnectFailure = false;
+
+    function registerConnectionFailure() {
+      if (!isActive || hasCapturedReconnectFailure) {
+        return;
+      }
+
+      consecutiveConnectionFailures += 1;
+
+      if (
+        consecutiveConnectionFailures >= RECONNECT_FAILURE_CAPTURE_THRESHOLD
+      ) {
+        hasCapturedReconnectFailure = true;
+        captureCoreFeatureFailure('chat_reconnect_exhausted');
+      }
+    }
+
     const client = new Client({
       brokerURL: createWebSocketUrl(),
       reconnectDelay: RECONNECT_DELAY,
@@ -84,6 +105,8 @@ export function useChatSocket({
         setStatus('connecting');
       },
       onConnect: () => {
+        consecutiveConnectionFailures = 0;
+        hasCapturedReconnectFailure = false;
         setStatus('connected');
         setErrorMessage(null);
         if (roomId) {
@@ -107,6 +130,7 @@ export function useChatSocket({
         setErrorMessage('채팅 서버에 연결하지 못했습니다.');
       },
       onWebSocketClose: () => {
+        registerConnectionFailure();
         setStatus('disconnected');
       },
     });
@@ -116,6 +140,7 @@ export function useChatSocket({
     client.activate();
 
     return () => {
+      isActive = false;
       clientRef.current = null;
       void client.deactivate();
     };
