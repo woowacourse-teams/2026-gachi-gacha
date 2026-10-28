@@ -8,9 +8,11 @@ import { getIsInternalUser } from './internalUser';
 
 const ANALYTICS_MEMBER_STORAGE_KEY = 'gachi-gacha:analytics-identified-member';
 const SENSITIVE_URL_PARAMETER_NAMES = [
+  'accessToken',
   'access_token',
   'code',
   'error_description',
+  'refreshToken',
   'refresh_token',
   'state',
   'token',
@@ -36,6 +38,18 @@ function removeSensitiveUrlParameters(value: unknown): unknown {
     SENSITIVE_URL_PARAMETER_NAMES.forEach((parameterName) => {
       url.searchParams.delete(parameterName);
     });
+
+    const hashParams = new URLSearchParams(url.hash.slice(1));
+    const hasSensitiveHashParameter = SENSITIVE_URL_PARAMETER_NAMES.some(
+      (parameterName) => hashParams.has(parameterName),
+    );
+
+    if (hasSensitiveHashParameter) {
+      SENSITIVE_URL_PARAMETER_NAMES.forEach((parameterName) => {
+        hashParams.delete(parameterName);
+      });
+      url.hash = hashParams.toString();
+    }
 
     return url.toString();
   } catch {
@@ -110,8 +124,10 @@ async function loadAnalyticsClient() {
       capture_pageleave: 'if_capture_pageview',
       capture_pageview: 'history_change',
       custom_personal_data_properties: [
+        'accessToken',
         'access_token',
         'code',
+        'refreshToken',
         'refresh_token',
         'state',
         'token',

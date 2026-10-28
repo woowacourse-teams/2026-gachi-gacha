@@ -9,6 +9,7 @@ describe('OAuth callback 경로', () => {
   it.each([
     ['/oauth/login/kakao', 'kakao'],
     ['/oauth/login/naver', 'naver'],
+    ['/oauth/login/apple', 'apple'],
   ] as const)('%s에서 소셜 로그인 제공자를 읽는다', (pathname, provider) => {
     expect(parseOAuthCallbackProvider(pathname)).toBe(provider);
   });
@@ -25,9 +26,12 @@ describe('OAuth callback 경로', () => {
   });
 
   it.each([
+    ['/oauth/callback', true],
+    ['/oauth/withdraw-callback', true],
     ['/oauth/login', true],
     ['/oauth/login/kakao', true],
     ['/oauth/login/naver', true],
+    ['/oauth/login/apple', true],
     ['/oauth/loginkakao', false],
     ['/login', false],
   ] as const)('%s의 인증 흐름 여부를 판별한다', (pathname, expected) => {

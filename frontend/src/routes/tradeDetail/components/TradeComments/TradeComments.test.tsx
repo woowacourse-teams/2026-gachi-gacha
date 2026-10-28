@@ -18,14 +18,31 @@ describe('TradeComments', () => {
     expect(screen.queryByRole('button', { name: '답글' })).toBeNull();
   });
 
-  it('정렬, 좋아요, 신고 기능은 제공하지 않는다', () => {
+  it('아직 연결되지 않은 댓글 작업은 사용자에게 노출하지 않는다', () => {
     render(<TradeComments comments={TRADE_COMMENTS} />);
 
     expect(screen.queryByRole('combobox')).toBeNull();
     expect(screen.queryByRole('button', { name: /좋아요/ })).toBeNull();
     expect(screen.queryByRole('button', { name: '신고' })).toBeNull();
-    expect(screen.getByRole('button', { name: '수정' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '수정' })).toBeNull();
+    expect(screen.queryByRole('button', { name: '삭제' })).toBeNull();
+  });
+
+  it('댓글 작업이 연결되면 내 댓글에 수정과 삭제를 제공한다', async () => {
+    const user = userEvent.setup();
+    const onCommentAction = jest.fn();
+
+    render(
+      <TradeComments
+        comments={TRADE_COMMENTS}
+        onCommentAction={onCommentAction}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: '수정' }));
+
     expect(screen.getByRole('button', { name: '삭제' })).toBeInTheDocument();
+    expect(onCommentAction).toHaveBeenCalledWith('edit', TRADE_COMMENTS[1]);
   });
 
   it('댓글을 입력하면 공백을 제거해 등록 콜백으로 전달한다', async () => {

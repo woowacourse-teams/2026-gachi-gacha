@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import type { UpdateCurrentMemberInput } from '@/features/auth/api/updateCurrentMember';
 import { uploadProfileImage } from '@/features/auth/api/uploadProfileImage';
 import type { AuthMember } from '@/features/auth/authMemberType';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import { ProfileEditDialog } from './ProfileEditDialog';
 
@@ -54,7 +55,12 @@ jest.mock('@/features/auth/api/uploadProfileImage', () => ({
   uploadProfileImage: jest.fn(),
 }));
 
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+}));
+
 const mockedUploadProfileImage = jest.mocked(uploadProfileImage);
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 const MEMBER = {
   name: '김민지',
@@ -76,6 +82,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   mockedUploadProfileImage.mockReset();
+  mockedCaptureAnalyticsEvent.mockReset();
 });
 
 describe('ProfileEditDialog', () => {
@@ -117,6 +124,37 @@ describe('ProfileEditDialog', () => {
         desireTradeLocation: '홍대입구역',
       });
     });
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'profile_image_selection_completed',
+      {
+        outcome: 'success',
+        rejection_reason: 'none',
+        format: 'png',
+        size_bucket: 'under_1mb',
+      },
+    );
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'profile_image_upload_started',
+      {
+        format: 'png',
+        size_bucket: 'under_1mb',
+      },
+    );
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'profile_image_upload_completed',
+      {
+        outcome: 'success',
+        format: 'png',
+        size_bucket: 'under_1mb',
+      },
+    );
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'profile_update_completed',
+      expect.objectContaining({
+        outcome: 'success',
+        image_change: 'replaced',
+      }),
+    );
   });
 
   it('지원하지 않는 프로필 사진은 업로드하지 않고 형식을 안내한다', async () => {
@@ -144,6 +182,15 @@ describe('ProfileEditDialog', () => {
     );
     expect(mockedUploadProfileImage).not.toHaveBeenCalled();
     expect(onSave).not.toHaveBeenCalled();
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'profile_image_selection_completed',
+      {
+        outcome: 'failure',
+        rejection_reason: 'unsupported_type',
+        format: 'other',
+        size_bucket: 'under_1mb',
+      },
+    );
   });
 
   it('사진 업로드에 실패하면 회원 정보를 수정하지 않고 오류를 안내한다', async () => {
@@ -174,6 +221,14 @@ describe('ProfileEditDialog', () => {
       await screen.findByText('프로필 사진을 업로드하지 못했습니다.'),
     ).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'profile_image_upload_completed',
+      {
+        outcome: 'failure',
+        format: 'webp',
+        size_bucket: 'under_1mb',
+      },
+    );
   });
 
   it('카카오 장소 검색에서 선택한 장소명을 선호 거래 지역으로 저장한다', async () => {

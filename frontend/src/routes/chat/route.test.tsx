@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Route, Routes } from 'react-router';
 
-import type { ChatMessage } from '@/domains/chat/chatType';
+import type { ChatMessage, ChatRoomUpdate } from '@/domains/chat/chatType';
+import { compressChatImages } from '@/domains/chat/compressChatImages';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -13,19 +14,32 @@ import { chatHandlers } from './mocks/chatHandlers';
 import { ChatRoute, ChatStartRoute } from './route';
 
 let mockOnMessage: ((message: ChatMessage) => void) | null = null;
+let mockOnRoomUpdate: ((update: ChatRoomUpdate) => void) | null = null;
+const mockSendImageMessage =
+  jest.fn<(content: string, files: ChatMessage['files']) => Promise<void>>();
+
+jest.mock('@/domains/chat/compressChatImages', () => ({
+  compressChatImages: jest.fn(),
+}));
+
+const mockedCompressChatImages = jest.mocked(compressChatImages);
 
 jest.mock('@/domains/chat/useChatSocket', () => ({
   useChatSocket: ({
     onMessage,
+    onRoomUpdate,
   }: {
     onMessage: (message: ChatMessage) => void;
+    onRoomUpdate: (update: ChatRoomUpdate) => void;
   }) => {
     mockOnMessage = onMessage;
+    mockOnRoomUpdate = onRoomUpdate;
 
     return {
       status: 'connected',
       errorMessage: null,
       sendTextMessage: async () => undefined,
+      sendImageMessage: mockSendImageMessage,
     };
   },
 }));
@@ -38,6 +52,7 @@ function createSocketMessage(sequence: number, senderId: number): ChatMessage {
     senderId,
     type: 'TEXT',
     content: `실시간 메시지 ${sequence}`,
+    files: [],
     createdAt: '2026-10-01T10:00:00',
   };
 }
@@ -67,6 +82,12 @@ function createTradeDetail(
 
 describe('ChatRoute', () => {
   beforeEach(() => {
+    mockOnMessage = null;
+    mockOnRoomUpdate = null;
+    mockSendImageMessage.mockReset();
+    mockSendImageMessage.mockResolvedValue();
+    mockedCompressChatImages.mockReset();
+    mockedCompressChatImages.mockImplementation(async (files) => files);
     storeAuthTokens({
       accessToken: ACCESS_TOKEN,
       refreshToken: 'refresh-token',
@@ -93,6 +114,41 @@ describe('ChatRoute', () => {
       ),
       ...chatHandlers,
     );
+  });
+
+  it('선택한 사진을 업로드한 뒤 이미지 메시지 메타데이터를 전송한다', async () => {
+    const user = userEvent.setup();
+
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: jest.fn(() => 'blob:chat-preview'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: jest.fn(),
+    });
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    const image = new File(['image'], 'offer.jpg', { type: 'image/jpeg' });
+    await user.upload(await screen.findByLabelText('사진 추가'), image);
+    await user.type(
+      screen.getByRole('textbox', { name: '메시지' }),
+      '교환 사진',
+    );
+    await user.click(screen.getByRole('button', { name: '보내기' }));
+
+    await waitFor(() => {
+      expect(mockSendImageMessage).toHaveBeenCalledWith('교환 사진', [
+        expect.objectContaining({
+          originalName: 'offer.jpg',
+          contentType: 'image/jpeg',
+        }),
+      ]);
+    });
   });
 
   it('열린 채팅방에서 상대 메시지를 받으면 마지막 sequence까지 서버에 읽음 처리한다', async () => {
@@ -152,6 +208,212 @@ describe('ChatRoute', () => {
         name: '가챠좋아님과의 채팅 페이지',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('선택한 채팅방 조회가 실패해도 다른 채팅방 목록을 유지하고 재시도한다', async () => {
+    const user = userEvent.setup();
+    let requests = 0;
+
+    server.use(
+      http.get('/api/v1/chat/rooms/1', () => {
+        requests += 1;
+
+        if (requests === 1) {
+          return HttpResponse.json(
+            { code: 'CHE001', message: '채팅 상대방 정보를 찾을 수 없습니다.' },
+            { status: 404 },
+          );
+        }
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            roomId: 1,
+            trade: {
+              tradeId: 1,
+              memberId: 3,
+              title: '쿠로미 미니 피규어 vol.2',
+              status: 'AVAILABLE',
+              thumbnailUrl: null,
+            },
+            otherMember: {
+              memberId: 8,
+              nickname: '가챠좋아',
+              profileImageUrl: null,
+            },
+            lastMessage: null,
+            unreadCount: 0,
+            createdAt: '2026-10-01T09:12:00',
+          },
+        });
+      }),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /가챠좋아/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '채팅 상대방 정보를 찾을 수 없습니다.',
+    );
+    expect(
+      screen.getByRole('button', { name: /피규어수집가/ }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(
+      await screen.findByRole('heading', { name: '가챠좋아' }),
+    ).toBeInTheDocument();
+    expect(requests).toBe(2);
+  });
+
+  it('선택한 방의 메시지 조회가 실패해도 채팅방 목록을 보여준다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/chat/rooms/1/messages', () =>
+        HttpResponse.json(
+          { code: 'S001', message: '메시지를 불러오지 못했습니다.' },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /가챠좋아/ }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '메시지를 불러오지 못했습니다.',
+    );
+    expect(
+      screen.getByRole('button', { name: /피규어수집가/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '가챠좋아' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /피규어수집가/ }));
+
+    expect(
+      await screen.findByRole('heading', { name: '피규어수집가' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('채팅방 목록 자체가 실패하면 전체 오류를 표시한다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json(
+          { code: 'CHE001', message: '채팅 상대방 정보를 찾을 수 없습니다.' },
+          { status: 404 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '채팅 상대방 정보를 찾을 수 없습니다.',
+    );
+    expect(
+      screen.queryByRole('button', { name: /가챠좋아/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('거래 상세 조회만 실패하면 채팅방 응답의 거래 정보로 대화를 표시한다', async () => {
+    server.use(
+      http.get('/api/v1/trades/1', () =>
+        HttpResponse.json(
+          { code: 'TE001', message: '존재하지 않는 교환 게시글입니다.' },
+          { status: 404 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute roomId={1} />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat/1',
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: '가챠좋아' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('첫 메시지가 없는 방은 숨기고 첫 메시지 갱신 후 목록에 보여준다', async () => {
+    const emptyRoom = {
+      roomId: 3,
+      trade: {
+        tradeId: 3,
+        memberId: 4,
+        title: '아직 대화하지 않은 교환글',
+        status: 'AVAILABLE' as const,
+        thumbnailUrl: null,
+      },
+      otherMember: {
+        memberId: 4,
+        nickname: '빈방상대',
+        profileImageUrl: null,
+      },
+      lastMessage: null,
+      unreadCount: 0,
+      createdAt: '2026-10-01T10:00:00',
+    };
+
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            rooms: [emptyRoom],
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+
+    expect(
+      await screen.findByText('아직 시작한 대화가 없어요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /빈방상대/ }),
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      mockOnRoomUpdate?.({
+        room: {
+          ...emptyRoom,
+          lastMessage: {
+            preview: '첫 교환 문의예요.',
+            sentAt: '2026-10-01T10:01:00',
+          },
+          unreadCount: 1,
+        },
+        totalUnreadCount: 1,
+      });
+    });
+
+    expect(
+      await screen.findByRole('button', { name: /빈방상대/ }),
+    ).toHaveTextContent('첫 교환 문의예요.');
   });
 
   it('버튼을 누르면 이전 메시지를 기존 대화 앞에 추가한다', async () => {

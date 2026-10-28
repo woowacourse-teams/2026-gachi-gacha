@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import styled from '@emotion/styled';
+import { useNavigate } from 'react-router';
 
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   color,
@@ -14,6 +17,7 @@ import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import TradeDetailPage from './TradeDetailPage';
 import { useRelatedTrades } from './useRelatedTrades';
+import { useTradeComments } from './useTradeComments';
 import { useTradeDetail } from './useTradeDetail';
 
 export interface TradeDetailRouteProps {
@@ -21,14 +25,37 @@ export interface TradeDetailRouteProps {
 }
 
 export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
+  const navigate = useNavigate();
   const { status: authStatus, member, memberId } = useAuthSession();
+  const { isMemberBlocked } = useMemberBlocks();
   const { state, retry } = useTradeDetail(tradeId);
+  const {
+    comments,
+    state: commentsState,
+    submit: submitComment,
+    retry: retryComments,
+    hasSubmittedComment,
+  } = useTradeComments({
+    tradeId,
+    postAuthorId: state.status === 'success' ? state.data.memberId : null,
+    viewerMemberId: memberId,
+    isAuthenticated: authStatus === 'authenticated',
+  });
   const {
     items: relatedItems,
     hasMore: hasMoreRelatedItems,
     isLoading: isLoadingRelatedItems,
     loadMore: loadMoreRelatedItems,
   } = useRelatedTrades(tradeId);
+
+  const isTradeAuthorBlocked =
+    state.status === 'success' && isMemberBlocked(state.data.memberId);
+
+  useEffect(() => {
+    if (isTradeAuthorBlocked) {
+      navigate('/trade', { replace: true });
+    }
+  }, [isTradeAuthorBlocked, navigate]);
 
   if (state.status === 'loading' || state.status === 'idle') {
     return <PageLoadingFallback label="교환 게시글을 불러오고 있어요." />;
@@ -60,6 +87,10 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     );
   }
 
+  if (isTradeAuthorBlocked) {
+    return <PageLoadingFallback label="교환 목록으로 이동하고 있어요." />;
+  }
+
   const action =
     authStatus === 'loading'
       ? null
@@ -82,11 +113,25 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     <TradeDetailPage
       detail={state.data}
       action={action}
+      hasSubmittedComment={hasSubmittedComment}
       relatedItems={relatedItems}
       hasMoreRelatedItems={hasMoreRelatedItems}
       isLoadingRelatedItems={isLoadingRelatedItems}
       onLoadMoreRelatedItems={loadMoreRelatedItems}
+      comments={comments}
+      commentsStatus={
+        commentsState.status === 'idle' ? 'loading' : commentsState.status
+      }
+      commentsErrorMessage={commentsState.errorMessage}
       commentViewer={commentViewer}
+      onSubmitComment={
+        authStatus === 'authenticated' || authStatus === 'guest'
+          ? submitComment
+          : undefined
+      }
+      onRetryComments={retryComments}
+      showSafetyActions={authStatus === 'authenticated'}
+      onTradeAuthorBlocked={() => navigate('/trade', { replace: true })}
     />
   );
 }

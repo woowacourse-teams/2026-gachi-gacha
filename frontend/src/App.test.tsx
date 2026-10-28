@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -9,6 +9,11 @@ import {
   readAccessToken,
   readRefreshToken,
 } from '@/features/auth/authTokenStorage';
+import { storeOAuthLoginProvider } from '@/features/auth/oauthLoginProviderStorage';
+import {
+  hasSeenCurrentLandingTour,
+  LANDING_TOUR_VERSION,
+} from '@/features/onboarding/landingTourSeenStorage';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -24,6 +29,10 @@ const accessToken = 'test-access-token';
 const refreshToken = 'test-refresh-token';
 
 describe('앱의 P0 인증과 라우팅 흐름', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
   it('비로그인 사용자도 업데이트 소식을 확인할 수 있다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
@@ -151,6 +160,63 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(readAccessToken()).toBe(accessToken);
     expect(readRefreshToken()).toBe(refreshToken);
     expect(requestedAuthorization).toBe(`Bearer ${accessToken}`);
+    expect(hasSeenCurrentLandingTour()).toBe(true);
+  });
+
+  it('백엔드 OAuth 리다이렉트의 해시 토큰을 저장하고 주소에서 즉시 제거한다', async () => {
+    let requestedAuthorization: string | null = null;
+
+    storeAuthReturnPath('/mypage?tab=stores');
+    storeOAuthLoginProvider('apple');
+    server.use(
+      http.get('/api/v1/members/me', ({ request }) => {
+        requestedAuthorization = request.headers.get('Authorization');
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        });
+      }),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: `/oauth/callback#accessToken=${accessToken}&refreshToken=${refreshToken}`,
+    });
+
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
+        '/mypage?tab=stores',
+      );
+    });
+    expect(window.location.hash).toBe('');
+    expect(readAccessToken()).toBe(accessToken);
+    expect(readRefreshToken()).toBe(refreshToken);
+    expect(requestedAuthorization).toBe(`Bearer ${accessToken}`);
+  });
+
+  it('백엔드 OAuth 리다이렉트 오류를 안내하고 해시를 제거한다', async () => {
+    storeAuthReturnPath('/notifications');
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/oauth/callback#error=invalid_state',
+    });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '로그인 요청이 유효하지 않습니다',
+    );
+    expect(window.location.hash).toBe('');
+    expect(screen.getByRole('link', { name: '다시 로그인' })).toHaveAttribute(
+      'href',
+      '/login?returnTo=%2Fnotifications',
+    );
   });
 
   it('OAuth API 오류가 발생하면 오류 안내와 다시 로그인 링크를 보여준다', async () => {
@@ -183,8 +249,147 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
 
-  it('루트 URL은 거래/교환 화면으로 이동한다', async () => {
+  it('비로그인 사용자가 루트 URL로 처음 들어오면 서비스 소개를 보여준다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/',
+    });
+
+    expect(
+      await screen.findByRole('dialog', {
+        name: '여기서 교환글을 작성해 봐요!',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('가치가챠')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/');
+  });
+
+  it('서비스 소개를 건너뛰면 거래/교환 화면으로 이동한다', async () => {
     server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/',
+    });
+
+    await user.click(await screen.findByRole('button', { name: 'SKIP' }));
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 거래글을 찾아볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+    expect(hasSeenCurrentLandingTour()).toBe(true);
+  });
+
+  it('현재 버전의 서비스 소개를 본 브라우저는 비로그인 상태에서도 바로 거래/교환 화면으로 이동한다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+    window.localStorage.setItem('landingTourSeenVersion', LANDING_TOUR_VERSION);
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 거래글을 찾아볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+  });
+
+  it('마지막 소개 단계에서 가치가챠를 시작하면 거래/교환 화면으로 이동한다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/',
+    });
+
+    for (let step = 0; step < 3; step += 1) {
+      await user.click(
+        await screen.findByRole('button', {
+          name: /다음/,
+        }),
+      );
+    }
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /가치가챠 시작하기/,
+      }),
+    );
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 거래글을 찾아볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+    expect(hasSeenCurrentLandingTour()).toBe(true);
+  });
+
+  it('로그인 사용자가 루트 URL로 들어오면 서비스 소개 없이 거래/교환 화면으로 이동한다', async () => {
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
       http.get('/api/v1/trades', () =>
         HttpResponse.json({
           code: 'C000',
@@ -201,7 +406,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     );
 
     renderWithProviders(<App />, {
-      initialAccessToken: null,
+      initialAccessToken: accessToken,
       route: '/',
     });
 
@@ -210,7 +415,9 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
         name: '어떤 거래글을 찾아볼까요?',
       }),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
+    expect(hasSeenCurrentLandingTour()).toBe(true);
   });
 
   it('잘못된 URL은 쿼리와 해시를 유지한 거래/교환 화면으로 이동한다', async () => {
@@ -243,6 +450,39 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(window.location.pathname).toBe('/trade');
     expect(window.location.search).toBe('?from=shared-link');
     expect(window.location.hash).toBe('#results');
+  });
+
+  it('잘못된 URL의 인증 파라미터는 거래/교환 화면으로 전달하지 않는다', async () => {
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            content: [],
+            totalElements: 0,
+            totalPages: 0,
+            number: 0,
+            size: 20,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route:
+        '/unknown-page?from=shared-link&code=secret#accessToken=secret&refreshToken=refresh-secret',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: '어떤 거래글을 찾아볼까요?',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/trade');
+    expect(window.location.search).toBe('?from=shared-link');
+    expect(window.location.hash).toBe('');
   });
 
   it('검색 URL에서 카테고리별 가챠 탐색 화면을 보여준다', async () => {
@@ -377,6 +617,13 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
             createdAt: '2026-09-29T10:00:00',
             updatedAt: '2026-09-29T10:00:00',
           },
+        }),
+      ),
+      http.get('/api/v1/trades/15/comments', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { comments: [], totalCount: 0 },
         }),
       ),
     );

@@ -113,3 +113,16 @@ export async function authenticatedFetch(
 
   return retryResponse;
 }
+
+/**
+ * 공개 API지만 로그인 사용자의 문맥이 필요할 때 사용합니다.
+ * 저장된 토큰이 있으면 갱신까지 포함한 인증 요청을 보내고, 없으면 공개 요청을 보냅니다.
+ */
+export async function optionallyAuthenticatedFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  return readAccessToken()
+    ? authenticatedFetch(input, init)
+    : fetch(input, init);
+}

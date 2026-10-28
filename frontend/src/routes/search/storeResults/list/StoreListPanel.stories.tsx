@@ -110,6 +110,12 @@ export const SelectedStore: Story = {
   },
 };
 
+export const WithAffiliateCatalog: Story = {
+  args: {
+    affiliateCategoryNames: ['치이카와'],
+  },
+};
+
 export const MobileCarousel: Story = {
   decorators: [
     (Story) => (
