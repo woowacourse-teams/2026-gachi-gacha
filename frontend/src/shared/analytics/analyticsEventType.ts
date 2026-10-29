@@ -11,7 +11,8 @@ export type EventApplicationTrack = 'BASIC' | 'COMPLETED' | 'BOTH';
 export type AnalyticsImageFormat = 'jpeg' | 'png' | 'webp' | 'other';
 export type AnalyticsImageSizeBucket =
   'under_1mb' | '1_to_5mb' | '5_to_10mb' | 'over_10mb';
-export type LandingTourTarget = 'create' | 'map' | 'search' | 'chat';
+export type LandingTourTarget =
+  'create' | 'map' | 'search' | 'chat' | 'notification';
 export type MemberSafetySource = 'trade' | 'comment' | 'chat' | 'mypage';
 export type MemberReportReason =
   'spam' | 'fraud' | 'harassment' | 'inappropriate' | 'privacy' | 'other';

@@ -353,7 +353,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
       route: '/',
     });
 
-    for (let step = 0; step < 3; step += 1) {
+    for (let step = 0; step < 4; step += 1) {
       await user.click(
         await screen.findByRole('button', {
           name: /다음/,

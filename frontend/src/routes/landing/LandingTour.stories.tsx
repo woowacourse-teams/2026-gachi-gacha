@@ -98,3 +98,9 @@ export const Mobile: Story = {
     },
   },
 };
+
+export const NotificationTechnology: Story = {
+  args: {
+    stepIndex: 4,
+  },
+};

@@ -3,6 +3,7 @@ export const LANDING_TOUR_TARGETS = [
   'map',
   'search',
   'chat',
+  'notification',
 ] as const;
 
 export type LandingTourTarget = (typeof LANDING_TOUR_TARGETS)[number];
@@ -45,6 +46,7 @@ export const DESKTOP_TARGET_RECTS: Record<
   map: createCenteredTargetRect(1153, 38, 98, 60),
   search: createCenteredTargetRect(1241, 38, 100, 60),
   chat: createCenteredTargetRect(1276, 37, 58, 58),
+  notification: createCenteredTargetRect(1324, 37, 58, 58),
 };
 
 export const MOBILE_TARGET_RECTS: Record<
@@ -55,4 +57,5 @@ export const MOBILE_TARGET_RECTS: Record<
   map: createCenteredTargetRect(141, 29, 72, 52),
   search: createCenteredTargetRect(203, 29, 72, 52),
   chat: createCenteredTargetRect(269, 29, 56, 56),
+  notification: createCenteredTargetRect(307, 29, 56, 56),
 };
