@@ -1,8 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 import type { AuthTokens } from './authTypes';
-
-const AUTH_SESSION_KEY = 'gachi-gacha:auth-session:v1';
+import { AUTH_SESSION_KEY } from './authStorageKeys';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
