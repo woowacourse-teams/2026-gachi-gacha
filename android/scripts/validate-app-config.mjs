@@ -7,6 +7,7 @@ const {
   DEFAULT_ANDROID_VERSION_CODE,
   DEFAULT_APP_VERSION,
   PRODUCTION_BLOCKED_PERMISSIONS,
+  WEBVIEW_LOCATION_PERMISSIONS,
   resolveOptionalHttpsUrl,
 } = createConfig;
 const {
@@ -82,6 +83,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     softwareKeyboardLayoutMode: config.android?.softwareKeyboardLayoutMode,
     version: config.version,
     versionCode: config.android?.versionCode,
+    permissions: config.android?.permissions,
     blockedPermissions: config.android?.blockedPermissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
     webAppBaseUrl: config.extra?.webAppBaseUrl,
@@ -103,6 +105,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     softwareKeyboardLayoutMode: 'resize',
     version: DEFAULT_APP_VERSION,
     versionCode: DEFAULT_ANDROID_VERSION_CODE,
+    permissions: WEBVIEW_LOCATION_PERMISSIONS,
     blockedPermissions:
       variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
@@ -126,6 +129,25 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
 
   console.log(`✓ ${variant}: ${actual.package}`);
 }
+
+const webAppShellSource = readFileSync(
+  new URL('../src/screens/WebAppShellScreen.tsx', import.meta.url),
+  'utf8',
+);
+
+if (!/\bgeolocationEnabled\b/.test(webAppShellSource)) {
+  throw new Error('Android WebView geolocation must be enabled for the map location control.');
+}
+
+if (
+  PRODUCTION_BLOCKED_PERMISSIONS.some((permission) =>
+    WEBVIEW_LOCATION_PERMISSIONS.includes(permission),
+  )
+) {
+  throw new Error('WebView location permissions must not be blocked in production.');
+}
+
+console.log('✓ Android WebView requests location only through its geolocation control');
 
 process.env.APP_VARIANT = 'production';
 process.env.APP_VERSION = '1.2.3';

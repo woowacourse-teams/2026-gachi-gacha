@@ -128,6 +128,11 @@ GitHub Actions에서는 비밀이 아닌 Repository Variable로 관리한다. ca
 WebView 안의 기존 웹 구현이 담당하므로 REST 키를 APK에서 직접 호출하는 경로에 쓰지
 않는다. Admin 키나 client secret은 앱 또는 GitHub Variable에 넣지 않는다.
 
+WebView 지도에서 현재 위치 버튼을 누르면 Android가 정밀·대략적 위치 권한을 그때
+요청한다. 권한은 앱 시작이나 지도 진입만으로 요청하지 않으며, 허용된 위치는 Kakao
+지도에서 현재 위치로 이동하는 데만 사용한다. 거부하면 웹의 기존 안내를 표시하고
+4초 뒤 시각적으로 닫는다.
+
 ### 소셜 로그인 실기기 진단
 
 DEV 서버에 모바일 OAuth API가 배포되고 공개 client ID와 callback이 준비되면 다음처럼

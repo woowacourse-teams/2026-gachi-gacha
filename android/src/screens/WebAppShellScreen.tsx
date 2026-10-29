@@ -217,6 +217,7 @@ export function WebAppShellScreen() {
         allowUniversalAccessFromFileURLs={false}
         cacheEnabled
         domStorageEnabled
+        geolocationEnabled
         injectedJavaScriptBeforeContentLoaded={createWebShellBootstrapScript(
           nativeSessionTokens,
         )}
