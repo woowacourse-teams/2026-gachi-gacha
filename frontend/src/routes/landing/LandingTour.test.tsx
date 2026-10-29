@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 
-import LandingTour, { type LandingTourStepIndex } from './LandingTour';
+import LandingTour, {
+  HERMES_TECH_ARTICLE_URL,
+  type LandingTourStepIndex,
+} from './LandingTour';
 
 interface ButtonBounds {
   bottom: number;
@@ -114,6 +117,11 @@ describe('LandingTour', () => {
         target: 'chat',
         bounds: { left: 1255, top: 16, right: 1297, bottom: 58 },
       },
+      {
+        stepIndex: 4,
+        target: 'notification',
+        bounds: { left: 1303, top: 16, right: 1345, bottom: 58 },
+      },
     ];
 
     for (const testCase of cases) {
@@ -153,6 +161,11 @@ describe('LandingTour', () => {
         stepIndex: 3,
         target: 'chat',
         bounds: { left: 251, top: 11, right: 287, bottom: 47 },
+      },
+      {
+        stepIndex: 4,
+        target: 'notification',
+        bounds: { left: 289, top: 11, right: 325, bottom: 47 },
       },
     ];
 
@@ -195,5 +208,29 @@ describe('LandingTour', () => {
     expect(focusSpot?.style.height).toBe('90px');
 
     marker.remove();
+  });
+
+  it('마지막 단계에서 현재 알림과 준비 중인 Hermes 기술을 구분해 안내한다', () => {
+    render(<LandingTour stepIndex={4} />);
+
+    expect(
+      screen.getByRole('heading', {
+        name: '놓치기 쉬운 가챠 소식을 알림으로 만나보세요!',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/댓글 알림은 지금 바로 확인/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/공식 사이트의 신상 소식도 받아볼 수 있도록 준비/),
+    ).toBeInTheDocument();
+
+    const technologyLink = screen.getByRole('link', {
+      name: /기술 블로그에서 더 알아보기/,
+    });
+
+    expect(technologyLink).toHaveAttribute('href', HERMES_TECH_ARTICLE_URL);
+    expect(technologyLink).toHaveAttribute('target', '_blank');
+    expect(
+      screen.getByRole('button', { name: /가치가챠 시작하기/ }),
+    ).toBeInTheDocument();
   });
 });

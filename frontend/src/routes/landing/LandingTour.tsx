@@ -12,24 +12,45 @@ import {
   MOBILE_TARGET_RECTS,
 } from './landingTourGeometry';
 
+export const HERMES_TECH_ARTICLE_URL =
+  'https://github.com/woowacourse-teams/2026-gachi-gacha/wiki';
+
+interface LandingTourTechnology {
+  description: string;
+  href: string;
+  linkLabel: string;
+  title: string;
+}
+
+interface LandingTourStep {
+  description: string;
+  instruction: string;
+  label: string;
+  target: LandingTourTarget;
+  technology?: LandingTourTechnology | undefined;
+}
+
 export const LANDING_TOUR_STEPS = [
   {
     target: LANDING_TOUR_TARGETS[0],
     label: '첫 번째 · 교환글 작성',
     instruction: '여기서 교환글을 작성해 봐요!',
     description: '사진과 원하는 교환 조건을 올리면 가까운 사람과 연결돼요.',
+    technology: undefined,
   },
   {
     target: LANDING_TOUR_TARGETS[1],
     label: '두 번째 · 지도 탐색',
     instruction: '원하는 가챠를 지도에서 찾아보세요!',
     description: '내 주변 매장과 원하는 가챠를 보유한 매장을 한눈에 살펴봐요.',
+    technology: undefined,
   },
   {
     target: LANDING_TOUR_TARGETS[2],
     label: '세 번째 · 키워드 검색',
     instruction: '원하는 가챠를 키워드로 검색해 보세요!',
     description: '가챠를 고르면 어느 매장이 보유 중인지 바로 확인할 수 있어요.',
+    technology: undefined,
   },
   {
     target: LANDING_TOUR_TARGETS[3],
@@ -37,10 +58,25 @@ export const LANDING_TOUR_STEPS = [
     instruction: '교환글 작성자와 나눈 채팅을 한눈에 확인해 보세요!',
     description:
       '로그인하면 교환 대화와 진행 중인 거래를 한곳에서 확인할 수 있어요.',
+    technology: undefined,
   },
-] as const;
+  {
+    target: LANDING_TOUR_TARGETS[4],
+    label: '다섯 번째 · 알림과 기술',
+    instruction: '놓치기 쉬운 가챠 소식을 알림으로 만나보세요!',
+    description:
+      '댓글 알림은 지금 바로 확인할 수 있고, 공식 사이트의 신상 소식도 받아볼 수 있도록 준비하고 있어요.',
+    technology: {
+      title: 'Hermes로 준비하는 신상 알림',
+      description:
+        '공식 사이트의 변화를 정기적으로 확인해 새 가챠만 골라 전하는 과정을 설계하고 있어요.',
+      href: HERMES_TECH_ARTICLE_URL,
+      linkLabel: '기술 블로그에서 더 알아보기',
+    },
+  },
+] as const satisfies readonly LandingTourStep[];
 
-export type LandingTourStepIndex = 0 | 1 | 2 | 3;
+export type LandingTourStepIndex = 0 | 1 | 2 | 3 | 4;
 
 interface ViewportSize {
   width: number;
@@ -263,7 +299,7 @@ interface LandingTourProps {
   onSkip?: (source: 'skip_button' | 'close_button') => void;
 }
 
-/** 가치가챠의 핵심 기능을 고정 스냅샷으로 소개하는 4단계 랜딩 투어입니다. */
+/** 가치가챠의 핵심 기능과 기술을 고정 스냅샷으로 소개하는 5단계 랜딩 투어입니다. */
 export default function LandingTour({
   stepIndex,
   onStepChange = () => undefined,
@@ -302,7 +338,11 @@ export default function LandingTour({
         <FocusSpot
           aria-hidden="true"
           data-landing-tour-focus={step.target}
-          $isCircle={step.target === 'create' || step.target === 'chat'}
+          $isCircle={
+            step.target === 'create' ||
+            step.target === 'chat' ||
+            step.target === 'notification'
+          }
           style={{
             left: overlayLayout.highlight.left,
             top: overlayLayout.highlight.top,
@@ -342,6 +382,23 @@ export default function LandingTour({
           <Description id="landing-tour-step-description">
             {step.description}
           </Description>
+
+          {step.technology && (
+            <TechnologyCard>
+              <TechnologyTitle>{step.technology.title}</TechnologyTitle>
+              <TechnologyDescription>
+                {step.technology.description}
+              </TechnologyDescription>
+              <TechnologyLink
+                href={step.technology.href}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {step.technology.linkLabel}
+                <span aria-hidden="true">↗</span>
+              </TechnologyLink>
+            </TechnologyCard>
+          )}
 
           <Actions>
             <Progress
@@ -621,6 +678,70 @@ const Description = styled.p`
   @media (max-width: ${breakpoint.mobile}) and (max-height: 720px) {
     margin-top: 3px;
     font-size: 16px;
+  }
+`;
+
+const TechnologyCard = styled.aside`
+  max-width: 570px;
+  margin-top: 10px;
+  padding: 10px 13px;
+  border: 1px solid rgb(255 255 255 / 34%);
+  border-radius: 14px;
+  background: rgb(36 33 34 / 32%);
+  color: #ffffff;
+
+  @media (max-width: ${breakpoint.mobile}) and (max-height: 720px) {
+    margin-top: 6px;
+    padding: 7px 10px;
+  }
+`;
+
+const TechnologyTitle = styled.h3`
+  margin: 0;
+  font-family: ${handwrittenFont};
+  font-size: clamp(18px, 1.6vw, 22px);
+  line-height: 1.1;
+
+  @media (max-width: ${breakpoint.mobile}) and (max-height: 720px) {
+    font-size: 17px;
+  }
+`;
+
+const TechnologyDescription = styled.p`
+  margin: 3px 0 0;
+  color: rgb(255 255 255 / 82%);
+  font-family: ${handwrittenFont};
+  font-size: clamp(15px, 1.25vw, 18px);
+  line-height: 1.2;
+
+  @media (max-width: ${breakpoint.mobile}) and (max-height: 720px) {
+    font-size: 14px;
+  }
+`;
+
+const TechnologyLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  margin-top: 3px;
+  color: #fff4f6;
+  font-size: 13px;
+  font-weight: 800;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: #ffffff;
+  }
+
+  &:focus-visible {
+    border-radius: 4px;
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+
+  @media (max-width: ${breakpoint.mobile}) {
+    min-height: 36px;
   }
 `;
 

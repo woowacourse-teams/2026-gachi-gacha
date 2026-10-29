@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { LANDING_TOUR_VERSION } from '@/features/onboarding/landingTourSeenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
@@ -34,7 +35,7 @@ describe('LandingRoute 분석 이벤트', () => {
     expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
       'landing_tour_step_viewed',
       {
-        tour_version: '1',
+        tour_version: LANDING_TOUR_VERSION,
         step_number: 1,
         target: 'create',
       },
@@ -45,7 +46,7 @@ describe('LandingRoute 분석 이벤트', () => {
     expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
       'landing_tour_step_viewed',
       {
-        tour_version: '1',
+        tour_version: LANDING_TOUR_VERSION,
         step_number: 2,
         target: 'map',
       },
@@ -56,7 +57,7 @@ describe('LandingRoute 분석 이벤트', () => {
     expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
       'landing_tour_exited',
       {
-        tour_version: '1',
+        tour_version: LANDING_TOUR_VERSION,
         exit_type: 'skip_button',
         last_step_number: 2,
       },
