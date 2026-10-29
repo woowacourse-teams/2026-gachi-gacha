@@ -4,6 +4,10 @@ Android 기능과 UI를 구현할 때의 제품 기준은 작업 브랜치 생�
 `main` 모바일 반응형 뷰다. Android는 화면을 새로 해석하는 별도 제품이 아니며,
 기기 기능이 필요한 부분만 네이티브 구현으로 대체한다.
 
+현재 기본 구조는 웹 모바일 화면 전체를 WebView로 제공한다. 아래 포팅 원칙은
+`ANDROID_WEB_SHELL_ENABLED=false` 비상 경로에서 기존 React Native 화면을 유지하거나,
+WebView 위에 네이티브 기능을 추가할 때만 적용한다.
+
 ## 포팅 기준
 
 1. 작업을 시작하기 전에 최신 `origin/main`을 받아 대응하는 웹 route, feature,
@@ -42,8 +46,11 @@ Android는 제스처 내비게이션과 3버튼 내비게이션 모두 edge-to-e
 
 ## 현재 공통 구현
 
-- 장소 선택: `KakaoPlaceSearchModal`
-  - 웹 `KakaoPlaceSearchDialog`와 같은 키워드 검색·결과 선택 흐름
-  - 교환글 구매 매장, 거래 장소, 프로필 선호 거래 지역에서 재사용
-- 하단 안전 여백: `useBottomContentPadding`
-  - 스크롤 콘텐츠와 하단 고정 UI에서 공통 사용
+- 기본 UI: `WebAppShellScreen`
+  - 빌드 환경의 배포된 웹 origin을 그대로 사용
+  - 웹과 같은 거래, 장소 검색, 지도, 채팅, 알림, 마이페이지 화면 제공
+- 네이티브 경계: `webShellPolicy`
+  - 카카오·네이버 OAuth 탐색만 Custom Tab으로 전환
+  - 정확한 HTTPS origin allowlist와 제한된 인증 브리지 사용
+- 시스템 안전 영역: `SafeAreaView`의 top·bottom 안에 전체 WebView 배치
+- 기존 React Native fallback: `useBottomContentPadding`을 계속 적용

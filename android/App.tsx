@@ -7,18 +7,20 @@ import { useEffect, useRef } from 'react';
 import { BackHandler, ToastAndroid } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { isWebShellEnabled } from './src/config/webShell';
 import { AuthSessionProvider } from './src/domains/auth/AuthSessionContext';
 import { MobileOAuthInitialCallbackHandler } from './src/domains/auth/MobileOAuthInitialCallbackHandler';
 import { ChatUnreadProvider } from './src/domains/chat/ChatUnreadContext';
 import { MemberSafetyProvider } from './src/domains/memberSafety/MemberSafetyContext';
 import { NotificationProvider } from './src/domains/notification/NotificationContext';
 import { RootStack, type RootStackParamList } from './src/navigation/RootStack';
+import { WebAppShellScreen } from './src/screens/WebAppShellScreen';
 import { navigationTheme } from './src/theme/navigationTheme';
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 const EXIT_CONFIRMATION_WINDOW_MS = 2_000;
 
-export default function App() {
+function NativeApp() {
   const lastRootBackPressAt = useRef(0);
 
   useEffect(() => {
@@ -45,20 +47,35 @@ export default function App() {
   }, []);
 
   return (
+    <AuthSessionProvider>
+      <MobileOAuthInitialCallbackHandler />
+      <ChatUnreadProvider>
+        <NotificationProvider>
+          <MemberSafetyProvider>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+              <StatusBar style="dark" />
+              <RootStack />
+            </NavigationContainer>
+          </MemberSafetyProvider>
+        </NotificationProvider>
+      </ChatUnreadProvider>
+    </AuthSessionProvider>
+  );
+}
+
+function WebShellApp() {
+  return (
+    <AuthSessionProvider>
+      <MobileOAuthInitialCallbackHandler />
+      <WebAppShellScreen />
+    </AuthSessionProvider>
+  );
+}
+
+export default function App() {
+  return (
     <SafeAreaProvider>
-      <AuthSessionProvider>
-        <MobileOAuthInitialCallbackHandler />
-        <ChatUnreadProvider>
-          <NotificationProvider>
-            <MemberSafetyProvider>
-              <NavigationContainer ref={navigationRef} theme={navigationTheme}>
-                <StatusBar style="dark" />
-                <RootStack />
-              </NavigationContainer>
-            </MemberSafetyProvider>
-          </NotificationProvider>
-        </ChatUnreadProvider>
-      </AuthSessionProvider>
+      {isWebShellEnabled() ? <WebShellApp /> : <NativeApp />}
     </SafeAreaProvider>
   );
 }

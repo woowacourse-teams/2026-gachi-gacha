@@ -48,6 +48,7 @@ const originalProductionMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 const originalAppVersion = process.env.APP_VERSION;
 const originalAndroidVersionCode = process.env.ANDROID_VERSION_CODE;
 const originalMemberReportEndpoint = process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
+const originalWebShellEnabled = process.env.ANDROID_WEB_SHELL_ENABLED;
 const oauthEnvironmentNames = [
   'ANDROID_OAUTH_CALLBACK_BASE_URL_DEV',
   'ANDROID_OAUTH_CALLBACK_BASE_URL_PROD',
@@ -64,6 +65,7 @@ delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 delete process.env.APP_VERSION;
 delete process.env.ANDROID_VERSION_CODE;
 delete process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
+delete process.env.ANDROID_WEB_SHELL_ENABLED;
 for (const name of oauthEnvironmentNames) {
   delete process.env[name];
 }
@@ -82,6 +84,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     versionCode: config.android?.versionCode,
     blockedPermissions: config.android?.blockedPermissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
+    webAppBaseUrl: config.extra?.webAppBaseUrl,
+    webShellEnabled: config.extra?.webShellEnabled,
     kakaoMapNativeAppKeyConfigured:
       config.extra?.kakaoMapNativeAppKeyConfigured,
     memberReportEndpoint: config.extra?.memberReportEndpoint,
@@ -102,6 +106,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     blockedPermissions:
       variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
+    webAppBaseUrl: expected.apiBaseUrl,
+    webShellEnabled: true,
     kakaoMapNativeAppKeyConfigured: false,
     memberReportEndpoint: '',
     oauth: {
@@ -133,6 +139,27 @@ if (
 }
 
 console.log('✓ release versionName and versionCode are configurable');
+
+process.env.ANDROID_WEB_SHELL_ENABLED = 'false';
+process.env.APP_VARIANT = 'development';
+const nativeFallbackConfig = createConfig({ config: {} });
+
+if (nativeFallbackConfig.extra?.webShellEnabled !== false) {
+  throw new Error('Android WebView shell fallback flag was not applied.');
+}
+
+process.env.ANDROID_WEB_SHELL_ENABLED = 'invalid';
+if (!throws(() => createConfig({ config: {} }))) {
+  throw new Error('Invalid ANDROID_WEB_SHELL_ENABLED must fail config generation.');
+}
+
+if (originalWebShellEnabled === undefined) {
+  delete process.env.ANDROID_WEB_SHELL_ENABLED;
+} else {
+  process.env.ANDROID_WEB_SHELL_ENABLED = originalWebShellEnabled;
+}
+
+console.log('✓ Android WebView shell is enabled by default and can be rolled back');
 
 process.env.APP_VERSION = 'not-a-version';
 if (!throws(() => createConfig({ config: {} }))) {

@@ -68,6 +68,26 @@ export async function storeAuthTokens(tokens: AuthTokens): Promise<void> {
   );
 }
 
+/**
+ * WebView에서 refresh token이 회전했을 때 네이티브 재실행용 세션만 맞춘다.
+ * access token은 다음 앱 시작 시 서버 refresh로 함께 갱신된다.
+ */
+export async function updateStoredRefreshToken(
+  refreshToken: string,
+): Promise<void> {
+  const currentTokens = await readAuthTokens();
+  const normalizedRefreshToken = refreshToken.trim();
+
+  if (!currentTokens || !normalizedRefreshToken) {
+    return;
+  }
+
+  await storeAuthTokens({
+    accessToken: currentTokens.accessToken,
+    refreshToken: normalizedRefreshToken,
+  });
+}
+
 export async function clearAuthTokens(): Promise<void> {
   await SecureStore.deleteItemAsync(AUTH_SESSION_KEY);
 }

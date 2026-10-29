@@ -111,6 +111,26 @@ function resolveOptionalHttpsUrl(value, name) {
   return url.toString().replace(/\/$/, '');
 }
 
+function resolveBooleanFlag(value, defaultValue = true) {
+  const normalized = value?.trim().toLowerCase();
+
+  if (!normalized) {
+    return defaultValue;
+  }
+
+  if (normalized === 'true') {
+    return true;
+  }
+
+  if (normalized === 'false') {
+    return false;
+  }
+
+  throw new Error(
+    `Boolean environment flag must be "true" or "false". Received: ${value}`,
+  );
+}
+
 function readVariantEnvironmentValue(baseName, variant) {
   const suffix = variant === DEVELOPMENT_VARIANT ? 'DEV' : 'PROD';
   return process.env[`${baseName}_${suffix}`]?.trim() ?? '';
@@ -164,6 +184,9 @@ function createConfig({ config }) {
     kakao: readVariantEnvironmentValue('ANDROID_KAKAO_OAUTH_CLIENT_ID', variant),
     naver: readVariantEnvironmentValue('ANDROID_NAVER_OAUTH_CLIENT_ID', variant),
   };
+  const webShellEnabled = resolveBooleanFlag(
+    process.env.ANDROID_WEB_SHELL_ENABLED,
+  );
 
   return {
     ...config,
@@ -209,6 +232,8 @@ function createConfig({ config }) {
     extra: {
       appVariant: variant,
       apiBaseUrl: variantConfig.apiBaseUrl,
+      webAppBaseUrl: variantConfig.apiBaseUrl,
+      webShellEnabled,
       memberReportEndpoint,
       oauth: {
         callbackBaseUrl: oauthCallbackBaseUrl,
@@ -226,4 +251,5 @@ module.exports.DEFAULT_APP_VERSION = DEFAULT_APP_VERSION;
 module.exports.PRODUCTION_BLOCKED_PERMISSIONS = PRODUCTION_BLOCKED_PERMISSIONS;
 module.exports.resolveAndroidVersionCode = resolveAndroidVersionCode;
 module.exports.resolveAppVersion = resolveAppVersion;
+module.exports.resolveBooleanFlag = resolveBooleanFlag;
 module.exports.resolveOptionalHttpsUrl = resolveOptionalHttpsUrl;
