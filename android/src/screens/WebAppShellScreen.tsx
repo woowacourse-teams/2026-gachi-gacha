@@ -26,17 +26,14 @@ import { loginWithMobileOAuth } from '../domains/auth/mobileOAuthLogin';
 import {
   classifyWebShellNavigation,
   createWebShellBootstrapScript,
-  createWebShellSessionReloadScript,
+  createWebShellRuntimeScript,
+  createWebShellSessionSyncScript,
   isTrustedWebShellMessageSource,
   parseWebShellMessage,
 } from '../domains/webShell/webShellPolicy';
 import { colors } from '../theme/colors';
 
 const EXIT_CONFIRMATION_WINDOW_MS = 2_000;
-
-function sessionFingerprint(tokens: AuthTokens | null): string | null {
-  return tokens?.refreshToken ?? null;
-}
 
 export function WebAppShellScreen() {
   const appBaseUrl = getWebAppBaseUrl();
@@ -45,10 +42,8 @@ export function WebAppShellScreen() {
   const lastRootBackPressAt = useRef(0);
   const webViewLoadedRef = useRef(false);
   const topLevelUrlRef = useRef(appBaseUrl);
-  const lastInjectedSessionRef = useRef<string | null | undefined>(undefined);
-  const initialSessionRequestedRef = useRef(false);
   const { authenticate, logout, status } = useAuthSession();
-  const [bootstrapTokens, setBootstrapTokens] = useState<
+  const [nativeSessionTokens, setNativeSessionTokens] = useState<
     AuthTokens | null | undefined
   >(undefined);
   const [authenticatingProvider, setAuthenticatingProvider] =
@@ -56,56 +51,32 @@ export function WebAppShellScreen() {
   const [hasLoadError, setHasLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const syncLatestNativeSessionToWeb = useCallback(async () => {
+  const refreshNativeSession = useCallback(async () => {
     const tokens = await readAuthTokens();
-
-    if (!tokens) {
-      return;
-    }
-
-    const fingerprint = sessionFingerprint(tokens);
-
-    if (lastInjectedSessionRef.current === fingerprint) {
-      return;
-    }
-
-    lastInjectedSessionRef.current = fingerprint;
-    webViewRef.current?.injectJavaScript(
-      createWebShellSessionReloadScript(tokens),
-    );
+    setNativeSessionTokens(tokens);
   }, []);
 
   useEffect(() => {
-    if (status === 'loading' || initialSessionRequestedRef.current) {
-      return;
-    }
-
-    initialSessionRequestedRef.current = true;
-    let active = true;
-
-    void readAuthTokens().then((tokens) => {
-      if (!active) return;
-
-      lastInjectedSessionRef.current = sessionFingerprint(tokens);
-      setBootstrapTokens(tokens);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [status]);
-
-  useEffect(() => {
     if (
-      bootstrapTokens === undefined ||
-      status !== 'authenticated' ||
+      nativeSessionTokens === undefined ||
+      status === 'loading' ||
       !webViewLoadedRef.current
     ) {
       return;
     }
 
-    void syncLatestNativeSessionToWeb();
-  }, [bootstrapTokens, status, syncLatestNativeSessionToWeb]);
+    webViewRef.current?.injectJavaScript(
+      createWebShellSessionSyncScript(nativeSessionTokens),
+    );
+  }, [nativeSessionTokens, status]);
+
+  useEffect(() => {
+    if (status === 'loading') {
+      return;
+    }
+
+    void refreshNativeSession();
+  }, [refreshNativeSession, status]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener(
@@ -148,10 +119,7 @@ export function WebAppShellScreen() {
       try {
         const tokens = await loginWithMobileOAuth(provider);
         await authenticate(tokens);
-        lastInjectedSessionRef.current = sessionFingerprint(tokens);
-        webViewRef.current?.injectJavaScript(
-          createWebShellSessionReloadScript(tokens),
-        );
+        setNativeSessionTokens(tokens);
         ToastAndroid.show('로그인되었습니다.', ToastAndroid.SHORT);
       } catch {
         Alert.alert(
@@ -178,12 +146,17 @@ export function WebAppShellScreen() {
       }
 
       if (message.token) {
-        void updateStoredRefreshToken(message.token);
-        lastInjectedSessionRef.current = message.token;
+        const refreshToken = message.token;
+        void updateStoredRefreshToken(refreshToken);
+        setNativeSessionTokens((current) =>
+          current
+            ? { ...current, refreshToken }
+            : current,
+        );
         return;
       }
 
-      lastInjectedSessionRef.current = null;
+      setNativeSessionTokens(null);
       void clearAuthTokens().then(() => logout());
     },
     [appBaseUrl, logout],
@@ -196,7 +169,7 @@ export function WebAppShellScreen() {
     setReloadKey((current) => current + 1);
   }
 
-  if (bootstrapTokens === undefined) {
+  if (nativeSessionTokens === undefined) {
     return (
       <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
         <StatusBar style="dark" />
@@ -245,8 +218,9 @@ export function WebAppShellScreen() {
         cacheEnabled
         domStorageEnabled
         injectedJavaScriptBeforeContentLoaded={createWebShellBootstrapScript(
-          bootstrapTokens,
+          nativeSessionTokens,
         )}
+        injectedJavaScript={createWebShellRuntimeScript()}
         javaScriptCanOpenWindowsAutomatically={false}
         javaScriptEnabled
         mixedContentMode="never"
@@ -262,7 +236,7 @@ export function WebAppShellScreen() {
         }}
         onLoadEnd={() => {
           webViewLoadedRef.current = true;
-          void syncLatestNativeSessionToWeb();
+          void refreshNativeSession();
         }}
         onMessage={({ nativeEvent }) =>
           handleWebMessage(nativeEvent.data, nativeEvent.url)
