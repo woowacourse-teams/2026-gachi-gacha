@@ -45,6 +45,12 @@ React Native로 다시 만들지 않는다.
 6. 웹에서 refresh token이 회전하거나 로그아웃하면 제한된 메시지 브리지로
    SecureStore를 함께 갱신한다.
 
+Android의 document-start JavaScript 실행은 기기 WebView 상태에 따라 누락될 수 있다.
+따라서 네이티브는 스크립트를 실행했다고 세션 동기화가 끝난 것으로 간주하지 않는다.
+페이지 로드가 끝날 때마다 SecureStore와 sessionStorage의 실제 토큰 값을 비교하고,
+값이 다른 경우에만 토큰을 복원한 뒤 한 번 다시 로드한다. OAuth callback으로 앱
+프로세스가 다시 만들어져도 같은 절차로 웹 로그인 상태를 복원한다.
+
 Apple 로그인은 Android에서 지원하지 않으므로 Android 셸이 해당 웹 버튼을 숨기고
 직접 탐색도 거부한다.
 
@@ -57,6 +63,12 @@ Apple 로그인은 Android에서 지원하지 않으므로 Android 셸이 해당
 키보드에서는 Expo의 `softwareKeyboardLayoutMode=resize`가 WebView 가시 높이를 줄인다.
 교환글 작성, 댓글, 채팅, 프로필 수정은 작은 화면과 큰 글자에서도 마지막 입력·저장
 버튼까지 접근 가능한지 실기기로 확인한다.
+
+배포 웹의 모바일 지도 오버레이가 Android 시스템 영역과 충돌할 때는 해시 형태의 CSS
+class가 아니라 `aria-label`, role, 고정 id 같은 의미 기반 DOM을 찾아 Android 전용
+data attribute를 붙인다. 선택 가챠 카드, 재검색 버튼, 지도 컨트롤, 검색 결과 상태의
+간격만 셸에서 보정하며 웹 소스는 변경하지 않는다. 위치 권한 오류는 접근성 알림으로
+한 번 전달한 뒤 4초 후 시각적으로 닫는다.
 
 ## Google Play 제출 관점
 

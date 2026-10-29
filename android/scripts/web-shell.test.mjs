@@ -4,12 +4,42 @@ import test from 'node:test';
 import {
   classifyWebShellNavigation,
   createWebShellBootstrapScript,
-  createWebShellSessionReloadScript,
+  createWebShellRuntimeScript,
+  createWebShellSessionSyncScript,
   isTrustedWebShellMessageSource,
   parseWebShellMessage,
 } from '../src/domains/webShell/webShellPolicy.ts';
 
 const APP_BASE_URL = 'https://dev.gachigacha.kro.kr';
+
+function runSessionSyncScript(script, initialEntries) {
+  const entries = new Map(Object.entries(initialEntries));
+  const operations = [];
+  let reloadCount = 0;
+  const window = {
+    location: {
+      reload() {
+        reloadCount += 1;
+      },
+    },
+    sessionStorage: {
+      getItem(key) {
+        return entries.get(key) ?? null;
+      },
+      removeItem(key) {
+        operations.push(['remove', key]);
+        entries.delete(key);
+      },
+      setItem(key, value) {
+        operations.push(['set', key, value]);
+        entries.set(key, value);
+      },
+    },
+  };
+
+  new Function('window', script)(window);
+  return { entries, operations, reloadCount };
+}
 
 test('같은 HTTPS origin의 모든 웹 화면을 WebView 안에서 연다', () => {
   assert.deepEqual(
@@ -93,13 +123,60 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
     refreshToken: 'refresh-token',
   };
   const bootstrapScript = createWebShellBootstrapScript(tokens);
-  const reloadScript = createWebShellSessionReloadScript(tokens);
+  const syncScript = createWebShellSessionSyncScript(tokens);
+  const guestSyncScript = createWebShellSessionSyncScript(null);
+  const runtimeScript = createWebShellRuntimeScript();
 
   assert.match(bootstrapScript, /gachi-gacha:access-token/);
-  assert.match(bootstrapScript, /data-apple-sign-in/);
-  assert.equal(bootstrapScript.includes('/api/v1/oauth/apple'), true);
+  assert.match(bootstrapScript, /data-gachigacha-android-apple-login/);
+  assert.match(runtimeScript, /data-gachigacha-android-map-header/);
+  assert.match(runtimeScript, /data-gachigacha-android-map-research/);
+  assert.match(runtimeScript, /data-gachigacha-android-map-controls/);
+  assert.match(runtimeScript, /data-gachigacha-android-map-status/);
+  assert.match(runtimeScript, /gachigacha-android-dismiss-location-error/);
   assert.match(bootstrapScript, /gachigacha:auth-refresh-token/);
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
-  assert.match(reloadScript, /window\.location\.reload/);
-  assert.doesNotMatch(reloadScript, /<\/script>/);
+  assert.match(syncScript, /sessionChanged/);
+  assert.match(syncScript, /window\.location\.reload/);
+  assert.match(guestSyncScript, /removeItem/);
+  assert.doesNotMatch(syncScript, /<\/script>/);
+  assert.doesNotThrow(() => new Function(bootstrapScript));
+  assert.doesNotThrow(() => new Function(runtimeScript));
+  assert.doesNotThrow(() => new Function(syncScript));
+});
+
+test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다시 로드한다', () => {
+  const tokens = {
+    accessToken: 'current-access',
+    refreshToken: 'current-refresh',
+  };
+  const matching = runSessionSyncScript(
+    createWebShellSessionSyncScript(tokens),
+    {
+      'gachi-gacha:access-token': tokens.accessToken,
+      'gachi-gacha:refresh-token': tokens.refreshToken,
+    },
+  );
+
+  assert.equal(matching.reloadCount, 0);
+  assert.deepEqual(matching.operations, []);
+
+  const stale = runSessionSyncScript(createWebShellSessionSyncScript(tokens), {
+    'gachi-gacha:access-token': 'stale-access',
+    'gachi-gacha:refresh-token': 'stale-refresh',
+  });
+
+  assert.equal(stale.reloadCount, 1);
+  assert.equal(
+    stale.entries.get('gachi-gacha:refresh-token'),
+    tokens.refreshToken,
+  );
+
+  const guest = runSessionSyncScript(createWebShellSessionSyncScript(null), {
+    'gachi-gacha:access-token': tokens.accessToken,
+    'gachi-gacha:refresh-token': tokens.refreshToken,
+  });
+
+  assert.equal(guest.reloadCount, 1);
+  assert.equal(guest.entries.size, 0);
 });
