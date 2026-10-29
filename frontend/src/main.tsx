@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router';
 import App from '@/App';
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { NotificationProvider } from '@/features/notifications/NotificationContext';
+import { NativePushBridge } from '@/features/pushNotifications/NativePushBridge';
 import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
 import { AppErrorBoundary } from '@/shared/errorMonitoring/AppErrorBoundary';
 import {
@@ -44,6 +45,7 @@ void enableMocking().then(() => {
       <BrowserRouter>
         <AuthSessionProvider>
           <ErrorMonitoringContext />
+          <NativePushBridge />
           <AppErrorBoundary>
             <NotificationProvider>
               <App />
