@@ -33,17 +33,30 @@ public class NaverIdTokenValidator {
     }
 
     public NaverIdTokenClaims validate(final String idToken) {
+        return validate(idToken, null);
+    }
+
+    public NaverIdTokenClaims validate(final String idToken, final String expectedNonce) {
+        String audience = expectedNonce != null && naverOauthConfig.mobileClientId() != null
+                && !naverOauthConfig.mobileClientId().isBlank()
+                ? naverOauthConfig.mobileClientId() : naverOauthConfig.clientId();
+        return validate(idToken, expectedNonce, audience);
+    }
+
+    private NaverIdTokenClaims validate(final String idToken, final String expectedNonce, final String audience) {
         try {
             DecodedJWT unverified = JWT.decode(idToken);
             Jwk jwk = jwkProvider.get(unverified.getKeyId());
             Algorithm algorithm = Algorithm.RSA256((RSAPublicKey) jwk.getPublicKey(), null);
 
-            DecodedJWT decoded = JWT.require(algorithm)
+            var verifier = JWT.require(algorithm)
                     .withIssuer(ISSUER)
-                    .withAudience(naverOauthConfig.clientId())
-                    .acceptLeeway(60)
-                    .build()
-                    .verify(idToken);
+                    .withAudience(audience)
+                    .acceptLeeway(60);
+            if (expectedNonce != null) {
+                verifier.withClaim("nonce", expectedNonce);
+            }
+            DecodedJWT decoded = verifier.build().verify(idToken);
 
             return NaverIdTokenClaims.from(decoded);
         } catch (JwkException e) {
