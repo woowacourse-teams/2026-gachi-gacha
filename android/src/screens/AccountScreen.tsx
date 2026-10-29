@@ -10,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RemoteImageWithFallback } from '../components/RemoteImageWithFallback';
 import {
@@ -53,7 +54,7 @@ function MenuRow({ description, label, onPress, tone = 'default' }: MenuRowProps
 }
 
 export function AccountScreen({ navigation }: Props) {
-  const bottomContentPadding = useBottomContentPadding(32);
+  const bottomContentPadding = useBottomContentPadding(32, false);
   const { errorMessage, logout, member, retry, status } = useAuthSession();
   const tradeFeaturesEnabled = areTradeFeaturesEnabled();
   const myTrades = useMyPageTrades(
@@ -95,7 +96,7 @@ export function AccountScreen({ navigation }: Props) {
   const accountName = member?.nickname ?? member?.name ?? '가치가챠 사용자';
 
   return (
-    <>
+    <SafeAreaView edges={['bottom']} style={styles.screen}>
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -302,11 +303,15 @@ export function AccountScreen({ navigation }: Props) {
           visible={isProfileEditOpen}
         />
       )}
-    </>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.surface,
+  },
   content: {
     flexGrow: 1,
     paddingHorizontal: 20,

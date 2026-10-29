@@ -370,3 +370,19 @@ Play Console 등록정보용 아이콘은 런처 빌드 자산과 별도로 `ass
 - 문구, 순위·가격·할인·Play 배지처럼 오해를 유발하는 요소 없음
 
 참고: [Google Play 그래픽 자산 요구사항](https://support.google.com/googleplay/android-developer/answer/9866151), [Android adaptive icon 디자인](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive)
+
+## 카카오 장소 검색
+
+교환글의 구매 매장·거래 장소와 프로필 선호 거래 지역 검색은 Kakao Local
+키워드 검색 REST API를 사용한다. 카카오 로그인 `client_id`로 사용하는 REST API
+키이더라도 해당 키의 `사용 가능 API`에서 Local 장소 검색 호출이 허용되어 있어야
+한다. 앱 빌드 전에 개발·운영 키 모두 다음 요청이 `200`을 반환하는지 확인한다.
+
+```text
+GET https://dapi.kakao.com/v2/local/search/keyword.json?query=홍대입구역
+Authorization: KakaoAK {REST_API_KEY}
+```
+
+`403 NotAuthorizedError`가 반환되면 앱 코드나 검색어 문제가 아니라 카카오 콘솔의
+REST API 키 권한 설정 문제다. 사용자 화면에는 내부 설정명이나 상태 코드를 노출하지
+않고 일시적인 이용 불가 안내만 표시한다.
