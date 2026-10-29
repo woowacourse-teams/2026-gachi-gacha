@@ -113,6 +113,10 @@ GitHub Actions에서는 비밀이 아닌 Repository Variable로 관리한다. ca
 값을 등록하고, callback host에는 package와 앱 서명 인증서를 연결하는
 `/.well-known/assetlinks.json`을 배포해야 한다.
 
+`ANDROID_KAKAO_OAUTH_CLIENT_ID_*`에는 카카오 디벨로퍼스 앱의 REST API 키를 넣는다.
+이 공개 키는 카카오 로그인 client ID이면서 웹과 동일한 장소 키워드 검색을 호출하는
+키로 사용된다. Admin 키나 client secret은 앱 또는 GitHub Variable에 넣지 않는다.
+
 ### 소셜 로그인 실기기 진단
 
 DEV 서버에 모바일 OAuth API가 배포되고 공개 client ID와 callback이 준비되면 다음처럼

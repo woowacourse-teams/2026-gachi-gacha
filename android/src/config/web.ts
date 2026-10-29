@@ -1,9 +1,10 @@
 export const PUBLIC_WEB_BASE_URL = 'https://gachigacha.kro.kr';
 export const PRIVACY_POLICY_URL = `${PUBLIC_WEB_BASE_URL}/privacy`;
+export const UPDATES_URL = `${PUBLIC_WEB_BASE_URL}/updates`;
 export const ACCOUNT_DELETION_URL = `${PUBLIC_WEB_BASE_URL}/account-deletion`;
 export const SUPPORT_INSTAGRAM_URL = 'https://www.instagram.com/gachi__.gacha/';
 
-export type PublicWebFeature = 'privacyPolicy';
+export type PublicWebFeature = 'privacyPolicy' | 'updates';
 
 type PublicWebFeatureConfig = {
   allowedPathPrefixes: readonly string[];
@@ -16,6 +17,11 @@ const PUBLIC_WEB_FEATURES: Record<PublicWebFeature, PublicWebFeatureConfig> = {
     allowedPathPrefixes: ['/privacy'],
     title: '개인정보처리방침',
     url: PRIVACY_POLICY_URL,
+  },
+  updates: {
+    allowedPathPrefixes: ['/updates'],
+    title: '업데이트 소식',
+    url: UPDATES_URL,
   },
 };
 

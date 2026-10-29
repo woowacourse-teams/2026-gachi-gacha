@@ -19,6 +19,7 @@ import type { ChatRoomSummary, ChatRoomUpdate } from '../domains/chat/chatTypes'
 import { useChatSocket } from '../domains/chat/useChatSocket';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChatRooms'>;
@@ -34,6 +35,7 @@ function formatRelativeTime(value: string): string {
 }
 
 export function ChatRoomsScreen({ navigation }: Props) {
+  const bottomContentPadding = useBottomContentPadding();
   const isFocused = useIsFocused();
   const { memberId } = useAuthSession();
   const { isMemberBlocked } = useMemberSafety();
@@ -105,7 +107,10 @@ export function ChatRoomsScreen({ navigation }: Props) {
     <View style={styles.screen}>
       {socket.errorMessage && <Text style={styles.socketError}>{socket.errorMessage}</Text>}
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: bottomContentPadding },
+        ]}
         data={visibleRooms}
         keyExtractor={({ roomId }) => String(roomId)}
         ListEmptyComponent={(
@@ -155,7 +160,7 @@ export function ChatRoomsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: colors.surface },
-  listContent: { flexGrow: 1, padding: 14, gap: 10, paddingBottom: 36 },
+  listContent: { flexGrow: 1, padding: 14, gap: 10 },
   emptyState: { flex: 1, minHeight: 320, alignItems: 'center', justifyContent: 'center' },
   stateTitle: { color: colors.text, fontSize: 18, fontWeight: '800', textAlign: 'center' },
   muted: { marginTop: 5, color: colors.textMuted, fontSize: 13, lineHeight: 20, textAlign: 'center' },

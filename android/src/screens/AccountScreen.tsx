@@ -22,6 +22,7 @@ import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import { TradeCard } from '../domains/trade/TradeCard';
 import { useMyPageTrades } from '../domains/trade/useMyPageTrades';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Account'>;
@@ -52,6 +53,7 @@ function MenuRow({ description, label, onPress, tone = 'default' }: MenuRowProps
 }
 
 export function AccountScreen({ navigation }: Props) {
+  const bottomContentPadding = useBottomContentPadding(32);
   const { errorMessage, logout, member, retry, status } = useAuthSession();
   const tradeFeaturesEnabled = areTradeFeaturesEnabled();
   const myTrades = useMyPageTrades(
@@ -95,7 +97,10 @@ export function AccountScreen({ navigation }: Props) {
   return (
     <>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: bottomContentPadding },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.intro}>
@@ -251,24 +256,17 @@ export function AccountScreen({ navigation }: Props) {
           <Text style={styles.sectionTitle}>계정 관리</Text>
           <View style={styles.menuSection}>
             {status === 'authenticated' && (
-              <>
-                <MenuRow
-                  description="교환 상대와 나눈 대화를 확인해요."
-                  label="채팅"
-                  onPress={() => navigation.navigate('ChatRooms')}
-                />
-                <MenuRow
-                  description="내 교환글에 달린 새 댓글을 확인해요."
-                  label="알림"
-                  onPress={() => navigation.navigate('Notifications')}
-                />
-                <MenuRow
-                  description="차단 목록을 확인하고 해제할 수 있어요."
-                  label="차단한 사용자"
-                  onPress={() => navigation.navigate('BlockedMembers')}
-                />
-              </>
+              <MenuRow
+                description="차단 목록을 확인하고 해제할 수 있어요."
+                label="차단한 사용자"
+                onPress={() => navigation.navigate('BlockedMembers')}
+              />
             )}
+            <MenuRow
+              description="새로 추가되고 달라진 기능을 확인해요."
+              label="업데이트 소식"
+              onPress={() => navigation.navigate('PublicWebFeature', { feature: 'updates' })}
+            />
             <MenuRow
               description="개인정보 처리와 보관 기준을 확인해요."
               label="개인정보처리방침"
@@ -279,12 +277,6 @@ export function AccountScreen({ navigation }: Props) {
               label="고객센터"
               onPress={() => void openExternalPage(SUPPORT_INSTAGRAM_URL, '고객센터')}
             />
-            <MenuRow
-              description="웹에서 본인 확인 후 계정 삭제를 요청해요."
-              label="회원 탈퇴"
-              onPress={() => void openExternalPage(ACCOUNT_DELETION_URL, '회원 탈퇴 페이지')}
-              tone="danger"
-            />
             {status === 'authenticated' && (
               <MenuRow
                 description="이 기기에 저장된 로그인 정보를 삭제해요."
@@ -292,6 +284,12 @@ export function AccountScreen({ navigation }: Props) {
                 onPress={isLoggingOut ? () => undefined : confirmLogout}
               />
             )}
+            <MenuRow
+              description="웹에서 본인 확인 후 계정 삭제를 요청해요."
+              label="회원 탈퇴"
+              onPress={() => void openExternalPage(ACCOUNT_DELETION_URL, '회원 탈퇴 페이지')}
+              tone="danger"
+            />
           </View>
         </View>
       </ScrollView>
@@ -313,7 +311,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 48,
     backgroundColor: colors.surface,
   },
   intro: { marginBottom: 20 },

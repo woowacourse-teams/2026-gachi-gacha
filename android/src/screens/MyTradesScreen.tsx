@@ -15,6 +15,7 @@ import {
   useMyTrades,
 } from '../domains/trade/useMyTrades';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyTrades'>;
@@ -27,6 +28,7 @@ const FILTERS: Array<{ label: string; value: MyTradeFilter }> = [
 ];
 
 export function MyTradesScreen({ navigation }: Props) {
+  const bottomContentPadding = useBottomContentPadding();
   const [filter, setFilter] = useState<MyTradeFilter>('ALL');
   const {
     hasMore,
@@ -96,7 +98,10 @@ export function MyTradesScreen({ navigation }: Props) {
     <View style={styles.screen}>
       {filterBar}
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: bottomContentPadding },
+        ]}
         data={state.data.content}
         keyExtractor={({ tradeId }) => String(tradeId)}
         ListEmptyComponent={(
@@ -155,7 +160,7 @@ const styles = StyleSheet.create({
   filterButtonSelected: { borderColor: colors.primary, backgroundColor: colors.primary },
   filterText: { color: colors.textMuted, fontSize: 12, fontWeight: '700' },
   filterTextSelected: { color: colors.background },
-  listContent: { flexGrow: 1, padding: 16, gap: 16, paddingBottom: 36 },
+  listContent: { flexGrow: 1, padding: 16, gap: 16 },
   center: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyState: { flex: 1, minHeight: 300, alignItems: 'center', justifyContent: 'center' },
   stateTitle: { color: colors.text, fontSize: 17, fontWeight: '800', textAlign: 'center' },

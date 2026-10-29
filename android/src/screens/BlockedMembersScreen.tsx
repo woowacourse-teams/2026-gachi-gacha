@@ -3,6 +3,7 @@ import { Alert, ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View }
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import type { BlockedMember } from '../domains/memberSafety/memberSafetyApi';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 function formatBlockedAt(value: string): string {
@@ -13,6 +14,7 @@ function formatBlockedAt(value: string): string {
 }
 
 export function BlockedMembersScreen() {
+  const bottomContentPadding = useBottomContentPadding();
   const { status: authStatus } = useAuthSession();
   const {
     blockedMembers,
@@ -75,7 +77,10 @@ export function BlockedMembersScreen() {
 
   return (
     <FlatList
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: bottomContentPadding },
+      ]}
       data={blockedMembers}
       keyExtractor={({ memberId }) => String(memberId)}
       ListHeaderComponent={
