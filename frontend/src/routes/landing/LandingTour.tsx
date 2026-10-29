@@ -62,16 +62,15 @@ export const LANDING_TOUR_STEPS = [
   },
   {
     target: LANDING_TOUR_TARGETS[4],
-    label: '다섯 번째 · 알림과 기술',
-    instruction: '놓치기 쉬운 가챠 소식을 알림으로 만나보세요!',
+    label: '다섯 번째 · 알림',
+    instruction: '놓치기 쉬운 소식을 알림으로 만나보세요!',
     description:
       '댓글 알림은 지금 바로 확인할 수 있고, 공식 사이트의 신상 소식도 받아볼 수 있도록 준비하고 있어요.',
     technology: {
       title: 'Hermes로 준비하는 신상 알림',
-      description:
-        '공식 사이트의 변화를 정기적으로 확인해 새 가챠만 골라 전하는 과정을 설계하고 있어요.',
+      description: '신상 알림도 기대해 주세요!',
       href: HERMES_TECH_ARTICLE_URL,
-      linkLabel: '기술 블로그에서 더 알아보기',
+      linkLabel: '가치가챠 wiki에서 알아보기',
     },
   },
 ] as const satisfies readonly LandingTourStep[];

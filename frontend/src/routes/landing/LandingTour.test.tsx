@@ -213,18 +213,20 @@ describe('LandingTour', () => {
   it('마지막 단계에서 현재 알림과 준비 중인 Hermes 기술을 구분해 안내한다', () => {
     render(<LandingTour stepIndex={4} />);
 
+    expect(screen.getByText('다섯 번째 · 알림')).toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
-        name: '놓치기 쉬운 가챠 소식을 알림으로 만나보세요!',
+        name: '놓치기 쉬운 소식을 알림으로 만나보세요!',
       }),
     ).toBeInTheDocument();
     expect(screen.getByText(/댓글 알림은 지금 바로 확인/)).toBeInTheDocument();
     expect(
       screen.getByText(/공식 사이트의 신상 소식도 받아볼 수 있도록 준비/),
     ).toBeInTheDocument();
+    expect(screen.getByText('신상 알림도 기대해 주세요!')).toBeInTheDocument();
 
     const technologyLink = screen.getByRole('link', {
-      name: /기술 블로그에서 더 알아보기/,
+      name: /가치가챠 wiki에서 알아보기/,
     });
 
     expect(technologyLink).toHaveAttribute('href', HERMES_TECH_ARTICLE_URL);
