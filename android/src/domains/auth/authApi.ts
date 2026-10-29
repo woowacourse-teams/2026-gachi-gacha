@@ -48,7 +48,7 @@ async function readJsonResponse(
   return response.json() as Promise<unknown>;
 }
 
-function parseTokens(value: unknown): AuthTokens {
+export function parseAuthTokens(value: unknown): AuthTokens {
   if (
     !isRecord(value) ||
     value.code !== 'C000' ||
@@ -211,7 +211,7 @@ export function refreshAuthTokensOnce(refreshToken: string): Promise<AuthTokens>
       );
     }
 
-    return parseTokens(body);
+    return parseAuthTokens(body);
   })().finally(() => {
     pendingRefreshes.delete(normalizedRefreshToken);
   });

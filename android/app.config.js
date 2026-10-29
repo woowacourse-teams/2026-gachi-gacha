@@ -80,6 +80,65 @@ function resolveAndroidVersionCode(value) {
   return versionCode;
 }
 
+function resolveOptionalHttpsUrl(value, name) {
+  const normalized = value?.trim().replace(/\/$/, '') ?? '';
+
+  if (!normalized) {
+    return '';
+  }
+
+  let url;
+
+  try {
+    url = new URL(normalized);
+  } catch {
+    throw new Error(`${name} must be an absolute HTTPS URL. Received: ${value}`);
+  }
+
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.port ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error(
+      `${name} must be an HTTPS URL without credentials, port, query, or fragment. Received: ${value}`,
+    );
+  }
+
+  return url.toString().replace(/\/$/, '');
+}
+
+function readVariantEnvironmentValue(baseName, variant) {
+  const suffix = variant === DEVELOPMENT_VARIANT ? 'DEV' : 'PROD';
+  return process.env[`${baseName}_${suffix}`]?.trim() ?? '';
+}
+
+function createOAuthIntentFilters(callbackBaseUrl) {
+  if (!callbackBaseUrl) {
+    return undefined;
+  }
+
+  const callbackUrl = new URL(callbackBaseUrl);
+
+  return [
+    {
+      action: 'VIEW',
+      autoVerify: true,
+      data: [
+        {
+          scheme: 'https',
+          host: callbackUrl.hostname,
+          pathPrefix: callbackUrl.pathname,
+        },
+      ],
+      category: ['BROWSABLE', 'DEFAULT'],
+    },
+  ];
+}
+
 /**
  * @param {import('expo/config').ConfigContext} context
  * @returns {import('expo/config').ExpoConfig}
@@ -97,6 +156,14 @@ function createConfig({ config }) {
       : 'KAKAO_MAP_NATIVE_APP_KEY_PROD'
   ]?.trim();
   const memberReportEndpoint = process.env.ANDROID_MEMBER_REPORT_ENDPOINT?.trim() ?? '';
+  const oauthCallbackBaseUrl = resolveOptionalHttpsUrl(
+    readVariantEnvironmentValue('ANDROID_OAUTH_CALLBACK_BASE_URL', variant),
+    'ANDROID_OAUTH_CALLBACK_BASE_URL',
+  );
+  const oauthClientIds = {
+    kakao: readVariantEnvironmentValue('ANDROID_KAKAO_OAUTH_CLIENT_ID', variant),
+    naver: readVariantEnvironmentValue('ANDROID_NAVER_OAUTH_CLIENT_ID', variant),
+  };
 
   return {
     ...config,
@@ -115,6 +182,7 @@ function createConfig({ config }) {
           ? PRODUCTION_BLOCKED_PERMISSIONS
           : undefined,
       softwareKeyboardLayoutMode: 'resize',
+      intentFilters: createOAuthIntentFilters(oauthCallbackBaseUrl),
       adaptiveIcon: {
         backgroundColor: '#68c4f3',
         foregroundImage: './assets/lucha-app-icon.png',
@@ -130,6 +198,7 @@ function createConfig({ config }) {
         'expo-secure-store',
         { configureAndroidBackup: true },
       ],
+      'expo-web-browser',
       './plugins/withAndroidExifInterface',
       './plugins/withAndroidReleaseSigning',
       [
@@ -141,6 +210,10 @@ function createConfig({ config }) {
       appVariant: variant,
       apiBaseUrl: variantConfig.apiBaseUrl,
       memberReportEndpoint,
+      oauth: {
+        callbackBaseUrl: oauthCallbackBaseUrl,
+        clientIds: oauthClientIds,
+      },
       kakaoMapNativeAppKeyConfigured: Boolean(kakaoMapNativeAppKey),
       tradeFeaturesEnabled: variant === DEVELOPMENT_VARIANT,
     },
@@ -153,3 +226,4 @@ module.exports.DEFAULT_APP_VERSION = DEFAULT_APP_VERSION;
 module.exports.PRODUCTION_BLOCKED_PERMISSIONS = PRODUCTION_BLOCKED_PERMISSIONS;
 module.exports.resolveAndroidVersionCode = resolveAndroidVersionCode;
 module.exports.resolveAppVersion = resolveAppVersion;
+module.exports.resolveOptionalHttpsUrl = resolveOptionalHttpsUrl;

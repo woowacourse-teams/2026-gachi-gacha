@@ -120,9 +120,18 @@ export function AccountScreen({ navigation }: Props) {
           <View style={styles.stateCard}>
             <Text style={styles.stateTitle}>로그인이 필요해요</Text>
             <Text style={styles.stateText}>
-              지도와 가챠 검색은 로그인 없이 이용할 수 있어요. 소셜 로그인은 안전한
-              앱 인증 인계가 준비되면 연결됩니다.
+              지도와 가챠 검색은 로그인 없이 이용할 수 있어요.
             </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigation.navigate('Login')}
+              style={({ pressed }) => [
+                styles.loginButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.loginButtonText}>소셜 로그인</Text>
+            </Pressable>
           </View>
         )}
 
@@ -341,6 +350,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   retryText: { color: colors.background, fontWeight: '700' },
+  loginButton: {
+    minWidth: 132,
+    minHeight: 44,
+    marginTop: 4,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+  },
+  loginButtonText: { color: colors.background, fontSize: 14, fontWeight: '800' },
   pressed: { opacity: 0.72 },
   profileCard: {
     padding: 18,
