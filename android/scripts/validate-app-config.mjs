@@ -7,6 +7,7 @@ const {
   DEFAULT_ANDROID_VERSION_CODE,
   DEFAULT_APP_VERSION,
   PRODUCTION_BLOCKED_PERMISSIONS,
+  resolveOptionalHttpsUrl,
 } = createConfig;
 const {
   KAKAO_MAP_MAVEN_REPOSITORY,
@@ -47,11 +48,25 @@ const originalProductionMapsKey = process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 const originalAppVersion = process.env.APP_VERSION;
 const originalAndroidVersionCode = process.env.ANDROID_VERSION_CODE;
 const originalMemberReportEndpoint = process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
+const oauthEnvironmentNames = [
+  'ANDROID_OAUTH_CALLBACK_BASE_URL_DEV',
+  'ANDROID_OAUTH_CALLBACK_BASE_URL_PROD',
+  'ANDROID_KAKAO_OAUTH_CLIENT_ID_DEV',
+  'ANDROID_KAKAO_OAUTH_CLIENT_ID_PROD',
+  'ANDROID_NAVER_OAUTH_CLIENT_ID_DEV',
+  'ANDROID_NAVER_OAUTH_CLIENT_ID_PROD',
+];
+const originalOAuthEnvironment = Object.fromEntries(
+  oauthEnvironmentNames.map((name) => [name, process.env[name]]),
+);
 delete process.env.KAKAO_MAP_NATIVE_APP_KEY_DEV;
 delete process.env.KAKAO_MAP_NATIVE_APP_KEY_PROD;
 delete process.env.APP_VERSION;
 delete process.env.ANDROID_VERSION_CODE;
 delete process.env.ANDROID_MEMBER_REPORT_ENDPOINT;
+for (const name of oauthEnvironmentNames) {
+  delete process.env[name];
+}
 
 for (const [variant, expected] of Object.entries(expectedVariants)) {
   process.env.APP_VARIANT = variant;
@@ -70,6 +85,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     kakaoMapNativeAppKeyConfigured:
       config.extra?.kakaoMapNativeAppKeyConfigured,
     memberReportEndpoint: config.extra?.memberReportEndpoint,
+    oauth: config.extra?.oauth,
+    oauthIntentFilters: config.android?.intentFilters,
     tradeFeaturesEnabled: config.extra?.tradeFeaturesEnabled,
   };
 
@@ -87,6 +104,11 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     apiBaseUrl: expected.apiBaseUrl,
     kakaoMapNativeAppKeyConfigured: false,
     memberReportEndpoint: '',
+    oauth: {
+      callbackBaseUrl: '',
+      clientIds: { kakao: '', naver: '' },
+    },
+    oauthIntentFilters: undefined,
     tradeFeaturesEnabled: variant === 'development',
   };
 
@@ -178,6 +200,47 @@ if (originalMemberReportEndpoint === undefined) {
 }
 
 console.log('✓ Android member report endpoint is injected at build time');
+
+process.env.APP_VARIANT = 'development';
+process.env.ANDROID_OAUTH_CALLBACK_BASE_URL_DEV =
+  'https://dev.gachigacha.kro.kr/oauth/mobile/callback/';
+process.env.ANDROID_KAKAO_OAUTH_CLIENT_ID_DEV = 'kakao-public-client';
+process.env.ANDROID_NAVER_OAUTH_CLIENT_ID_DEV = 'naver-public-client';
+const oauthConfig = createConfig({ config: {} });
+const oauthExtra = oauthConfig.extra?.oauth;
+const oauthIntentFilter = oauthConfig.android?.intentFilters?.[0];
+
+if (
+  oauthExtra?.callbackBaseUrl !==
+    'https://dev.gachigacha.kro.kr/oauth/mobile/callback' ||
+  oauthExtra?.clientIds?.kakao !== 'kakao-public-client' ||
+  oauthExtra?.clientIds?.naver !== 'naver-public-client' ||
+  oauthIntentFilter?.autoVerify !== true ||
+  oauthIntentFilter?.data?.[0]?.scheme !== 'https' ||
+  oauthIntentFilter?.data?.[0]?.host !== 'dev.gachigacha.kro.kr' ||
+  oauthIntentFilter?.data?.[0]?.pathPrefix !== '/oauth/mobile/callback'
+) {
+  throw new Error('Android OAuth App Link config was not generated correctly.');
+}
+
+if (
+  !throws(() => resolveOptionalHttpsUrl('gachigacha://oauth/callback', 'TEST')) ||
+  !throws(() => resolveOptionalHttpsUrl('http://example.com/callback', 'TEST')) ||
+  !throws(() => resolveOptionalHttpsUrl('https://example.com/callback?token=x', 'TEST'))
+) {
+  throw new Error('OAuth callback config must reject unsafe callback URLs.');
+}
+
+console.log('✓ Android OAuth uses optional verified HTTPS App Link config');
+
+for (const name of oauthEnvironmentNames) {
+  const original = originalOAuthEnvironment[name];
+  if (original === undefined) {
+    delete process.env[name];
+  } else {
+    process.env[name] = original;
+  }
+}
 
 console.log('✓ Kakao Map key is injected without exposing it through public extras');
 

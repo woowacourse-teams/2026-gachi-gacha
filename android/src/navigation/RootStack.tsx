@@ -6,6 +6,7 @@ import { AccountScreen } from '../screens/AccountScreen';
 import { BlockedMembersScreen } from '../screens/BlockedMembersScreen';
 import { ChatRoomScreen } from '../screens/ChatRoomScreen';
 import { ChatRoomsScreen } from '../screens/ChatRoomsScreen';
+import { LoginScreen } from '../screens/LoginScreen';
 import { MyTradesScreen } from '../screens/MyTradesScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PublicWebFeatureScreen } from '../screens/PublicWebFeatureScreen';
@@ -18,6 +19,7 @@ export type RootStackParamList = {
   BlockedMembers: undefined;
   ChatRoom: { roomId: number };
   ChatRooms: undefined;
+  Login: undefined;
   MyTrades: undefined;
   Notifications: undefined;
   PublicWebFeature: { feature: PublicWebFeature };
@@ -65,6 +67,15 @@ export function RootStack() {
         name="ChatRoom"
         options={{
           title: '채팅',
+          headerShadowVisible: false,
+          headerTintColor: colors.text,
+        }}
+      />
+      <Stack.Screen
+        component={LoginScreen}
+        name="Login"
+        options={{
+          title: '로그인',
           headerShadowVisible: false,
           headerTintColor: colors.text,
         }}

@@ -36,7 +36,7 @@ export function AppHeader() {
       return;
     }
 
-    navigation.navigate('Account');
+    navigation.navigate('Login');
   }
 
   function openMyPage() {

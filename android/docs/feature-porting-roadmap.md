@@ -61,7 +61,7 @@ production 거래 feature flag는 로그인·신고·차단·Play 선언 검증�
 
 ### 1. Kakao·Naver 네이티브 OAuth 계약과 로그인
 
-상태: **백엔드 계약 차단**
+상태: **Android 구현 완료, 백엔드·App Link 통합 대기**
 
 Android는 Apple 로그인을 제외하고 Kakao·Naver를 제공하는 방향이다. 다만 Apple로만
 가입한 기존 회원의 접근 정책 또는 provider 계정 연결 정책은 서버·운영 합의가 필요하다.
@@ -70,15 +70,20 @@ Android는 Apple 로그인을 제외하고 Kakao·Naver를 제공하는 방향�
 JSON 토큰 응답만 되돌려도 브라우저가 JSON을 받고 앱은 읽을 수 없으므로 다음 중 한
 형태의 브라우저→앱 인계와 앱의 HTTPS 교환 단계가 필요하다.
 
-- DEV callback: `gachigacha-dev://oauth/callback/{provider}`
-- PROD callback: `gachigacha://oauth/callback/{provider}`
-- callback에는 짧은 TTL·일회용 code와 state만 전달
-- 앱은 code와 PKCE verifier로 기존 `{ accessToken, refreshToken }` JSON을 교환
+- callback에는 provider가 발급한 짧은 TTL의 code와 state만 전달
+- 앱은 code, 서버 nonce와 PKCE verifier로 기존 `{ accessToken, refreshToken }` JSON을 교환
 - access/refresh token은 URL, WebView, 로그와 분석 도구에 넣지 않음
+
+Android에는 환경값이 있을 때만 활성화되는 웹 동일 로그인 UI, PKCE, SecureStore 임시
+상태, 시스템 브라우저, HTTPS callback 검증과 토큰 교환 경계를 포팅했다. 앱과 웹이
+공유하는 기존 TLS 도메인의 검증된 Android App Link를 callback으로 사용한다. provider
+콘솔·서버 redirect URI·빌드 변수와 도메인의
+`assetlinks.json`이 확정되기 전에는 버튼을 안전하게 비활성화한다.
 
 별도 URL은 필수가 아니며 기존 endpoint에 mobile mode 또는 POST exchange를 추가할
 수 있다. 그러나 브라우저 결과를 앱으로 돌려주고 서비스 토큰을 앱이 받는 단계 자체는
-생략할 수 없다. 계약 확정 전 추측한 endpoint를 앱에 연결하지 않는다.
+생략할 수 없다. Android API 경계는 백엔드 `feature/495-social-login`의 최신 경로에
+맞췄으며 DEV 배포 뒤 실제 왕복을 검증한다.
 
 ### 2. 교환글 작성·수정·삭제·상태 변경
 

@@ -8,6 +8,7 @@ import { BackHandler, ToastAndroid } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthSessionProvider } from './src/domains/auth/AuthSessionContext';
+import { MobileOAuthInitialCallbackHandler } from './src/domains/auth/MobileOAuthInitialCallbackHandler';
 import { ChatUnreadProvider } from './src/domains/chat/ChatUnreadContext';
 import { MemberSafetyProvider } from './src/domains/memberSafety/MemberSafetyContext';
 import { NotificationProvider } from './src/domains/notification/NotificationContext';
@@ -46,6 +47,7 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <AuthSessionProvider>
+        <MobileOAuthInitialCallbackHandler />
         <ChatUnreadProvider>
           <NotificationProvider>
             <MemberSafetyProvider>

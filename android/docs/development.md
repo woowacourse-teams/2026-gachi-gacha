@@ -95,6 +95,67 @@ export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
 
 Windows에서는 시스템 환경 변수에 `JAVA_HOME`, `ANDROID_HOME`을 추가하고 `Path`에 `%ANDROID_HOME%\platform-tools`와 `%ANDROID_HOME%\emulator`를 추가한다.
 
+소셜 로그인은 환경별 공개 client ID와 HTTPS callback base가 모두 있는 빌드에서만
+활성화된다. client secret은 Android 환경 변수나 바이너리에 넣지 않는다.
+
+```text
+ANDROID_OAUTH_CALLBACK_BASE_URL_DEV
+ANDROID_OAUTH_CALLBACK_BASE_URL_PROD
+ANDROID_KAKAO_OAUTH_CLIENT_ID_DEV
+ANDROID_KAKAO_OAUTH_CLIENT_ID_PROD
+ANDROID_NAVER_OAUTH_CLIENT_ID_DEV
+ANDROID_NAVER_OAUTH_CLIENT_ID_PROD
+```
+
+GitHub Actions에서는 비밀이 아닌 Repository Variable로 관리한다. callback base가
+`https://dev.gachigacha.kro.kr/oauth/mobile/callback`이면 실제 callback은 provider별로
+`.../kakao`, `.../naver`가 된다. provider 콘솔과 서버의 모바일 redirect URI에도 같은
+값을 등록하고, callback host에는 package와 앱 서명 인증서를 연결하는
+`/.well-known/assetlinks.json`을 배포해야 한다.
+
+### 소셜 로그인 실기기 진단
+
+DEV 서버에 모바일 OAuth API가 배포되고 공개 client ID와 callback이 준비되면 다음처럼
+개발 빌드를 생성한다. 값은 예시이며 client secret은 이 명령이나 Android 환경에 넣지
+않는다.
+
+```bash
+export ANDROID_OAUTH_CALLBACK_BASE_URL_DEV='https://dev.gachigacha.kro.kr/oauth/mobile/callback'
+export ANDROID_KAKAO_OAUTH_CLIENT_ID_DEV='<public-kakao-client-id>'
+export ANDROID_NAVER_OAUTH_CLIENT_ID_DEV='<public-naver-client-id>'
+npm run android:dev
+```
+
+config plugin이 HTTPS intent filter를 manifest에 생성하므로 환경값을 바꾼 뒤에는
+development build를 다시 생성해야 한다. 설치된 DEV 앱의 App Link 연결 상태는 다음으로
+확인한다.
+
+```bash
+adb shell pm verify-app-links --re-verify com.dev.gachigacha.app
+adb shell pm get-app-links com.dev.gachigacha.app
+```
+
+로그인 단계 로그는 Metro 콘솔 또는 다음 필터로 확인한다.
+
+```bash
+adb logcat | rg --line-buffered 'GachiGachaOAuth'
+```
+
+정상 왕복에서는 대략
+`login_started → nonce_request_succeeded → browser_opened → callback_validated →
+token_exchange_succeeded → session_authenticated` 순서가 보인다. 진단 로그에는 provider,
+단계, HTTP status와 nonce TTL만 기록하며 callback URL, 인가 code, nonce, PKCE verifier,
+access/refresh token은 기록하지 않는다. 실제 값을 채팅·이슈·스크린샷에도 남기지 않는다.
+
+실기기에서는 다음을 각각 확인한다.
+
+- 카카오·네이버 성공 후 이전 앱 화면 복귀와 프로필 표시
+- 사용자 취소 후 재시도 가능 여부
+- state가 다르거나 만료된 callback 거부
+- OAuth 도중 앱 프로세스가 재생성돼도 SecureStore의 pending 상태로 callback 완료
+- 앱 재실행 시 SecureStore 세션 복원, access token 만료 시 refresh 회전
+- 로그아웃 후 채팅·알림·마이페이지가 다시 로그인 상태를 요구
+
 ### WSL2 사용 시 주의
 
 현재 개발 환경처럼 저장소가 WSL2 안에 있다면 Windows용 Gradle·Node와 WSL용 Gradle·Node를 한 빌드에서 섞지 않는다. 가장 단순한 선택은 다음 둘 중 하나다.

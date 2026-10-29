@@ -43,6 +43,12 @@ jobs:
       KAKAO_MAP_NATIVE_APP_KEY_DEV: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_DEV }}
       KAKAO_MAP_NATIVE_APP_KEY_PROD: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD }}
       ANDROID_MEMBER_REPORT_ENDPOINT: ${{ secrets.ANDROID_MEMBER_REPORT_ENDPOINT }}
+      ANDROID_OAUTH_CALLBACK_BASE_URL_DEV: ${{ vars.ANDROID_OAUTH_CALLBACK_BASE_URL_DEV }}
+      ANDROID_OAUTH_CALLBACK_BASE_URL_PROD: ${{ vars.ANDROID_OAUTH_CALLBACK_BASE_URL_PROD }}
+      ANDROID_KAKAO_OAUTH_CLIENT_ID_DEV: ${{ vars.ANDROID_KAKAO_OAUTH_CLIENT_ID_DEV }}
+      ANDROID_KAKAO_OAUTH_CLIENT_ID_PROD: ${{ vars.ANDROID_KAKAO_OAUTH_CLIENT_ID_PROD }}
+      ANDROID_NAVER_OAUTH_CLIENT_ID_DEV: ${{ vars.ANDROID_NAVER_OAUTH_CLIENT_ID_DEV }}
+      ANDROID_NAVER_OAUTH_CLIENT_ID_PROD: ${{ vars.ANDROID_NAVER_OAUTH_CLIENT_ID_PROD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -87,18 +93,20 @@ jobs:
         working-directory: android/android
         run: ./gradlew assembleRelease
 
-      - name: Publish preview Kakao key hash
+      - name: Publish preview registration fingerprints
         if: github.event_name != 'pull_request'
         working-directory: android/android
         shell: bash
         run: |
           KEY_HASH="$(keytool -exportcert -alias androiddebugkey -keystore app/debug.keystore -storepass android -keypass android | openssl sha1 -binary | openssl base64)"
+          APP_LINK_SHA256="$(keytool -list -v -alias androiddebugkey -keystore app/debug.keystore -storepass android -keypass android | sed -n 's/.*SHA256: //p')"
           {
-            echo '### Kakao Maps preview registration'
+            echo '### Android preview registration'
             echo ''
             echo '- Variant: `${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}`'
             echo '- Package: `${{ (github.event_name == 'workflow_dispatch' && inputs.app_variant == 'production') && 'com.gachigacha.app' || 'com.dev.gachigacha.app' }}`'
-            echo "- Key hash: \`${KEY_HASH}\`"
+            echo "- Kakao key hash: \`${KEY_HASH}\`"
+            echo "- App Link certificate SHA-256: \`${APP_LINK_SHA256}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload standalone preview APK
