@@ -178,7 +178,9 @@ export function NotificationsScreen({ navigation }: Props) {
       <View style={styles.summary}>
         <View style={styles.summaryCopy}>
           <Text style={styles.summaryTitle}>댓글 알림</Text>
-          <Text style={styles.muted}>내 교환글에 달린 새 댓글을 확인해요.</Text>
+          <Text style={styles.summaryDescription}>
+            내 교환글에 달린 새 댓글을 확인해요.
+          </Text>
         </View>
         {visibleUnreadCount > 0 && (
           <View style={styles.unreadBadge}>
@@ -187,9 +189,18 @@ export function NotificationsScreen({ navigation }: Props) {
         )}
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{
+            busy: isMarkingAll,
+            disabled: visibleUnreadCount === 0 || isMarkingAll,
+          }}
+          android_ripple={{ color: colors.border }}
           disabled={visibleUnreadCount === 0 || isMarkingAll}
           onPress={() => void markAll()}
-          style={styles.markAllButton}
+          style={({ pressed }) => [
+            styles.markAllButton,
+            pressed && styles.markAllButtonPressed,
+            (visibleUnreadCount === 0 || isMarkingAll) && styles.markAllButtonDisabled,
+          ]}
         >
           <Text style={styles.markAllText}>{isMarkingAll ? '처리 중…' : '모두 읽음'}</Text>
         </Pressable>
@@ -251,10 +262,19 @@ const styles = StyleSheet.create({
   summary: { padding: 18, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, backgroundColor: colors.background },
   summaryCopy: { flex: 1, minWidth: 0 },
   summaryTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
+  summaryDescription: {
+    marginTop: 5,
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'left',
+  },
   muted: { marginTop: 5, color: colors.textMuted, fontSize: 13, lineHeight: 19, textAlign: 'center' },
   unreadBadge: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 12, backgroundColor: colors.primarySoft },
   unreadBadgeText: { color: colors.primary, fontSize: 11, fontWeight: '800' },
-  markAllButton: { minHeight: 38, paddingHorizontal: 11, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 19 },
+  markAllButton: { minHeight: 38, paddingHorizontal: 11, justifyContent: 'center', overflow: 'hidden', borderWidth: 1, borderColor: colors.border, borderRadius: 19, backgroundColor: colors.background },
+  markAllButtonPressed: { backgroundColor: colors.surface },
+  markAllButtonDisabled: { opacity: 0.48 },
   markAllText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   actionError: { margin: 14, padding: 11, borderRadius: 11, backgroundColor: colors.primarySoft, color: colors.primary, fontSize: 12, textAlign: 'center' },
   listContent: { flexGrow: 1, padding: 14, gap: 10 },

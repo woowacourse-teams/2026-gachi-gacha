@@ -1,4 +1,5 @@
 import { getKakaoPlaceSearchRestApiKey } from '../../config/placeSearch';
+import { getKakaoPlaceSearchFailureMessage } from './kakaoPlaceSearchError';
 import { parseKakaoPlaceSearchResponse } from './kakaoPlaceSearchParser';
 import type { KakaoPlaceSearchResult } from './placeSearchTypes';
 
@@ -28,7 +29,7 @@ export async function searchKakaoPlaces(
   });
 
   if (!response.ok) {
-    throw new Error('장소를 검색하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    throw new Error(getKakaoPlaceSearchFailureMessage(response.status));
   }
 
   return parseKakaoPlaceSearchResponse(await response.json()) satisfies KakaoPlaceSearchResult[];
