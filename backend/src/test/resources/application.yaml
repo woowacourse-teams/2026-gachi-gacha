@@ -68,7 +68,6 @@ elasticsearch:
 firebase:
   push-enabled: false
 oauth:
-  mobile-nonce-ttl-seconds: ${OAUTH_MOBILE_NONCE_TTL_SECONDS:300}
   frontend-callback-url: fron_callback_url
   frontend-withdraw-callback-url: front_withdraw_callback_url
   apple:
