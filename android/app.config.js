@@ -4,9 +4,12 @@ const DEFAULT_APP_VERSION = '0.1.0';
 const DEFAULT_ANDROID_VERSION_CODE = 1;
 const MAX_ANDROID_VERSION_CODE = 2_100_000_000;
 
-const PRODUCTION_BLOCKED_PERMISSIONS = [
+const WEBVIEW_LOCATION_PERMISSIONS = [
   'android.permission.ACCESS_COARSE_LOCATION',
   'android.permission.ACCESS_FINE_LOCATION',
+];
+
+const PRODUCTION_BLOCKED_PERMISSIONS = [
   'android.permission.CAMERA',
   'android.permission.READ_EXTERNAL_STORAGE',
   'android.permission.READ_MEDIA_IMAGES',
@@ -200,6 +203,7 @@ function createConfig({ config }) {
     android: {
       package: variantConfig.applicationId,
       versionCode,
+      permissions: WEBVIEW_LOCATION_PERMISSIONS,
       blockedPermissions:
         variant === PRODUCTION_VARIANT
           ? PRODUCTION_BLOCKED_PERMISSIONS
@@ -249,6 +253,7 @@ module.exports = createConfig;
 module.exports.DEFAULT_ANDROID_VERSION_CODE = DEFAULT_ANDROID_VERSION_CODE;
 module.exports.DEFAULT_APP_VERSION = DEFAULT_APP_VERSION;
 module.exports.PRODUCTION_BLOCKED_PERMISSIONS = PRODUCTION_BLOCKED_PERMISSIONS;
+module.exports.WEBVIEW_LOCATION_PERMISSIONS = WEBVIEW_LOCATION_PERMISSIONS;
 module.exports.resolveAndroidVersionCode = resolveAndroidVersionCode;
 module.exports.resolveAppVersion = resolveAppVersion;
 module.exports.resolveBooleanFlag = resolveBooleanFlag;

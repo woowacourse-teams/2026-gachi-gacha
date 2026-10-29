@@ -133,7 +133,17 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /data-gachigacha-android-map-research/);
   assert.match(runtimeScript, /data-gachigacha-android-map-controls/);
   assert.match(runtimeScript, /data-gachigacha-android-map-status/);
+  assert.match(runtimeScript, /data-gachigacha-android-map-list-area/);
+  assert.match(runtimeScript, /현재 지원 지역/);
+  assert.match(runtimeScript, /--gachigacha-android-map-research-top/);
+  assert.match(runtimeScript, /--gachigacha-android-map-controls-bottom/);
   assert.match(runtimeScript, /gachigacha-android-dismiss-location-error/);
+  assert.match(runtimeScript, /data-gachigacha-android-chat-main/);
+  assert.match(runtimeScript, /data-gachigacha-android-chat-composer/);
+  assert.match(runtimeScript, /전체 대화/);
+  assert.match(runtimeScript, /data-gachigacha-android-avatar-fallback/);
+  assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);
+  assert.match(runtimeScript, /data:image\/svg\+xml/);
   assert.match(bootstrapScript, /gachigacha:auth-refresh-token/);
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
   assert.match(syncScript, /sessionChanged/);
