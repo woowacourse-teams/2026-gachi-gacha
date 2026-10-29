@@ -20,6 +20,7 @@ import {
 } from '../domains/auth/mobileOAuthLogin';
 import { traceMobileOAuth } from '../domains/auth/oauthDiagnostics';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 import {
@@ -66,6 +67,7 @@ function readLoginError(error: unknown): string {
 }
 
 export function LoginScreen({ navigation }: Props) {
+  const bottomContentPadding = useBottomContentPadding(28);
   const { authenticate, errorMessage, retry, status } = useAuthSession();
   const [activeProvider, setActiveProvider] =
     useState<MobileOAuthProvider | null>(null);
@@ -104,7 +106,10 @@ export function LoginScreen({ navigation }: Props) {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.page}
+      contentContainerStyle={[
+        styles.page,
+        { paddingBottom: bottomContentPadding },
+      ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -228,7 +233,7 @@ const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingVertical: 28,
+    paddingTop: 28,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.surface,

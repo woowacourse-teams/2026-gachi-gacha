@@ -46,6 +46,7 @@ export function useChatSocket({ active, memberId, onMessage, onRoomUpdate, roomI
   const onRoomUpdateRef = useRef(onRoomUpdate);
   const [status, setStatus] = useState<ChatSocketStatus>('disconnected');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => { onMessageRef.current = onMessage; }, [onMessage]);
   useEffect(() => { onRoomUpdateRef.current = onRoomUpdate; }, [onRoomUpdate]);
@@ -53,22 +54,38 @@ export function useChatSocket({ active, memberId, onMessage, onRoomUpdate, roomI
   useEffect(() => {
     if (!active || memberId === null) {
       setStatus('disconnected');
+      setErrorMessage(null);
       return;
     }
 
+    let isCurrent = true;
     const client = new Client({
       brokerURL: createWebSocketUrl(),
+      connectionTimeout: 10_000,
       reconnectDelay: 5_000,
       heartbeatIncoming: 10_000,
       heartbeatOutgoing: 10_000,
       debug: () => undefined,
       beforeConnect: async () => {
-        const tokens = await readAuthTokens();
-        if (!tokens) throw new Error('로그인이 필요한 기능입니다.');
-        client.connectHeaders = { Authorization: `Bearer ${tokens.accessToken}` };
-        setStatus('connecting');
+        try {
+          const tokens = await readAuthTokens();
+          if (!tokens) throw new Error('로그인이 필요한 기능입니다.');
+          client.connectHeaders = { Authorization: `Bearer ${tokens.accessToken}` };
+          if (isCurrent) setStatus('connecting');
+        } catch (error) {
+          if (isCurrent) {
+            setStatus('error');
+            setErrorMessage(
+              error instanceof Error
+                ? error.message
+                : '채팅 로그인 정보를 확인하지 못했습니다.',
+            );
+          }
+          throw error;
+        }
       },
       onConnect: () => {
+        if (!isCurrent) return;
         setStatus('connected');
         setErrorMessage(null);
         if (roomId !== null) {
@@ -89,24 +106,38 @@ export function useChatSocket({ active, memberId, onMessage, onRoomUpdate, roomI
         });
       },
       onStompError: (frame) => {
+        if (!isCurrent) return;
         setStatus('error');
         setErrorMessage(frame.headers.message || '채팅 연결에 실패했습니다.');
       },
       onWebSocketError: () => {
+        if (!isCurrent) return;
         setStatus('error');
         setErrorMessage('채팅 서버에 연결하지 못했습니다.');
       },
-      onWebSocketClose: () => setStatus('disconnected'),
+      onWebSocketClose: () => {
+        if (!isCurrent) return;
+        setStatus('error');
+        setErrorMessage((current) => current ?? '채팅 서버 연결이 끊어졌습니다.');
+      },
     });
 
     clientRef.current = client;
     setStatus('connecting');
+    setErrorMessage(null);
     client.activate();
     return () => {
+      isCurrent = false;
       clientRef.current = null;
       void client.deactivate();
     };
-  }, [active, memberId, roomId]);
+  }, [active, memberId, retryKey, roomId]);
+
+  const retry = useCallback(() => {
+    setErrorMessage(null);
+    setStatus('connecting');
+    setRetryKey((current) => current + 1);
+  }, []);
 
   const publish = useCallback((type: 'TEXT' | 'IMAGE', content: string | null, files: ChatMessageFile[]) => {
     const client = clientRef.current;
@@ -126,5 +157,6 @@ export function useChatSocket({ active, memberId, onMessage, onRoomUpdate, roomI
       publish('IMAGE', content.trim() || null, files),
     sendTextMessage: (content: string) => publish('TEXT', content.trim(), []),
     status,
+    retry,
   };
 }

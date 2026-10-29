@@ -14,7 +14,10 @@ import {
 } from 'react-native';
 
 import { RemoteImageWithFallback } from '../../components/RemoteImageWithFallback';
+import { useBottomContentPadding } from '../../shared/useBottomContentPadding';
 import { colors } from '../../theme/colors';
+import { KakaoPlaceSearchModal } from '../place/KakaoPlaceSearchModal';
+import type { PlaceSearchSelection } from '../place/placeSearchTypes';
 import { uploadProfileImage } from './authApi';
 import type { AuthMember, ProfileImageUpload } from './authTypes';
 import { useAuthSession } from './AuthSessionContext';
@@ -59,8 +62,11 @@ function resolveImageUpload(asset: ImagePicker.ImagePickerAsset): ProfileImageUp
 
 export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
   const { updateProfile } = useAuthSession();
+  const bottomContentPadding = useBottomContentPadding(24);
   const [nickname, setNickname] = useState('');
   const [location, setLocation] = useState('');
+  const [selectedPlaceAddress, setSelectedPlaceAddress] = useState<string | null>(null);
+  const [isPlaceSearchOpen, setIsPlaceSearchOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ProfileImageUpload | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,9 +75,22 @@ export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
     if (!visible) return;
     setNickname(member.nickname ?? '');
     setLocation(member.desireTradeLocation ?? '');
+    setSelectedPlaceAddress(null);
+    setIsPlaceSearchOpen(false);
     setSelectedImage(null);
     setErrorMessage(null);
   }, [member.desireTradeLocation, member.nickname, visible]);
+
+  function close() {
+    setIsPlaceSearchOpen(false);
+    onClose();
+  }
+
+  function selectTradeLocation(place: PlaceSearchSelection) {
+    setLocation(place.name);
+    setSelectedPlaceAddress(place.address);
+    setErrorMessage(null);
+  }
 
   async function selectImage() {
     try {
@@ -114,7 +133,7 @@ export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
         profileImageUrl,
       });
       onSaved();
-      onClose();
+      close();
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : '프로필을 저장하지 못했습니다.',
@@ -125,21 +144,25 @@ export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
   }
 
   return (
-    <Modal
-      animationType="slide"
-      onRequestClose={isSubmitting ? undefined : onClose}
-      transparent
-      visible={visible}
-    >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.backdrop}
+    <>
+      <Modal
+        animationType="slide"
+        onRequestClose={isSubmitting ? undefined : close}
+        transparent
+        visible={visible}
       >
-        <View style={styles.sheet}>
-          <ScrollView
-            contentContainerStyle={styles.content}
-            keyboardShouldPersistTaps="handled"
-          >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.backdrop}
+        >
+          <View style={styles.sheet}>
+            <ScrollView
+              contentContainerStyle={[
+                styles.content,
+                { paddingBottom: bottomContentPadding },
+              ]}
+              keyboardShouldPersistTaps="handled"
+            >
             <View style={styles.titleRow}>
               <View style={styles.titleCopy}>
                 <Text accessibilityRole="header" style={styles.title}>프로필 수정</Text>
@@ -149,7 +172,7 @@ export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
                 accessibilityLabel="프로필 수정 닫기"
                 accessibilityRole="button"
                 disabled={isSubmitting}
-                onPress={onClose}
+                onPress={close}
                 style={styles.closeButton}
               >
                 <Text aria-hidden style={styles.closeText}>×</Text>
@@ -186,15 +209,54 @@ export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
             />
 
             <Text style={styles.label}>선호 거래 지역</Text>
-            <TextInput
-              editable={!isSubmitting}
-              maxLength={100}
-              onChangeText={setLocation}
-              placeholder="예: 홍대입구역 8번 출구"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-              value={location}
-            />
+            <View style={styles.placeSearchRow}>
+              <Pressable
+                accessibilityLabel="선호 거래 지역 카카오 장소 검색"
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={() => setIsPlaceSearchOpen(true)}
+                style={({ pressed }) => [
+                  styles.placeSelectButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                {location ? (
+                  <View style={styles.placeCopy}>
+                    <Text numberOfLines={1} style={styles.placeName}>{location}</Text>
+                    {selectedPlaceAddress && (
+                      <Text numberOfLines={2} style={styles.placeAddress}>
+                        {selectedPlaceAddress}
+                      </Text>
+                    )}
+                  </View>
+                ) : (
+                  <Text style={styles.placePlaceholder}>
+                    카카오 장소 검색으로 선택해 주세요
+                  </Text>
+                )}
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={() => setIsPlaceSearchOpen(true)}
+                style={({ pressed }) => [styles.placeSearchButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.placeSearchText}>검색</Text>
+              </Pressable>
+            </View>
+            {location && (
+              <Pressable
+                accessibilityRole="button"
+                disabled={isSubmitting}
+                onPress={() => {
+                  setLocation('');
+                  setSelectedPlaceAddress(null);
+                }}
+                style={styles.clearPlaceButton}
+              >
+                <Text style={styles.clearPlaceText}>선택 해제</Text>
+              </Pressable>
+            )}
 
             {errorMessage && (
               <Text accessibilityLiveRegion="polite" style={styles.errorText}>
@@ -211,10 +273,18 @@ export function ProfileEditModal({ member, onClose, onSaved, visible }: Props) {
               {isSubmitting && <ActivityIndicator color={colors.background} size="small" />}
               <Text style={styles.saveText}>{isSubmitting ? '저장 중...' : '저장하기'}</Text>
             </Pressable>
-          </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+      <KakaoPlaceSearchModal
+        description="선호하는 거래 지역의 지하철역이나 건물명을 검색해주세요."
+        onClose={() => setIsPlaceSearchOpen(false)}
+        onSelect={selectTradeLocation}
+        title="선호 거래 지역 선택"
+        visible={visible && isPlaceSearchOpen}
+      />
+    </>
   );
 }
 
@@ -231,7 +301,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 26,
     backgroundColor: colors.surface,
   },
-  content: { padding: 22, paddingBottom: 36 },
+  content: { padding: 22 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   titleCopy: { flex: 1 },
   title: { color: colors.text, fontSize: 24, fontWeight: '800' },
@@ -271,6 +341,34 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 15,
   },
+  placeSearchRow: { marginTop: 8, flexDirection: 'row', alignItems: 'stretch', gap: 8 },
+  placeSelectButton: {
+    minHeight: 58,
+    minWidth: 0,
+    flex: 1,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    backgroundColor: colors.background,
+  },
+  placeCopy: { minWidth: 0 },
+  placeName: { color: colors.text, fontSize: 15, fontWeight: '800' },
+  placeAddress: { marginTop: 4, color: colors.textMuted, fontSize: 12, lineHeight: 17 },
+  placePlaceholder: { color: colors.textMuted, fontSize: 14 },
+  placeSearchButton: {
+    minWidth: 66,
+    paddingHorizontal: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+  },
+  placeSearchText: { color: colors.background, fontSize: 14, fontWeight: '800' },
+  clearPlaceButton: { minHeight: 40, alignSelf: 'flex-start', justifyContent: 'center' },
+  clearPlaceText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   errorText: {
     marginTop: 14,
     padding: 12,

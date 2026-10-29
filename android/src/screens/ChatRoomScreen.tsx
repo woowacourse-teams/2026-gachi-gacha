@@ -35,6 +35,7 @@ import { useChatSocket } from '../domains/chat/useChatSocket';
 import { useMemberSafety } from '../domains/memberSafety/MemberSafetyContext';
 import { UserSafetyMenu } from '../domains/memberSafety/UserSafetyMenu';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChatRoom'>;
@@ -67,6 +68,7 @@ function formatMessageTime(value: string): string {
 }
 
 export function ChatRoomScreen({ navigation, route }: Props) {
+  const composerBottomPadding = useBottomContentPadding(10);
   const roomId = route.params.roomId;
   const tradeFeaturesEnabled = areTradeFeaturesEnabled();
   const isFocused = useIsFocused();
@@ -213,8 +215,9 @@ export function ChatRoomScreen({ navigation, route }: Props) {
   const blocked = room ? isMemberBlocked(room.otherMember.memberId) : false;
   const connectionLabel = useMemo(() => {
     if (socket.status === 'connected') return null;
+    if (socket.errorMessage) return socket.errorMessage;
     if (socket.status === 'connecting') return '채팅 서버에 연결하고 있어요.';
-    return socket.errorMessage || '채팅 서버 연결이 끊어졌어요. 다시 연결하고 있어요.';
+    return '채팅 서버 연결이 끊어졌어요.';
   }, [socket.errorMessage, socket.status]);
 
   function openTrade() {
@@ -261,7 +264,16 @@ export function ChatRoomScreen({ navigation, route }: Props) {
           targetNickname={room.otherMember.nickname}
         />
       </View>
-      {connectionLabel && <Text style={styles.connectionNotice}>{connectionLabel}</Text>}
+      {connectionLabel && (
+        <View style={styles.connectionNotice}>
+          <Text style={styles.connectionNoticeText}>{connectionLabel}</Text>
+          {socket.status !== 'connected' && socket.errorMessage && (
+            <Pressable accessibilityRole="button" onPress={socket.retry}>
+              <Text style={styles.connectionRetryText}>다시 연결</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
       <FlatList
         contentContainerStyle={styles.messageList}
         data={messages}
@@ -299,7 +311,7 @@ export function ChatRoomScreen({ navigation, route }: Props) {
         }}
       />
       {sendError && <Text style={styles.sendError}>{sendError}</Text>}
-      <View style={styles.composerRow}>
+      <View style={[styles.composerRow, { paddingBottom: composerBottomPadding }]}>
         <Pressable accessibilityLabel="사진 보내기" accessibilityRole="button" disabled={isSending} onPress={() => void sendImages()} style={styles.imageButton}>
           <Text aria-hidden style={styles.imageButtonText}>＋</Text>
         </Pressable>
@@ -337,7 +349,9 @@ const styles = StyleSheet.create({
   tradeEyebrow: { color: colors.primary, fontSize: 11, fontWeight: '800' },
   tradeTitle: { marginTop: 4, color: colors.text, fontSize: 14, fontWeight: '700', lineHeight: 19 },
   tradeArrow: { color: colors.textMuted, fontSize: 22 },
-  connectionNotice: { padding: 8, backgroundColor: '#fff8df', color: '#8a651c', fontSize: 11, textAlign: 'center' },
+  connectionNotice: { padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff8df' },
+  connectionNoticeText: { color: '#8a651c', fontSize: 11, textAlign: 'center' },
+  connectionRetryText: { color: colors.primary, fontSize: 11, fontWeight: '800' },
   messageList: { flexGrow: 1, padding: 14, gap: 10 },
   emptyMessages: { flex: 1, minHeight: 280, alignItems: 'center', justifyContent: 'center' },
   previousButton: { minHeight: 38, marginBottom: 8, alignSelf: 'center', paddingHorizontal: 14, justifyContent: 'center', borderRadius: 19, backgroundColor: colors.background },
@@ -354,7 +368,7 @@ const styles = StyleSheet.create({
   messageImages: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   messageImage: { width: 118, height: 118, borderRadius: 11 },
   sendError: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: colors.primarySoft, color: colors.primary, fontSize: 11, textAlign: 'center' },
-  composerRow: { padding: 10, flexDirection: 'row', alignItems: 'flex-end', gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
+  composerRow: { paddingHorizontal: 10, paddingTop: 10, flexDirection: 'row', alignItems: 'flex-end', gap: 8, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, backgroundColor: colors.background },
   imageButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 21 },
   imageButtonText: { color: colors.primary, fontSize: 26, lineHeight: 29 },
   input: { maxHeight: 120, minHeight: 42, flex: 1, paddingHorizontal: 13, paddingVertical: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 18, color: colors.text, fontSize: 14 },

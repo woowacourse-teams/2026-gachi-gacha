@@ -18,6 +18,7 @@ import type {
   NotificationPage,
 } from '../domains/notification/notificationTypes';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
@@ -37,6 +38,7 @@ function formatRelativeTime(value: string): string {
 }
 
 export function NotificationsScreen({ navigation }: Props) {
+  const bottomContentPadding = useBottomContentPadding();
   const { markAllRead, markRead, unreadCount } = useNotifications();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<State>({ data: null, errorMessage: null, status: 'loading' });
@@ -194,7 +196,10 @@ export function NotificationsScreen({ navigation }: Props) {
       </View>
       {actionError && <Text style={styles.actionError}>{actionError}</Text>}
       <FlatList
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: bottomContentPadding },
+        ]}
         data={state.data.notifications}
         keyExtractor={({ notificationId }) => String(notificationId)}
         ListEmptyComponent={(
@@ -252,7 +257,7 @@ const styles = StyleSheet.create({
   markAllButton: { minHeight: 38, paddingHorizontal: 11, justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderRadius: 19 },
   markAllText: { color: colors.primary, fontSize: 12, fontWeight: '800' },
   actionError: { margin: 14, padding: 11, borderRadius: 11, backgroundColor: colors.primarySoft, color: colors.primary, fontSize: 12, textAlign: 'center' },
-  listContent: { flexGrow: 1, padding: 14, gap: 10, paddingBottom: 36 },
+  listContent: { flexGrow: 1, padding: 14, gap: 10 },
   emptyState: { flex: 1, minHeight: 300, alignItems: 'center', justifyContent: 'center', gap: 4 },
   stateTitle: { color: colors.text, fontSize: 17, fontWeight: '800', textAlign: 'center' },
   primaryButton: { minHeight: 44, marginTop: 4, paddingHorizontal: 18, justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary },

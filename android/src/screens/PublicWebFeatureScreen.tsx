@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   getPublicWebFeature,
@@ -64,73 +65,78 @@ export function PublicWebFeatureScreen({ navigation, route }: Props) {
 
   if (hasLoadError) {
     return (
-      <View style={styles.stateContainer}>
-        <Text accessibilityRole="header" style={styles.stateTitle}>
-          페이지를 불러오지 못했어요
-        </Text>
-        <Text style={styles.stateDescription}>
-          인터넷 연결을 확인한 뒤 다시 시도해 주세요.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={retry}
-          style={({ pressed }) => [
-            styles.retryButton,
-            pressed && styles.retryButtonPressed,
-          ]}
-        >
-          <Text style={styles.retryButtonText}>다시 시도</Text>
-        </Pressable>
-      </View>
+      <SafeAreaView edges={['bottom']} style={styles.screen}>
+        <View style={styles.stateContainer}>
+          <Text accessibilityRole="header" style={styles.stateTitle}>
+            페이지를 불러오지 못했어요
+          </Text>
+          <Text style={styles.stateDescription}>
+            인터넷 연결을 확인한 뒤 다시 시도해 주세요.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={retry}
+            style={({ pressed }) => [
+              styles.retryButton,
+              pressed && styles.retryButtonPressed,
+            ]}
+          >
+            <Text style={styles.retryButtonText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <WebView
-      key={reloadKey}
-      ref={webViewRef}
-      allowsBackForwardNavigationGestures
-      cacheEnabled
-      incognito
-      javaScriptCanOpenWindowsAutomatically={false}
-      mixedContentMode="never"
-      onError={() => setHasLoadError(true)}
-      onHttpError={({ nativeEvent }) => {
-        if (
-          nativeEvent.statusCode >= 400 &&
-          isPublicWebFeatureEntryUrl(route.params.feature, nativeEvent.url)
-        ) {
-          setHasLoadError(true);
-        }
-      }}
-      onNavigationStateChange={({ canGoBack: nextCanGoBack }) => {
-        setCanGoBack(nextCanGoBack);
-      }}
-      onShouldStartLoadWithRequest={({ url }) => {
-        if (isAllowedPublicWebFeatureUrl(route.params.feature, url)) {
-          return true;
-        }
+    <SafeAreaView edges={['bottom']} style={styles.screen}>
+      <WebView
+        key={reloadKey}
+        ref={webViewRef}
+        allowsBackForwardNavigationGestures
+        cacheEnabled
+        incognito
+        javaScriptCanOpenWindowsAutomatically={false}
+        mixedContentMode="never"
+        onError={() => setHasLoadError(true)}
+        onHttpError={({ nativeEvent }) => {
+          if (
+            nativeEvent.statusCode >= 400 &&
+            isPublicWebFeatureEntryUrl(route.params.feature, nativeEvent.url)
+          ) {
+            setHasLoadError(true);
+          }
+        }}
+        onNavigationStateChange={({ canGoBack: nextCanGoBack }) => {
+          setCanGoBack(nextCanGoBack);
+        }}
+        onShouldStartLoadWithRequest={({ url }) => {
+          if (isAllowedPublicWebFeatureUrl(route.params.feature, url)) {
+            return true;
+          }
 
-        openOutsideApp(url);
-        return false;
-      }}
-      originWhitelist={['https://gachigacha.kro.kr']}
-      renderLoading={() => (
-        <View style={[StyleSheet.absoluteFill, styles.loadingContainer]}>
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.loadingText}>{feature.title}을 불러오고 있어요.</Text>
-        </View>
-      )}
-      setSupportMultipleWindows={false}
-      sharedCookiesEnabled={false}
-      source={{ uri: feature.url }}
-      startInLoadingState
-      thirdPartyCookiesEnabled={false}
-    />
+          openOutsideApp(url);
+          return false;
+        }}
+        originWhitelist={['https://gachigacha.kro.kr']}
+        renderLoading={() => (
+          <View style={[StyleSheet.absoluteFill, styles.loadingContainer]}>
+            <ActivityIndicator color={colors.primary} size="large" />
+            <Text style={styles.loadingText}>{feature.title}을 불러오고 있어요.</Text>
+          </View>
+        )}
+        setSupportMultipleWindows={false}
+        sharedCookiesEnabled={false}
+        source={{ uri: feature.url }}
+        startInLoadingState
+        thirdPartyCookiesEnabled={false}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background },
   loadingContainer: {
     alignItems: 'center',
     justifyContent: 'center',

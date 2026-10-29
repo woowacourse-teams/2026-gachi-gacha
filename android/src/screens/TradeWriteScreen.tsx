@@ -37,6 +37,7 @@ import type {
   TradeWriteRequest,
 } from '../domains/trade/tradeTypes';
 import type { TradeStackParamList } from '../navigation/TradeStack';
+import { useBottomContentPadding } from '../shared/useBottomContentPadding';
 import { colors } from '../theme/colors';
 
 type CreateProps = NativeStackScreenProps<TradeStackParamList, 'TradeCreate'>;
@@ -100,6 +101,7 @@ function TradeWriteForm({
   tradeId,
 }: FormProps) {
   const { status: authStatus } = useAuthSession();
+  const bottomContentPadding = useBottomContentPadding(28);
   const [title, setTitle] = useState(initialValues.title);
   const [description, setDescription] = useState(initialValues.description);
   const [desiredProduction, setDesiredProduction] = useState(initialValues.desiredProduction);
@@ -232,12 +234,13 @@ function TradeWriteForm({
     }
   }
 
-  const currentPlace = placeTarget === 'purchaseStore' ? purchaseStore : tradePlace;
-
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: bottomContentPadding },
+        ]}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
       >
@@ -329,7 +332,6 @@ function TradeWriteForm({
       </ScrollView>
 
       <TradePlacePickerModal
-        initialValue={currentPlace}
         onClose={() => setPlaceTarget(null)}
         onSelect={setPlace}
         title={placeTarget === 'purchaseStore' ? '구매 매장 선택' : '거래 장소 선택'}
@@ -437,7 +439,7 @@ export function TradeEditScreen({ navigation, route }: EditProps) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
-  content: { padding: 18, paddingBottom: 52 },
+  content: { padding: 18 },
   intro: { color: colors.textMuted, fontSize: 14, lineHeight: 21 },
   sectionTitle: { marginTop: 28, marginBottom: 4, color: colors.text, fontSize: 20, fontWeight: '800' },
   label: { marginTop: 16, marginBottom: 8, color: colors.text, fontSize: 13, fontWeight: '800' },
