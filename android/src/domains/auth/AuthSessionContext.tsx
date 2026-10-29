@@ -52,6 +52,11 @@ const LOADING_STATE: AuthSessionState = {
   errorMessage: null,
 };
 
+const SESSION_RESTORE_ERROR_MESSAGE =
+  '로그인 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+const AUTHENTICATION_ERROR_MESSAGE =
+  '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+
 const AuthSessionContext = createContext<AuthSessionValue | null>(null);
 
 function readMemberId(accessToken: string): number | null {
@@ -143,10 +148,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         status: 'error',
         member: null,
         memberId: null,
-        errorMessage:
-          error instanceof Error
-            ? error.message
-            : '로그인 상태를 확인하지 못했습니다.',
+        errorMessage: SESSION_RESTORE_ERROR_MESSAGE,
       });
     }
   }, []);
@@ -179,7 +181,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
         status: 'error',
         member: null,
         memberId: null,
-        errorMessage: error instanceof Error ? error.message : '로그인에 실패했습니다.',
+        errorMessage: AUTHENTICATION_ERROR_MESSAGE,
       });
       throw error;
     }

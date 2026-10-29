@@ -48,11 +48,11 @@ function ProviderIcon({ provider }: { provider: MobileOAuthProvider }) {
 }
 
 function readLoginError(error: unknown): string {
-  if (error instanceof MobileOAuthLoginError || error instanceof Error) {
+  if (error instanceof MobileOAuthLoginError) {
     return error.message;
   }
 
-  return '소셜 로그인을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  return '로그인을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.';
 }
 
 export function LoginScreen({ navigation }: Props) {

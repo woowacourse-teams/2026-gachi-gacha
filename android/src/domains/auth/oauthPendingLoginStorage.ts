@@ -4,8 +4,7 @@ import {
   isMobileOAuthProvider,
   type MobileOAuthProvider,
 } from './authTypes';
-
-const PENDING_OAUTH_LOGIN_KEY = 'gachi-gacha:pending-oauth-login:v1';
+import { PENDING_OAUTH_LOGIN_KEY } from './authStorageKeys';
 
 export type PendingOAuthLogin = {
   callbackUrl: string;
