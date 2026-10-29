@@ -10,14 +10,12 @@ import com.gachi.gacha.server.member.application.OauthService;
 import com.gachi.gacha.server.member.application.TokenService;
 import com.gachi.gacha.server.member.application.dto.LoginInfo;
 import com.gachi.gacha.server.member.application.dto.MobileNonceInfo;
-import com.gachi.gacha.server.member.application.dto.MemberDeleteResult;
 import com.gachi.gacha.server.member.application.dto.TokenInfo;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
 import com.gachi.gacha.server.member.domain.exception.InvalidOauthStateException;
 import com.gachi.gacha.server.member.domain.exception.OauthAuthenticationDeniedException;
 import com.gachi.gacha.server.member.infra.apple.util.AppleUserNameExtractor;
 import com.gachi.gacha.server.member.presentation.dto.LoginResponse;
-import com.gachi.gacha.server.member.presentation.dto.MemberDeleteResponse;
 import com.gachi.gacha.server.member.presentation.dto.MobileLoginRequest;
 import com.gachi.gacha.server.member.presentation.dto.MobileNonceResponse;
 import com.gachi.gacha.server.member.presentation.session.OauthNonceSessionManager;
@@ -33,7 +31,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -78,7 +75,7 @@ public class OauthController {
     }
 
     @Operation(summary = "Apple 회원 탈퇴용 재인증 URL 발급")
-    @GetMapping("/withdraw-url")
+    @GetMapping("/withdraw/apple/url")
     public BaseResponse<String> withdrawUrl(
             @Auth final Long memberId,
             final HttpSession session
@@ -118,15 +115,6 @@ public class OauthController {
             log.error("Apple 회원 탈퇴 처리 중 오류", e);
             return redirectToFrontend(frontendWithdrawCallbackUrl, "error=withdraw_failed");
         }
-    }
-
-    @Operation(summary = "회원 탈퇴 (카카오·네이버)")
-    @DeleteMapping("/withdraw")
-    public BaseResponse<MemberDeleteResponse> withdraw(
-            @Auth final Long memberId
-    ) {
-        MemberDeleteResult result = oauthService.withdrawWithoutReauth(memberId);
-        return BaseResponse.deleted(MemberDeleteResponse.from(result));
     }
 
     @Operation(summary = "소셜 로그인 콜백")
@@ -177,7 +165,7 @@ public class OauthController {
     }
 
     @Operation(summary = "모바일 로그인 nonce 발급")
-    @GetMapping("/mobile/{provider}/nonce")
+    @GetMapping("/mobile/nonce/{provider}")
     public ResponseEntity<BaseResponse<MobileNonceResponse>> issueMobileNonce(
             @Parameter(description = "소셜 로그인 제공자", example = "KAKAO")
             @PathVariable final OauthProviderType provider
@@ -189,7 +177,7 @@ public class OauthController {
     }
 
     @Operation(summary = "모바일 소셜 로그인 (인가 코드)")
-    @PostMapping("/mobile/{provider}")
+    @PostMapping("/mobile/login/{provider}")
     public BaseResponse<LoginResponse> mobileLogin(
             @Parameter(description = "소셜 로그인 제공자", example = "KAKAO")
             @PathVariable final OauthProviderType provider,
