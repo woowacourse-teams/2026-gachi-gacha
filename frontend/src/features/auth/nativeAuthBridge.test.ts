@@ -3,7 +3,7 @@ import { afterEach, expect, jest, test } from '@jest/globals';
 import { clearAuthTokens, storeAuthTokens } from './authTokenStorage';
 
 const webViewWindow = window as Window & {
-  ReactNativeWebView?: { postMessage: jest.Mock };
+  ReactNativeWebView?: { postMessage: (message: string) => void };
 };
 
 afterEach(() => {
