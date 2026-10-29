@@ -5,8 +5,10 @@
 - Expo SDK 57 / React Native 0.86
 - TypeScript strict mode
 - React Native New Architecture
-- 웹을 WebView로 감싸지 않고 React Native 네이티브 컴포넌트로 화면을 구현한다.
-- 로그인, 알림처럼 계약 변경 가능성이 큰 기능은 기반이 안정된 뒤 별도 이슈로 추가한다.
+- 배포된 웹 모바일 화면을 전체 WebView 앱 셸로 사용한다.
+- OAuth, App Links, 푸시 알림, 파일 선택, 공유와 시스템 뒤로가기만 Android에서 연결한다.
+- 기존 React Native 화면은 전환 QA가 끝날 때까지 `ANDROID_WEB_SHELL_ENABLED=false`로
+  되돌릴 수 있는 비상 경로로 유지한다.
 
 웹 기능 대비 구현 현황과 순서는 [Android 기능 포팅 현황](./feature-porting-roadmap.md),
 로그인에 필요한 서버 인계 조건은 [Android 네이티브 로그인 인계 계약](./native-auth-contract.md)을
@@ -32,6 +34,14 @@ feat/<issue>-android-* -> android -> main
 | --- | --- | --- | --- | --- | --- |
 | 개발 | `development` | 가치가챠 Dev | `com.dev.gachigacha.app` | `gachigacha-dev` | `https://dev.gachigacha.kro.kr` |
 | 운영 | `production` | 가치가챠 | `com.gachigacha.app` | `gachigacha` | `https://gachigacha.kro.kr` |
+
+두 환경 모두 API 기준 주소와 WebView가 여는 웹 주소가 같다. 기본값은 WebView 셸
+활성화이며, 일시적으로 기존 네이티브 화면을 비교해야 할 때만 빌드 환경에 다음 값을
+지정한다.
+
+```text
+ANDROID_WEB_SHELL_ENABLED=false
+```
 
 Android에서는 Bundle ID에 대응하는 값을 `applicationId` 또는 package name이라고 부른다. Play Console에서는 두 application ID를 서로 다른 앱으로 취급한다.
 
@@ -114,8 +124,9 @@ GitHub Actions에서는 비밀이 아닌 Repository Variable로 관리한다. ca
 `/.well-known/assetlinks.json`을 배포해야 한다.
 
 `ANDROID_KAKAO_OAUTH_CLIENT_ID_*`에는 카카오 디벨로퍼스 앱의 REST API 키를 넣는다.
-이 공개 키는 카카오 로그인 client ID이면서 웹과 동일한 장소 키워드 검색을 호출하는
-키로 사용된다. Admin 키나 client secret은 앱 또는 GitHub Variable에 넣지 않는다.
+이 공개 키는 Android 네이티브 OAuth의 client ID로만 사용한다. 장소 검색과 지도는
+WebView 안의 기존 웹 구현이 담당하므로 REST 키를 APK에서 직접 호출하는 경로에 쓰지
+않는다. Admin 키나 client secret은 앱 또는 GitHub Variable에 넣지 않는다.
 
 ### 소셜 로그인 실기기 진단
 
