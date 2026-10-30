@@ -17,15 +17,16 @@ import { WebView } from 'react-native-webview';
 import { getWebAppBaseUrl } from '../config/webShell';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import {
-  clearAuthTokens,
   readAuthTokens,
   updateStoredRefreshToken,
 } from '../domains/auth/authTokenStorage';
 import type { AuthTokens, MobileOAuthProvider } from '../domains/auth/authTypes';
 import { loginWithMobileOAuth } from '../domains/auth/mobileOAuthLogin';
+import { usePushNotifications } from '../domains/notification/usePushNotifications';
 import {
   classifyWebShellNavigation,
   createWebShellBootstrapScript,
+  createWebShellNavigationScript,
   createWebShellRuntimeScript,
   createWebShellSessionSyncScript,
   isTrustedWebShellMessageSource,
@@ -41,6 +42,7 @@ export function WebAppShellScreen() {
   const canGoBackRef = useRef(false);
   const lastRootBackPressAt = useRef(0);
   const webViewLoadedRef = useRef(false);
+  const pendingPushPathRef = useRef<string | null>(null);
   const topLevelUrlRef = useRef(appBaseUrl);
   const { authenticate, logout, status } = useAuthSession();
   const [nativeSessionTokens, setNativeSessionTokens] = useState<
@@ -50,6 +52,17 @@ export function WebAppShellScreen() {
     useState<MobileOAuthProvider | null>(null);
   const [hasLoadError, setHasLoadError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const openPushPath = useCallback((path: string) => {
+    pendingPushPathRef.current = path;
+
+    if (!webViewLoadedRef.current) return;
+
+    webViewRef.current?.injectJavaScript(createWebShellNavigationScript(path));
+    pendingPushPathRef.current = null;
+  }, []);
+
+  usePushNotifications(openPushPath);
 
   const refreshNativeSession = useCallback(async () => {
     const tokens = await readAuthTokens();
@@ -157,7 +170,7 @@ export function WebAppShellScreen() {
       }
 
       setNativeSessionTokens(null);
-      void clearAuthTokens().then(() => logout());
+      void logout();
     },
     [appBaseUrl, logout],
   );
@@ -238,6 +251,14 @@ export function WebAppShellScreen() {
         onLoadEnd={() => {
           webViewLoadedRef.current = true;
           void refreshNativeSession();
+
+          const pendingPushPath = pendingPushPathRef.current;
+          if (pendingPushPath) {
+            webViewRef.current?.injectJavaScript(
+              createWebShellNavigationScript(pendingPushPath),
+            );
+            pendingPushPathRef.current = null;
+          }
         }}
         onMessage={({ nativeEvent }) =>
           handleWebMessage(nativeEvent.data, nativeEvent.url)

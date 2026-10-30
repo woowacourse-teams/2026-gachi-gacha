@@ -126,16 +126,18 @@ Android에는 환경값이 있을 때만 활성화되는 웹 동일 로그인 UI
 
 ### 5. FCM 푸시
 
-상태: **Firebase 외부 설정 차단**
+상태: **Android 코드 연결 완료, Firebase 외부 설정·실기기 QA 대기**
 
-- DEV/PROD Firebase Android 앱과 각각의 `google-services.json`
-- Android 13+ 알림 권한
-- 로그인/복구/토큰 갱신 시 `PUT /api/v1/push-tokens`
+- Android 13+ 알림 권한과 댓글·채팅 알림 채널
+- 로그인/복구/FCM 토큰 갱신 시 `PUT /api/v1/push-tokens`
 - 로그아웃 전 `DELETE /api/v1/push-tokens`
-- 댓글·채팅·공지 payload별 딥링크
+- 댓글은 교환글, 채팅은 채팅방으로 연결하는 안전한 딥링크
+- foreground 표시와 앱 재실행 시 알림 탭 처리
 - Firebase Admin private key는 앱과 workflow에 넣지 않음
 
-REST 알림 센터는 완료됐지만 실제 push 수신은 이 단계에 남아 있다.
+DEV/PROD Firebase Android 앱과 각각의 `google-services.json`, 백엔드 Firebase Admin
+환경값, CI 파일 주입은 외부 설정으로 남아 있다. 이 값이 없는 빌드는 기존 기능을
+유지하고 푸시만 비활성화한다. 실제 댓글·채팅 수신은 설정 후 실기기에서 검증한다.
 
 ### 6. 공개 콘텐츠와 첫 사용 경험
 
@@ -180,6 +182,6 @@ REST 알림 센터는 완료됐지만 실제 push 수신은 이 단계에 남아
 2. OAuth 계약 답변을 기다리는 동안 교환글 CRUD와 native 이미지 흐름을 포팅한다. (완료)
 3. 로그인 계약이 도착하면 Kakao·Naver 로그인과 원래 화면 복귀를 가장 먼저 연결한다.
 4. 실제 계정으로 신고·차단·프로필·내 글·채팅·알림을 통합 검증한다.
-5. 채팅 미디어 마감과 FCM을 진행한다.
+5. Firebase 외부 설정을 연결해 댓글·채팅 푸시를 실기기 검증하고 채팅 미디어를 마감한다.
 6. 약관·패치노트·온보딩을 연결한다.
 7. 분석·오류 추적, 접근성·성능, Play 선언을 마친 뒤 운영 노출 승인을 받는다.

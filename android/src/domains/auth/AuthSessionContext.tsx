@@ -17,6 +17,7 @@ import {
   updateCurrentMember,
 } from './authApi';
 import { clearAuthTokens, readAuthTokens, storeAuthTokens } from './authTokenStorage';
+import { unregisterStoredPushTokenBeforeLogout } from '../notification/pushNotificationApi';
 import type {
   AuthMember,
   AuthStatus,
@@ -189,6 +190,13 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     const tokens = await readAuthTokens();
+
+    if (tokens) {
+      await unregisterStoredPushTokenBeforeLogout(tokens.accessToken).catch(
+        () => undefined,
+      );
+    }
+
     await clearAuthTokens();
     setState(GUEST_STATE);
 

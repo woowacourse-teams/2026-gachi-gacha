@@ -1,13 +1,16 @@
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const createConfig = require('../app.config.js');
 const {
   DEFAULT_ANDROID_VERSION_CODE,
   DEFAULT_APP_VERSION,
+  ANDROID_APP_PERMISSIONS,
+  FIREBASE_CONFIG_FILES,
+  PUSH_NOTIFICATION_CHANNEL_ID,
+  PUSH_NOTIFICATION_PERMISSIONS,
   PRODUCTION_BLOCKED_PERMISSIONS,
-  WEBVIEW_LOCATION_PERMISSIONS,
   resolveOptionalHttpsUrl,
 } = createConfig;
 const {
@@ -72,8 +75,15 @@ for (const name of oauthEnvironmentNames) {
 }
 
 for (const [variant, expected] of Object.entries(expectedVariants)) {
+  const firebaseConfigPath = FIREBASE_CONFIG_FILES[variant];
+  const firebaseConfigPresent = existsSync(
+    new URL(`../${firebaseConfigPath.replace(/^\.\//, '')}`, import.meta.url),
+  );
   process.env.APP_VARIANT = variant;
   const config = createConfig({ config: {} });
+  const notificationPlugin = config.plugins?.find(
+    (plugin) => Array.isArray(plugin) && plugin[0] === 'expo-notifications',
+  );
   const actual = {
     name: config.name,
     package: config.android?.package,
@@ -84,6 +94,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     version: config.version,
     versionCode: config.android?.versionCode,
     permissions: config.android?.permissions,
+    googleServicesFile: config.android?.googleServicesFile,
     blockedPermissions: config.android?.blockedPermissions,
     apiBaseUrl: config.extra?.apiBaseUrl,
     webAppBaseUrl: config.extra?.webAppBaseUrl,
@@ -93,6 +104,11 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     memberReportEndpoint: config.extra?.memberReportEndpoint,
     oauth: config.extra?.oauth,
     oauthIntentFilters: config.android?.intentFilters,
+    pushNotificationsConfigured:
+      config.extra?.pushNotificationsConfigured,
+    pushNotificationChannelId:
+      config.extra?.pushNotificationChannelId,
+    notificationPlugin,
     tradeFeaturesEnabled: config.extra?.tradeFeaturesEnabled,
   };
 
@@ -105,7 +121,8 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     softwareKeyboardLayoutMode: 'resize',
     version: DEFAULT_APP_VERSION,
     versionCode: DEFAULT_ANDROID_VERSION_CODE,
-    permissions: WEBVIEW_LOCATION_PERMISSIONS,
+    permissions: ANDROID_APP_PERMISSIONS,
+    googleServicesFile: firebaseConfigPresent ? firebaseConfigPath : undefined,
     blockedPermissions:
       variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
@@ -118,6 +135,15 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
       clientIds: { kakao: '', naver: '' },
     },
     oauthIntentFilters: undefined,
+    pushNotificationsConfigured: firebaseConfigPresent,
+    pushNotificationChannelId: PUSH_NOTIFICATION_CHANNEL_ID,
+    notificationPlugin: [
+      'expo-notifications',
+      {
+        color: '#d93b54',
+        defaultChannel: PUSH_NOTIFICATION_CHANNEL_ID,
+      },
+    ],
     tradeFeaturesEnabled: variant === 'development',
   };
 
@@ -141,13 +167,38 @@ if (!/\bgeolocationEnabled\b/.test(webAppShellSource)) {
 
 if (
   PRODUCTION_BLOCKED_PERMISSIONS.some((permission) =>
-    WEBVIEW_LOCATION_PERMISSIONS.includes(permission),
+    ANDROID_APP_PERMISSIONS.includes(permission),
   )
 ) {
-  throw new Error('WebView location permissions must not be blocked in production.');
+  throw new Error('Required Android permissions must not be blocked in production.');
 }
 
-console.log('✓ Android WebView requests location only through its geolocation control');
+if (
+  !PUSH_NOTIFICATION_PERMISSIONS.includes(
+    'android.permission.POST_NOTIFICATIONS',
+  )
+) {
+  throw new Error('Android 13 notification permission must be declared.');
+}
+
+const pushNotificationHookSource = readFileSync(
+  new URL('../src/domains/notification/usePushNotifications.ts', import.meta.url),
+  'utf8',
+);
+const pushNotificationApiSource = readFileSync(
+  new URL('../src/domains/notification/pushNotificationApi.ts', import.meta.url),
+  'utf8',
+);
+
+if (
+  !/getDevicePushTokenAsync/.test(pushNotificationHookSource) ||
+  !/addNotificationResponseReceivedListener/.test(pushNotificationHookSource) ||
+  !/\/api\/v1\/push-tokens/.test(pushNotificationApiSource)
+) {
+  throw new Error('Android FCM token registration and notification routing must remain connected.');
+}
+
+console.log('✓ Android WebView location and FCM notification permissions are declared');
 
 process.env.APP_VARIANT = 'production';
 process.env.APP_VERSION = '1.2.3';

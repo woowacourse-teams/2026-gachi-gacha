@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   classifyWebShellNavigation,
   createWebShellBootstrapScript,
+  createWebShellNavigationScript,
   createWebShellRuntimeScript,
   createWebShellSessionSyncScript,
   isTrustedWebShellMessageSource,
@@ -144,6 +145,8 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /data-gachigacha-android-avatar-fallback/);
   assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);
   assert.match(runtimeScript, /data:image\/svg\+xml/);
+  assert.doesNotMatch(runtimeScript, /%3Crect/);
+  assert.match(runtimeScript, /bottom: 12px/);
   assert.match(bootstrapScript, /gachigacha:auth-refresh-token/);
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
   assert.match(syncScript, /sessionChanged/);
@@ -153,6 +156,17 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.doesNotThrow(() => new Function(bootstrapScript));
   assert.doesNotThrow(() => new Function(runtimeScript));
   assert.doesNotThrow(() => new Function(syncScript));
+});
+
+test('푸시 딥링크는 교환글과 채팅방 숫자 경로만 허용한다', () => {
+  const tradeScript = createWebShellNavigationScript('/trade/37');
+  const chatScript = createWebShellNavigationScript('/chat/12');
+
+  assert.match(tradeScript, /window\.location\.assign/);
+  assert.match(tradeScript, /"\/trade\/37"/);
+  assert.match(chatScript, /"\/chat\/12"/);
+  assert.throws(() => createWebShellNavigationScript('/login'));
+  assert.throws(() => createWebShellNavigationScript('/trade/1?next=javascript:1'));
 });
 
 test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다시 로드한다', () => {

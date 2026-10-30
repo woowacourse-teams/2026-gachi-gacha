@@ -17,6 +17,7 @@
     "expo-file-system": "~57.0.7",
     "expo-image-manipulator": "~57.0.21",
     "expo-image-picker": "~57.0.20",
+    "expo-notifications": "~57.0.24",
     "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-web-browser": "~57.0.3",
@@ -44,12 +45,13 @@
     "login-ui:test": "node --no-warnings --experimental-strip-types scripts/login-provider-presentation.test.mjs",
     "place-search:test": "node --no-warnings --experimental-strip-types scripts/place-search.test.mjs",
     "web-shell:test": "node --no-warnings --experimental-strip-types scripts/web-shell.test.mjs",
+    "push-notification:test": "node --no-warnings --experimental-strip-types scripts/push-notification.test.mjs",
     "catalog:test": "node --test scripts/affiliate-catalog/catalog.test.mjs",
     "catalog:sync": "node scripts/affiliate-catalog/sync.mjs",
     "export:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo export --platform android --output-dir dist/development",
     "export:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo export --platform android --output-dir dist/production",
     "typecheck": "tsc --noEmit",
-    "check": "npm run auth:test && npm run login-ui:test && npm run place-search:test && npm run web-shell:test && npm run catalog:test && npm run typecheck && npm run config:check && npm run export:dev && npm run export:prod"
+    "check": "npm run auth:test && npm run login-ui:test && npm run place-search:test && npm run web-shell:test && npm run push-notification:test && npm run catalog:test && npm run typecheck && npm run config:check && npm run export:dev && npm run export:prod"
   },
   "private": true
 }
