@@ -1,187 +1,126 @@
-# main v1.6.0 기준 Android 포팅 현황
+# Android WebView 하이브리드 포팅 현황
 
-> 이 문서는 완료 범위의 역사적 기준을 기록한다. 새 Android 기능과 UI의 제품
-> 기준은 항상 작업 시점 최신 웹 `main`의 모바일 반응형 뷰다. 포팅 전 확인 절차와
-> Android 시스템 하단 안전 영역 규칙은
-> [web-mobile-parity.md](./web-mobile-parity.md)를 따른다.
+> 제품 UI와 사용자 반응 경로의 기준은 작업 시점 최신 웹 `main`의 모바일
+> 반응형 뷰다. Android는 웹 화면을 임의로 다시 디자인하지 않고, OS 권한·OAuth·
+> 안전한 토큰 저장·푸시·외부 앱 연결처럼 앱에서만 처리할 수 있는 기능을 담당한다.
 
-기준은 운영 태그 `v1.6.0`의 `b10a283b`와 Android 통합 브랜치의
-`b457fc9e`다. 이 문서는 2026-10-28 현재 병합된 #480, #482, #484, #486, #489,
-#492, #494를 반영한다. 코드 연결 완료와 실제 기기 QA 완료는 구분한다.
+2026-10-30 기준 `android` 브랜치와 DEV APK 실기기 QA 결과를 기록한다. 코드 연결,
+외부 환경 설정, 실기기 검증은 서로 다른 완료 조건으로 구분한다.
 
-종료된 이벤트 응모, 웹에서도 준비 중인 관심 가챠·관심 매장은 포팅하지 않는다.
-production 거래 feature flag는 로그인·신고·차단·Play 선언 검증과 사용자 승인 전까지
-켜지 않는다.
+## 현재 구조
 
-## 현재 완료된 범위
+- 기본 화면은 최신 웹 모바일 화면을 단일 WebView에서 제공한다.
+- Kakao·Naver OAuth는 시스템 브라우저와 검증된 Android App Link를 사용한다.
+- access/refresh token은 Android SecureStore에 저장하고 웹 세션과 브리지로 동기화한다.
+- 위치 권한, Android 시스템 안전 영역, 외부 링크, FCM 토큰과 푸시 딥링크는
+  Android가 처리한다.
+- 과거 네이티브 화면은 비상용 fallback으로만 유지하며 새 제품 UI의 기준으로 삼지
+  않는다.
 
-### 공개 탐색
+세부 책임과 보안 경계는 [webview-hybrid-architecture.md](./webview-hybrid-architecture.md),
+모바일 화면 포팅 규칙은 [web-mobile-parity.md](./web-mobile-parity.md)를 따른다.
 
-- 카테고리·키워드 가챠 탐색, 보유 매장 조회
-- Kakao Maps 네이티브 지도, 캡슐 마커 선택, 카드 캐러셀과 2단계 상세 진입
-- 매장 상세, 보유 가챠, 길찾기·전화·Instagram·공유
-- 원격 이미지 fallback과 상세 이미지 확대
-- G 로고와 wordmark, 로그인/프로필 중심 헤더와 드롭다운
-- 교환 상세의 다른 교환글
+## 완료된 범위
 
-### 인증 기반 UI
+### 공개 탐색과 거래
 
-- SecureStore access/refresh token 저장과 세션 복구
-- access token 갱신, 동시 401 refresh 단일화, 로그아웃
-- 프로필 조회·닉네임·선호 지역·프로필 이미지 수정
-- 내 교환글 요약·목록
-- 차단 목록·해제
-- 공개 회원 탈퇴 안내
+- 거래/교환, 지도, 검색과 상세 화면의 웹 모바일 UI
+- Kakao 지도, 캡슐·카드 포커스, 검색 결과와 현재 위치 권한
+- 가챠·매장 검색, 쇼핑 커넥트 정적 카탈로그와 외부 링크
+- 교환글 작성·수정·삭제·상태 변경, 댓글, 신고·차단
+- 프로필, 선호 거래 지역, 내 교환글과 알림 화면
 
-소셜 로그인 시작은 아직 노출하지 않는다. 현재 서버 계약으로 시스템 브라우저에서
-로그인한 뒤 서비스 토큰을 앱에 안전하게 넘길 방법이 없기 때문이다.
+### 인증과 세션
 
-### 거래·안전
+- Kakao·Naver 네이티브 OAuth 코드와 PKCE/nonce 계약
+- HTTPS callback App Link와 SecureStore 세션 복구
+- 로그인 후 원래 웹 화면 복귀, refresh token 회전과 로그아웃 동기화
+- Apple 로그인은 Android 로그인 화면에서 제외
 
-- development variant의 거래 목록·검색·상태 필터·상세·댓글
-- 구매 매장과 거래 장소 표시
-- 게시글·댓글·채팅 인접 신고/차단
-- 차단 직후 신고 진입과 차단 사용자 콘텐츠 방어적 숨김
-- 교환 상세에서 기존 방 조회 또는 첫 채팅방 생성
-- 교환글 작성·수정·삭제·상태 변경과 네이티브 사진·장소 폼
+Kakao 로그인은 DEV 실기기에서 왕복을 확인했다. Naver 로그인은 동일 코드 경계를
+사용하지만 별도 실기기 최종 확인이 남아 있다.
 
-### 채팅·알림
+### 채팅과 알림
 
-- 채팅방 목록, 방 상세, 이전 메시지, STOMP 재연결
-- 텍스트·복수 이미지 전송, 이미지 확대
-- 읽음 처리와 전체 unread count
-- 탈퇴/차단 회원 방어, 채팅 신고/차단
-- 댓글 알림 목록·추가 로딩·개별/전체 읽음·교환글 이동
+- 채팅방 목록·상세, 텍스트·이미지 전송, 읽음 처리와 재연결
+- 댓글 알림 목록·개별/전체 읽음과 대상 교환글 이동
+- Android 13 이상 알림 권한과 댓글·채팅 알림 채널
+- 로그인·토큰 갱신·로그아웃에 맞춘 FCM token 등록·해제
+- 댓글은 교환글, 채팅은 채팅방으로만 이동하는 숫자 경로 allowlist
 
-### 카탈로그와 운영 기반
+DEV Firebase Android 앱, CI 설정 주입과 백엔드 Firebase Admin 설정을 연결했고,
+DEV APK 실기기에서 댓글·채팅 푸시 수신을 확인했다. 알림을 눌렀을 때의 대상 화면
+이동은 1.0.0 최종 회귀 항목으로 유지한다.
 
-- 웹과 byte 단위로 같은 generator와 revision을 사용하는 Android 정적
-  쇼핑 커넥트 카탈로그
-- 검색 `/search`, 지도 `/map`, 교환 상세 `/trade`의 카테고리·제목 매칭,
-  Asia/Seoul 노출 기간, 제휴 고지와 외부 브라우저 연결을 적용한다.
-- Android Quality가 같은 Sheet를 검증해 변경 시 `android` 대상 PR을 만든다.
-- DEV/PROD package·scheme·API, preview APK, Play AAB와 서명 설정은 유지 중이다.
+### 빌드와 운영 기반
+
+- 개발 `com.dev.gachigacha.app`, 운영 `com.gachigacha.app` 분리
+- DEV/PROD API·OAuth callback·Firebase 설정 분리
+- Android Quality preview APK와 서명된 Play AAB workflow
+- 웹과 같은 generator/revision을 사용하는 쇼핑 커넥트 정적 카탈로그
+- 토큰, OAuth URL, 서비스 계정 키를 앱 로그와 저장소에 남기지 않는 검증
 
 ## 남은 단계
 
-### 1. Kakao·Naver 네이티브 OAuth 계약과 로그인
+### 1. 인증·계정 실기기 회귀
 
-상태: **Android 구현 완료, 백엔드·App Link 통합 대기**
+상태: **일부 실기기 QA 남음**
 
-Android는 Apple 로그인을 제외하고 Kakao·Naver를 제공하는 방향이다. 다만 Apple로만
-가입한 기존 회원의 접근 정책 또는 provider 계정 연결 정책은 서버·운영 합의가 필요하다.
+- Naver 로그인과 로그인 전 화면 복귀
+- 앱 재시작·장시간 백그라운드 뒤 세션 복구와 401 refresh
+- 웹 로그아웃·회원 탈퇴 뒤 SecureStore와 FCM token이 함께 정리되는지 확인
+- Apple로만 가입한 기존 회원의 Android 접근 정책 확인
 
-시스템 브라우저와 native fetch는 웹 `HttpSession` 쿠키를 공유하지 않는다. 기존
-JSON 토큰 응답만 되돌려도 브라우저가 JSON을 받고 앱은 읽을 수 없으므로 다음 중 한
-형태의 브라우저→앱 인계와 앱의 HTTPS 교환 단계가 필요하다.
+### 2. 채팅 미디어와 장시간 사용 마감
 
-- callback에는 provider가 발급한 짧은 TTL의 code와 state만 전달
-- 앱은 code, 서버 nonce와 PKCE verifier로 기존 `{ accessToken, refreshToken }` JSON을 교환
-- access/refresh token은 URL, WebView, 로그와 분석 도구에 넣지 않음
+상태: **기본 전송 완료, Android UX 회귀 남음**
 
-Android에는 환경값이 있을 때만 활성화되는 웹 동일 로그인 UI, PKCE, SecureStore 임시
-상태, 시스템 브라우저, HTTPS callback 검증과 토큰 교환 경계를 포팅했다. 앱과 웹이
-공유하는 기존 TLS 도메인의 검증된 Android App Link를 callback으로 사용한다. provider
-콘솔·서버 redirect URI·빌드 변수와 도메인의
-`assetlinks.json`이 확정되기 전에는 버튼을 안전하게 비활성화한다.
+- 이미지 선택 전 미리보기·개별 취소가 웹과 같은지 확인
+- 큰 JPEG/PNG/WebP의 업로드 실패·재시도와 메모리 사용량 확인
+- 채팅 이미지 저장 또는 Android 공유 시트 연결 여부 결정
+- 키보드, 화면 회전, background/foreground, 장시간 WebSocket 회귀
 
-별도 URL은 필수가 아니며 기존 endpoint에 mobile mode 또는 POST exchange를 추가할
-수 있다. 그러나 브라우저 결과를 앱으로 돌려주고 서비스 토큰을 앱이 받는 단계 자체는
-생략할 수 없다. Android API 경계는 백엔드 `feature/495-social-login`의 최신 경로에
-맞췄으며 DEV 배포 뒤 실제 왕복을 검증한다.
+### 3. 공개 문서·외부 링크 회귀
 
-### 2. 교환글 작성·수정·삭제·상태 변경
+상태: **코드 연결 완료, 운영 URL QA 남음**
 
-상태: **#494 코드 포팅 완료, 실제 완료 QA는 로그인 필요**
+- 개인정보처리방침·업데이트 소식·계정 삭제 안내 URL 확인
+- 네이버 쇼핑 커넥트, 길찾기, 전화, Instagram이 허용된 외부 앱으로 열리는지 확인
+- 존재하지 않는 이용약관 경로를 앱에서 노출하지 않도록 웹 운영 경로와 합의
 
-- 웹 `v1.6.0`의 실제 request/response 계약을 기준으로 native form과 API를 구현
-- 사진 선택, 형식·용량 검증, 미리보기, 삭제, 순서 변경
-- 업로드 실패 시 거대한 원본을 자동 전송하지 않는 압축 정책
-- 가지고 있는 것/얻고 싶은 것, 복수 거래 장소, 구매 매장, 가능 시간
-- 작성 후 상세 복귀, 수정·삭제·상태 변경과 소유자 UI
-- production feature flag는 계속 비활성
+### 4. 접근성·성능·Play 1.0.0
 
-#494에서 development 앱에 연결했다. OAuth가 연결되면 실제 계정으로 multipart 업로드,
-소유자 권한, 사진 순서와 장소 좌표를 검증해야 한다.
+상태: **다음 통합 단계**
 
-### 3. 인증 기능 실계정 연결과 계정 삭제
+- Galaxy 3버튼/제스처, Pixel, 작은 화면, 큰 글자와 TalkBack
+- 지도·채팅 탭 복귀, 느린 네트워크·오프라인·서버 오류 복구
+- UGC 신고·차단, 로그인, 계정 삭제, 알림에 맞는 Play Console 선언
+- Play App Signing 인증서의 App Link와 Kakao Maps hash 등록
+- 내부 테스트 AAB 후 비공개 테스트와 운영 1.0.0 승인
 
-상태: **OAuth 이후**
+실행 순서는 [release-qa-checklist.md](./release-qa-checklist.md)와
+[play-closed-test.md](./play-closed-test.md)를 따른다.
 
-- 로그인 후 원래 화면 복귀
-- 프로필 수정·내 글·차단·신고의 실제 계정 회귀
-- 앱 내부 회원 탈퇴
-- Kakao·Naver 재인증 또는 탈퇴 인가 계약
-- Apple 로그인 제외에 따른 기존 Apple 회원 정책 확인
-
-### 4. 채팅 미디어 마감
-
-상태: **기반 구현 완료, 일부 UX 미구현**
-
-- 전송 전 이미지 미리보기·개별 취소
-- 안전한 리사이즈/압축과 업로드 진행·재시도
-- 전송 이미지 다운로드 또는 Android 공유 시트
-- 키보드, background/foreground, 장시간 WebSocket 실기기 회귀
-- 교환 상태 변경 UX가 채팅에 필요한지 웹과 재확인
-
-### 5. FCM 푸시
-
-상태: **Android 코드 연결 완료, Firebase 외부 설정·실기기 QA 대기**
-
-- Android 13+ 알림 권한과 댓글·채팅 알림 채널
-- 로그인/복구/FCM 토큰 갱신 시 `PUT /api/v1/push-tokens`
-- 로그아웃 전 `DELETE /api/v1/push-tokens`
-- 댓글은 교환글, 채팅은 채팅방으로 연결하는 안전한 딥링크
-- foreground 표시와 앱 재실행 시 알림 탭 처리
-- Firebase Admin private key는 앱과 workflow에 넣지 않음
-
-DEV/PROD Firebase Android 앱과 각각의 `google-services.json`, 백엔드 Firebase Admin
-환경값, CI 파일 주입은 외부 설정으로 남아 있다. 이 값이 없는 빌드는 기존 기능을
-유지하고 푸시만 비활성화한다. 실제 댓글·채팅 수신은 설정 후 실기기에서 검증한다.
-
-### 6. 공개 콘텐츠와 첫 사용 경험
-
-상태: **Android만으로 진행 가능**
-
-- 이용약관과 패치노트 allowlist WebView
-- 버전이 있는 native onboarding seen flag
-- 공개 계정 삭제와 정책 링크 회귀
-- 쇼핑 커넥트 실기기 레이아웃·외부 링크 QA
-
-### 7. 분석·오류 추적
+### 5. 분석·오류 추적
 
 상태: **운영 계약 필요**
 
-- 모바일 PostHog 프로젝트, 이벤트 이름·중복 수집·개인정보 최소화
-- Android Sentry 또는 Crashlytics 선택, DSN과 개인정보처리방침 반영
-- OAuth URL·토큰·채팅 내용·이미지 URL을 원문 수집하지 않음
+- PostHog 이벤트 이름·웹 중복 수집·개인정보 최소화 합의
+- Android Sentry 또는 Crashlytics 선택과 개인정보처리방침 반영
+- OAuth URL·토큰·채팅 내용·이미지 URL 원문을 수집하지 않는 필터
 
-### 8. 접근성·성능·Play 운영 노출
+## 외부 합의가 필요한 항목
 
-상태: **마지막 통합 단계**
-
-- Galaxy S24+ 3버튼/제스처, Pixel 8, 작은 화면, 큰 글자
-- 지도 탭 복귀, background/foreground, 네트워크 지연·오류
-- JPEG/PNG/WebP와 지원하지 않는 HEIF, 여러 장 업로드, 메모리 사용량
-- UGC, 로그인, 계정 삭제, 알림, 분석 SDK에 맞는 Play Console 선언
-- 신고 운영 경로와 심사용 로그인 절차 확인
-- 사용자 승인 뒤 production 거래 feature flag 활성화
-
-## 차단 항목
-
-- Kakao·Naver 모바일 OAuth 일회성 인계·교환 계약
-- Apple-only 기존 회원의 Android 접근 정책
-- 앱 내부 계정 삭제 재인증 계약
-- 신고 endpoint의 실제 운영자 수신 확인
-- Firebase DEV/PROD Android 앱과 구성 파일
-- PostHog·오류 추적 도구와 개인정보 정책
+- Apple 전용 기존 회원의 Android 로그인 정책
+- 회원 탈퇴 재인증 계약과 실제 탈퇴 회귀
+- 신고를 실제로 검토·조치하는 운영 경로
+- 이용약관의 운영 URL과 동의 시점
+- 분석·오류 추적 도구와 개인정보 정책
 
 ## 다음 작업 순서
 
-1. #486 카탈로그를 검증·병합한다. (완료)
-2. OAuth 계약 답변을 기다리는 동안 교환글 CRUD와 native 이미지 흐름을 포팅한다. (완료)
-3. 로그인 계약이 도착하면 Kakao·Naver 로그인과 원래 화면 복귀를 가장 먼저 연결한다.
-4. 실제 계정으로 신고·차단·프로필·내 글·채팅·알림을 통합 검증한다.
-5. Firebase 외부 설정을 연결해 댓글·채팅 푸시를 실기기 검증하고 채팅 미디어를 마감한다.
-6. 약관·패치노트·온보딩을 연결한다.
-7. 분석·오류 추적, 접근성·성능, Play 선언을 마친 뒤 운영 노출 승인을 받는다.
+1. Naver 로그인, 앱 재시작 세션, 로그아웃·회원 탈퇴를 실계정으로 확인한다.
+2. 채팅 이미지·키보드·백그라운드 복귀를 장시간 실기기 QA한다.
+3. 운영 URL과 외부 앱 연결을 확인한다.
+4. 기기·접근성·네트워크 회귀를 마친 뒤 1.0.0 AAB를 내부 테스트에 올린다.
+5. Play 선언과 심사용 계정을 확정해 비공개 테스트를 시작한다.
