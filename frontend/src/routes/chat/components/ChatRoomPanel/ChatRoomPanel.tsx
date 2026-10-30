@@ -340,6 +340,9 @@ export default function ChatRoomPanel({
               거래글로 이동
             </TradeDetailLink>
           </ProductLinks>
+          <MobileTradeStatus>
+            <TradeStatusBadge status={room.tradeStatus} />
+          </MobileTradeStatus>
         </ProductInfo>
         {tradeStatusAction && onChangeTradeStatus && (
           <TradeActionArea>
@@ -532,7 +535,9 @@ const Panel = styled.section`
   background: #ffffff;
 
   @media (max-width: 900px) {
+    position: relative;
     min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 `;
 
@@ -541,6 +546,12 @@ const RoomTitleGroup = styled.div`
   min-width: 0;
   align-items: center;
   gap: 14px;
+
+  @media (max-width: 900px) {
+    > div {
+      display: none;
+    }
+  }
 `;
 
 const closeControlStyles = css`
@@ -560,6 +571,11 @@ const closeControlStyles = css`
   &:hover {
     background: #f3f0f1;
   }
+
+  @media (max-width: 900px) {
+    border: 1px solid #eeeaec;
+    background: #ffffff;
+  }
 `;
 
 const CloseLink = styled(Link)`
@@ -570,6 +586,18 @@ const CloseButton = styled.button`
   ${closeControlStyles}
 `;
 
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  @media (max-width: 900px) {
+    > :first-child {
+      display: none;
+    }
+  }
+`;
+
 const RoomHeader = styled.header`
   display: flex;
   min-height: 82px;
@@ -578,12 +606,21 @@ const RoomHeader = styled.header`
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid #eeeaec;
-`;
 
-const HeaderActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  @media (max-width: 900px) {
+    position: absolute;
+    z-index: 2;
+    inset: 0 0 auto;
+    min-height: 0;
+    padding: 14px 10px;
+    align-items: flex-start;
+    border: 0;
+    pointer-events: none;
+
+    > div {
+      pointer-events: auto;
+    }
+  }
 `;
 
 const PartnerName = styled.h2`
@@ -600,6 +637,11 @@ const ProductSummary = styled.div`
   align-items: center;
   gap: 12px;
   border-bottom: 1px solid #eeeaec;
+
+  @media (max-width: 900px) {
+    padding-right: 52px;
+    padding-left: 52px;
+  }
 
   @media (max-width: 440px) {
     grid-template-columns: 52px minmax(0, 1fr);
@@ -660,6 +702,15 @@ const ProductLinks = styled.div`
   flex-wrap: wrap;
   gap: 4px 10px;
   font-size: 11px;
+`;
+
+const MobileTradeStatus = styled.div`
+  display: none;
+
+  @media (max-width: 900px) {
+    display: flex;
+    margin-top: 6px;
+  }
 `;
 
 const TradeDetailLink = styled(Link)`
@@ -875,6 +926,10 @@ const MessageInput = styled.input`
   background: transparent;
   color: #aaa2a6;
   font-size: 13px;
+
+  @media (max-width: 900px) {
+    font-size: 16px;
+  }
 
   &:disabled {
     cursor: wait;
