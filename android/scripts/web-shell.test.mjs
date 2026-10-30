@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   classifyWebShellNavigation,
+  createWebShellApiCompatibilityScript,
   createWebShellBootstrapScript,
   createWebShellNavigationScript,
   createWebShellRuntimeScript,
@@ -40,6 +41,27 @@ function runSessionSyncScript(script, initialEntries) {
 
   new Function('window', script)(window);
   return { entries, operations, reloadCount };
+}
+
+function runApiCompatibilityScript(requestUrl, method) {
+  const requests = [];
+  const window = {
+    fetch(input, init) {
+      requests.push({ input, init });
+      return Promise.resolve();
+    },
+    location: {
+      href: `${APP_BASE_URL}/mypage`,
+      origin: APP_BASE_URL,
+    },
+  };
+
+  const script = createWebShellApiCompatibilityScript();
+  new Function('window', 'URL', script)(window, URL);
+  new Function('window', 'URL', script)(window, URL);
+  window.fetch(requestUrl, { method });
+
+  return requests;
 }
 
 test('같은 HTTPS origin의 모든 웹 화면을 WebView 안에서 연다', () => {
@@ -118,6 +140,36 @@ test('허용된 네이티브 브리지 메시지만 파싱한다', () => {
   );
 });
 
+test('구형 회원 탈퇴 DELETE 요청만 현재 API 경로로 보정한다', () => {
+  const rewritten = runApiCompatibilityScript(
+    `${APP_BASE_URL}/api/v1/oauth/withdraw`,
+    'DELETE',
+  );
+  assert.equal(rewritten.length, 1);
+  assert.equal(
+    rewritten[0].input,
+    `${APP_BASE_URL}/api/v1/members/me`,
+  );
+
+  const samePathGet = runApiCompatibilityScript(
+    `${APP_BASE_URL}/api/v1/oauth/withdraw`,
+    'GET',
+  );
+  assert.equal(
+    samePathGet[0].input,
+    `${APP_BASE_URL}/api/v1/oauth/withdraw`,
+  );
+
+  const externalDelete = runApiCompatibilityScript(
+    'https://example.com/api/v1/oauth/withdraw',
+    'DELETE',
+  );
+  assert.equal(
+    externalDelete[0].input,
+    'https://example.com/api/v1/oauth/withdraw',
+  );
+});
+
 test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열을 이스케이프한다', () => {
   const tokens = {
     accessToken: 'access</script><script>alert(1)</script>',
@@ -143,6 +195,8 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /data-gachigacha-android-chat-composer/);
   assert.match(runtimeScript, /전체 대화/);
   assert.match(runtimeScript, /data-gachigacha-android-avatar-fallback/);
+  assert.match(runtimeScript, /\/api\/v1\/oauth\/withdraw/);
+  assert.match(runtimeScript, /\/api\/v1\/members\/me/);
   assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);
   assert.match(runtimeScript, /data:image\/svg\+xml/);
   assert.doesNotMatch(runtimeScript, /%3Crect/);

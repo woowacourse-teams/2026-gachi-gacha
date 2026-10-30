@@ -1,9 +1,5 @@
 import { getApiBaseUrl } from '../../config/api';
 import { authenticatedFetch } from '../auth/authApi';
-import {
-  clearStoredPushToken,
-  readStoredPushToken,
-} from './pushTokenStorage';
 
 const PUSH_TOKENS_PATH = '/api/v1/push-tokens';
 
@@ -33,21 +29,26 @@ export async function registerAndroidPushToken(token: string): Promise<void> {
   }
 }
 
-export async function unregisterStoredPushTokenBeforeLogout(
+export async function unregisterAndroidPushToken(
   accessToken: string,
+  token: string,
 ): Promise<void> {
-  const pushToken = await readStoredPushToken();
-  if (!pushToken) return;
+  const normalizedAccessToken = accessToken.trim();
+  const normalizedPushToken = token.trim();
 
-  try {
-    await fetch(`${getApiBaseUrl()}${PUSH_TOKENS_PATH}`, {
-      ...createJsonRequest('DELETE', pushToken),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-  } finally {
-    await clearStoredPushToken();
+  if (!normalizedAccessToken || !normalizedPushToken) {
+    return;
+  }
+
+  const response = await fetch(`${getApiBaseUrl()}${PUSH_TOKENS_PATH}`, {
+    ...createJsonRequest('DELETE', normalizedPushToken),
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${normalizedAccessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('푸시 알림 연결을 해제하지 못했습니다.');
   }
 }
