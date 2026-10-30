@@ -17,7 +17,12 @@ import {
   updateCurrentMember,
 } from './authApi';
 import { clearAuthTokens, readAuthTokens, storeAuthTokens } from './authTokenStorage';
-import { unregisterStoredPushTokenBeforeLogout } from '../notification/pushNotificationApi';
+import { cleanupAndroidSession } from './sessionCleanup';
+import { unregisterAndroidPushToken } from '../notification/pushNotificationApi';
+import {
+  clearStoredPushToken,
+  readStoredPushToken,
+} from '../notification/pushTokenStorage';
 import type {
   AuthMember,
   AuthStatus,
@@ -189,20 +194,15 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    const tokens = await readAuthTokens();
-
-    if (tokens) {
-      await unregisterStoredPushTokenBeforeLogout(tokens.accessToken).catch(
-        () => undefined,
-      );
-    }
-
-    await clearAuthTokens();
-    setState(GUEST_STATE);
-
-    if (tokens) {
-      await logoutAuthSession(tokens.refreshToken).catch(() => undefined);
-    }
+    await cleanupAndroidSession({
+      clearAuthTokens,
+      clearStoredPushToken,
+      logoutRemoteSession: logoutAuthSession,
+      onLocalSessionCleared: () => setState(GUEST_STATE),
+      readAuthTokens,
+      readStoredPushToken,
+      unregisterRemotePushToken: unregisterAndroidPushToken,
+    });
   }, []);
 
   const retry = useCallback(() => {

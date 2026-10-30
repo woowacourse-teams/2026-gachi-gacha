@@ -42,6 +42,8 @@
     "config:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo config --type public",
     "config:check": "node scripts/validate-app-config.mjs",
     "auth:test": "node --no-warnings --experimental-strip-types scripts/auth-storage-keys.test.mjs",
+    "oauth-contract:test": "node --no-warnings --experimental-strip-types scripts/mobile-oauth-contract.test.mjs",
+    "session-cleanup:test": "node --no-warnings --experimental-strip-types scripts/session-cleanup.test.mjs",
     "login-ui:test": "node --no-warnings --experimental-strip-types scripts/login-provider-presentation.test.mjs",
     "place-search:test": "node --no-warnings --experimental-strip-types scripts/place-search.test.mjs",
     "web-shell:test": "node --no-warnings --experimental-strip-types scripts/web-shell.test.mjs",
@@ -51,7 +53,7 @@
     "export:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo export --platform android --output-dir dist/development",
     "export:prod": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=production expo export --platform android --output-dir dist/production",
     "typecheck": "tsc --noEmit",
-    "check": "npm run auth:test && npm run login-ui:test && npm run place-search:test && npm run web-shell:test && npm run push-notification:test && npm run catalog:test && npm run typecheck && npm run config:check && npm run export:dev && npm run export:prod"
+    "check": "npm run auth:test && npm run oauth-contract:test && npm run session-cleanup:test && npm run login-ui:test && npm run place-search:test && npm run web-shell:test && npm run push-notification:test && npm run catalog:test && npm run typecheck && npm run config:check && npm run export:dev && npm run export:prod"
   },
   "private": true
 }
