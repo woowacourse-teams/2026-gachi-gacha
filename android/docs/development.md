@@ -133,6 +133,21 @@ WebView 지도에서 현재 위치 버튼을 누르면 Android가 정밀·대략
 지도에서 현재 위치로 이동하는 데만 사용한다. 거부하면 웹의 기존 안내를 표시하고
 4초 뒤 시각적으로 닫는다.
 
+### 댓글·채팅 푸시 알림
+
+Android 13 이상에서는 로그인 후 처음 FCM 토큰을 연결할 때 시스템 알림 권한을
+요청한다. 로컬 빌드 전에 환경에 맞는 Firebase 파일을 준비한다.
+
+```text
+android/firebase/development.google-services.json
+android/firebase/production.google-services.json
+```
+
+파일이 없으면 설정 검증과 APK 빌드는 계속 가능하지만 푸시 기능은 안전하게
+비활성화된다. 자세한 Firebase 앱·서버·CI 설정은
+[Firebase Android 설정](../firebase/README.md)을 따른다. 푸시를 누르면 댓글은 교환글
+상세, 채팅은 채팅방으로 이동한다.
+
 ### 소셜 로그인 실기기 진단
 
 DEV 서버에 모바일 OAuth API가 배포되고 공개 client ID와 callback이 준비되면 다음처럼

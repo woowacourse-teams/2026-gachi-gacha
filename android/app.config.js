@@ -1,3 +1,6 @@
+const { existsSync, readFileSync } = require('node:fs');
+const path = require('node:path');
+
 const DEVELOPMENT_VARIANT = 'development';
 const PRODUCTION_VARIANT = 'production';
 const DEFAULT_APP_VERSION = '0.1.0';
@@ -9,13 +12,28 @@ const WEBVIEW_LOCATION_PERMISSIONS = [
   'android.permission.ACCESS_FINE_LOCATION',
 ];
 
+const PUSH_NOTIFICATION_PERMISSIONS = [
+  'android.permission.POST_NOTIFICATIONS',
+];
+
+const ANDROID_APP_PERMISSIONS = [
+  ...WEBVIEW_LOCATION_PERMISSIONS,
+  ...PUSH_NOTIFICATION_PERMISSIONS,
+];
+
+const FIREBASE_CONFIG_FILES = {
+  development: './firebase/development.google-services.json',
+  production: './firebase/production.google-services.json',
+};
+
+const PUSH_NOTIFICATION_CHANNEL_ID = 'gachigacha-updates';
+
 const PRODUCTION_BLOCKED_PERMISSIONS = [
   'android.permission.CAMERA',
   'android.permission.READ_EXTERNAL_STORAGE',
   'android.permission.READ_MEDIA_IMAGES',
   'android.permission.RECORD_AUDIO',
   'android.permission.SYSTEM_ALERT_WINDOW',
-  'android.permission.VIBRATE',
   'android.permission.WRITE_EXTERNAL_STORAGE',
 ];
 
@@ -162,6 +180,37 @@ function createOAuthIntentFilters(callbackBaseUrl) {
   ];
 }
 
+function resolveFirebaseConfig(variant, applicationId) {
+  const relativePath = FIREBASE_CONFIG_FILES[variant];
+  const absolutePath = path.join(__dirname, relativePath);
+
+  if (!existsSync(absolutePath)) {
+    return { configured: false, googleServicesFile: undefined };
+  }
+
+  let config;
+
+  try {
+    config = JSON.parse(readFileSync(absolutePath, 'utf8'));
+  } catch {
+    throw new Error(`${relativePath} must be valid google-services.json JSON.`);
+  }
+
+  const clients = Array.isArray(config.client) ? config.client : [];
+  const hasMatchingApplication = clients.some(
+    (client) =>
+      client?.client_info?.android_client_info?.package_name === applicationId,
+  );
+
+  if (!hasMatchingApplication) {
+    throw new Error(
+      `${relativePath} must contain Android package ${applicationId}.`,
+    );
+  }
+
+  return { configured: true, googleServicesFile: relativePath };
+}
+
 /**
  * @param {import('expo/config').ConfigContext} context
  * @returns {import('expo/config').ExpoConfig}
@@ -190,6 +239,10 @@ function createConfig({ config }) {
   const webShellEnabled = resolveBooleanFlag(
     process.env.ANDROID_WEB_SHELL_ENABLED,
   );
+  const firebase = resolveFirebaseConfig(
+    variant,
+    variantConfig.applicationId,
+  );
 
   return {
     ...config,
@@ -203,7 +256,8 @@ function createConfig({ config }) {
     android: {
       package: variantConfig.applicationId,
       versionCode,
-      permissions: WEBVIEW_LOCATION_PERMISSIONS,
+      permissions: ANDROID_APP_PERMISSIONS,
+      googleServicesFile: firebase.googleServicesFile,
       blockedPermissions:
         variant === PRODUCTION_VARIANT
           ? PRODUCTION_BLOCKED_PERMISSIONS
@@ -225,6 +279,13 @@ function createConfig({ config }) {
         'expo-secure-store',
         { configureAndroidBackup: true },
       ],
+      [
+        'expo-notifications',
+        {
+          color: '#d93b54',
+          defaultChannel: PUSH_NOTIFICATION_CHANNEL_ID,
+        },
+      ],
       'expo-web-browser',
       './plugins/withAndroidExifInterface',
       './plugins/withAndroidReleaseSigning',
@@ -244,6 +305,8 @@ function createConfig({ config }) {
         clientIds: oauthClientIds,
       },
       kakaoMapNativeAppKeyConfigured: Boolean(kakaoMapNativeAppKey),
+      pushNotificationsConfigured: firebase.configured,
+      pushNotificationChannelId: PUSH_NOTIFICATION_CHANNEL_ID,
       tradeFeaturesEnabled: variant === DEVELOPMENT_VARIANT,
     },
   };
@@ -252,8 +315,13 @@ function createConfig({ config }) {
 module.exports = createConfig;
 module.exports.DEFAULT_ANDROID_VERSION_CODE = DEFAULT_ANDROID_VERSION_CODE;
 module.exports.DEFAULT_APP_VERSION = DEFAULT_APP_VERSION;
+module.exports.ANDROID_APP_PERMISSIONS = ANDROID_APP_PERMISSIONS;
+module.exports.FIREBASE_CONFIG_FILES = FIREBASE_CONFIG_FILES;
 module.exports.PRODUCTION_BLOCKED_PERMISSIONS = PRODUCTION_BLOCKED_PERMISSIONS;
+module.exports.PUSH_NOTIFICATION_CHANNEL_ID = PUSH_NOTIFICATION_CHANNEL_ID;
+module.exports.PUSH_NOTIFICATION_PERMISSIONS = PUSH_NOTIFICATION_PERMISSIONS;
 module.exports.WEBVIEW_LOCATION_PERMISSIONS = WEBVIEW_LOCATION_PERMISSIONS;
+module.exports.resolveFirebaseConfig = resolveFirebaseConfig;
 module.exports.resolveAndroidVersionCode = resolveAndroidVersionCode;
 module.exports.resolveAppVersion = resolveAppVersion;
 module.exports.resolveBooleanFlag = resolveBooleanFlag;

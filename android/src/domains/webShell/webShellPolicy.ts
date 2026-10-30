@@ -3,7 +3,7 @@ import type { AuthTokens, MobileOAuthProvider } from '../auth/authTypes';
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
 const DEFAULT_PROFILE_IMAGE_DATA_URI =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Crect width='96' height='96' rx='48' fill='%23fce9ef'/%3E%3Ccircle cx='48' cy='36' r='17' fill='%23c8899d'/%3E%3Cpath d='M18 89c2-20 14-31 30-31s28 11 30 31' fill='%23c8899d'/%3E%3C/svg%3E";
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='31' r='14' fill='%23c8899d'/%3E%3Cpath d='M25 79c1-17 10-27 23-27s22 10 23 27' fill='%23c8899d'/%3E%3C/svg%3E";
 
 const ANDROID_WEB_SHELL_STYLES = `
   @keyframes gachigacha-android-dismiss-location-error {
@@ -23,11 +23,11 @@ const ANDROID_WEB_SHELL_STYLES = `
 
   html[data-gachigacha-native-platform="android"] [data-gachigacha-android-avatar-fallback] {
     overflow: hidden !important;
-    background-color: #fce9ef !important;
+    background-color: transparent !important;
     background-image: url("${DEFAULT_PROFILE_IMAGE_DATA_URI}") !important;
     background-position: center !important;
     background-repeat: no-repeat !important;
-    background-size: cover !important;
+    background-size: contain !important;
     color: transparent !important;
     font-size: 0 !important;
   }
@@ -70,7 +70,7 @@ const ANDROID_WEB_SHELL_STYLES = `
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-list-area] {
-      bottom: 4px !important;
+      bottom: 12px !important;
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-location-error] {
@@ -429,7 +429,6 @@ function createWebShellRuntimeBody(): string {
       }
 
       image.dataset.gachigachaAndroidAvatarFallbackImage = '';
-      container?.setAttribute('data-gachigacha-android-avatar-fallback', '');
       image.removeAttribute('srcset');
       image.src = defaultProfileImage;
     };
@@ -722,6 +721,19 @@ export function createWebShellRuntimeScript(): string {
         ${createWebShellRuntimeBody()}
       } catch {}
     })();
+    true;
+  `;
+}
+
+export function createWebShellNavigationScript(path: string): string {
+  if (!/^\/(?:trade|chat)\/\d+$/.test(path)) {
+    throw new Error('푸시 알림 이동 경로가 허용되지 않았습니다.');
+  }
+
+  return `
+    window.location.assign(
+      new URL(${serializeForInlineScript(path)}, window.location.origin).toString(),
+    );
     true;
   `;
 }
