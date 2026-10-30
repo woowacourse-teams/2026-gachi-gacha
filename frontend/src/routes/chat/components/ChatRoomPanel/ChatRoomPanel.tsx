@@ -528,8 +528,12 @@ const Panel = styled.section`
   height: 100%;
   min-width: 0;
   min-height: 680px;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   background: #ffffff;
+
+  @media (max-width: 900px) {
+    min-height: 0;
+  }
 `;
 
 const RoomTitleGroup = styled.div`
@@ -714,6 +718,7 @@ const Messages = styled.div`
   display: flex;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 28px 24px;
   flex-direction: column;
   gap: 12px;
