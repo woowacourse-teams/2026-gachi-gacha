@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router';
 
 import ChatPage from './ChatPage';
 import { CHAT_CONVERSATIONS, SELECTED_CHAT_ROOM } from './storybook/chatMocks';
@@ -16,6 +17,13 @@ const meta: Meta<typeof ChatPage> = {
   parameters: {
     layout: 'fullscreen',
   },
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 };
 
 export default meta;
@@ -27,6 +35,13 @@ export const Empty: Story = {};
 export const Selected: Story = {
   args: {
     selectedRoom: SELECTED_CHAT_ROOM,
+  },
+};
+
+export const SelectedSplit: Story = {
+  args: {
+    selectedRoom: SELECTED_CHAT_ROOM,
+    presentation: 'split',
   },
 };
 

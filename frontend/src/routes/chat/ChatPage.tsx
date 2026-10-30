@@ -125,7 +125,7 @@ export default function ChatPage({
   }
 
   return (
-    <Page>
+    <Page $hasSelectedRoom={Boolean(selectedRoom)}>
       <AppGachaSearchHeader currentPath="/chat" />
       {roomLoadError && (
         <RoomLoadError role="alert">
@@ -166,9 +166,23 @@ export default function ChatPage({
   );
 }
 
-const Page = styled.div`
+const Page = styled.div<{ $hasSelectedRoom?: boolean }>`
   min-height: 100dvh;
   background: #f7f5f6;
+
+  @media (max-width: 900px) {
+    ${({ $hasSelectedRoom }) =>
+      $hasSelectedRoom &&
+      `
+        height: 100dvh;
+        min-height: 0;
+        overflow: hidden;
+
+        > header {
+          display: none;
+        }
+      `}
+  }
 `;
 
 const RoomLoadError = styled.div`
@@ -199,6 +213,17 @@ const RetryRoomButton = styled.button`
 const RoomPage = styled(Page)`
   position: relative;
   overflow: hidden;
+
+  @media (max-width: 900px) {
+    height: 100dvh;
+    min-height: 0;
+
+    > header,
+    > main,
+    > a {
+      display: none;
+    }
+  }
 `;
 
 const TradeContext = styled.main`
@@ -296,8 +321,17 @@ const Main = styled.main<{ $hasSelectedRoom: boolean }>`
   background: #ffffff;
 
   @media (max-width: 900px) {
-    width: calc(100% - 32px);
+    width: ${({ $hasSelectedRoom }) =>
+      $hasSelectedRoom ? '100%' : 'calc(100% - 32px)'};
+    min-height: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? '0' : '680px')};
+    height: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? '100dvh' : 'auto')};
+    margin: ${({ $hasSelectedRoom }) =>
+      $hasSelectedRoom ? '0' : '36px auto 64px'};
     grid-template-columns: 1fr;
+    border: ${({ $hasSelectedRoom }) =>
+      $hasSelectedRoom ? '0' : '1px solid #eeeaec'};
+    border-radius: ${({ $hasSelectedRoom }) =>
+      $hasSelectedRoom ? '0' : '22px'};
 
     > aside {
       display: ${({ $hasSelectedRoom }) =>
@@ -307,6 +341,7 @@ const Main = styled.main<{ $hasSelectedRoom: boolean }>`
     > section {
       display: ${({ $hasSelectedRoom }) =>
         $hasSelectedRoom ? 'grid' : 'none'};
+      min-height: 0;
     }
   }
 `;
