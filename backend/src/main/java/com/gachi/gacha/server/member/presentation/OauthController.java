@@ -107,7 +107,7 @@ public class OauthController {
         } catch (InvalidOauthStateException e) {
             return redirectToFrontend(frontendWithdrawCallbackUrl, "error=invalid_state");
         } catch (RuntimeException e) {
-            log.error("Apple 회원 탈퇴 처리 중 오류", e);
+            log.error("[OAuth Internal Error] Apple 로그인 처리 중 예상치 못한 오류 발생 [{}: {}]", e.getClass().getSimpleName(), e.getMessage(), e);
             return redirectToFrontend(frontendWithdrawCallbackUrl, "error=withdraw_failed");
         }
     }
@@ -163,7 +163,8 @@ public class OauthController {
         } catch (InvalidOauthStateException e) {
             return redirectToFrontend(frontendCallbackUrl, "error=invalid_state");
         } catch (RuntimeException e) {
-            log.error("{} 로그인 처리 중 오류", provider, e);
+            log.error("[OAuth Internal Error] {} 로그인 처리 중 예상치 못한 오류 발생 [{}: {}]",
+                    provider, e.getClass().getSimpleName(), e.getMessage(), e);
             return redirectToFrontend(frontendCallbackUrl, "error=login_failed");
         }
     }
