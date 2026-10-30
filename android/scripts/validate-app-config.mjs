@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const createConfig = require('../app.config.js');
@@ -7,6 +7,7 @@ const {
   DEFAULT_ANDROID_VERSION_CODE,
   DEFAULT_APP_VERSION,
   ANDROID_APP_PERMISSIONS,
+  FIREBASE_CONFIG_FILES,
   PUSH_NOTIFICATION_CHANNEL_ID,
   PUSH_NOTIFICATION_PERMISSIONS,
   PRODUCTION_BLOCKED_PERMISSIONS,
@@ -74,6 +75,10 @@ for (const name of oauthEnvironmentNames) {
 }
 
 for (const [variant, expected] of Object.entries(expectedVariants)) {
+  const firebaseConfigPath = FIREBASE_CONFIG_FILES[variant];
+  const firebaseConfigPresent = existsSync(
+    new URL(`../${firebaseConfigPath.replace(/^\.\//, '')}`, import.meta.url),
+  );
   process.env.APP_VARIANT = variant;
   const config = createConfig({ config: {} });
   const notificationPlugin = config.plugins?.find(
@@ -117,7 +122,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     version: DEFAULT_APP_VERSION,
     versionCode: DEFAULT_ANDROID_VERSION_CODE,
     permissions: ANDROID_APP_PERMISSIONS,
-    googleServicesFile: undefined,
+    googleServicesFile: firebaseConfigPresent ? firebaseConfigPath : undefined,
     blockedPermissions:
       variant === 'production' ? PRODUCTION_BLOCKED_PERMISSIONS : undefined,
     apiBaseUrl: expected.apiBaseUrl,
@@ -130,7 +135,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
       clientIds: { kakao: '', naver: '' },
     },
     oauthIntentFilters: undefined,
-    pushNotificationsConfigured: false,
+    pushNotificationsConfigured: firebaseConfigPresent,
     pushNotificationChannelId: PUSH_NOTIFICATION_CHANNEL_ID,
     notificationPlugin: [
       'expo-notifications',

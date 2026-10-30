@@ -49,6 +49,8 @@ jobs:
       ANDROID_KAKAO_OAUTH_CLIENT_ID_PROD: ${{ vars.ANDROID_KAKAO_OAUTH_CLIENT_ID_PROD }}
       ANDROID_NAVER_OAUTH_CLIENT_ID_DEV: ${{ vars.ANDROID_NAVER_OAUTH_CLIENT_ID_DEV }}
       ANDROID_NAVER_OAUTH_CLIENT_ID_PROD: ${{ vars.ANDROID_NAVER_OAUTH_CLIENT_ID_PROD }}
+      ANDROID_GOOGLE_SERVICES_JSON_DEV_BASE64: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_DEV_BASE64 }}
+      ANDROID_GOOGLE_SERVICES_JSON_PROD_BASE64: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON_PROD_BASE64 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -62,6 +64,30 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Restore Firebase Android config
+        if: github.event_name != 'pull_request'
+        env:
+          APP_VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}
+        shell: bash
+        run: |
+          if [[ "$APP_VARIANT" == 'production' ]]; then
+            firebase_config="$ANDROID_GOOGLE_SERVICES_JSON_PROD_BASE64"
+            firebase_target='firebase/production.google-services.json'
+            firebase_secret='ANDROID_GOOGLE_SERVICES_JSON_PROD_BASE64'
+          else
+            firebase_config="$ANDROID_GOOGLE_SERVICES_JSON_DEV_BASE64"
+            firebase_target='firebase/development.google-services.json'
+            firebase_secret='ANDROID_GOOGLE_SERVICES_JSON_DEV_BASE64'
+          fi
+
+          if [[ -z "$firebase_config" ]]; then
+            echo "Missing required GitHub Actions secret: $firebase_secret" >&2
+            exit 1
+          fi
+
+          mkdir -p firebase
+          printf '%s' "$firebase_config" | base64 --decode > "$firebase_target"
 
       - name: Validate TypeScript and bundles
         run: npm run check

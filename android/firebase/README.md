@@ -1,7 +1,7 @@
 # Firebase Android 설정
 
-Android 앱 등록은 아직 완료되지 않았습니다. Firebase Console에서 아래 두 앱을 각각
-등록한 뒤 환경에 맞는 `google-services.json`을 내려받습니다.
+Android 앱은 Firebase Console의 개발·운영 프로젝트에 각각 등록합니다. 내려받은
+`google-services.json`은 아래 환경별 경로로 이름을 바꿔 관리합니다.
 
 | 환경 | Firebase 프로젝트 | Android application ID | 로컬 파일 |
 | --- | --- | --- | --- |
@@ -38,7 +38,14 @@ FIREBASE_SERVICE_ACCOUNT_KEY_BASE64=<해당 환경 서비스 계정 JSON의 base
 
 ## CI 주입
 
-`firebase/*.json`은 저장소에서 무시됩니다. 따라서 GitHub Actions APK에서 실제 푸시를
-시험하려면 개발용 JSON 전체를 GitHub Actions secret으로 보관하고, Android 빌드 전에
-`android/firebase/development.google-services.json`으로 복원하는 CI 작업이 추가로
-필요합니다. 운영 JSON은 Play 출시 workflow에서만 같은 방식으로 주입합니다.
+`firebase/*.json`은 저장소에서 무시됩니다. JSON 전체를 Base64로 변환해 아래 GitHub
+Actions secret으로 보관하며, workflow가 빌드 전에 환경별 고정 경로로 복원합니다.
+
+| 환경 | GitHub Actions secret |
+| --- | --- |
+| 개발 | `ANDROID_GOOGLE_SERVICES_JSON_DEV_BASE64` |
+| 운영 | `ANDROID_GOOGLE_SERVICES_JSON_PROD_BASE64` |
+
+로컬 원본을 GitHub Actions 명령의 입력으로 직접 쓰지 않습니다. 저장소 내부의 관리용
+사본인 `android/firebase/development.google-services.json`과
+`android/firebase/production.google-services.json`만 입력으로 사용합니다.
