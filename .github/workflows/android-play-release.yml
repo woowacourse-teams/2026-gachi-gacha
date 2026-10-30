@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version_name:
-        description: 'Public app version (for example 0.1.0)'
+        description: 'Public app version (for example 1.0.0)'
         required: true
-        default: '0.1.0'
+        default: '1.0.0'
         type: string
       version_code:
         description: 'Google Play version code (must increase for every upload)'
@@ -61,7 +61,7 @@ jobs:
         shell: bash
         run: |
           if [[ ! "$APP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-            echo 'version_name must be a semantic version such as 0.1.0.' >&2
+            echo 'version_name must be a semantic version such as 1.0.0.' >&2
             exit 1
           fi
           if [[ ! "$ANDROID_VERSION_CODE" =~ ^[1-9][0-9]*$ ]] || (( ANDROID_VERSION_CODE > 2100000000 )); then

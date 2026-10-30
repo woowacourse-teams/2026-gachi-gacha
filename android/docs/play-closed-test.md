@@ -2,9 +2,12 @@
 
 ## 최소 출시 범위
 
-첫 비공개 테스트에서는 로그인·채팅·알림이 필수가 아니다. 운영 빌드는 홍대 주변 매장 지도, 매장 상세와 가챠 검색만 제공하는 공개 탐색 앱으로 제출한다. 개발 빌드의 거래 기능은 보존하지만 운영 빌드에서는 거래글·댓글을 노출하지 않는다. 아직 구현하지 않은 버튼이나 빈 화면도 먼저 노출하지 않는다.
+1.0.0 비공개 테스트는 공개 탐색뿐 아니라 로그인·거래·댓글·채팅·알림을 포함한 현재
+하이브리드 앱을 기준으로 한다. 운영 AAB를 만들기 전에
+[실기기 통합 QA 체크리스트](./release-qa-checklist.md)를 완료한다. 아직 구현하지 않은
+버튼이나 빈 화면은 노출하지 않는다.
 
-거래 기능을 후속 운영 버전에서 다시 활성화할 때는 사용자 생성 콘텐츠 안전 기능을 먼저 확인한다.
+거래와 채팅을 포함하므로 사용자 생성 콘텐츠 안전 기능을 반드시 확인한다.
 
 - 앱 안에서 게시글·댓글과 작성자를 명확히 신고할 수 있는가
 - 차단한 작성자의 공개 콘텐츠가 다시 보이지 않는가
@@ -18,10 +21,11 @@
 - 운영 package: `com.gachigacha.app`
 - 개발 package: `com.dev.gachigacha.app`
 - 운영 API: `https://gachigacha.kro.kr`
-- 첫 제출 versionName 기본값: `0.1.0`
+- 첫 제출 목표 versionName: `1.0.0`
 - 첫 제출 versionCode 기본값: `1`
 
-Play Console에 첫 AAB를 올린 뒤 package는 변경할 수 없다. 이후 기능은 같은 package와 서명을 유지하고 versionCode만 증가시켜 업데이트한다. 로그인도 후속 버전에서 추가할 수 있다.
+Play Console에 첫 AAB를 올린 뒤 package는 변경할 수 없다. 이후 기능은 같은 package와
+서명을 유지하고 versionCode를 매 업로드마다 증가시킨다.
 
 ## 1. Play App Signing과 upload key
 
@@ -47,6 +51,7 @@ keystore 파일과 비밀번호는 저장소, Slack, 이슈, PR에 올리지 않
 
 ```text
 ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD
+ANDROID_GOOGLE_SERVICES_JSON_PROD_BASE64
 ANDROID_UPLOAD_KEYSTORE_BASE64
 ANDROID_UPLOAD_KEYSTORE_PASSWORD
 ANDROID_UPLOAD_KEY_ALIAS
@@ -63,13 +68,13 @@ Windows PowerShell에서 keystore를 Base64 문자열로 변환하는 예시는 
 
 GitHub Actions에서 `Android Play Release`를 수동 실행한다.
 
-- `version_name`: 사용자에게 보이는 버전. 예: `0.1.0`
+- `version_name`: 사용자에게 보이는 버전. 첫 목표는 `1.0.0`
 - `version_code`: Play 업로드마다 증가하는 양의 정수. 첫 제출은 `1`
 
 workflow는 다음 조건을 모두 확인한 뒤 AAB를 artifact로 제공한다.
 
 1. 운영 package와 운영 API로 clean prebuild
-2. 위치·외부 저장소·시스템 오버레이 등 미사용 권한 제거
+2. 현재 위치·알림처럼 사용하는 권한만 manifest에 포함됐는지 확인
 3. upload key가 없으면 즉시 실패
 4. 서명된 `app-release.aab` 생성 및 `jarsigner` 검증
 5. versionName, versionCode와 SHA-256을 Summary에 기록
@@ -99,7 +104,7 @@ upload key hash만 등록하면 Play가 다시 서명해 배포한 앱에서 Kak
 - 휴대폰 스크린샷과 1024×500 feature graphic
 - 개인정보처리방침 공개 URL과 앱 내부 접근 경로
 - 광고 포함 여부
-- 앱 액세스: 현재 버전은 로그인 제한 없음으로 신고
+- 앱 액세스: Kakao·Naver 심사용 로그인 절차와 재사용 가능한 계정 제공
 - 타깃 연령과 콘텐츠 등급: 공개 게시글·댓글(UGC)을 사실대로 응답
 - 데이터 보안: 앱과 서버의 실제 수집·전송·삭제 정책을 기준으로 응답
 - UGC 신고·차단 및 이용약관 동의 경로 확인
