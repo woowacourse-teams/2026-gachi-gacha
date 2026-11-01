@@ -59,25 +59,11 @@ function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
   );
 }
 
-/** 브라우저 WebP → WASM WebP → JPEG 순서로 압축한다. */
+/** WASM WebP → JPEG 순서로 압축한다. */
 async function compressImage(
   file: File,
   options: Parameters<typeof imageCompression>[1],
 ): Promise<File> {
-  try {
-    const webpBlob = await imageCompression(file, {
-      ...options,
-      fileType: WEBP_MIME_TYPE,
-    });
-
-    // Safari는 WebP 요청에 다른 형식을 반환할 수 있다.
-    if (webpBlob.type === WEBP_MIME_TYPE) {
-      return createCompressedFile(file, webpBlob);
-    }
-  } catch {
-    // 브라우저 WebP 예외도 아래 WASM 경로에서 처리한다.
-  }
-
   try {
     const { encodeTradeImageWithWasm } =
       await import('./encodeTradeImageWithWasm');
