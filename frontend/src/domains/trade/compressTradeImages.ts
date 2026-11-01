@@ -59,7 +59,7 @@ function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
   );
 }
 
-/** WebP를 우선 사용하고 브라우저가 인코딩하지 못하면 JPEG로 한 번만 폴백한다. */
+/** 브라우저 WebP → WASM WebP → JPEG 순서로 압축한다. */
 async function compressImage(
   file: File,
   options: Parameters<typeof imageCompression>[1],
@@ -70,12 +70,21 @@ async function compressImage(
       fileType: WEBP_MIME_TYPE,
     });
 
-    // 요청한 형식과 실제 결과가 다를 수 있으므로 반환된 MIME 타입을 사용한다.
-    if (isSupportedCompressionMimeType(webpBlob.type)) {
+    // Safari는 WebP 요청에 다른 형식을 반환할 수 있다.
+    if (webpBlob.type === WEBP_MIME_TYPE) {
       return createCompressedFile(file, webpBlob);
     }
   } catch {
-    // WebP 예외도 아래 JPEG 폴백에서 동일하게 처리한다.
+    // 브라우저 WebP 예외도 아래 WASM 경로에서 처리한다.
+  }
+
+  try {
+    const { encodeTradeImageWithWasm } =
+      await import('./encodeTradeImageWithWasm');
+    const webpBlob = await encodeTradeImageWithWasm(file, options.signal);
+    return createCompressedFile(file, webpBlob);
+  } catch {
+    // WASM 로드·디코딩·인코딩 오류는 JPEG 폴백에서 처리한다.
   }
 
   const jpegBlob = await imageCompression(file, {

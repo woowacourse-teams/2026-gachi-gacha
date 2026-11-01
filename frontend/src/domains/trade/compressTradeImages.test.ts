@@ -6,17 +6,26 @@ import {
   TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE,
   type TradeImageCompressionProgress,
 } from './compressTradeImages';
+import { encodeTradeImageWithWasm } from './encodeTradeImageWithWasm';
 
 jest.mock('browser-image-compression', () => ({
   __esModule: true,
   default: jest.fn(),
 }));
+jest.mock('./encodeTradeImageWithWasm', () => ({
+  encodeTradeImageWithWasm: jest.fn(),
+}));
 
 const mockedImageCompression = jest.mocked(imageCompression);
+const mockedWasmEncoder = jest.mocked(encodeTradeImageWithWasm);
 
 describe('compressTradeImages', () => {
   beforeEach(() => {
     mockedImageCompression.mockReset();
+    mockedWasmEncoder.mockReset();
+    mockedWasmEncoder.mockResolvedValue(
+      new Blob(['wasm-webp'], { type: 'image/webp' }),
+    );
     mockedImageCompression.mockImplementation((async (file, options) => {
       options.onProgress?.(50);
       options.onProgress?.(100);
@@ -64,6 +73,7 @@ describe('compressTradeImages', () => {
     expect(compressedFiles.map(({ lastModified }) => lastModified)).toEqual([
       10, 20,
     ]);
+    expect(mockedWasmEncoder).not.toHaveBeenCalled();
   });
 
   it('모든 이미지의 진행률 평균과 완료 개수를 알린다', async () => {
@@ -117,33 +127,24 @@ describe('compressTradeImages', () => {
     expect(maximumActiveCompressionCount).toBe(2);
   });
 
-  it('WebP 변환이 실패하면 JPEG로 다시 압축한다', async () => {
-    mockedImageCompression
-      .mockRejectedValueOnce(new Error('WebP encoding failed'))
-      .mockResolvedValueOnce(
-        new File(['fallback'], 'kuromi.jpg', { type: 'image/jpeg' }),
-      );
+  it('브라우저 WebP 변환이 실패하면 WASM으로 WebP를 만든다', async () => {
+    mockedImageCompression.mockRejectedValueOnce(
+      new Error('WebP encoding failed'),
+    );
 
     const [compressedFile] = await compressTradeImages([
       new File(['image'], 'kuromi.jpeg', { type: 'image/jpeg' }),
     ]);
 
-    expect(mockedImageCompression).toHaveBeenCalledTimes(2);
-    expect(mockedImageCompression).toHaveBeenNthCalledWith(
-      2,
-      expect.any(File),
-      expect.objectContaining({
-        fileType: 'image/jpeg',
-        useWebWorker: false,
-      }),
-    );
+    expect(mockedImageCompression).toHaveBeenCalledTimes(1);
+    expect(mockedWasmEncoder).toHaveBeenCalledTimes(1);
     expect(compressedFile).toMatchObject({
-      name: 'kuromi.jpg',
-      type: 'image/jpeg',
+      name: 'kuromi.webp',
+      type: 'image/webp',
     });
   });
 
-  it('WebP 요청에 JPEG가 반환되면 실제 JPEG 형식으로 사용한다', async () => {
+  it('WebP 요청에 JPEG가 반환되어도 WASM WebP를 먼저 시도한다', async () => {
     mockedImageCompression.mockResolvedValueOnce(
       new File(['fallback'], 'kuromi.jpg', { type: 'image/jpeg' }),
     );
@@ -156,29 +157,43 @@ describe('compressTradeImages', () => {
     ]);
 
     expect(mockedImageCompression).toHaveBeenCalledTimes(1);
+    expect(mockedWasmEncoder).toHaveBeenCalledTimes(1);
     expect(compressedFile).toEqual(
       expect.objectContaining({
-        name: 'kuromi.jpg',
-        type: 'image/jpeg',
+        name: 'kuromi.webp',
+        type: 'image/webp',
         lastModified: 10,
       }),
     );
   });
 
-  it('WebP 요청에 지원하지 않는 PNG가 반환되면 JPEG로 다시 압축한다', async () => {
-    mockedImageCompression
-      .mockResolvedValueOnce(
-        new File(['unsupported'], 'kuromi.png', { type: 'image/png' }),
-      )
-      .mockResolvedValueOnce(
-        new File(['fallback'], 'kuromi.jpg', { type: 'image/jpeg' }),
-      );
+  it('WebP 요청에 PNG가 반환되면 WASM WebP로 다시 압축한다', async () => {
+    mockedImageCompression.mockResolvedValueOnce(
+      new File(['unsupported'], 'kuromi.png', { type: 'image/png' }),
+    );
 
     const [compressedFile] = await compressTradeImages([
       new File(['image'], 'kuromi.jpeg', { type: 'image/jpeg' }),
     ]);
 
-    expect(mockedImageCompression).toHaveBeenCalledTimes(2);
+    expect(mockedImageCompression).toHaveBeenCalledTimes(1);
+    expect(mockedWasmEncoder).toHaveBeenCalledTimes(1);
+    expect(compressedFile).toMatchObject({
+      name: 'kuromi.webp',
+      type: 'image/webp',
+    });
+  });
+
+  it('WASM WebP도 실패하면 JPEG로 폴백한다', async () => {
+    mockedImageCompression.mockRejectedValueOnce(
+      new Error('WebP encoding failed'),
+    );
+    mockedWasmEncoder.mockRejectedValueOnce(new Error('WASM loading failed'));
+
+    const [compressedFile] = await compressTradeImages([
+      new File(['image'], 'kuromi.png', { type: 'image/png' }),
+    ]);
+
     expect(mockedImageCompression).toHaveBeenNthCalledWith(
       2,
       expect.any(File),
@@ -196,6 +211,7 @@ describe('compressTradeImages', () => {
       .mockResolvedValueOnce(
         new File(['unsupported'], 'kuromi.png', { type: 'image/png' }),
       );
+    mockedWasmEncoder.mockRejectedValueOnce(new Error('WASM encoding failed'));
 
     await expect(
       compressTradeImages([
@@ -204,10 +220,11 @@ describe('compressTradeImages', () => {
     ).rejects.toThrow(TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE);
   });
 
-  it('WebP와 JPEG 모두 변환하지 못하면 원본 대신 안내 오류를 반환한다', async () => {
+  it('브라우저 WebP, WASM WebP, JPEG 모두 실패하면 안내 오류를 반환한다', async () => {
     mockedImageCompression
       .mockRejectedValueOnce(new Error('WebP encoding failed'))
       .mockRejectedValueOnce(new Error('JPEG encoding failed'));
+    mockedWasmEncoder.mockRejectedValueOnce(new Error('WASM encoding failed'));
 
     await expect(
       compressTradeImages([
