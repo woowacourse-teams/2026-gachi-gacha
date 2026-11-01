@@ -44,7 +44,9 @@ describe('encodeTradeImageWithWasm', () => {
     height: 400,
   } as ImageData;
   const drawImage = jest.fn();
-  const getImageData = jest.fn(() => imageData);
+  const getImageData = jest.fn<CanvasRenderingContext2D['getImageData']>(
+    () => imageData,
+  );
   let getContextSpy: ReturnType<typeof jest.spyOn>;
 
   beforeEach(() => {
