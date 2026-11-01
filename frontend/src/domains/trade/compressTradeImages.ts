@@ -2,7 +2,7 @@ import imageCompression from 'browser-image-compression';
 
 import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 
-const WEBP_MIME_TYPE = 'image/webp';
+const JPEG_MIME_TYPE = 'image/jpeg';
 const PNG_MIME_TYPE = 'image/png';
 const MAX_COMPRESSED_SIZE_MB = 1;
 const MAX_WIDTH_OR_HEIGHT = 800;
@@ -10,10 +10,10 @@ const INITIAL_QUALITY = 0.8;
 const MAX_CONCURRENT_COMPRESSION_COUNT = 2;
 
 export const TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE =
-  '이미지를 최적화하지 못했습니다. Chrome 브라우저에서 다시 시도해 주세요.';
+  '이미지를 최적화하지 못했습니다. 다시 시도해 주세요.';
 
 const IMAGE_FILE_EXTENSIONS = {
-  [WEBP_MIME_TYPE]: 'webp',
+  [JPEG_MIME_TYPE]: 'jpg',
   [PNG_MIME_TYPE]: 'png',
 } as const;
 
@@ -59,23 +59,23 @@ function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
   );
 }
 
-/** WebP를 우선 사용하고 브라우저가 인코딩하지 못하면 PNG로 한 번만 폴백한다. */
+/** JPEG를 우선 사용하고 브라우저가 인코딩하지 못하면 PNG로 한 번만 폴백한다. */
 async function compressImage(
   file: File,
   options: Parameters<typeof imageCompression>[1],
 ): Promise<File> {
   try {
-    const webpBlob = await imageCompression(file, {
+    const jpegBlob = await imageCompression(file, {
       ...options,
-      fileType: WEBP_MIME_TYPE,
+      fileType: JPEG_MIME_TYPE,
     });
 
-    // 일부 Safari는 WebP를 요청해도 PNG를 반환한다. 실제 안전한 형식을 존중한다.
-    if (isSupportedCompressionMimeType(webpBlob.type)) {
-      return createCompressedFile(file, webpBlob);
+    // 요청한 형식과 실제 결과가 다를 수 있으므로 반환된 MIME 타입을 사용한다.
+    if (isSupportedCompressionMimeType(jpegBlob.type)) {
+      return createCompressedFile(file, jpegBlob);
     }
   } catch {
-    // WebP 예외도 아래 PNG 폴백에서 동일하게 처리한다.
+    // JPEG 예외도 아래 PNG 폴백에서 동일하게 처리한다.
   }
 
   const pngBlob = await imageCompression(file, {
