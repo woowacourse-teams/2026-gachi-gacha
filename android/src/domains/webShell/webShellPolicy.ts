@@ -41,7 +41,7 @@ const ANDROID_WEB_SHELL_STYLES = `
 
   @media (max-width: 767px) {
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-header] {
-      top: 12px !important;
+      top: var(--gachigacha-android-map-header-top, 12px) !important;
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-research] {
@@ -120,6 +120,33 @@ const ANDROID_WEB_SHELL_STYLES = `
       min-width: 0;
     }
 
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] {
+      height: 100% !important;
+      overflow: hidden !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-messages] {
+      min-height: 0 !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain !important;
+      touch-action: pan-y !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-product-summary] {
+      grid-template-columns: 52px minmax(0, 1fr) auto !important;
+      align-items: center !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-trade-action] {
+      grid-column: 3 !important;
+      grid-row: 1 !important;
+      max-width: 116px !important;
+      align-self: center !important;
+      justify-items: end !important;
+    }
+
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-drawer] {
       top: 12px !important;
       right: 12px !important;
@@ -136,7 +163,7 @@ const ANDROID_WEB_SHELL_STYLES = `
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer-area] {
       box-sizing: border-box !important;
       width: 100% !important;
-      padding: 12px 12px max(12px, env(safe-area-inset-bottom)) !important;
+      padding: 12px !important;
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] {
@@ -171,6 +198,8 @@ export const WEB_NATIVE_BRIDGE_READY_MESSAGE =
   'gachigacha:native-bridge-ready';
 export const WEB_PUSH_TOKEN_REQUEST_MESSAGE =
   'gachigacha:push-token-request';
+export const WEB_CHAT_ROOM_STATE_MESSAGE =
+  'gachigacha:chat-room-state';
 
 export type WebShellNavigationDecision =
   | { type: 'allow' }
@@ -183,7 +212,8 @@ export type WebShellMessage =
   | { token: string | null; type: 'auth-refresh-token' }
   | { type: 'auth-session-synced' }
   | { type: 'native-bridge-ready' }
-  | { type: 'push-token-request' };
+  | { type: 'push-token-request' }
+  | { isOpen: boolean; type: 'chat-room-state' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -290,6 +320,13 @@ export function parseWebShellMessage(value: string): WebShellMessage | null {
 
   if (message.type === WEB_PUSH_TOKEN_REQUEST_MESSAGE) {
     return { type: 'push-token-request' };
+  }
+
+  if (
+    message.type === WEB_CHAT_ROOM_STATE_MESSAGE &&
+    typeof message.isOpen === 'boolean'
+  ) {
+    return { isOpen: message.isOpen, type: 'chat-room-state' };
   }
 
   if (message.type !== WEB_AUTH_REFRESH_TOKEN_MESSAGE) {
@@ -549,8 +586,20 @@ function createWebShellRuntimeBody(): string {
         (heading) => heading.textContent?.trim() === text,
       );
 
+    const postChatRoomState = (isOpen) => {
+      if (window.__gachigachaAndroidChatRoomOpen === isOpen) return;
+      window.__gachigachaAndroidChatRoomOpen = isOpen;
+      window.ReactNativeWebView?.postMessage(JSON.stringify({
+        type: ${serializeForInlineScript(WEB_CHAT_ROOM_STATE_MESSAGE)},
+        isOpen,
+      }));
+    };
+
     const markChatPresentation = () => {
-      if (!window.location.pathname.startsWith('/chat')) return;
+      if (!window.location.pathname.startsWith('/chat')) {
+        postChatRoomState(false);
+        return;
+      }
 
       const conversationHeading = findHeadingByText('전체 대화');
       const conversationList = conversationHeading?.closest('aside');
@@ -579,13 +628,43 @@ function createWebShellRuntimeBody(): string {
 
       if (chatMain?.tagName === 'MAIN') {
         chatMain.setAttribute('data-gachigacha-android-chat-main', '');
-        const chatTop = Math.max(chatMain.getBoundingClientRect().top, 0);
-        const availableHeight = Math.floor(window.innerHeight - chatTop - 12);
-        if (availableHeight >= 360) {
+        const visualViewport = window.visualViewport;
+        const viewportTop = visualViewport?.offsetTop || 0;
+        const viewportHeight = visualViewport?.height || window.innerHeight;
+        const chatTop = Math.max(
+          chatMain.getBoundingClientRect().top - viewportTop,
+          0,
+        );
+        const availableHeight = Math.floor(viewportHeight - chatTop - 12);
+        if (availableHeight >= 240) {
           chatMain.style.setProperty(
             '--gachigacha-android-chat-height',
             availableHeight + 'px',
           );
+        }
+
+        const messageInput = document.querySelector(
+          'input[aria-label="메시지"]',
+        );
+        const viewportBaseline = Math.max(
+          window.__gachigachaAndroidChatViewportBaseline || 0,
+          viewportHeight,
+        );
+        if (document.activeElement !== messageInput) {
+          window.__gachigachaAndroidChatViewportBaseline = viewportBaseline;
+        }
+        const isKeyboardVisible =
+          document.activeElement === messageInput &&
+          viewportHeight < viewportBaseline - 80;
+        const roundedViewportHeight = Math.round(viewportHeight);
+        if (
+          isKeyboardVisible &&
+          window.__gachigachaAndroidChatKeyboardHeight !== roundedViewportHeight
+        ) {
+          window.__gachigachaAndroidChatKeyboardHeight = roundedViewportHeight;
+          chatMain.scrollIntoView({ block: 'start' });
+        } else if (!isKeyboardVisible) {
+          window.__gachigachaAndroidChatKeyboardHeight = null;
         }
       }
 
@@ -605,11 +684,35 @@ function createWebShellRuntimeBody(): string {
       }
       if (composer) {
         composer.setAttribute('data-gachigacha-android-chat-composer', '');
-        composer.parentElement?.setAttribute(
+        const composerArea = composer.parentElement;
+        composerArea?.setAttribute(
           'data-gachigacha-android-chat-composer-area',
           '',
         );
+        const messages = composerArea?.previousElementSibling;
+        messages?.setAttribute(
+          'data-gachigacha-android-chat-messages',
+          '',
+        );
+        const productSummary = messages?.previousElementSibling;
+        productSummary?.setAttribute(
+          'data-gachigacha-android-chat-product-summary',
+          '',
+        );
+        const tradeActionButton = Array.from(
+          chatRoom?.querySelectorAll('button') || [],
+        ).find((button) =>
+          ['예약 확정', '거래 완료', '변경 중...'].includes(
+            button.textContent?.trim() || '',
+          ),
+        );
+        tradeActionButton?.parentElement?.setAttribute(
+          'data-gachigacha-android-chat-trade-action',
+          '',
+        );
       }
+
+      postChatRoomState(Boolean(chatRoom && composer));
     };
 
     const markMapOverlays = () => {
@@ -666,10 +769,28 @@ function createWebShellRuntimeBody(): string {
 
       const mapRect = map.getBoundingClientRect();
       const headerRect = mapHeader?.getBoundingClientRect();
+      const appHeader = document
+        .querySelector('[data-header-search-slot]')
+        ?.closest('header');
+      const appHeaderRect = appHeader?.getBoundingClientRect();
+      const visibleAppHeaderBottom = Math.max(
+        mapRect.top,
+        Math.min(appHeaderRect?.bottom || mapRect.top, mapRect.bottom),
+      );
+      const mapHeaderTop = Math.max(
+        12,
+        Math.round(visibleAppHeaderBottom - mapRect.top + 12),
+      );
+      if (mapHeader instanceof HTMLElement) {
+        mapHeader.style.setProperty(
+          '--gachigacha-android-map-header-top',
+          mapHeaderTop + 'px',
+        );
+      }
       if (researchButton && headerRect && headerRect.height > 0) {
         const researchTop = Math.max(
           12,
-          Math.round(headerRect.bottom - mapRect.top + 10),
+          Math.round(mapHeaderTop + headerRect.height + 10),
         );
         researchButton.style.setProperty(
           '--gachigacha-android-map-research-top',
@@ -720,10 +841,16 @@ function createWebShellRuntimeBody(): string {
         { childList: true, subtree: true },
       );
       window.addEventListener('resize', scheduleAndroidPresentation);
+      window.addEventListener('scroll', scheduleAndroidPresentation, true);
       window.visualViewport?.addEventListener(
         'resize',
         scheduleAndroidPresentation,
       );
+      window.visualViewport?.addEventListener(
+        'scroll',
+        scheduleAndroidPresentation,
+      );
+      document.addEventListener('transitionend', scheduleAndroidPresentation);
     }
   `;
 }
@@ -809,6 +936,32 @@ export function createWebShellRuntimeScript(): string {
     (() => {
       try {
         ${createWebShellRuntimeBody()}
+      } catch {}
+    })();
+    true;
+  `;
+}
+
+/** Android 시스템 뒤로가기에서 열린 채팅 상세를 우선 닫아 목록으로 복귀한다. */
+export function createWebShellChatListNavigationScript(): string {
+  return `
+    (() => {
+      try {
+        const chatRoom = document.querySelector(
+          '[data-gachigacha-android-chat-room]',
+        );
+        const closeButton = chatRoom?.querySelector(
+          'button[aria-label="채팅 닫기"]',
+        );
+
+        if (closeButton instanceof HTMLButtonElement) {
+          closeButton.click();
+          return;
+        }
+
+        window.location.assign(
+          new URL('/chat', window.location.origin).toString(),
+        );
       } catch {}
     })();
     true;
