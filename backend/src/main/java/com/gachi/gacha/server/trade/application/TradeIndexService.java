@@ -69,7 +69,7 @@ public class TradeIndexService {
             log.error("ES bulk 색인 실패 index={} requested={} failed={} items={}",
                     INDEX, tradeIds.size(), failed.size(), failed.stream().limit(20).toList());
             throw new TradeIndexingException(ErrorCode.ELASTICSEARCH_INDEX_FAILED,
-                    "ES bulk 색인 실패 count=" + failed.size() + " " + abbreviate(failed));
+                    "ES bulk 색인 실패 count=" + failed.size() + " " + summarizeFailures(failed));
         }
     }
 
@@ -91,7 +91,7 @@ public class TradeIndexService {
                 ));
     }
 
-    private String abbreviate(final List<String> failed) {
+    private String summarizeFailures(final List<String> failed) {
         return failed.stream().limit(20).collect(Collectors.joining(", "))
                 + (failed.size() > 20 ? " ..." : "");
     }
