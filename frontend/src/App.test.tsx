@@ -528,6 +528,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(
       await screen.findByText('오늘은 어떤 가챠를 찾아볼까요?'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/search');
   });
 
@@ -558,6 +559,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
         name: '어떤 거래글을 찾아볼까요?',
       }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(
       screen.queryByText('중고거래 페이지를 준비하고 있어요'),
     ).not.toBeInTheDocument();

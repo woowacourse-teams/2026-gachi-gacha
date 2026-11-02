@@ -21,6 +21,7 @@ import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext'
 import { HomePage } from '@/routes/home';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
+import { shouldShowSiteFooter, SiteFooter } from '@/shared/ui/SiteFooter';
 
 const SearchRoute = lazy(async () => {
   const routeModule = await import('@/routes/search/route');
@@ -236,6 +237,7 @@ function CanonicalRoutes() {
         </Route>
         <Route path="*" element={<RedirectToEntry />} />
       </Routes>
+      {shouldShowSiteFooter(location.pathname) && <SiteFooter />}
       {backgroundLocation && (
         <Routes>
           <Route element={<ProtectedRoutes />}>
