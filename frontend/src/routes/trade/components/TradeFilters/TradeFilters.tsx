@@ -5,7 +5,6 @@ import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import {
   CategoryButton,
   CategoryFilter,
-  CategoryMessage,
   CategoryScroller,
   FilterHeading,
   FilterPanel,
@@ -14,30 +13,26 @@ import {
   SelectLabel,
   SelectLabelText,
 } from './TradeFilters.styles';
-import type { TradeSortOrder } from '../../model/tradeListFilter';
-import type {
-  TradeFilterCategory,
-  TradeFilterCategoryLoadStatus,
-} from '../../useTradeFilterCategories';
+import {
+  TRADE_QUICK_KEYWORDS,
+  type TradeQuickKeyword,
+  type TradeSortOrder,
+} from '../../model/tradeListFilter';
 
 interface TradeFiltersProps {
-  categories: readonly TradeFilterCategory[];
-  categoryStatus: TradeFilterCategoryLoadStatus;
-  selectedCategoryId: number | null;
+  selectedQuickKeyword: TradeQuickKeyword | null;
   status: TradeStatus | null;
   sortOrder: TradeSortOrder;
-  onSelectCategory: (categoryId: number | null) => void;
+  onSelectQuickKeyword: (keyword: TradeQuickKeyword | null) => void;
   onChangeStatus: (status: TradeStatus | null) => void;
   onChangeSortOrder: (sortOrder: TradeSortOrder) => void;
 }
 
 export function TradeFilters({
-  categories,
-  categoryStatus,
-  selectedCategoryId,
+  selectedQuickKeyword,
   status,
   sortOrder,
-  onSelectCategory,
+  onSelectQuickKeyword,
   onChangeStatus,
   onChangeSortOrder,
 }: TradeFiltersProps) {
@@ -61,41 +56,26 @@ export function TradeFilters({
 
   return (
     <FilterPanel aria-label="거래 목록 필터">
-      <CategoryFilter aria-busy={categoryStatus === 'loading'}>
+      <CategoryFilter>
         <FilterHeading>카테고리</FilterHeading>
-        <CategoryScroller aria-label="대표 카테고리 필터">
+        <CategoryScroller aria-label="카테고리 빠른 검색">
           <CategoryButton
             type="button"
-            aria-pressed={selectedCategoryId === null}
-            onClick={() => onSelectCategory(null)}
+            aria-pressed={selectedQuickKeyword === null}
+            onClick={() => onSelectQuickKeyword(null)}
           >
             전체
           </CategoryButton>
-          {categoryStatus === 'error' ? (
-            <CategoryMessage role="alert">
-              카테고리를 불러오지 못했어요.
-            </CategoryMessage>
-          ) : (
-            categories.map((category) => (
-              <CategoryButton
-                key={category.name}
-                type="button"
-                disabled={category.categoryId === null}
-                title={
-                  category.categoryId === null && categoryStatus === 'success'
-                    ? '현재 사용할 수 없는 카테고리입니다.'
-                    : undefined
-                }
-                aria-pressed={
-                  category.categoryId !== null &&
-                  selectedCategoryId === category.categoryId
-                }
-                onClick={() => onSelectCategory(category.categoryId)}
-              >
-                {category.name}
-              </CategoryButton>
-            ))
-          )}
+          {TRADE_QUICK_KEYWORDS.map((keyword) => (
+            <CategoryButton
+              key={keyword}
+              type="button"
+              aria-pressed={selectedQuickKeyword === keyword}
+              onClick={() => onSelectQuickKeyword(keyword)}
+            >
+              {keyword}
+            </CategoryButton>
+          ))}
         </CategoryScroller>
       </CategoryFilter>
 

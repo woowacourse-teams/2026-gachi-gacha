@@ -16,18 +16,15 @@ import ProductCard from './components/ProductCard';
 import SearchHero from './components/SearchHero';
 import { TradeFilters } from './components/TradeFilters';
 import type { TradeItem } from './model/tradeItem';
-import type { TradeSortOrder } from './model/tradeListFilter';
 import type {
-  TradeFilterCategory,
-  TradeFilterCategoryLoadStatus,
-} from './useTradeFilterCategories';
+  TradeQuickKeyword,
+  TradeSortOrder,
+} from './model/tradeListFilter';
 
 interface TradePageProps {
   items: TradeItem[];
   query?: string;
-  categories?: readonly TradeFilterCategory[];
-  categoryStatus?: TradeFilterCategoryLoadStatus;
-  selectedCategoryId?: number | null;
+  selectedQuickKeyword?: TradeQuickKeyword | null;
   statusFilter?: TradeStatus | null;
   sortOrder?: TradeSortOrder;
   status?: 'loading' | 'success' | 'error';
@@ -36,7 +33,7 @@ interface TradePageProps {
   isLoadingMore?: boolean;
   loadMoreError?: string | null;
   onSearch?: (query: string) => void;
-  onSelectCategory?: (categoryId: number | null) => void;
+  onSelectQuickKeyword?: (keyword: TradeQuickKeyword | null) => void;
   onChangeStatusFilter?: (status: TradeStatus | null) => void;
   onChangeSortOrder?: (sortOrder: TradeSortOrder) => void;
   onRetry?: () => void;
@@ -46,9 +43,7 @@ interface TradePageProps {
 export default function TradePage({
   items,
   query = '',
-  categories = [],
-  categoryStatus = 'success',
-  selectedCategoryId = null,
+  selectedQuickKeyword = null,
   statusFilter = null,
   sortOrder = 'latest',
   status = 'success',
@@ -57,21 +52,18 @@ export default function TradePage({
   isLoadingMore = false,
   loadMoreError = null,
   onSearch = () => undefined,
-  onSelectCategory = () => undefined,
+  onSelectQuickKeyword = () => undefined,
   onChangeStatusFilter = () => undefined,
   onChangeSortOrder = () => undefined,
   onRetry,
   onLoadMore,
 }: TradePageProps) {
-  const selectedCategoryName = categories.find(
-    ({ categoryId }) => categoryId === selectedCategoryId,
-  )?.name;
   const hasActiveFilter =
-    Boolean(query) || selectedCategoryId !== null || statusFilter !== null;
+    Boolean(query) || selectedQuickKeyword !== null || statusFilter !== null;
   const resultsTitle = query
     ? `‘${query}’ 검색결과`
-    : selectedCategoryName
-      ? `${selectedCategoryName} 교환글`
+    : selectedQuickKeyword
+      ? `${selectedQuickKeyword} 교환글`
       : sortOrder === 'oldest'
         ? '오래된순'
         : '최신순';
@@ -89,12 +81,10 @@ export default function TradePage({
 
         <ResultsPanel aria-live="polite">
           <TradeFilters
-            categories={categories}
-            categoryStatus={categoryStatus}
-            selectedCategoryId={selectedCategoryId}
+            selectedQuickKeyword={selectedQuickKeyword}
             status={statusFilter}
             sortOrder={sortOrder}
-            onSelectCategory={onSelectCategory}
+            onSelectQuickKeyword={onSelectQuickKeyword}
             onChangeStatus={onChangeStatusFilter}
             onChangeSortOrder={onChangeSortOrder}
           />

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
@@ -11,23 +11,6 @@ import { TradeRoute } from './route';
 
 beforeEach(() => {
   window.localStorage.clear();
-  server.use(
-    http.get('/api/v1/categories', () =>
-      HttpResponse.json({
-        code: 'C000',
-        message: '정상',
-        data: {
-          items: [
-            { categoryId: 1, name: '산리오' },
-            { categoryId: 2, name: '치이카와' },
-            { categoryId: 3, name: '포켓몬' },
-            { categoryId: 4, name: '짱구' },
-            { categoryId: 5, name: '디즈니' },
-          ],
-        },
-      }),
-    ),
-  );
 });
 
 function createTradePage(keyword: string | null) {
@@ -110,6 +93,32 @@ function createPaginatedTradePage(page: number) {
   };
 }
 
+function submitSearchForm(form: HTMLFormElement) {
+  const RequestFormData = globalThis.FormData;
+
+  class HtmlFormData extends RequestFormData {
+    constructor() {
+      super();
+    }
+  }
+
+  Object.defineProperty(globalThis, 'FormData', {
+    configurable: true,
+    value: HtmlFormData,
+    writable: true,
+  });
+
+  try {
+    fireEvent.submit(form);
+  } finally {
+    Object.defineProperty(globalThis, 'FormData', {
+      configurable: true,
+      value: RequestFormData,
+      writable: true,
+    });
+  }
+}
+
 describe('교환 게시글 검색', () => {
   it('로컬 차단 상태에 있는 작성자의 이미 로드된 게시글을 숨긴다', async () => {
     window.localStorage.setItem(
@@ -177,7 +186,7 @@ describe('교환 게시글 검색', () => {
     expect(window.location.search).toBe('?keyword=%EC%BF%A0%EB%A1%9C%EB%AF%B8');
   });
 
-  it('URL의 카테고리·교환 상태·정렬을 화면과 API 요청에 복원한다', async () => {
+  it('URL의 빠른 검색어·교환 상태·정렬을 화면과 API 요청에 복원한다', async () => {
     const requestedUrls: URL[] = [];
 
     server.use(
@@ -193,18 +202,22 @@ describe('교환 게시글 검색', () => {
 
     renderWithProviders(<TradeRoute />, {
       route:
-        '/trade?keyword=%EC%BF%A0%EB%A1%9C%EB%AF%B8&categoryId=1&status=AVAILABLE&sort=oldest',
+        '/trade?quickKeyword=%EC%82%B0%EB%A6%AC%EC%98%A4&status=AVAILABLE&sort=oldest',
     });
 
     expect(
       await screen.findByRole('heading', { name: '쿠로미 피규어 교환해요' }),
     ).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: '산리오' })).toHaveAttribute(
-        'aria-pressed',
-        'true',
-      ),
+    expect(
+      screen.getByRole('heading', { name: '산리오 교환글' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '산리오' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
     );
+    expect(
+      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
+    ).toHaveValue('');
     expect(screen.getByRole('combobox', { name: '교환 상태' })).toHaveValue(
       'AVAILABLE',
     );
@@ -215,19 +228,24 @@ describe('교환 게시글 검색', () => {
     await waitFor(() => expect(requestedUrls).toHaveLength(1));
     const requestUrl = requestedUrls[0]!;
 
-    expect(requestUrl.searchParams.get('keyword')).toBe('쿠로미');
-    expect(requestUrl.searchParams.get('categoryIds')).toBe('1');
+    expect(requestUrl.searchParams.get('keyword')).toBe('산리오');
+    expect(requestUrl.searchParams.get('categoryIds')).toBeNull();
     expect(requestUrl.searchParams.get('status')).toBe('AVAILABLE');
     expect(requestUrl.searchParams.get('sort')).toBe('createdAt,asc');
   });
 
-  it('필터를 변경해도 기존 검색어를 URL에 함께 보존한다', async () => {
+  it('카테고리 핫키가 직접 검색어를 대체하고 다른 필터와 함께 유지된다', async () => {
+    const requestedUrls: URL[] = [];
+
     server.use(
-      http.get('/api/v1/trades', ({ request }) =>
-        HttpResponse.json(
-          createTradePage(new URL(request.url).searchParams.get('keyword')),
-        ),
-      ),
+      http.get('/api/v1/trades', ({ request }) => {
+        const url = new URL(request.url);
+
+        requestedUrls.push(url);
+        return HttpResponse.json(
+          createTradePage(url.searchParams.get('keyword')),
+        );
+      }),
     );
     const user = userEvent.setup();
 
@@ -236,10 +254,6 @@ describe('교환 게시글 검색', () => {
     });
 
     await screen.findByRole('heading', { name: '쿠로미 피규어 교환해요' });
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: '산리오' })).toBeEnabled(),
-    );
-
     await user.click(screen.getByRole('button', { name: '산리오' }));
     await user.selectOptions(
       screen.getByRole('combobox', { name: '교환 상태' }),
@@ -252,11 +266,56 @@ describe('교환 게시글 검색', () => {
     await waitFor(() => {
       const currentSearchParams = new URLSearchParams(window.location.search);
 
-      expect(currentSearchParams.get('keyword')).toBe('쿠로미');
-      expect(currentSearchParams.get('categoryId')).toBe('1');
+      expect(currentSearchParams.get('keyword')).toBeNull();
+      expect(currentSearchParams.get('quickKeyword')).toBe('산리오');
+      expect(currentSearchParams.get('categoryId')).toBeNull();
       expect(currentSearchParams.get('status')).toBe('AVAILABLE');
       expect(currentSearchParams.get('sort')).toBe('oldest');
     });
+    await waitFor(() =>
+      expect(requestedUrls.at(-1)?.searchParams.get('keyword')).toBe('산리오'),
+    );
+    expect(requestedUrls.at(-1)?.searchParams.get('categoryIds')).toBeNull();
+    expect(
+      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
+    ).toHaveValue('');
+    expect(
+      screen.getByRole('heading', { name: '산리오 교환글' }),
+    ).toBeInTheDocument();
+  });
+
+  it('직접 검색하면 선택한 빠른 검색어를 해제한다', async () => {
+    server.use(
+      http.get('/api/v1/trades', ({ request }) =>
+        HttpResponse.json(
+          createTradePage(new URL(request.url).searchParams.get('keyword')),
+        ),
+      ),
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(<TradeRoute />, {
+      route: '/trade?quickKeyword=%EC%B9%98%EC%9D%B4%EC%B9%B4%EC%99%80',
+    });
+
+    await screen.findByRole('heading', { name: '치이카와 교환글' });
+    const searchbox = screen.getByRole('searchbox', {
+      name: '교환 게시글 검색어',
+    });
+
+    await user.type(searchbox, '쿠로미');
+    submitSearchForm(searchbox.closest('form')!);
+
+    await waitFor(() => {
+      const currentSearchParams = new URLSearchParams(window.location.search);
+
+      expect(currentSearchParams.get('keyword')).toBe('쿠로미');
+      expect(currentSearchParams.get('quickKeyword')).toBeNull();
+    });
+    expect(screen.getByRole('button', { name: '전체' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
   });
 
   it('더보기를 누르면 다음 페이지 게시글을 기존 목록에 추가한다', async () => {
@@ -275,7 +334,8 @@ describe('교환 게시글 검색', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<TradeRoute />, {
-      route: '/trade?categoryId=1&status=AVAILABLE&sort=oldest',
+      route:
+        '/trade?quickKeyword=%EC%82%B0%EB%A6%AC%EC%98%A4&status=AVAILABLE&sort=oldest',
     });
 
     expect(
@@ -295,7 +355,8 @@ describe('교환 게시글 검색', () => {
       '0',
       '1',
     ]);
-    expect(requestedUrls[1]!.searchParams.get('categoryIds')).toBe('1');
+    expect(requestedUrls[1]!.searchParams.get('keyword')).toBe('산리오');
+    expect(requestedUrls[1]!.searchParams.get('categoryIds')).toBeNull();
     expect(requestedUrls[1]!.searchParams.get('status')).toBe('AVAILABLE');
     expect(requestedUrls[1]!.searchParams.get('sort')).toBe('createdAt,asc');
   });

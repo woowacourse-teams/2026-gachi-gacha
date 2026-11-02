@@ -23,12 +23,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-export function useTrades({
-  keyword,
-  categoryId,
-  status,
-  sortOrder,
-}: TradeListFilter) {
+export function useTrades({ keyword, status, sortOrder }: TradeListFilter) {
   const { isMemberBlocked } = useMemberBlocks();
   const loadMoreControllerRef = useRef<AbortController | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -40,12 +35,11 @@ export function useTrades({
   const request = useMemo(
     () => ({
       keyword: normalizedKeyword,
-      categoryId,
       status,
       sort: getTradeSortParameter(sortOrder),
       attempt,
     }),
-    [attempt, categoryId, normalizedKeyword, sortOrder, status],
+    [attempt, normalizedKeyword, sortOrder, status],
   );
   const retry = useCallback(() => {
     setAttempt((currentAttempt) => currentAttempt + 1);
@@ -63,9 +57,6 @@ export function useTrades({
       try {
         const data = await getTrades({
           keyword: request.keyword,
-          ...(request.categoryId === null
-            ? {}
-            : { categoryIds: [request.categoryId] }),
           ...(request.status === null ? {} : { status: request.status }),
           page: 0,
           size: PAGE_SIZE,
@@ -134,9 +125,6 @@ export function useTrades({
     try {
       const data = await getTrades({
         keyword: request.keyword,
-        ...(request.categoryId === null
-          ? {}
-          : { categoryIds: [request.categoryId] }),
         ...(request.status === null ? {} : { status: request.status }),
         page: nextPage,
         size: PAGE_SIZE,

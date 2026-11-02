@@ -3,31 +3,34 @@ import { useSearchParams } from 'react-router';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import {
-  parseTradeCategoryId,
+  parseTradeQuickKeyword,
   parseTradeSortOrder,
   parseTradeStatus,
 } from './model/tradeListFilter';
 import TradePage from './TradePage';
-import { useTradeFilterCategories } from './useTradeFilterCategories';
 import { useTrades } from './useTrades';
 
 export function TradeRoute() {
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get('keyword')?.trim() ?? '';
-  const categoryId = parseTradeCategoryId(searchParams.get('categoryId'));
+  const quickKeyword = keyword
+    ? null
+    : parseTradeQuickKeyword(searchParams.get('quickKeyword'));
+  const effectiveKeyword = keyword || quickKeyword || '';
   const statusFilter = parseTradeStatus(searchParams.get('status'));
   const sortOrder = parseTradeSortOrder(searchParams.get('sort'));
-  const { categories, status: categoryStatus } = useTradeFilterCategories();
   const { state, retry, hasMore, isLoadingMore, loadMoreError, loadMore } =
-    useTrades({ keyword, categoryId, status: statusFilter, sortOrder });
+    useTrades({ keyword: effectiveKeyword, status: statusFilter, sortOrder });
 
-  function updateSearchParam(name: string, value: string | null) {
+  function updateSearchParams(updates: Record<string, string | null>) {
     const nextSearchParams = new URLSearchParams(searchParams);
 
-    if (value === null) {
-      nextSearchParams.delete(name);
-    } else {
-      nextSearchParams.set(name, value);
+    for (const [name, value] of Object.entries(updates)) {
+      if (value === null) {
+        nextSearchParams.delete(name);
+      } else {
+        nextSearchParams.set(name, value);
+      }
     }
 
     setSearchParams(nextSearchParams);
@@ -38,16 +41,18 @@ export function TradeRoute() {
       query_length: query.length,
     });
 
-    updateSearchParam('keyword', query || null);
+    updateSearchParams({
+      keyword: query || null,
+      quickKeyword: null,
+      categoryId: null,
+    });
   }
 
   return (
     <TradePage
       items={state.status === 'success' ? state.data.content : []}
       query={keyword}
-      categories={categories}
-      categoryStatus={categoryStatus}
-      selectedCategoryId={categoryId}
+      selectedQuickKeyword={quickKeyword}
       statusFilter={statusFilter}
       sortOrder={sortOrder}
       status={state.status === 'idle' ? 'loading' : state.status}
@@ -56,36 +61,32 @@ export function TradeRoute() {
       isLoadingMore={isLoadingMore}
       loadMoreError={loadMoreError}
       onSearch={searchTrades}
-      onSelectCategory={(nextCategoryId) => {
-        const categoryName =
-          categories.find((category) => category.categoryId === nextCategoryId)
-            ?.name ?? 'ALL';
-
+      onSelectQuickKeyword={(nextQuickKeyword) => {
         captureAnalyticsEvent('trade_filter_selected', {
           filter: 'category',
-          value: categoryName,
+          value: nextQuickKeyword ?? 'ALL',
         });
-        updateSearchParam(
-          'categoryId',
-          nextCategoryId === null ? null : String(nextCategoryId),
-        );
+        updateSearchParams({
+          keyword: nextQuickKeyword === null ? keyword || null : null,
+          quickKeyword: nextQuickKeyword,
+          categoryId: null,
+        });
       }}
       onChangeStatusFilter={(nextStatus) => {
         captureAnalyticsEvent('trade_filter_selected', {
           filter: 'status',
           value: nextStatus ?? 'ALL',
         });
-        updateSearchParam('status', nextStatus);
+        updateSearchParams({ status: nextStatus });
       }}
       onChangeSortOrder={(nextSortOrder) => {
         captureAnalyticsEvent('trade_filter_selected', {
           filter: 'sort',
           value: nextSortOrder,
         });
-        updateSearchParam(
-          'sort',
-          nextSortOrder === 'latest' ? null : nextSortOrder,
-        );
+        updateSearchParams({
+          sort: nextSortOrder === 'latest' ? null : nextSortOrder,
+        });
       }}
       onRetry={() => {
         captureAnalyticsEvent('recovery_action_selected', {
@@ -95,7 +96,7 @@ export function TradeRoute() {
       }}
       onLoadMore={() => {
         captureAnalyticsEvent('trade_list_more_requested', {
-          query_applied: Boolean(keyword),
+          query_applied: Boolean(effectiveKeyword),
           loaded_item_count:
             state.status === 'success' ? state.data.content.length : 0,
           source: 'trade_list',
