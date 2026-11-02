@@ -13,6 +13,7 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 
 import CreateTradeButton from './components/CreateTradeButton';
 import ProductCard from './components/ProductCard';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import SearchHero from './components/SearchHero';
 import { TradeFilters } from './components/TradeFilters';
 import type { TradeItem } from './model/tradeItem';
@@ -140,6 +141,7 @@ export default function TradePage({
         </ResultsPanel>
       </Main>
 
+      <ScrollToTopButton />
       <CreateTradeButton />
     </Page>
   );

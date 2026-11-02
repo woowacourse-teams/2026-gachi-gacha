@@ -10,6 +10,8 @@ import {
   zIndex,
 } from '@/shared/styles/tokens';
 
+import { floatingTradeActionSizeAndPosition } from '../floatingTradeAction.styles';
+
 const CREATE_TRADE_PATH = '/trade/new';
 
 /**
@@ -46,14 +48,13 @@ function PlusIcon(props: React.SVGProps<SVGSVGElement>) {
 }
 
 const FloatingLink = styled(Link)`
+  ${floatingTradeActionSizeAndPosition};
+
   position: fixed;
   /* 헤더와 다이얼로그 오버레이보다 아래에 둔다. */
   z-index: ${zIndex.header - 10};
-  right: max(24px, env(safe-area-inset-right));
   bottom: calc(24px + env(safe-area-inset-bottom));
   display: grid;
-  width: 60px;
-  height: 60px;
   place-items: center;
   border-radius: 50%;
   background: ${color.primary};
@@ -74,10 +75,7 @@ const FloatingLink = styled(Link)`
   }
 
   @media (max-width: ${breakpoint.mobile}) {
-    right: max(16px, env(safe-area-inset-right));
     bottom: calc(16px + env(safe-area-inset-bottom));
-    width: 56px;
-    height: 56px;
   }
 
   @media (prefers-reduced-motion: reduce) {
