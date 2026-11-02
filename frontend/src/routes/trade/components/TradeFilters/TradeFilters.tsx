@@ -95,7 +95,6 @@ export function TradeFilters({
             ariaLabel="정렬"
             value={sortOrder}
             options={SORT_OPTIONS}
-            align="end"
             onChange={onChangeSortOrder}
           />
         </SelectField>
