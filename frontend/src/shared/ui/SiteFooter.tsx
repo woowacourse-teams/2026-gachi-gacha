@@ -9,6 +9,8 @@ import { color } from '@/shared/styles/tokens';
 
 const FOOTERLESS_ROUTE_ROOTS = ['/map', '/chat', '/oauth'] as const;
 
+export const SITE_FOOTER_ID = 'site-footer';
+
 function isPathOrNestedRoute(pathname: string, routeRoot: string) {
   return pathname === routeRoot || pathname.startsWith(`${routeRoot}/`);
 }
@@ -26,7 +28,7 @@ export function shouldShowSiteFooter(pathname: string) {
 
 export function SiteFooter() {
   return (
-    <Wrapper>
+    <Wrapper id={SITE_FOOTER_ID}>
       <BrandGroup>
         <Brand aria-label="GachiGacha">
           <BrandIcon src={logoIcon} alt="" aria-hidden="true" />
