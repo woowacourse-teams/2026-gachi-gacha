@@ -299,9 +299,7 @@ export default function ChatRoomPanel({
               ←
             </CloseButton>
           )}
-          <div>
-            <PartnerName>{room.partnerName}</PartnerName>
-          </div>
+          <PartnerName title={room.partnerName}>{room.partnerName}</PartnerName>
         </RoomTitleGroup>
         <HeaderActions>
           <TradeStatusBadge status={room.tradeStatus} />
@@ -315,7 +313,7 @@ export default function ChatRoomPanel({
         </HeaderActions>
       </RoomHeader>
 
-      <ProductSummary>
+      <ProductSummary aria-label="교환 상품 정보">
         <ProductImage>
           {room.itemImageUrl ? (
             <ProductPhoto src={room.itemImageUrl} alt="" />
@@ -340,9 +338,6 @@ export default function ChatRoomPanel({
               거래글로 이동
             </TradeDetailLink>
           </ProductLinks>
-          <MobileTradeStatus>
-            <TradeStatusBadge status={room.tradeStatus} />
-          </MobileTradeStatus>
         </ProductInfo>
         {tradeStatusAction && onChangeTradeStatus && (
           <TradeActionArea>
@@ -535,22 +530,19 @@ const Panel = styled.section`
   background: #ffffff;
 
   @media (max-width: 900px) {
-    position: relative;
     min-height: 0;
-    grid-template-rows: auto minmax(0, 1fr) auto;
   }
 `;
 
 const RoomTitleGroup = styled.div`
   display: flex;
   min-width: 0;
+  flex: 1;
   align-items: center;
   gap: 14px;
 
-  @media (max-width: 900px) {
-    > div {
-      display: none;
-    }
+  @media (max-width: 440px) {
+    gap: 8px;
   }
 `;
 
@@ -571,11 +563,6 @@ const closeControlStyles = css`
   &:hover {
     background: #f3f0f1;
   }
-
-  @media (max-width: 900px) {
-    border: 1px solid #eeeaec;
-    background: #ffffff;
-  }
 `;
 
 const CloseLink = styled(Link)`
@@ -588,13 +575,12 @@ const CloseButton = styled.button`
 
 const HeaderActions = styled.div`
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 6px;
 
-  @media (max-width: 900px) {
-    > :first-child {
-      display: none;
-    }
+  @media (max-width: 440px) {
+    gap: 4px;
   }
 `;
 
@@ -608,29 +594,25 @@ const RoomHeader = styled.header`
   border-bottom: 1px solid #eeeaec;
 
   @media (max-width: 900px) {
-    position: absolute;
-    z-index: 2;
-    inset: 0 0 auto;
-    min-height: 0;
-    padding: 14px 10px;
-    align-items: flex-start;
-    border: 0;
-    pointer-events: none;
-
-    > div {
-      pointer-events: auto;
-    }
+    min-height: 64px;
+    padding: 12px 16px;
+    gap: 8px;
   }
 `;
 
 const PartnerName = styled.h2`
+  min-width: 0;
+  overflow: hidden;
   margin: 0;
+  flex: 1;
   color: #2b2528;
   font-size: 18px;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
-const ProductSummary = styled.div`
+const ProductSummary = styled.section`
   display: grid;
   padding: 14px 24px;
   grid-template-columns: 52px minmax(0, 1fr) auto;
@@ -639,13 +621,8 @@ const ProductSummary = styled.div`
   border-bottom: 1px solid #eeeaec;
 
   @media (max-width: 900px) {
-    padding-right: 52px;
-    padding-left: 52px;
-  }
-
-  @media (max-width: 440px) {
-    grid-template-columns: 52px minmax(0, 1fr);
-    align-items: start;
+    padding: 12px 16px;
+    gap: 10px;
   }
 `;
 
@@ -704,15 +681,6 @@ const ProductLinks = styled.div`
   font-size: 11px;
 `;
 
-const MobileTradeStatus = styled.div`
-  display: none;
-
-  @media (max-width: 900px) {
-    display: flex;
-    margin-top: 6px;
-  }
-`;
-
 const TradeDetailLink = styled(Link)`
   color: #9a9095;
   text-decoration: none;
@@ -727,12 +695,6 @@ const TradeActionArea = styled.div`
   max-width: 116px;
   justify-items: end;
   gap: 6px;
-
-  @media (max-width: 440px) {
-    grid-column: 2;
-    max-width: none;
-    justify-items: start;
-  }
 `;
 
 const TradeActionButton = styled.button`
@@ -759,10 +721,6 @@ const TradeStatusError = styled.p`
   font-size: 10px;
   line-height: 1.35;
   text-align: right;
-
-  @media (max-width: 440px) {
-    text-align: left;
-  }
 `;
 
 const Messages = styled.div`
