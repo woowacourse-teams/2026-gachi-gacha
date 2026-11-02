@@ -22,6 +22,7 @@ import {
 } from '../domains/auth/authTokenStorage';
 import type { AuthTokens, MobileOAuthProvider } from '../domains/auth/authTypes';
 import { loginWithMobileOAuth } from '../domains/auth/mobileOAuthLogin';
+import { createPushNavigationQueue } from '../domains/notification/pushNavigationQueue';
 import { usePushNotifications } from '../domains/notification/usePushNotifications';
 import {
   classifyWebShellNavigation,
@@ -42,7 +43,7 @@ export function WebAppShellScreen() {
   const canGoBackRef = useRef(false);
   const lastRootBackPressAt = useRef(0);
   const webViewLoadedRef = useRef(false);
-  const pendingPushPathRef = useRef<string | null>(null);
+  const pushNavigationQueueRef = useRef(createPushNavigationQueue());
   const topLevelUrlRef = useRef(appBaseUrl);
   const { authenticate, logout, status } = useAuthSession();
   const [nativeSessionTokens, setNativeSessionTokens] = useState<
@@ -54,12 +55,12 @@ export function WebAppShellScreen() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const openPushPath = useCallback((path: string) => {
-    pendingPushPathRef.current = path;
+    const pathToOpen = pushNavigationQueueRef.current.request(path);
+    if (!pathToOpen) return;
 
-    if (!webViewLoadedRef.current) return;
-
-    webViewRef.current?.injectJavaScript(createWebShellNavigationScript(path));
-    pendingPushPathRef.current = null;
+    webViewRef.current?.injectJavaScript(
+      createWebShellNavigationScript(pathToOpen),
+    );
   }, []);
 
   usePushNotifications(openPushPath);
@@ -179,6 +180,7 @@ export function WebAppShellScreen() {
     setHasLoadError(false);
     canGoBackRef.current = false;
     webViewLoadedRef.current = false;
+    pushNavigationQueueRef.current.markLoading();
     setReloadKey((current) => current + 1);
   }
 
@@ -248,16 +250,19 @@ export function WebAppShellScreen() {
             setHasLoadError(true);
           }
         }}
+        onLoadStart={() => {
+          webViewLoadedRef.current = false;
+          pushNavigationQueueRef.current.markLoading();
+        }}
         onLoadEnd={() => {
           webViewLoadedRef.current = true;
           void refreshNativeSession();
 
-          const pendingPushPath = pendingPushPathRef.current;
+          const pendingPushPath = pushNavigationQueueRef.current.markReady();
           if (pendingPushPath) {
             webViewRef.current?.injectJavaScript(
               createWebShellNavigationScript(pendingPushPath),
             );
-            pendingPushPathRef.current = null;
           }
         }}
         onMessage={({ nativeEvent }) =>
