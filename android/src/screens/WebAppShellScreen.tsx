@@ -39,6 +39,7 @@ import {
 import { colors } from '../theme/colors';
 
 const EXIT_CONFIRMATION_WINDOW_MS = 2_000;
+const WEB_SESSION_READY_FALLBACK_MS = 2_000;
 
 export function WebAppShellScreen() {
   const appBaseUrl = getWebAppBaseUrl();
@@ -48,6 +49,9 @@ export function WebAppShellScreen() {
   const lastNonLoginUrlRef = useRef(appBaseUrl);
   const appStateRef = useRef(AppState.currentState);
   const oauthInFlightRef = useRef(false);
+  const webSessionReadyFallbackRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const webViewLoadedRef = useRef(false);
   const pushNavigationQueueRef = useRef(createPushNavigationQueue());
   const topLevelUrlRef = useRef(appBaseUrl);
@@ -59,8 +63,39 @@ export function WebAppShellScreen() {
   const [authenticatingProvider, setAuthenticatingProvider] =
     useState<MobileOAuthProvider | null>(null);
   const [hasLoadError, setHasLoadError] = useState(false);
-  const [isWebSessionReady, setIsWebSessionReady] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+
+  const clearWebSessionReadyFallback = useCallback(() => {
+    if (webSessionReadyFallbackRef.current === null) {
+      return;
+    }
+
+    clearTimeout(webSessionReadyFallbackRef.current);
+    webSessionReadyFallbackRef.current = null;
+  }, []);
+
+  const markWebSessionReady = useCallback(() => {
+    clearWebSessionReadyFallback();
+    const pendingPushPath = pushNavigationQueueRef.current.markReady();
+    if (pendingPushPath) {
+      webViewRef.current?.injectJavaScript(
+        createWebShellNavigationScript(pendingPushPath),
+      );
+    }
+  }, [clearWebSessionReadyFallback]);
+
+  const scheduleWebSessionReadyFallback = useCallback(() => {
+    clearWebSessionReadyFallback();
+    webSessionReadyFallbackRef.current = setTimeout(
+      markWebSessionReady,
+      WEB_SESSION_READY_FALLBACK_MS,
+    );
+  }, [clearWebSessionReadyFallback, markWebSessionReady]);
+
+  useEffect(
+    () => () => clearWebSessionReadyFallback(),
+    [clearWebSessionReadyFallback],
+  );
 
   const openPushPath = useCallback((path: string) => {
     const pathToOpen = pushNavigationQueueRef.current.request(path);
@@ -110,7 +145,6 @@ export function WebAppShellScreen() {
         (previousState === 'background' || previousState === 'inactive') &&
         !oauthInFlightRef.current
       ) {
-        setIsWebSessionReady(false);
         retryAuthSession();
       }
     });
@@ -161,7 +195,6 @@ export function WebAppShellScreen() {
         const tokens = await loginWithMobileOAuth(provider);
         await authenticate(tokens);
         setNativeSessionTokens(tokens);
-        setIsWebSessionReady(false);
         webViewRef.current?.injectJavaScript(
           createWebShellAuthenticationCompletionScript(
             appBaseUrl,
@@ -229,13 +262,7 @@ export function WebAppShellScreen() {
       }
 
       if (message.type === 'auth-session-synced') {
-        setIsWebSessionReady(true);
-        const pendingPushPath = pushNavigationQueueRef.current.markReady();
-        if (pendingPushPath) {
-          webViewRef.current?.injectJavaScript(
-            createWebShellNavigationScript(pendingPushPath),
-          );
-        }
+        markWebSessionReady();
         return;
       }
 
@@ -262,14 +289,14 @@ export function WebAppShellScreen() {
       setNativeSessionTokens(null);
       void logout();
     },
-    [appBaseUrl, logout, refreshNativeSession],
+    [appBaseUrl, logout, markWebSessionReady, refreshNativeSession],
   );
 
   function retry() {
     setHasLoadError(false);
     canGoBackRef.current = false;
     webViewLoadedRef.current = false;
-    setIsWebSessionReady(false);
+    clearWebSessionReadyFallback();
     pushNavigationQueueRef.current.markLoading();
     setReloadKey((current) => current + 1);
   }
@@ -342,7 +369,7 @@ export function WebAppShellScreen() {
         }}
         onLoadStart={() => {
           webViewLoadedRef.current = false;
-          setIsWebSessionReady(false);
+          clearWebSessionReadyFallback();
           pushNavigationQueueRef.current.markLoading();
         }}
         onLoadEnd={() => {
@@ -350,6 +377,7 @@ export function WebAppShellScreen() {
           webViewRef.current?.injectJavaScript(
             createWebShellSessionSyncScript(nativeSessionTokens),
           );
+          scheduleWebSessionReadyFallback();
           void refreshNativeSession();
         }}
         onMessage={({ nativeEvent }) =>
@@ -412,16 +440,6 @@ export function WebAppShellScreen() {
         startInLoadingState
         thirdPartyCookiesEnabled={false}
       />
-
-      {!isWebSessionReady && !authenticatingProvider && (
-        <View
-          accessibilityLiveRegion="polite"
-          style={[StyleSheet.absoluteFill, styles.sessionOverlay]}
-        >
-          <ActivityIndicator color={colors.primary} size="large" />
-          <Text style={styles.loadingText}>로그인 상태를 확인하고 있어요.</Text>
-        </View>
-      )}
 
       {authenticatingProvider && (
         <View
@@ -494,12 +512,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.28)',
-  },
-  sessionOverlay: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    backgroundColor: colors.background,
   },
   authCard: {
     minWidth: 220,
