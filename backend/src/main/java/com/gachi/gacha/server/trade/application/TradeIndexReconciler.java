@@ -27,6 +27,10 @@ public class TradeIndexReconciler {
 
     private static final int BATCH_SIZE = 500;
     private static final int ORPHAN_SCAN_SIZE = 10_000;   // max_result_window 이내
+    private static final Duration STARTUP_LOOKBACK = Duration.ofHours(24);
+    private static final Duration OVERLAP = Duration.ofMinutes(2);
+
+    private volatile LocalDateTime lastSyncedAt;
 
     private final ElasticsearchClient esClient;
     private final TradeIndexService tradeIndexService;
@@ -75,17 +79,19 @@ public class TradeIndexReconciler {
         }
     }
 
-    public void syncRecent(final Duration lookback) throws IOException {
-        LocalDateTime since = LocalDateTime.now().minus(lookback);
-        List<Long> ids = tradeJpaRepository.findIdsModifiedAfter(since);
-        if (ids.isEmpty()) {
-            return;
-        }
+    public void syncRecent() {
+        LocalDateTime startedAt = LocalDateTime.now();
+        LocalDateTime base = lastSyncedAt != null ? lastSyncedAt : startedAt.minus(STARTUP_LOOKBACK);
+        LocalDateTime since = base.minus(OVERLAP);
 
-        syncAllSince(ids, since);
+        List<Long> ids = tradeJpaRepository.findIdsModifiedAfter(since);
+        boolean success = ids.isEmpty() || syncAllSince(ids, since);
+        if (success) {
+            lastSyncedAt = startedAt;
+        }
     }
 
-    private void syncAllSince(List<Long> ids, LocalDateTime since) {
+    private boolean syncAllSince(List<Long> ids, LocalDateTime since) {
         int synced = 0;
         int failedBatches = 0;
         for (int i = 0; i < ids.size(); i += BATCH_SIZE) {
@@ -101,6 +107,7 @@ public class TradeIndexReconciler {
         }
         log.info("trade 증분 동기화 종료 since={} total={} synced={} failedBatches={}",
                 since, ids.size(), synced, failedBatches);
+        return failedBatches == 0;
     }
 
     private int deleteOrphans(final long greaterThan, final Long lessThanOrEqual, final Set<Long> knownIds) throws IOException {
