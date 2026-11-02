@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import {
@@ -15,6 +16,10 @@ import {
 } from '../src/domains/webShell/webShellPolicy.ts';
 
 const APP_BASE_URL = 'https://dev.gachigacha.kro.kr';
+const WEB_APP_SHELL_SOURCE = readFileSync(
+  new URL('../src/screens/WebAppShellScreen.tsx', import.meta.url),
+  'utf8',
+);
 
 function runSessionSyncScript(script, initialEntries) {
   const entries = new Map(Object.entries(initialEntries));
@@ -328,6 +333,20 @@ test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다�
   assert.equal(guest.reloadCount, 1);
   assert.equal(guest.entries.size, 0);
   assert.deepEqual(guest.messages, []);
+});
+
+test('세션 동기화 응답이 누락되어도 앱 화면을 무기한 차단하지 않는다', () => {
+  assert.doesNotMatch(WEB_APP_SHELL_SOURCE, /sessionOverlay/);
+  assert.doesNotMatch(
+    WEB_APP_SHELL_SOURCE,
+    /로그인 상태를 확인하고 있어요/,
+  );
+  assert.match(WEB_APP_SHELL_SOURCE, /WEB_SESSION_READY_FALLBACK_MS/);
+  assert.match(WEB_APP_SHELL_SOURCE, /scheduleWebSessionReadyFallback\(\)/);
+  assert.match(
+    WEB_APP_SHELL_SOURCE,
+    /pushNavigationQueueRef\.current\.markReady\(\)/,
+  );
 });
 
 test('OAuth 완료 스크립트는 로그인 전 같은 origin 화면으로 토큰 주입 후 복귀한다', () => {
