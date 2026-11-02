@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.trade.application;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -26,7 +27,7 @@ import org.springframework.stereotype.Service;
 public class TradeIndexReconciler {
 
     private static final int BATCH_SIZE = 500;
-    private static final int ORPHAN_SCAN_SIZE = 10_000;   // max_result_window 이내
+    private static final int ORPHAN_PAGE_SIZE = 1_000;
     private static final Duration STARTUP_LOOKBACK = Duration.ofHours(24);
     private static final Duration OVERLAP = Duration.ofMinutes(2);
 
@@ -72,6 +73,10 @@ public class TradeIndexReconciler {
             log.error("trade 끝 구간 고아 정리 실패 afterId={}", lastId, e);
         }
 
+        logReconcileResult(batchNo, failedBatches, indexed, deleted);
+    }
+
+    private void logReconcileResult(final int batchNo, final int failedBatches, final int indexed, final int deleted) {
         log.info("trade 정합성 점검 종료 batches={} failedBatches={} indexed={} orphanDeleted={}",
                 batchNo, failedBatches, indexed, deleted);
         if (failedBatches > 0) {
@@ -111,26 +116,50 @@ public class TradeIndexReconciler {
     }
 
     private int deleteOrphans(final long greaterThan, final Long lessThanOrEqual, final Set<Long> knownIds) throws IOException {
-        List<Long> candidates = findIndexedIds(greaterThan, lessThanOrEqual, knownIds);
+        int deleted = 0;
+        long cursor = greaterThan;
+
+        while (true) {
+            List<Long> pageIds = findIndexedIdsPage(cursor, lessThanOrEqual);
+            if (pageIds.isEmpty()) {
+                break;
+            }
+            long next = pageIds.get(pageIds.size() - 1);
+            if (next <= cursor) {
+                log.warn("trade 고아 정리 커서가 전진하지 않아 중단합니다. cursor={} next={}", cursor, next);
+                break;
+            }
+            cursor = next;
+
+            deleted += deleteOrphansInPage(pageIds, knownIds);
+            if (pageIds.size() < ORPHAN_PAGE_SIZE) {
+                break;
+            }
+        }
+        return deleted;
+    }
+
+    private int deleteOrphansInPage(final List<Long> pageIds, final Set<Long> knownIds) throws IOException {
+        List<Long> candidates = pageIds.stream()
+                .filter(id -> !knownIds.contains(id))
+                .toList();
         if (candidates.isEmpty()) {
             return 0;
         }
-
-        // 스냅샷 이후 새로 생긴 글을 지우지 않도록 DB에서 한 번 더 확인
         List<Long> orphans = excludeExistingInDb(candidates);
         if (orphans.isEmpty()) {
             return 0;
         }
-
         return deleteFromIndex(orphans);
     }
 
-    private List<Long> findIndexedIds(final long greaterThan, final Long lessThanOrEqual, final Set<Long> knownIds)
+    private List<Long> findIndexedIdsPage(final long greaterThan, final Long lessThanOrEqual)
             throws IOException {
         SearchResponse<Void> res = esClient.search(s -> s
                 .index(INDEX)
-                .size(ORPHAN_SCAN_SIZE)
+                .size(ORPHAN_PAGE_SIZE)
                 .source(src -> src.fetch(false))      // ID만 필요
+                .sort(so -> so.field(f -> f.field("tradeId").order(SortOrder.Asc)))
                 .query(q -> q.range(r -> r.number(n -> {
                     n.field("tradeId").gt((double) greaterThan);
                     if (lessThanOrEqual != null) {
@@ -139,11 +168,9 @@ public class TradeIndexReconciler {
                     return n;
                 }))), Void.class);
 
-        List<Long> candidates = res.hits().hits().stream()
+        return res.hits().hits().stream()
                 .map(h -> Long.valueOf(h.id()))
-                .filter(id -> !knownIds.contains(id))
                 .toList();
-        return candidates;
     }
 
     private List<Long> excludeExistingInDb(final List<Long> candidates) {
