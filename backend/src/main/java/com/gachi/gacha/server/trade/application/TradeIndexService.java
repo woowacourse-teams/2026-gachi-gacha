@@ -93,6 +93,6 @@ public class TradeIndexService {
 
     private String abbreviate(final List<String> failed) {
         return failed.stream().limit(20).collect(Collectors.joining(", "))
-                + (failed.size() > 5 ? " ..." : "");
+                + (failed.size() > 20 ? " ..." : "");
     }
 }
