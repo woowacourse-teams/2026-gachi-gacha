@@ -29,6 +29,7 @@ import {
   createWebShellBootstrapScript,
   createWebShellNavigationScript,
   createWebShellRuntimeScript,
+  createWebShellSameOriginNavigationScript,
   createWebShellSessionSyncScript,
   isTrustedWebShellMessageSource,
   parseWebShellMessage,
@@ -145,6 +146,39 @@ export function WebAppShellScreen() {
       }
     },
     [authenticate, authenticatingProvider],
+  );
+
+  const handleNewWindow = useCallback(
+    (url: string) => {
+      const decision = classifyWebShellNavigation(appBaseUrl, url);
+
+      if (decision.type === 'allow') {
+        if (url === 'about:blank') return;
+
+        webViewRef.current?.injectJavaScript(
+          createWebShellSameOriginNavigationScript(appBaseUrl, url),
+        );
+        return;
+      }
+
+      if (decision.type === 'native-oauth') {
+        void startNativeOAuth(decision.provider);
+        return;
+      }
+
+      if (decision.type === 'unsupported-oauth') {
+        Alert.alert(
+          'Android에서 지원하지 않는 로그인입니다',
+          '카카오 또는 네이버로 로그인해 주세요.',
+        );
+        return;
+      }
+
+      if (decision.type === 'external') {
+        openOutsideApp(url);
+      }
+    },
+    [appBaseUrl, openOutsideApp, startNativeOAuth],
   );
 
   const handleWebMessage = useCallback(
@@ -268,6 +302,9 @@ export function WebAppShellScreen() {
         onMessage={({ nativeEvent }) =>
           handleWebMessage(nativeEvent.data, nativeEvent.url)
         }
+        onOpenWindow={({ nativeEvent }) =>
+          handleNewWindow(nativeEvent.targetUrl)
+        }
         onNavigationStateChange={({ canGoBack, url }) => {
           canGoBackRef.current = canGoBack;
           topLevelUrlRef.current = url;
@@ -305,7 +342,7 @@ export function WebAppShellScreen() {
             <Text style={styles.loadingText}>가치가챠를 불러오고 있어요.</Text>
           </View>
         )}
-        setSupportMultipleWindows={false}
+        setSupportMultipleWindows
         sharedCookiesEnabled={false}
         source={{ uri: appBaseUrl }}
         startInLoadingState
