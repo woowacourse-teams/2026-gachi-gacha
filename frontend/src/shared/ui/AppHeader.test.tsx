@@ -113,6 +113,35 @@ describe('AppHeader', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('읽지 않은 채팅 메시지 수를 채팅 아이콘 배지에 표시한다', async () => {
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <AppHeader currentPath="/trade" chatUnreadCount={120} />,
+      { initialAccessToken: 'access-token' },
+    );
+
+    const chatLink = await screen.findByRole('link', {
+      name: '채팅, 읽지 않은 메시지 120개',
+    });
+
+    expect(chatLink).toHaveAttribute('href', '/chat');
+    expect(chatLink).toHaveTextContent('99+');
+  });
+
   it('알림 아이콘을 누르면 팝오버를 열고 다시 누르면 닫는다', async () => {
     const user = userEvent.setup();
 

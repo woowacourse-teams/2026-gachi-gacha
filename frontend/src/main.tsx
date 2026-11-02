@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router';
 
 import App from '@/App';
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
+import { ChatUnreadProvider } from '@/features/chatUnread/ChatUnreadContext';
 import { NotificationProvider } from '@/features/notifications/NotificationContext';
 import { NativePushBridge } from '@/features/pushNotifications/NativePushBridge';
 import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
@@ -47,9 +48,11 @@ void enableMocking().then(() => {
           <ErrorMonitoringContext />
           <NativePushBridge />
           <AppErrorBoundary>
-            <NotificationProvider>
-              <App />
-            </NotificationProvider>
+            <ChatUnreadProvider>
+              <NotificationProvider>
+                <App />
+              </NotificationProvider>
+            </ChatUnreadProvider>
           </AppErrorBoundary>
         </AuthSessionProvider>
       </BrowserRouter>
