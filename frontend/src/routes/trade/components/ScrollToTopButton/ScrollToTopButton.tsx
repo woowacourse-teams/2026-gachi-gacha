@@ -71,9 +71,15 @@ function ArrowUpIcon(props: React.SVGProps<SVGSVGElement>) {
 const FloatingButton = styled.button`
   ${floatingTradeActionSizeAndPosition};
 
+  --app-header-height: 78px;
+
   position: fixed;
   z-index: ${zIndex.header - 10};
-  top: calc(126px + env(safe-area-inset-top));
+  /* 헤더 아래 여백과 우측 여백은 같은 edge offset을 공유한다. */
+  top: calc(
+    var(--app-header-height) + var(--trade-floating-edge-offset) +
+      env(safe-area-inset-top)
+  );
   display: grid;
   padding: 0;
   place-items: center;
@@ -101,11 +107,11 @@ const FloatingButton = styled.button`
   }
 
   @media (max-width: 1180px) {
-    top: calc(88px + env(safe-area-inset-top));
+    --app-header-height: 64px;
   }
 
   @media (max-width: ${breakpoint.mobile}) {
-    top: max(16px, env(safe-area-inset-top));
+    top: max(var(--trade-floating-edge-offset), env(safe-area-inset-top));
   }
 
   @media (prefers-reduced-motion: reduce) {
