@@ -165,6 +165,8 @@ const ANDROID_WEB_SHELL_STYLES = `
 
 export const WEB_AUTH_REFRESH_TOKEN_MESSAGE =
   'gachigacha:auth-refresh-token';
+export const WEB_AUTH_SESSION_SYNCED_MESSAGE =
+  'gachigacha:auth-session-synced';
 export const WEB_NATIVE_BRIDGE_READY_MESSAGE =
   'gachigacha:native-bridge-ready';
 export const WEB_PUSH_TOKEN_REQUEST_MESSAGE =
@@ -179,6 +181,7 @@ export type WebShellNavigationDecision =
 
 export type WebShellMessage =
   | { token: string | null; type: 'auth-refresh-token' }
+  | { type: 'auth-session-synced' }
   | { type: 'native-bridge-ready' }
   | { type: 'push-token-request' };
 
@@ -279,6 +282,10 @@ export function parseWebShellMessage(value: string): WebShellMessage | null {
 
   if (message.type === WEB_NATIVE_BRIDGE_READY_MESSAGE) {
     return { type: 'native-bridge-ready' };
+  }
+
+  if (message.type === WEB_AUTH_SESSION_SYNCED_MESSAGE) {
+    return { type: 'auth-session-synced' };
   }
 
   if (message.type === WEB_PUSH_TOKEN_REQUEST_MESSAGE) {
@@ -750,7 +757,46 @@ export function createWebShellSessionSyncScript(
         ${createTokenStorageSyncScript(tokens)}
         if (sessionChanged) {
           window.location.reload();
+        } else {
+          window.ReactNativeWebView?.postMessage(JSON.stringify({
+            type: ${serializeForInlineScript(WEB_AUTH_SESSION_SYNCED_MESSAGE)},
+          }));
         }
+      } catch {}
+    })();
+    true;
+  `;
+}
+
+/**
+ * 네이티브 OAuth가 끝나면 현재 /login 문서를 다시 로드하지 않고, 토큰을 먼저
+ * 저장한 뒤 로그인 전에 보던 같은 origin 화면으로 교체한다.
+ */
+export function createWebShellAuthenticationCompletionScript(
+  appBaseUrl: string,
+  tokens: AuthTokens,
+  returnUrl: string,
+): string {
+  const appOrigin = normalizeOrigin(appBaseUrl);
+  let target = appOrigin;
+
+  try {
+    const candidate = new URL(returnUrl);
+    if (
+      candidate.protocol === 'https:' &&
+      candidate.origin === appOrigin &&
+      candidate.pathname !== '/login' &&
+      !candidate.pathname.startsWith('/api/v1/oauth/')
+    ) {
+      target = candidate.toString();
+    }
+  } catch {}
+
+  return `
+    (() => {
+      try {
+        ${createTokenStorageScript(tokens)}
+        window.location.replace(${serializeForInlineScript(target)});
       } catch {}
     })();
     true;
