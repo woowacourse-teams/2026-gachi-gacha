@@ -1,6 +1,7 @@
 import Constants from 'expo-constants';
 
 import type { MobileOAuthProvider } from '../domains/auth/authTypes';
+import { MOBILE_OAUTH_PROVIDER_SETTINGS } from './oauthProviderSettings';
 
 type OAuthExtra = {
   callbackBaseUrl?: unknown;
@@ -16,20 +17,6 @@ export type MobileOAuthProviderConfig = {
   clientId: string;
   provider: MobileOAuthProvider;
   scope: string;
-};
-
-const PROVIDER_SETTINGS: Record<
-  MobileOAuthProvider,
-  Pick<MobileOAuthProviderConfig, 'authorizationEndpoint' | 'scope'>
-> = {
-  kakao: {
-    authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
-    scope: 'openid,profile_nickname,profile_image',
-  },
-  naver: {
-    authorizationEndpoint: 'https://nid.naver.com/oauth2/authorize',
-    scope: 'openid',
-  },
 };
 
 function readNonBlankString(value: unknown): string {
@@ -53,7 +40,7 @@ export function getMobileOAuthProviderConfig(
   }
 
   return {
-    ...PROVIDER_SETTINGS[provider],
+    ...MOBILE_OAUTH_PROVIDER_SETTINGS[provider],
     callbackUrl: `${callbackBaseUrl}/${provider}`,
     clientId,
     provider,
