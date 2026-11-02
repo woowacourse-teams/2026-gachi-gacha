@@ -123,8 +123,52 @@ jobs:
         working-directory: android/android
         shell: bash
         run: |
+          set -euo pipefail
+
           AAB_PATH='app/build/outputs/bundle/release/app-release.aab'
-          jarsigner -verify -strict "$AAB_PATH"
+          KEYSTORE_PATH='app/gachigacha-upload.jks'
+
+          jarsigner -verify "$AAB_PATH"
+
+          EXPECTED_CERTIFICATE="$(
+            keytool \
+              -J-Duser.language=en \
+              -J-Duser.country=US \
+              -list \
+              -v \
+              -keystore "$KEYSTORE_PATH" \
+              -alias "$ANDROID_UPLOAD_KEY_ALIAS" \
+              -storepass "$ANDROID_UPLOAD_KEYSTORE_PASSWORD"
+          )"
+          ACTUAL_CERTIFICATE="$(
+            keytool \
+              -J-Duser.language=en \
+              -J-Duser.country=US \
+              -printcert \
+              -jarfile "$AAB_PATH"
+          )"
+          EXPECTED_SIGNER_SHA256="$(
+            printf '%s\n' "$EXPECTED_CERTIFICATE" |
+              awk '/SHA256:/ && !found { print $2; found = 1 }' |
+              tr -d ':' |
+              tr '[:lower:]' '[:upper:]'
+          )"
+          ACTUAL_SIGNER_SHA256="$(
+            printf '%s\n' "$ACTUAL_CERTIFICATE" |
+              awk '/SHA256:/ && !found { print $2; found = 1 }' |
+              tr -d ':' |
+              tr '[:lower:]' '[:upper:]'
+          )"
+
+          if [[ -z "$EXPECTED_SIGNER_SHA256" || -z "$ACTUAL_SIGNER_SHA256" ]]; then
+            echo 'Unable to read the expected or actual AAB signer SHA-256.' >&2
+            exit 1
+          fi
+          if [[ "$ACTUAL_SIGNER_SHA256" != "$EXPECTED_SIGNER_SHA256" ]]; then
+            echo 'AAB signer does not match the configured upload key.' >&2
+            exit 1
+          fi
+
           AAB_SHA256="$(sha256sum "$AAB_PATH" | cut -d ' ' -f 1)"
           {
             echo '### Google Play production AAB'
@@ -132,7 +176,8 @@ jobs:
             echo '- Package: `com.gachigacha.app`'
             echo "- Version: \`$APP_VERSION ($ANDROID_VERSION_CODE)\`"
             echo "- SHA-256: \`$AAB_SHA256\`"
-            echo '- Signing: upload key verified'
+            echo "- Upload signer SHA-256: \`$ACTUAL_SIGNER_SHA256\`"
+            echo '- Signing: integrity and upload key verified'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload production AAB
