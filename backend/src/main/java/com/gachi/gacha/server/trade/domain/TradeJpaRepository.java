@@ -57,4 +57,7 @@ public interface TradeJpaRepository extends JpaRepository<Trade, Long>, JpaSpeci
 
     @Query("SELECT t.id FROM Trade t")
     Slice<Long> findTradeIds(PageRequest id);
+
+    @Query("select t.id from Trade t where t.id > :lastId order by t.id")
+    List<Long> findIdsAfter(@Param("lastId") Long lastId, Pageable pageable);
 }
