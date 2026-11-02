@@ -91,7 +91,7 @@ public class TradeIndexReconciler {
         }
     }
 
-    private boolean syncAllSince(List<Long> ids, LocalDateTime since) {
+    private boolean syncAllSince(final List<Long> ids, final LocalDateTime since) {
         int synced = 0;
         int failedBatches = 0;
         for (int i = 0; i < ids.size(); i += BATCH_SIZE) {
