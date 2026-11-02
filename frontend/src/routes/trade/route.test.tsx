@@ -218,11 +218,11 @@ describe('교환 게시글 검색', () => {
     expect(
       screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
     ).toHaveValue('');
-    expect(screen.getByRole('combobox', { name: '교환 상태' })).toHaveValue(
-      'AVAILABLE',
-    );
-    expect(screen.getByRole('combobox', { name: '정렬' })).toHaveValue(
-      'oldest',
+    expect(
+      screen.getByRole('combobox', { name: '교환 상태' }),
+    ).toHaveTextContent('교환 가능');
+    expect(screen.getByRole('combobox', { name: '정렬' })).toHaveTextContent(
+      '오래된순',
     );
 
     await waitFor(() => expect(requestedUrls).toHaveLength(1));
@@ -255,14 +255,10 @@ describe('교환 게시글 검색', () => {
 
     await screen.findByRole('heading', { name: '쿠로미 피규어 교환해요' });
     await user.click(screen.getByRole('button', { name: '산리오' }));
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: '교환 상태' }),
-      'AVAILABLE',
-    );
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: '정렬' }),
-      'oldest',
-    );
+    await user.click(screen.getByRole('combobox', { name: '교환 상태' }));
+    await user.click(screen.getByRole('option', { name: '교환 가능' }));
+    await user.click(screen.getByRole('combobox', { name: '정렬' }));
+    await user.click(screen.getByRole('option', { name: '오래된순' }));
     await waitFor(() => {
       const currentSearchParams = new URLSearchParams(window.location.search);
 

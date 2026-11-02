@@ -1,6 +1,8 @@
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
+import { shadow } from '@/shared/styles/tokens';
+
 export const Popover = styled.section`
   position: absolute;
   z-index: 60;
@@ -11,7 +13,7 @@ export const Popover = styled.section`
   border: 1px solid var(--color-border, #e8e6e3);
   border-radius: 20px;
   background: var(--color-surface, #ffffff);
-  box-shadow: 0 20px 52px rgb(35 31 32 / 18%);
+  box-shadow: ${shadow.popover};
   color: var(--color-text, #242122);
 
   &::before {

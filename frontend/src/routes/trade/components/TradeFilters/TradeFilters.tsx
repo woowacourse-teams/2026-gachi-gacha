@@ -1,6 +1,8 @@
-import type { ChangeEvent } from 'react';
-
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import {
+  DropdownSelect,
+  type DropdownSelectOption,
+} from '@/shared/ui/DropdownSelect';
 
 import {
   CategoryButton,
@@ -8,9 +10,8 @@ import {
   CategoryScroller,
   FilterHeading,
   FilterPanel,
-  Select,
+  SelectField,
   SelectFilters,
-  SelectLabel,
   SelectLabelText,
 } from './TradeFilters.styles';
 import {
@@ -28,6 +29,20 @@ interface TradeFiltersProps {
   onChangeSortOrder: (sortOrder: TradeSortOrder) => void;
 }
 
+type StatusFilter = TradeStatus | 'ALL';
+
+const STATUS_OPTIONS: readonly DropdownSelectOption<StatusFilter>[] = [
+  { value: 'ALL', label: '전체' },
+  { value: 'AVAILABLE', label: '교환 가능' },
+  { value: 'IN_PROGRESS', label: '진행 중' },
+  { value: 'COMPLETED', label: '교환 완료' },
+];
+
+const SORT_OPTIONS: readonly DropdownSelectOption<TradeSortOrder>[] = [
+  { value: 'latest', label: '최신순' },
+  { value: 'oldest', label: '오래된순' },
+];
+
 export function TradeFilters({
   selectedQuickKeyword,
   status,
@@ -36,24 +51,6 @@ export function TradeFilters({
   onChangeStatus,
   onChangeSortOrder,
 }: TradeFiltersProps) {
-  function changeStatus(event: ChangeEvent<HTMLSelectElement>) {
-    const nextStatus = event.currentTarget.value;
-
-    onChangeStatus(
-      nextStatus === 'AVAILABLE' ||
-        nextStatus === 'IN_PROGRESS' ||
-        nextStatus === 'COMPLETED'
-        ? nextStatus
-        : null,
-    );
-  }
-
-  function changeSortOrder(event: ChangeEvent<HTMLSelectElement>) {
-    onChangeSortOrder(
-      event.currentTarget.value === 'oldest' ? 'oldest' : 'latest',
-    );
-  }
-
   return (
     <FilterPanel aria-label="거래 목록 필터">
       <CategoryFilter>
@@ -80,23 +77,28 @@ export function TradeFilters({
       </CategoryFilter>
 
       <SelectFilters>
-        <SelectLabel>
+        <SelectField>
           <SelectLabelText>교환 상태</SelectLabelText>
-          <Select value={status ?? 'ALL'} onChange={changeStatus}>
-            <option value="ALL">전체</option>
-            <option value="AVAILABLE">교환 가능</option>
-            <option value="IN_PROGRESS">진행 중</option>
-            <option value="COMPLETED">교환 완료</option>
-          </Select>
-        </SelectLabel>
+          <DropdownSelect
+            ariaLabel="교환 상태"
+            value={status ?? 'ALL'}
+            options={STATUS_OPTIONS}
+            onChange={(nextStatus) =>
+              onChangeStatus(nextStatus === 'ALL' ? null : nextStatus)
+            }
+          />
+        </SelectField>
 
-        <SelectLabel>
+        <SelectField>
           <SelectLabelText>정렬</SelectLabelText>
-          <Select value={sortOrder} onChange={changeSortOrder}>
-            <option value="latest">최신순</option>
-            <option value="oldest">오래된순</option>
-          </Select>
-        </SelectLabel>
+          <DropdownSelect
+            ariaLabel="정렬"
+            value={sortOrder}
+            options={SORT_OPTIONS}
+            align="end"
+            onChange={onChangeSortOrder}
+          />
+        </SelectField>
       </SelectFilters>
     </FilterPanel>
   );
