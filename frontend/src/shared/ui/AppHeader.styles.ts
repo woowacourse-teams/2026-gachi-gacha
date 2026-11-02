@@ -192,6 +192,7 @@ export const ActionLink = styled(Link, {
   $isActive: boolean;
   $isAccount?: boolean;
 }>`
+  position: relative;
   display: inline-flex;
   min-width: 42px;
   height: 42px;
@@ -280,7 +281,7 @@ export const ActionButton = styled('button', {
   }
 `;
 
-export const NotificationBadge = styled.span`
+export const ActionBadge = styled.span`
   position: absolute;
   top: -5px;
   right: -5px;
@@ -297,6 +298,14 @@ export const NotificationBadge = styled.span`
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+
+  @media (max-width: 520px) {
+    top: -4px;
+    right: -2px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+  }
 `;
 
 export const ActionIcon = styled.svg`
