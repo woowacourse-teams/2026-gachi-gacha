@@ -7,6 +7,7 @@ import {
   createWebShellAuthenticationCompletionScript,
   createWebShellApiCompatibilityScript,
   createWebShellBootstrapScript,
+  createWebShellChatListNavigationScript,
   createWebShellNavigationScript,
   createWebShellRuntimeScript,
   createWebShellSameOriginNavigationScript,
@@ -204,6 +205,24 @@ test('허용된 네이티브 브리지 메시지만 파싱한다', () => {
     ),
     { token: null, type: 'auth-refresh-token' },
   );
+  assert.deepEqual(
+    parseWebShellMessage(
+      JSON.stringify({
+        type: 'gachigacha:chat-room-state',
+        isOpen: true,
+      }),
+    ),
+    { isOpen: true, type: 'chat-room-state' },
+  );
+  assert.equal(
+    parseWebShellMessage(
+      JSON.stringify({
+        type: 'gachigacha:chat-room-state',
+        isOpen: 'true',
+      }),
+    ),
+    null,
+  );
   assert.equal(
     parseWebShellMessage(JSON.stringify({ type: 'run-native-command' })),
     null,
@@ -263,6 +282,13 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /gachigacha-android-dismiss-location-error/);
   assert.match(runtimeScript, /data-gachigacha-android-chat-main/);
   assert.match(runtimeScript, /data-gachigacha-android-chat-composer/);
+  assert.match(runtimeScript, /data-gachigacha-android-chat-messages/);
+  assert.match(runtimeScript, /data-gachigacha-android-chat-trade-action/);
+  assert.match(runtimeScript, /gachigacha:chat-room-state/);
+  assert.match(runtimeScript, /visualViewport/);
+  assert.match(runtimeScript, /scrollIntoView/);
+  assert.match(runtimeScript, /--gachigacha-android-map-header-top/);
+  assert.match(runtimeScript, /addEventListener\('scroll'/);
   assert.match(runtimeScript, /전체 대화/);
   assert.match(runtimeScript, /data-gachigacha-android-avatar-fallback/);
   assert.match(runtimeScript, /\/api\/v1\/oauth\/withdraw/);
@@ -292,6 +318,20 @@ test('푸시 딥링크는 교환글과 채팅방 숫자 경로만 허용한다',
   assert.match(chatScript, /"\/chat\/12"/);
   assert.throws(() => createWebShellNavigationScript('/login'));
   assert.throws(() => createWebShellNavigationScript('/trade/1?next=javascript:1'));
+});
+
+test('Android 뒤로가기는 열린 채팅방을 목록으로 먼저 닫는다', () => {
+  const script = createWebShellChatListNavigationScript();
+
+  assert.match(script, /data-gachigacha-android-chat-room/);
+  assert.match(script, /button\[aria-label="채팅 닫기"\]/);
+  assert.match(script, /closeButton\.click\(\)/);
+  assert.match(script, /new URL\('\/chat'/);
+  assert.match(WEB_APP_SHELL_SOURCE, /isChatRoomOpenRef\.current/);
+  assert.match(
+    WEB_APP_SHELL_SOURCE,
+    /createWebShellChatListNavigationScript\(\)/,
+  );
 });
 
 test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다시 로드한다', () => {

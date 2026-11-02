@@ -29,6 +29,7 @@ import {
   classifyWebShellNavigation,
   createWebShellAuthenticationCompletionScript,
   createWebShellBootstrapScript,
+  createWebShellChatListNavigationScript,
   createWebShellNavigationScript,
   createWebShellRuntimeScript,
   createWebShellSameOriginNavigationScript,
@@ -45,6 +46,7 @@ export function WebAppShellScreen() {
   const appBaseUrl = getWebAppBaseUrl();
   const webViewRef = useRef<WebView>(null);
   const canGoBackRef = useRef(false);
+  const isChatRoomOpenRef = useRef(false);
   const lastRootBackPressAt = useRef(0);
   const lastNonLoginUrlRef = useRef(appBaseUrl);
   const appStateRef = useRef(AppState.currentState);
@@ -156,6 +158,14 @@ export function WebAppShellScreen() {
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
+        if (isChatRoomOpenRef.current) {
+          isChatRoomOpenRef.current = false;
+          webViewRef.current?.injectJavaScript(
+            createWebShellChatListNavigationScript(),
+          );
+          return true;
+        }
+
         if (canGoBackRef.current) {
           webViewRef.current?.goBack();
           return true;
@@ -268,6 +278,11 @@ export function WebAppShellScreen() {
 
       if (message.type === 'native-bridge-ready') {
         void refreshNativeSession();
+        return;
+      }
+
+      if (message.type === 'chat-room-state') {
+        isChatRoomOpenRef.current = message.isOpen;
         return;
       }
 
@@ -392,6 +407,9 @@ export function WebAppShellScreen() {
 
           try {
             const candidate = new URL(url);
+            if (!candidate.pathname.startsWith('/chat')) {
+              isChatRoomOpenRef.current = false;
+            }
             if (
               candidate.origin === new URL(appBaseUrl).origin &&
               candidate.pathname !== '/login' &&
