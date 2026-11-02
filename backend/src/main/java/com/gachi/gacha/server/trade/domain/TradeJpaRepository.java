@@ -2,6 +2,7 @@ package com.gachi.gacha.server.trade.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.trade.domain.exception.TradeNotFoundException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.NonNull;
@@ -60,4 +61,7 @@ public interface TradeJpaRepository extends JpaRepository<Trade, Long>, JpaSpeci
 
     @Query("select t.id from Trade t where t.id > :lastId order by t.id")
     List<Long> findIdsAfter(@Param("lastId") Long lastId, Pageable pageable);
+
+    @Query("select t.id from Trade t where t.updatedAt >= :since order by t.id")
+    List<Long> findIdsModifiedAfter(@Param("since") LocalDateTime since);
 }

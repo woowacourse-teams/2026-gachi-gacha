@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.trade.application;
 
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -18,6 +19,15 @@ public class TradeReindexScheduler {
             reconciler.reconcile();
         } catch (Exception e) {
             log.error("trade 정합성 점검 실패", e);
+        }
+    }
+
+    @Scheduled(fixedDelay = 5 * 60 * 1000, initialDelay = 60 * 1000)
+    public void syncRecent() {
+        try {
+            reconciler.syncRecent(Duration.ofMinutes(15));
+        } catch (Exception e) {
+            log.error("trade 증분 동기화 실패", e);
         }
     }
 }
