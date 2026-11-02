@@ -60,8 +60,8 @@ public interface TradeJpaRepository extends JpaRepository<Trade, Long>, JpaSpeci
     Slice<Long> findTradeIds(PageRequest id);
 
     @Query("select t.id from Trade t where t.id > :lastId order by t.id")
-    List<Long> findIdsAfter(@Param("lastId") Long lastId, Pageable pageable);
+    List<Long> findIdsAfter(@Param("lastId") final Long lastId, final Pageable pageable);
 
     @Query("select t.id from Trade t where t.updatedAt >= :since order by t.id")
-    List<Long> findIdsModifiedAfter(@Param("since") LocalDateTime since);
+    List<Long> findIdsModifiedAfter(@Param("since") final LocalDateTime since);
 }
