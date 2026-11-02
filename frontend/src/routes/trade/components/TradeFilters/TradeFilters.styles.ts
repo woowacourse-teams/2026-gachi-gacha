@@ -58,14 +58,6 @@ export const CategoryScroller = styled.div`
   }
 `;
 
-export const CategoryMessage = styled.p`
-  min-height: 40px;
-  margin: 0;
-  color: ${color.textMuted};
-  font-size: ${fontSize.bodySmall};
-  line-height: 40px;
-`;
-
 export const CategoryButton = styled.button`
   min-height: 40px;
   padding: 0 ${space.md};

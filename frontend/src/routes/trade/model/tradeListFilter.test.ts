@@ -2,21 +2,20 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   getTradeSortParameter,
-  parseTradeCategoryId,
+  parseTradeQuickKeyword,
   parseTradeSortOrder,
   parseTradeStatus,
 } from './tradeListFilter';
 
 describe('거래 목록 필터 URL 값', () => {
   it.each([
-    ['12', 12],
-    ['0', null],
-    ['-1', null],
-    ['1.5', null],
-    ['산리오', null],
+    ['산리오', '산리오'],
+    ['치이카와', '치이카와'],
+    ['피규어', null],
+    ['', null],
     [null, null],
-  ])('카테고리 식별자 %p를 안전하게 해석한다', (value, expected) => {
-    expect(parseTradeCategoryId(value)).toBe(expected);
+  ])('빠른 검색어 %p를 안전하게 해석한다', (value, expected) => {
+    expect(parseTradeQuickKeyword(value)).toBe(expected);
   });
 
   it('지원하는 교환 상태만 사용한다', () => {
