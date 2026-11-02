@@ -62,8 +62,11 @@ elasticsearch:
   index:
     gacha: index
     trade: index
-  init:
-    enabled: false
+  schedule:
+    reconcile-cron: ${ELASTIC_TRADE_RECONCILE_CRON:0 0 9 * * *}
+    reconcile-zone: ${ELASTIC_TRADE_RECONCILE_ZONE:Asia/Seoul}
+    sync-fixed-delay: ${ELASTIC_TRADE_SYNC_FIXED_DELAY:PT5M}
+    sync-initial-delay: ${ELASTIC_TRADE_SYNC_INITIAL_DELAY:PT1M}
 
 firebase:
   push-enabled: false

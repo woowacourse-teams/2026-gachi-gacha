@@ -12,7 +12,7 @@ public class TradeReindexScheduler {
 
     private final TradeIndexReconciler reconciler;
 
-    @Scheduled(cron = "0 0 9 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "${elasticsearch.schedule.reconcile-cron}", zone = "${elasticsearch.schedule.reconcile-zone}")
     public void reconcile() {
         try {
             reconciler.reconcile();
@@ -21,7 +21,7 @@ public class TradeReindexScheduler {
         }
     }
 
-    @Scheduled(fixedDelay = 5 * 60 * 1000, initialDelay = 60 * 1000)
+    @Scheduled(fixedDelayString = "${elasticsearch.schedule.sync-fixed-delay}", initialDelayString = "${elasticsearch.schedule.sync-initial-delay}")
     public void syncRecent() {
         try {
             reconciler.syncRecent();
