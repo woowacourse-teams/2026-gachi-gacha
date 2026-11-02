@@ -31,6 +31,23 @@ const refreshToken = 'test-refresh-token';
 describe('앱의 P0 인증과 라우팅 흐름', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    server.use(
+      http.get('/api/v1/categories', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            items: [
+              { categoryId: 1, name: '산리오' },
+              { categoryId: 2, name: '치이카와' },
+              { categoryId: 3, name: '포켓몬' },
+              { categoryId: 4, name: '짱구' },
+              { categoryId: 5, name: '디즈니' },
+            ],
+          },
+        }),
+      ),
+    );
   });
 
   it('비로그인 사용자도 업데이트 소식을 확인할 수 있다', async () => {

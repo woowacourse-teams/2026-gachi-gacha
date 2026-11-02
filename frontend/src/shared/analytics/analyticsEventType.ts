@@ -144,6 +144,10 @@ export interface AnalyticsEventPropertiesMap {
   trade_search_submitted: {
     query_length: number;
   };
+  trade_filter_selected: {
+    filter: 'category' | 'status' | 'sort';
+    value: string;
+  };
   trade_list_load_completed: {
     query_applied: boolean;
     outcome: AnalyticsOutcome;

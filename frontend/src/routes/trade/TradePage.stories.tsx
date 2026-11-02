@@ -9,6 +9,17 @@ const meta: Meta<typeof TradePage> = {
   component: TradePage,
   args: {
     items: TRADE_ITEMS,
+    categories: [
+      { categoryId: 1, name: '산리오' },
+      { categoryId: 6, name: '치이카와' },
+      { categoryId: 5, name: '포켓몬' },
+      { categoryId: 7, name: '짱구' },
+      { categoryId: 8, name: '디즈니' },
+    ],
+    categoryStatus: 'success',
+    selectedCategoryId: null,
+    statusFilter: null,
+    sortOrder: 'latest',
   },
   parameters: {
     layout: 'fullscreen',
