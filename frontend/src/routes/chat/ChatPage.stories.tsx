@@ -38,6 +38,30 @@ export const Selected: Story = {
   },
 };
 
+export const MobileSelected: Story = {
+  ...Selected,
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
+
+export const MobileLongHeader: Story = {
+  args: {
+    selectedRoom: {
+      ...SELECTED_CHAT_ROOM,
+      partnerName: '아주긴닉네임의가챠수집가',
+      itemTitle: '쿠로미와 마이멜로디 한정판 미니 피규어 세트 교환',
+    },
+  },
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
+
 export const SelectedSplit: Story = {
   args: {
     selectedRoom: SELECTED_CHAT_ROOM,
