@@ -6,6 +6,7 @@ import {
   createWebShellBootstrapScript,
   createWebShellNavigationScript,
   createWebShellRuntimeScript,
+  createWebShellSameOriginNavigationScript,
   createWebShellSessionSyncScript,
   isTrustedWebShellMessageSource,
   parseWebShellMessage,
@@ -51,6 +52,12 @@ test('같은 HTTPS origin의 모든 웹 화면을 WebView 안에서 연다', () 
     isTrustedWebShellMessageSource(APP_BASE_URL, `${APP_BASE_URL}/mypage`),
     true,
   );
+  for (const path of ['/privacy', '/updates', '/account-deletion']) {
+    assert.deepEqual(
+      classifyWebShellNavigation(APP_BASE_URL, `${APP_BASE_URL}${path}`),
+      { type: 'allow' },
+    );
+  }
 });
 
 test('카카오·네이버 로그인만 네이티브 OAuth로 전달하고 Apple은 막는다', () => {
@@ -69,10 +76,17 @@ test('카카오·네이버 로그인만 네이티브 OAuth로 전달하고 Apple
 });
 
 test('외부 HTTPS 링크는 브라우저로 보내고 위장 origin과 위험 scheme은 거부한다', () => {
-  assert.deepEqual(
-    classifyWebShellNavigation(APP_BASE_URL, 'https://brand.naver.com/item/1'),
-    { type: 'external' },
-  );
+  for (const url of [
+    'https://brand.naver.com/item/1',
+    'https://www.instagram.com/gachi__.gacha/',
+    'https://privacy.kisa.or.kr',
+    'tel:0212345678',
+    'mailto:help@gachigacha.kr',
+  ]) {
+    assert.deepEqual(classifyWebShellNavigation(APP_BASE_URL, url), {
+      type: 'external',
+    });
+  }
   assert.deepEqual(
     classifyWebShellNavigation(
       APP_BASE_URL,
@@ -84,12 +98,50 @@ test('외부 HTTPS 링크는 브라우저로 보내고 위장 origin과 위험 s
     classifyWebShellNavigation(APP_BASE_URL, 'javascript:alert(1)'),
     { type: 'block' },
   );
+  assert.deepEqual(
+    classifyWebShellNavigation(APP_BASE_URL, 'intent://trade/1'),
+    { type: 'block' },
+  );
+  assert.deepEqual(
+    classifyWebShellNavigation(APP_BASE_URL, 'file:///data/local/private'),
+    { type: 'block' },
+  );
   assert.equal(
     isTrustedWebShellMessageSource(
       APP_BASE_URL,
       'https://dev.gachigacha.kro.kr.attacker.example/trade',
     ),
     false,
+  );
+});
+
+test('새 창의 같은 origin 문서만 현재 WebView 이동 스크립트를 만든다', () => {
+  const privacyUrl = `${APP_BASE_URL}/privacy?source=mypage#collection`;
+  const script = createWebShellSameOriginNavigationScript(
+    APP_BASE_URL,
+    privacyUrl,
+  );
+
+  assert.match(script, /window\.location\.assign/);
+  assert.match(script, /\/privacy\?source=mypage#collection/);
+  assert.doesNotThrow(() => new Function('window', script));
+  assert.throws(() =>
+    createWebShellSameOriginNavigationScript(
+      APP_BASE_URL,
+      'https://dev.gachigacha.kro.kr.attacker.example/privacy',
+    ),
+  );
+  assert.throws(() =>
+    createWebShellSameOriginNavigationScript(
+      APP_BASE_URL,
+      'https://www.instagram.com/gachi__.gacha/',
+    ),
+  );
+  assert.throws(() =>
+    createWebShellSameOriginNavigationScript(
+      APP_BASE_URL,
+      'javascript:alert(1)',
+    ),
   );
 });
 

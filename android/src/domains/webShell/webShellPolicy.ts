@@ -737,3 +737,26 @@ export function createWebShellNavigationScript(path: string): string {
     true;
   `;
 }
+
+export function createWebShellSameOriginNavigationScript(
+  appBaseUrl: string,
+  value: string,
+): string {
+  const appOrigin = normalizeOrigin(appBaseUrl);
+  let target: URL;
+
+  try {
+    target = new URL(value);
+  } catch {
+    throw new Error('새 창 이동 주소가 올바르지 않습니다.');
+  }
+
+  if (target.protocol !== 'https:' || target.origin !== appOrigin) {
+    throw new Error('새 창 이동 주소가 GachiGacha origin이 아닙니다.');
+  }
+
+  return `
+    window.location.assign(${serializeForInlineScript(target.toString())});
+    true;
+  `;
+}
