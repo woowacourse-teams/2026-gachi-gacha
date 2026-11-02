@@ -80,113 +80,6 @@ const ANDROID_WEB_SHELL_STYLES = `
       pointer-events: none !important;
     }
 
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-main] {
-      box-sizing: border-box !important;
-      width: calc(100% - 24px) !important;
-      max-width: calc(100% - 24px) !important;
-      height: var(--gachigacha-android-chat-height, auto) !important;
-      min-width: 0 !important;
-      min-height: 0 !important;
-      max-height: var(--gachigacha-android-chat-height, none) !important;
-      margin: 12px auto !important;
-      overflow: hidden !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-main] > aside,
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-main] > section,
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] {
-      box-sizing: border-box !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-      min-height: 0 !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-list] {
-      height: 100% !important;
-      overflow-x: hidden !important;
-      overflow-y: auto !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-list] button {
-      box-sizing: border-box !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] * {
-      box-sizing: border-box !important;
-      min-width: 0;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] {
-      height: 100% !important;
-      overflow: hidden !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-messages] {
-      min-height: 0 !important;
-      overflow-x: hidden !important;
-      overflow-y: auto !important;
-      overscroll-behavior-y: contain !important;
-      touch-action: pan-y !important;
-      -webkit-overflow-scrolling: touch !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-product-summary] {
-      grid-template-columns: 52px minmax(0, 1fr) auto !important;
-      align-items: center !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-trade-action] {
-      grid-column: 3 !important;
-      grid-row: 1 !important;
-      max-width: 116px !important;
-      align-self: center !important;
-      justify-items: end !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-drawer] {
-      top: 12px !important;
-      right: 12px !important;
-      bottom: 12px !important;
-      left: 12px !important;
-      box-sizing: border-box !important;
-      width: auto !important;
-      max-width: none !important;
-      height: auto !important;
-      overflow: hidden !important;
-      border-radius: 20px !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer-area] {
-      box-sizing: border-box !important;
-      width: 100% !important;
-      padding: 12px !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] {
-      box-sizing: border-box !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      min-width: 0 !important;
-      padding-right: 6px !important;
-      padding-left: 10px !important;
-      gap: 8px !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] input[aria-label="메시지"] {
-      width: 0 !important;
-      min-width: 0 !important;
-      flex: 1 1 auto !important;
-    }
-
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] button[type="submit"] {
-      max-width: 92px !important;
-      flex: 0 0 auto !important;
-      white-space: nowrap !important;
-    }
   }
 `;
 
@@ -581,11 +474,6 @@ function createWebShellRuntimeBody(): string {
         .forEach((image) => watchProfileImage(image));
     };
 
-    const findHeadingByText = (text) =>
-      Array.from(document.querySelectorAll('h1, h2')).find(
-        (heading) => heading.textContent?.trim() === text,
-      );
-
     const postChatRoomState = (isOpen) => {
       if (window.__gachigachaAndroidChatRoomOpen === isOpen) return;
       window.__gachigachaAndroidChatRoomOpen = isOpen;
@@ -595,77 +483,10 @@ function createWebShellRuntimeBody(): string {
       }));
     };
 
-    const markChatPresentation = () => {
+    const markChatRoomState = () => {
       if (!window.location.pathname.startsWith('/chat')) {
         postChatRoomState(false);
         return;
-      }
-
-      const conversationHeading = findHeadingByText('전체 대화');
-      const conversationList = conversationHeading?.closest('aside');
-      const chatMain = conversationList?.parentElement;
-
-      if (conversationList) {
-        conversationList.setAttribute(
-          'data-gachigacha-android-chat-list',
-          '',
-        );
-        conversationList.querySelectorAll('button').forEach((button) => {
-          const avatar = button.firstElementChild;
-          if (!avatar) return;
-
-          const image = avatar.querySelector('img');
-          if (image) {
-            watchProfileImage(image, avatar);
-          } else {
-            avatar.setAttribute(
-              'data-gachigacha-android-avatar-fallback',
-              '',
-            );
-          }
-        });
-      }
-
-      if (chatMain?.tagName === 'MAIN') {
-        chatMain.setAttribute('data-gachigacha-android-chat-main', '');
-        const visualViewport = window.visualViewport;
-        const viewportTop = visualViewport?.offsetTop || 0;
-        const viewportHeight = visualViewport?.height || window.innerHeight;
-        const chatTop = Math.max(
-          chatMain.getBoundingClientRect().top - viewportTop,
-          0,
-        );
-        const availableHeight = Math.floor(viewportHeight - chatTop - 12);
-        if (availableHeight >= 240) {
-          chatMain.style.setProperty(
-            '--gachigacha-android-chat-height',
-            availableHeight + 'px',
-          );
-        }
-
-        const messageInput = document.querySelector(
-          'input[aria-label="메시지"]',
-        );
-        const viewportBaseline = Math.max(
-          window.__gachigachaAndroidChatViewportBaseline || 0,
-          viewportHeight,
-        );
-        if (document.activeElement !== messageInput) {
-          window.__gachigachaAndroidChatViewportBaseline = viewportBaseline;
-        }
-        const isKeyboardVisible =
-          document.activeElement === messageInput &&
-          viewportHeight < viewportBaseline - 80;
-        const roundedViewportHeight = Math.round(viewportHeight);
-        if (
-          isKeyboardVisible &&
-          window.__gachigachaAndroidChatKeyboardHeight !== roundedViewportHeight
-        ) {
-          window.__gachigachaAndroidChatKeyboardHeight = roundedViewportHeight;
-          chatMain.scrollIntoView({ block: 'start' });
-        } else if (!isKeyboardVisible) {
-          window.__gachigachaAndroidChatKeyboardHeight = null;
-        }
       }
 
       const composer = document.querySelector(
@@ -674,42 +495,6 @@ function createWebShellRuntimeBody(): string {
       const chatRoom = composer?.closest('section');
       if (chatRoom) {
         chatRoom.setAttribute('data-gachigacha-android-chat-room', '');
-        const chatSurface = chatRoom.parentElement;
-        if (chatSurface?.tagName === 'ASIDE' && chatSurface !== conversationList) {
-          chatSurface.setAttribute(
-            'data-gachigacha-android-chat-drawer',
-            '',
-          );
-        }
-      }
-      if (composer) {
-        composer.setAttribute('data-gachigacha-android-chat-composer', '');
-        const composerArea = composer.parentElement;
-        composerArea?.setAttribute(
-          'data-gachigacha-android-chat-composer-area',
-          '',
-        );
-        const messages = composerArea?.previousElementSibling;
-        messages?.setAttribute(
-          'data-gachigacha-android-chat-messages',
-          '',
-        );
-        const productSummary = messages?.previousElementSibling;
-        productSummary?.setAttribute(
-          'data-gachigacha-android-chat-product-summary',
-          '',
-        );
-        const tradeActionButton = Array.from(
-          chatRoom?.querySelectorAll('button') || [],
-        ).find((button) =>
-          ['예약 확정', '거래 완료', '변경 중...'].includes(
-            button.textContent?.trim() || '',
-          ),
-        );
-        tradeActionButton?.parentElement?.setAttribute(
-          'data-gachigacha-android-chat-trade-action',
-          '',
-        );
       }
 
       postChatRoomState(Boolean(chatRoom && composer));
@@ -815,7 +600,7 @@ function createWebShellRuntimeBody(): string {
       installAndroidStyle();
       markAppleLogin();
       markProfileImages();
-      markChatPresentation();
+      markChatRoomState();
       markMapOverlays();
     };
 
