@@ -3,11 +3,11 @@ import { isApiResponse } from '@/shared/api/isApiResponse';
 import { AuthApiError } from './AuthApiError';
 import { authenticatedFetch } from './authenticatedFetch';
 
-const ACCOUNT_WITHDRAW_API_PATH = '/api/v1/oauth/withdraw';
+const CURRENT_MEMBER_API_PATH = '/api/v1/members/me';
 const JSON_CONTENT_TYPE = 'application/json';
 
 export async function deleteCurrentMember(): Promise<void> {
-  const response = await authenticatedFetch(ACCOUNT_WITHDRAW_API_PATH, {
+  const response = await authenticatedFetch(CURRENT_MEMBER_API_PATH, {
     method: 'DELETE',
   });
   const contentType = response.headers.get('content-type');

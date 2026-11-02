@@ -89,7 +89,7 @@ describe('외부 회원 탈퇴 페이지', () => {
     ).toHaveAttribute('href', '/api/v1/oauth/apple');
   });
 
-  it('로그인 사용자가 확인 문구를 입력하면 OAuth 회원 탈퇴 API로 계정을 삭제한다', async () => {
+  it('로그인 사용자가 확인 문구를 입력하면 현재 회원 API로 계정을 삭제한다', async () => {
     const user = userEvent.setup();
     let requestedAuthorization: string | null = null;
 
@@ -100,7 +100,7 @@ describe('외부 회원 탈퇴 페이지', () => {
 
     server.use(
       http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
-      http.delete('/api/v1/oauth/withdraw', ({ request }) => {
+      http.delete('/api/v1/members/me', ({ request }) => {
         requestedAuthorization = request.headers.get('Authorization');
 
         return HttpResponse.json({
@@ -151,7 +151,7 @@ describe('외부 회원 탈퇴 페이지', () => {
 
     server.use(
       http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
-      http.delete('/api/v1/oauth/withdraw', () =>
+      http.delete('/api/v1/members/me', () =>
         HttpResponse.json(
           {
             code: 'S001',
@@ -195,7 +195,7 @@ describe('외부 회원 탈퇴 페이지', () => {
 
     server.use(
       http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
-      http.delete('/api/v1/oauth/withdraw', () =>
+      http.delete('/api/v1/members/me', () =>
         HttpResponse.json(
           {
             code: 'AUE03',
@@ -204,7 +204,7 @@ describe('외부 회원 탈퇴 페이지', () => {
           { status: 400 },
         ),
       ),
-      http.get('/api/v1/oauth/withdraw-url', () =>
+      http.get('/api/v1/oauth/withdraw/apple/url', () =>
         HttpResponse.json({
           code: 'C000',
           message: '정상',
