@@ -3,7 +3,8 @@ import { isApiResponse } from '@/shared/api/isApiResponse';
 import { AuthApiError } from './AuthApiError';
 import { authenticatedFetch } from './authenticatedFetch';
 
-const ACCOUNT_DELETION_REAUTHENTICATION_API_PATH = '/api/v1/oauth/withdraw-url';
+const ACCOUNT_DELETION_REAUTHENTICATION_API_PATH =
+  '/api/v1/oauth/withdraw/apple/url';
 const JSON_CONTENT_TYPE = 'application/json';
 const APPLE_AUTHORIZATION_HOST = 'appleid.apple.com';
 
