@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
   classifyWebShellNavigation,
+  createWebShellAuthenticationCompletionScript,
   createWebShellApiCompatibilityScript,
   createWebShellBootstrapScript,
   createWebShellNavigationScript,
@@ -19,10 +20,16 @@ function runSessionSyncScript(script, initialEntries) {
   const entries = new Map(Object.entries(initialEntries));
   const operations = [];
   let reloadCount = 0;
+  const messages = [];
   const window = {
     location: {
       reload() {
         reloadCount += 1;
+      },
+    },
+    ReactNativeWebView: {
+      postMessage(message) {
+        messages.push(JSON.parse(message));
       },
     },
     sessionStorage: {
@@ -41,7 +48,7 @@ function runSessionSyncScript(script, initialEntries) {
   };
 
   new Function('window', script)(window);
-  return { entries, operations, reloadCount };
+  return { entries, messages, operations, reloadCount };
 }
 
 function runApiCompatibilityScript(requestUrl, method) {
@@ -170,6 +177,12 @@ test('새 창의 같은 origin 문서만 현재 WebView 이동 스크립트를 �
 test('허용된 네이티브 브리지 메시지만 파싱한다', () => {
   assert.deepEqual(
     parseWebShellMessage(
+      JSON.stringify({ type: 'gachigacha:auth-session-synced' }),
+    ),
+    { type: 'auth-session-synced' },
+  );
+  assert.deepEqual(
+    parseWebShellMessage(
       JSON.stringify({
         type: 'gachigacha:auth-refresh-token',
         token: ' rotated-refresh ',
@@ -257,6 +270,7 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
   assert.match(syncScript, /sessionChanged/);
   assert.match(syncScript, /window\.location\.reload/);
+  assert.match(syncScript, /gachigacha:auth-session-synced/);
   assert.match(guestSyncScript, /removeItem/);
   assert.doesNotMatch(syncScript, /<\/script>/);
   assert.doesNotThrow(() => new Function(bootstrapScript));
@@ -290,6 +304,9 @@ test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다�
 
   assert.equal(matching.reloadCount, 0);
   assert.deepEqual(matching.operations, []);
+  assert.deepEqual(matching.messages, [
+    { type: 'gachigacha:auth-session-synced' },
+  ]);
 
   const stale = runSessionSyncScript(createWebShellSessionSyncScript(tokens), {
     'gachi-gacha:access-token': 'stale-access',
@@ -297,6 +314,7 @@ test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다�
   });
 
   assert.equal(stale.reloadCount, 1);
+  assert.deepEqual(stale.messages, []);
   assert.equal(
     stale.entries.get('gachi-gacha:refresh-token'),
     tokens.refreshToken,
@@ -309,4 +327,66 @@ test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다�
 
   assert.equal(guest.reloadCount, 1);
   assert.equal(guest.entries.size, 0);
+  assert.deepEqual(guest.messages, []);
+});
+
+test('OAuth 완료 스크립트는 로그인 전 같은 origin 화면으로 토큰 주입 후 복귀한다', () => {
+  const tokens = {
+    accessToken: 'new-access',
+    refreshToken: 'new-refresh',
+  };
+  const script = createWebShellAuthenticationCompletionScript(
+    APP_BASE_URL,
+    tokens,
+    `${APP_BASE_URL}/trade/37?from=login`,
+  );
+  const entries = new Map();
+  let replacedUrl = null;
+  const window = {
+    location: {
+      replace(url) {
+        replacedUrl = url;
+      },
+    },
+    sessionStorage: {
+      setItem(key, value) {
+        entries.set(key, value);
+      },
+    },
+  };
+
+  new Function('window', script)(window);
+
+  assert.equal(entries.get('gachi-gacha:access-token'), tokens.accessToken);
+  assert.equal(entries.get('gachi-gacha:refresh-token'), tokens.refreshToken);
+  assert.equal(replacedUrl, `${APP_BASE_URL}/trade/37?from=login`);
+});
+
+test('OAuth 완료 복귀 주소가 로그인·외부 주소이면 서비스 홈으로 제한한다', () => {
+  const tokens = { accessToken: 'access', refreshToken: 'refresh' };
+
+  for (const returnUrl of [
+    `${APP_BASE_URL}/login`,
+    `${APP_BASE_URL}/api/v1/oauth/naver`,
+    'https://attacker.example/after-login',
+    'javascript:alert(1)',
+  ]) {
+    const script = createWebShellAuthenticationCompletionScript(
+      APP_BASE_URL,
+      tokens,
+      returnUrl,
+    );
+    let replacedUrl = null;
+    const window = {
+      location: {
+        replace(url) {
+          replacedUrl = url;
+        },
+      },
+      sessionStorage: { setItem() {} },
+    };
+
+    new Function('window', script)(window);
+    assert.equal(replacedUrl, APP_BASE_URL);
+  }
 });
