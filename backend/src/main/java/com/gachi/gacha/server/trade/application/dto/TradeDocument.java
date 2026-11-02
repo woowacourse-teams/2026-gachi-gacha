@@ -17,6 +17,7 @@ public record TradeDocument(
         List<Long> categoryIds,
         List<String> categories,
         String thumbnailUrl,
+        String description,
         LocalDateTime createdAt
 ) {
     public static TradeDocument of(final Trade trade, final String thumbnailUrl) {
@@ -39,6 +40,7 @@ public record TradeDocument(
                 .thumbnailUrl(thumbnailUrl)
                 .categoryIds(categoryIds)
                 .categories(categories)
+                .description(trade.getDescription())
                 .createdAt(trade.getCreatedAt())
                 .build();
     }
