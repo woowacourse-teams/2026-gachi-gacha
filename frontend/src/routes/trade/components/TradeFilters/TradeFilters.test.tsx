@@ -28,14 +28,10 @@ describe('거래 목록 필터', () => {
     );
 
     await user.click(screen.getByRole('button', { name: '치이카와' }));
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: '교환 상태' }),
-      'IN_PROGRESS',
-    );
-    await user.selectOptions(
-      screen.getByRole('combobox', { name: '정렬' }),
-      'oldest',
-    );
+    await user.click(screen.getByRole('combobox', { name: '교환 상태' }));
+    await user.click(screen.getByRole('option', { name: '진행 중' }));
+    await user.click(screen.getByRole('combobox', { name: '정렬' }));
+    await user.click(screen.getByRole('option', { name: '오래된순' }));
 
     expect(onSelectQuickKeyword).toHaveBeenCalledWith('치이카와');
     expect(onChangeStatus).toHaveBeenCalledWith('IN_PROGRESS');

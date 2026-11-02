@@ -102,7 +102,7 @@ export const SelectFilters = styled.div`
   }
 `;
 
-export const SelectLabel = styled.label`
+export const SelectField = styled.div`
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -113,24 +113,4 @@ export const SelectLabelText = styled.span`
   color: ${color.textMuted};
   font-size: ${fontSize.label};
   font-weight: ${fontWeight.bold};
-`;
-
-export const Select = styled.select`
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 44px;
-  padding: 0 ${space.sm};
-  border: 1px solid ${color.border};
-  border-radius: ${radius.control};
-  background: ${color.surface};
-  color: ${color.text};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.medium};
-  cursor: pointer;
-
-  &:focus-visible {
-    outline: none;
-    border-color: ${color.primary};
-    box-shadow: ${focusRing};
-  }
 `;
