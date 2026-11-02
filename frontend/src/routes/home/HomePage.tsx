@@ -3,7 +3,6 @@ import styled from '@emotion/styled';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import CategoryFeed from './components/CategoryFeed';
-import Footer from './components/Footer';
 import SearchHero from './components/SearchHero';
 
 export default function HomePage() {
@@ -15,8 +14,6 @@ export default function HomePage() {
         <SearchHero />
         <CategoryFeed />
       </Main>
-
-      <Footer />
     </Page>
   );
 }
