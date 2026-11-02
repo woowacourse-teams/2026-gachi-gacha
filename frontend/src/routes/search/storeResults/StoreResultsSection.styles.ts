@@ -14,8 +14,8 @@ export const Section = styled.section`
 
   @media (max-width: 767px) {
     position: relative;
-    height: 100dvh;
-    min-height: 100dvh;
+    height: 100%;
+    min-height: 0;
     flex: none;
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
@@ -30,12 +30,20 @@ export const ListHeaderArea = styled.div`
 
   @media (max-width: 767px) {
     position: absolute;
-    top: max(12px, env(safe-area-inset-top));
+    top: calc(
+      var(--mobile-map-header-offset, 120px) +
+        max(12px, env(safe-area-inset-top))
+    );
     right: 12px;
     left: 12px;
     z-index: 3;
     padding: 0;
     grid-area: auto;
+    transition: top 240ms ease;
+  }
+
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

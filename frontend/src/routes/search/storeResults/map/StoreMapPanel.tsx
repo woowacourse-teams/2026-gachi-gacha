@@ -18,7 +18,6 @@ export interface StoreMapPanelProps {
   selectedStoreId: number | null;
   isSearchAreaChanged: boolean;
   onBackgroundClick: () => void;
-  onMapDragEnd: () => void;
   onSelectStore: (storeId: number) => void;
   onViewportCenterChange: (center: MapCoordinate) => void;
   onSearchArea: () => void;
@@ -72,7 +71,6 @@ export function StoreMapPanel({
   selectedStoreId,
   isSearchAreaChanged,
   onBackgroundClick,
-  onMapDragEnd,
   onSelectStore,
   onViewportCenterChange,
   onSearchArea,
@@ -124,7 +122,6 @@ export function StoreMapPanel({
           isGachaSelected ? '검색된 가챠 보유 매장 지도' : '홍대 가챠 매장 지도'
         }
         onBackgroundClick={handleBackgroundClick}
-        onDragEnd={onMapDragEnd}
         onMapReady={setMap}
         onViewportCenterChange={onViewportCenterChange}
       />
