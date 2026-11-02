@@ -31,10 +31,14 @@ describe('DropdownSelect', () => {
     await user.click(trigger);
 
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('option', { name: '최신순' })).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
+    expect(screen.getByRole('listbox', { name: '정렬 선택지' })).toHaveStyle({
+      width: '100%',
+      padding: '6px',
+    });
+    const selectedOption = screen.getByRole('option', { name: '최신순' });
+
+    expect(selectedOption).toHaveAttribute('aria-selected', 'true');
+    expect(selectedOption).toHaveStyle({ padding: '0px 6px' });
 
     await user.click(screen.getByRole('option', { name: '오래된순' }));
 

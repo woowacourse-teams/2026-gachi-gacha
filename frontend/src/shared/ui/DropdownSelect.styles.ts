@@ -91,14 +91,13 @@ export const Chevron = styled.span`
   }
 `;
 
-export const Options = styled.ul<{ $align: 'start' | 'end' }>`
+export const Options = styled.ul`
   position: absolute;
   z-index: 30;
   top: calc(100% + ${space.xs});
-  ${({ $align }) => ($align === 'end' ? 'right: 0;' : 'left: 0;')}
+  left: 0;
   box-sizing: border-box;
-  width: max(100%, 176px);
-  max-width: calc(100vw - ${space.xxl});
+  width: 100%;
   margin: 0;
   padding: 6px;
   border: 1px solid ${color.border};
@@ -111,7 +110,7 @@ export const Options = styled.ul<{ $align: 'start' | 'end' }>`
 export const Option = styled.li`
   display: flex;
   min-height: 40px;
-  padding: 0 10px;
+  padding: 0 6px;
   align-items: center;
   justify-content: space-between;
   gap: ${space.sm};
@@ -123,6 +122,13 @@ export const Option = styled.li`
   transition:
     background-color ${motion.fast} ease,
     color ${motion.fast} ease;
+
+  & > span:first-of-type {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   &[data-active='true'] {
     background: ${color.surfaceMuted};

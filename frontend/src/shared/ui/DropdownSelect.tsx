@@ -21,7 +21,6 @@ interface DropdownSelectProps<Value extends string> {
   value: Value;
   options: readonly DropdownSelectOption<Value>[];
   onChange: (value: Value) => void;
-  align?: 'start' | 'end';
 }
 
 export function DropdownSelect<Value extends string>({
@@ -29,7 +28,6 @@ export function DropdownSelect<Value extends string>({
   value,
   options,
   onChange,
-  align = 'start',
 }: DropdownSelectProps<Value>) {
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -178,7 +176,6 @@ export function DropdownSelect<Value extends string>({
           id={listboxId}
           role="listbox"
           aria-label={`${ariaLabel} 선택지`}
-          $align={align}
           onMouseDown={(event) => event.preventDefault()}
         >
           {options.map((option, index) => {
