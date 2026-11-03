@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import type {
   HeaderNotification,
@@ -50,15 +51,32 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     useState<HeaderNotificationState>(IDLE_NOTIFICATION_STATE);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const refreshUnreadCount = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setUnreadCount(await getUnreadNotificationCount(signal));
-    } catch (error) {
-      if (!isAbortError(error)) {
-        setUnreadCount(0);
+  const refreshUnreadCount = useCallback(
+    async (signal?: AbortSignal, captureInitialLoad = false) => {
+      try {
+        setUnreadCount(await getUnreadNotificationCount(signal));
+
+        if (captureInitialLoad) {
+          captureAnalyticsEvent('unread_count_initial_load_completed', {
+            channel: 'notification',
+            outcome: 'success',
+          });
+        }
+      } catch (error) {
+        if (!isAbortError(error)) {
+          setUnreadCount(0);
+
+          if (captureInitialLoad) {
+            captureAnalyticsEvent('unread_count_initial_load_completed', {
+              channel: 'notification',
+              outcome: 'failure',
+            });
+          }
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (status !== 'authenticated') {
@@ -68,7 +86,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
 
     const controller = new AbortController();
-    void refreshUnreadCount(controller.signal);
+    void refreshUnreadCount(controller.signal, true);
 
     return () => {
       controller.abort();

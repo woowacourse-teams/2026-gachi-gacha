@@ -37,6 +37,10 @@ interface StoreResultsContext extends StoreSearchContext {
 }
 
 export interface AnalyticsEventPropertiesMap {
+  unread_count_initial_load_completed: {
+    channel: 'notification' | 'chat';
+    outcome: AnalyticsOutcome;
+  };
   notification_popover_opened: {
     unread_count: number;
   };
@@ -141,6 +145,9 @@ export interface AnalyticsEventPropertiesMap {
     gacha_id: number | null;
     search_radius_meters: number;
   };
+  map_mobile_header_toggled: {
+    next_state: 'open' | 'closed';
+  };
   trade_search_submitted: {
     query_length: number;
   };
@@ -193,6 +200,7 @@ export interface AnalyticsEventPropertiesMap {
     loaded_item_count: number;
     source: 'trade_list' | 'related_list';
   };
+  trade_scroll_to_top_selected: Record<string, never>;
   mypage_trade_filter_selected: {
     status: 'ALL' | 'AVAILABLE' | 'IN_PROGRESS' | 'COMPLETED';
   };
@@ -388,6 +396,9 @@ export interface AnalyticsEventPropertiesMap {
   };
   account_deletion_completed: {
     outcome: AnalyticsOutcome;
+  };
+  footer_contact_selected: {
+    target: 'partnership' | 'support';
   };
   event_application_started: {
     source: 'mypage';

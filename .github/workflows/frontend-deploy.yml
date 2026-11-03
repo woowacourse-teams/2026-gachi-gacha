@@ -59,9 +59,8 @@ jobs:
         env:
           APP_ENV: development
           KAKAO_MAP_KEY: ${{ vars.DEV_KAKAO_MAP_KEY }}
-          POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST }}
-          POSTHOG_API_KEY: ${{ vars.POSTHOG_API_KEY }}
-          POSTHOG_ENABLED: ${{ vars.POSTHOG_ENABLED }}
+          # 개발 사용 기록이 운영 PostHog 프로젝트에 유입되지 않도록 고정한다.
+          POSTHOG_ENABLED: "false"
           SENTRY_ENABLED: ${{ vars.SENTRY_ENABLED }}
           SENTRY_DSN: ${{ vars.SENTRY_DSN }}
           SENTRY_ORG: ${{ vars.SENTRY_ORG }}
