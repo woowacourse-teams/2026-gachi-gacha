@@ -4,8 +4,6 @@ const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
 const LEGACY_ACCOUNT_DELETION_PATH = '/api/v1/oauth/withdraw';
 const CURRENT_ACCOUNT_DELETION_PATH = '/api/v1/members/me';
-const DEFAULT_PROFILE_IMAGE_DATA_URI =
-  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='31' r='14' fill='%23c8899d'/%3E%3Cpath d='M25 79c1-17 10-27 23-27s22 10 23 27' fill='%23c8899d'/%3E%3C/svg%3E";
 
 const ANDROID_WEB_SHELL_STYLES = `
   @keyframes gachigacha-android-dismiss-location-error {
@@ -23,19 +21,10 @@ const ANDROID_WEB_SHELL_STYLES = `
     display: none !important;
   }
 
-  html[data-gachigacha-native-platform="android"] [data-gachigacha-android-avatar-fallback] {
-    overflow: hidden !important;
-    background-color: transparent !important;
-    background-image: url("${DEFAULT_PROFILE_IMAGE_DATA_URI}") !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
-    background-size: contain !important;
-    color: transparent !important;
-    font-size: 0 !important;
-  }
-
   html[data-gachigacha-native-platform="android"] img[data-gachigacha-android-avatar-fallback-image] {
     display: block !important;
+    width: 100% !important;
+    height: 100% !important;
     object-fit: cover !important;
   }
 
@@ -78,6 +67,71 @@ const ANDROID_WEB_SHELL_STYLES = `
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-location-error] {
       animation: gachigacha-android-dismiss-location-error 4s ease forwards !important;
       pointer-events: none !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-main],
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-drawer] {
+      box-sizing: border-box !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: var(--gachigacha-android-chat-height, 100dvh) !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      max-height: var(--gachigacha-android-chat-height, 100dvh) !important;
+      overflow: hidden !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-drawer] {
+      right: 0 !important;
+      left: 0 !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room],
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] > * {
+      box-sizing: border-box !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] {
+      height: 100% !important;
+      overflow: hidden !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-room] * {
+      box-sizing: border-box !important;
+      min-width: 0 !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-messages] {
+      min-height: 0 !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain !important;
+      touch-action: pan-y !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer-area],
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] {
+      box-sizing: border-box !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] input[aria-label="메시지"] {
+      width: 0 !important;
+      min-width: 0 !important;
+      flex: 1 1 auto !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] button[type="submit"] {
+      max-width: min(92px, 28vw) !important;
+      flex: 0 0 auto !important;
+      white-space: nowrap !important;
     }
 
   }
@@ -402,21 +456,49 @@ function createWebShellRuntimeBody(): string {
       });
     };
 
-    const defaultProfileImage = ${serializeForInlineScript(DEFAULT_PROFILE_IMAGE_DATA_URI)};
+    const normalizeAvatarInitial = (value, fallback = 'G') =>
+      Array.from(String(value || '').trim())[0] || fallback;
+    const escapeAvatarText = (value) => String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&apos;');
+    const createProfileFallbackImage = (initial) => {
+      const label = escapeAvatarText(normalizeAvatarInitial(initial));
+      const svg =
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'>" +
+        "<rect width='96' height='96' rx='48' fill='#fce9ef'/>" +
+        "<text x='48' y='52' fill='#963c5d' font-family='sans-serif' " +
+        "font-size='34' font-weight='700' text-anchor='middle' " +
+        "dominant-baseline='middle'>" + label + "</text></svg>";
+
+      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+    };
     const useDefaultProfileImage = (image, container) => {
       if (!(image instanceof HTMLImageElement)) return;
-      if (image.dataset.gachigachaAndroidAvatarFallbackImage !== undefined) {
+      const initial = normalizeAvatarInitial(
+        image.dataset.gachigachaAndroidAvatarInitial,
+      );
+      const fallbackImage = createProfileFallbackImage(initial);
+      if (
+        image.dataset.gachigachaAndroidAvatarFallbackImage !== undefined &&
+        image.src === fallbackImage
+      ) {
         return;
       }
 
       image.dataset.gachigachaAndroidAvatarFallbackImage = '';
+      container?.setAttribute('data-gachigacha-android-avatar-fallback', '');
       image.removeAttribute('srcset');
-      image.src = defaultProfileImage;
+      image.src = fallbackImage;
     };
 
-    const watchProfileImage = (image, container = image) => {
+    const watchProfileImage = (image, container = image, initial = 'G') => {
       if (!(image instanceof HTMLImageElement)) return;
 
+      image.dataset.gachigachaAndroidAvatarInitial =
+        normalizeAvatarInitial(initial);
       image.setAttribute('data-gachigacha-android-avatar-image', '');
       if (image.dataset.gachigachaAndroidAvatarListener === undefined) {
         image.dataset.gachigachaAndroidAvatarListener = '';
@@ -424,15 +506,32 @@ function createWebShellRuntimeBody(): string {
           useDefaultProfileImage(image, container);
         });
         image.addEventListener('load', () => {
+          const expectedFallback = createProfileFallbackImage(
+            image.dataset.gachigachaAndroidAvatarInitial,
+          );
           if (
-            image.dataset.gachigachaAndroidAvatarFallbackImage === undefined &&
+            image.src !== expectedFallback &&
             image.naturalWidth > 0
           ) {
+            delete image.dataset.gachigachaAndroidAvatarFallbackImage;
             container?.removeAttribute(
               'data-gachigacha-android-avatar-fallback',
             );
           }
         });
+      }
+
+      if (image.dataset.gachigachaAndroidAvatarFallbackImage !== undefined) {
+        const nextFallbackImage = createProfileFallbackImage(
+          image.dataset.gachigachaAndroidAvatarInitial,
+        );
+        if (
+          image.src.startsWith('data:image/svg+xml') &&
+          image.src !== nextFallbackImage
+        ) {
+          image.src = nextFallbackImage;
+        }
+        return;
       }
 
       if (image.complete && image.naturalWidth === 0) {
@@ -441,10 +540,26 @@ function createWebShellRuntimeBody(): string {
     };
 
     const markProfileImages = () => {
+      const ownCommentAction = document.querySelector(
+        '[aria-label$="댓글 작업"]',
+      );
+      const ownCommentNickname = ownCommentAction
+        ?.getAttribute('aria-label')
+        ?.replace(/\\s*댓글 작업$/, '')
+        .trim();
+      if (ownCommentNickname) {
+        window.__gachigachaAndroidCurrentUserInitial =
+          normalizeAvatarInitial(ownCommentNickname);
+      }
+
       const accountLink = document.querySelector('a[aria-label="마이페이지"]');
       const accountImage = accountLink?.querySelector('img');
       if (accountImage) {
-        watchProfileImage(accountImage, accountLink);
+        watchProfileImage(
+          accountImage,
+          accountLink,
+          window.__gachigachaAndroidCurrentUserInitial || 'G',
+        );
       }
 
       const profileEditButton = Array.from(
@@ -452,17 +567,22 @@ function createWebShellRuntimeBody(): string {
       ).find((button) => button.textContent?.trim() === '프로필 수정');
       const profileIdentity = profileEditButton?.previousElementSibling;
       const myProfileAvatar = profileIdentity?.firstElementChild;
+      const profileNickname =
+        profileIdentity?.children?.[1]?.firstElementChild?.textContent?.trim();
+      if (profileNickname) {
+        window.__gachigachaAndroidCurrentUserInitial =
+          normalizeAvatarInitial(profileNickname);
+      }
       if (myProfileAvatar) {
         const profileImage = myProfileAvatar.matches('img')
           ? myProfileAvatar
           : myProfileAvatar.querySelector('img');
 
         if (profileImage) {
-          watchProfileImage(profileImage, myProfileAvatar);
-        } else {
-          myProfileAvatar.setAttribute(
-            'data-gachigacha-android-avatar-fallback',
-            '',
+          watchProfileImage(
+            profileImage,
+            myProfileAvatar,
+            profileNickname || 'G',
           );
         }
       }
@@ -471,7 +591,43 @@ function createWebShellRuntimeBody(): string {
         .querySelectorAll(
           'img[alt="현재 프로필 사진"], img[alt="새 프로필 사진 미리보기"]',
         )
-        .forEach((image) => watchProfileImage(image));
+        .forEach((image) =>
+          watchProfileImage(
+            image,
+            image,
+            window.__gachigachaAndroidCurrentUserInitial || 'G',
+          ),
+        );
+
+      const conversationHeading = Array.from(
+        document.querySelectorAll('h1, h2'),
+      ).find((heading) => heading.textContent?.trim() === '전체 대화');
+      const conversationList = conversationHeading?.closest('aside');
+      conversationList?.querySelectorAll('button').forEach((button) => {
+        const avatar = button.firstElementChild;
+        const image = avatar?.querySelector('img');
+        const nickname = button.querySelector('strong')?.textContent;
+        if (image) {
+          watchProfileImage(image, avatar, nickname || 'G');
+        }
+      });
+
+      const commentsSection = document
+        .getElementById('trade-comments-title')
+        ?.closest('section');
+      commentsSection
+        ?.querySelectorAll('img[data-private-media]')
+        .forEach((image) => {
+          const avatar = image.parentElement;
+          const nickname = avatar?.parentElement
+            ?.querySelector('strong')
+            ?.textContent?.trim();
+          watchProfileImage(
+            image,
+            avatar || image,
+            nickname || window.__gachigachaAndroidCurrentUserInitial || 'G',
+          );
+        });
     };
 
     const postChatRoomState = (isOpen) => {
@@ -483,18 +639,90 @@ function createWebShellRuntimeBody(): string {
       }));
     };
 
-    const markChatRoomState = () => {
+    const markChatPresentation = () => {
       if (!window.location.pathname.startsWith('/chat')) {
         postChatRoomState(false);
         return;
       }
 
+      const conversationHeading = Array.from(
+        document.querySelectorAll('h1, h2'),
+      ).find((heading) => heading.textContent?.trim() === '전체 대화');
+      const conversationList = conversationHeading?.closest('aside');
       const composer = document.querySelector(
         'form[aria-label="메시지 입력 영역"]',
       );
       const chatRoom = composer?.closest('section');
       if (chatRoom) {
         chatRoom.setAttribute('data-gachigacha-android-chat-room', '');
+      }
+
+      const chatSurface = chatRoom?.parentElement;
+      const chatMain = conversationList?.parentElement?.tagName === 'MAIN'
+        ? conversationList.parentElement
+        : chatSurface?.tagName === 'MAIN'
+          ? chatSurface
+          : null;
+      const chatDrawer = chatSurface?.tagName === 'ASIDE'
+        ? chatSurface
+        : null;
+      chatMain?.setAttribute('data-gachigacha-android-chat-main', '');
+      chatDrawer?.setAttribute('data-gachigacha-android-chat-drawer', '');
+
+      if (composer) {
+        composer.setAttribute('data-gachigacha-android-chat-composer', '');
+        const composerArea = composer.parentElement;
+        composerArea?.setAttribute(
+          'data-gachigacha-android-chat-composer-area',
+          '',
+        );
+        composerArea?.previousElementSibling?.setAttribute(
+          'data-gachigacha-android-chat-messages',
+          '',
+        );
+      }
+
+      const chatViewport = chatMain || chatDrawer;
+      if (chatViewport) {
+        const visualViewport = window.visualViewport;
+        const viewportTop = visualViewport?.offsetTop || 0;
+        const viewportHeight = visualViewport?.height || window.innerHeight;
+        const chatTop = Math.max(
+          chatViewport.getBoundingClientRect().top - viewportTop,
+          0,
+        );
+        const availableHeight = Math.floor(viewportHeight - chatTop);
+        if (availableHeight >= 240) {
+          chatViewport.style.setProperty(
+            '--gachigacha-android-chat-height',
+            availableHeight + 'px',
+          );
+        }
+
+        const messageInput = composer?.querySelector(
+          'input[aria-label="메시지"]',
+        );
+        const viewportBaseline = Math.max(
+          window.__gachigachaAndroidChatViewportBaseline || 0,
+          viewportHeight,
+        );
+        if (document.activeElement !== messageInput) {
+          window.__gachigachaAndroidChatViewportBaseline = viewportBaseline;
+        }
+        const isKeyboardVisible =
+          document.activeElement === messageInput &&
+          viewportHeight < viewportBaseline - 80;
+        const roundedViewportHeight = Math.round(viewportHeight);
+        if (
+          isKeyboardVisible &&
+          window.__gachigachaAndroidChatKeyboardHeight !== roundedViewportHeight
+        ) {
+          window.__gachigachaAndroidChatKeyboardHeight = roundedViewportHeight;
+          chatViewport.scrollIntoView({ block: 'start', inline: 'nearest' });
+          document.scrollingElement?.scrollTo({ top: 0, left: 0 });
+        } else if (!isKeyboardVisible) {
+          window.__gachigachaAndroidChatKeyboardHeight = null;
+        }
       }
 
       postChatRoomState(Boolean(chatRoom && composer));
@@ -600,7 +828,7 @@ function createWebShellRuntimeBody(): string {
       installAndroidStyle();
       markAppleLogin();
       markProfileImages();
-      markChatRoomState();
+      markChatPresentation();
       markMapOverlays();
     };
 
