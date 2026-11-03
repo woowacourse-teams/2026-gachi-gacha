@@ -3,7 +3,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
+import {
+  SUPPORT_EMAIL,
+  SUPPORT_INSTAGRAM_URL,
+} from '@/shared/contact/supportContact';
 
 import { shouldShowSiteFooter, SITE_FOOTER_ID, SiteFooter } from './SiteFooter';
 
@@ -28,10 +31,9 @@ describe('SiteFooter', () => {
       'href',
       SUPPORT_INSTAGRAM_URL,
     );
-    expect(screen.getByRole('link', { name: '고객센터' })).toHaveAttribute(
-      'href',
-      SUPPORT_INSTAGRAM_URL,
-    );
+    expect(
+      screen.getByRole('link', { name: `고객센터: ${SUPPORT_EMAIL}` }),
+    ).toHaveAttribute('href', `mailto:${SUPPORT_EMAIL}`);
     expect(
       screen.queryByRole('link', { name: '이용약관' }),
     ).not.toBeInTheDocument();
