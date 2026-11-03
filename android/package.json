@@ -48,6 +48,7 @@
     "place-search:test": "node --no-warnings --experimental-strip-types scripts/place-search.test.mjs",
     "web-shell:test": "node --no-warnings --experimental-strip-types scripts/web-shell.test.mjs",
     "push-notification:test": "node --no-warnings --experimental-strip-types scripts/push-notification.test.mjs",
+    "play-compatibility:verify": "node scripts/verify-generated-play-compatibility.mjs",
     "catalog:test": "node --test scripts/affiliate-catalog/catalog.test.mjs",
     "catalog:sync": "node scripts/affiliate-catalog/sync.mjs",
     "export:dev": "cross-env EXPO_NO_TELEMETRY=1 APP_VARIANT=development expo export --platform android --output-dir dist/development",
