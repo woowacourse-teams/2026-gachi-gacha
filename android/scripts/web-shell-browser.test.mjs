@@ -3,13 +3,15 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import test from 'node:test';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   createWebShellConfirmLeaveScript,
+  createWebShellBootstrapScript,
   createWebShellOverlayBackScript,
   createWebShellRuntimeScript,
 } from '../src/domains/webShell/webShellPolicy.ts';
@@ -32,6 +34,37 @@ const runtimeFactory = process.env.ANDROID_TEST_RUNTIME_MODULE
   ? (await import(pathToFileURL(process.env.ANDROID_TEST_RUNTIME_MODULE).href)).createWebShellRuntimeScript
   : createWebShellRuntimeScript;
 const runtimeScript = runtimeFactory();
+
+async function buildProfileFixture() {
+  // Worktrees can borrow installed web dependencies without modifying frontend.
+  const modules = resolve(process.env.ANDROID_TEST_FRONTEND_NODE_MODULES ||
+    fileURLToPath(new URL('../../frontend/node_modules', import.meta.url)));
+  const requireWeb = createRequire(join(modules, '../package.json'));
+  let esbuild;
+  try { esbuild = requireWeb('esbuild'); }
+  catch {
+    try { esbuild = requireWeb(join(modules, '.pnpm/node_modules/esbuild')); }
+    catch {
+      throw new Error('React browser regression requires installed frontend dependencies; set ANDROID_TEST_FRONTEND_NODE_MODULES for an isolated worktree.');
+    }
+  }
+  const bundle = await esbuild.build({
+    entryPoints: [fileURLToPath(new URL('./fixtures/profile-file-picker.mjs', import.meta.url))],
+    bundle: true,
+    write: false,
+    platform: 'browser',
+    format: 'iife',
+    nodePaths: [modules],
+    // The fixture lives under android/, whose React version differs from web.
+    // Resolve both React and its DOM renderer from the same web installation.
+    alias: {
+      react: dirname(requireWeb.resolve('react/package.json')),
+      'react-dom': dirname(requireWeb.resolve('react-dom/package.json')),
+    },
+    define: { 'process.env.NODE_ENV': '"production"' },
+  });
+  return bundle.outputFiles[0].text;
+}
 const widths = [320, 360, 393, 412, 768];
 const validPhoto = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="blue"/></svg>',
@@ -123,11 +156,12 @@ function fixture(kind, mode = 'broken') {
 }
 
 // These readiness markers and photo close labels are copied from origin/main's
-// updates/route.tsx, TradeDetail.tsx and the shared PhotoViewer (2026-11-03).
+// updates/route.tsx, TradeDetail.tsx, TradeForm.tsx, mypage/trades/route.tsx,
+// TradePage.tsx and the shared PhotoViewer (2026-11-03).
 // Route commits are intentionally separate from pushState to model React's
-// asynchronous loading without pulling React or the web application into CI.
+// asynchronous loading without making these fixtures depend on API responses.
 function scrollPageContent(path, pending = false) {
-  if (pending) return '<p>불러오는 중</p>';
+  if (pending) return '<p role="status">불러오는 중</p>';
   if (path === '/updates') {
     return '<h1>업데이트 소식</h1><ol aria-label="서비스 업데이트 목록"><li>최근 소식</li></ol>';
   }
@@ -137,11 +171,25 @@ function scrollPageContent(path, pending = false) {
   if (/^\/trade\/\d+\/edit$/.test(path)) {
     return '<h1>교환글 수정</h1><form id="trade-edit-form"><label>제목<input name="title" value="원래 제목"></label><label>설명<textarea name="description">원래 설명</textarea></label><button type="submit">수정하기</button></form>';
   }
+  if (path === '/trade/new') {
+    return '<h1>교환글 작성</h1><form id="trade-create-form"><label>제목<input name="title" value=""></label><label>설명<textarea name="description"></textarea></label><button type="submit">등록하기</button></form>';
+  }
+  if (path === '/mypage') {
+    return '<h1>마이페이지</h1><a href="/mypage/trades">전체 보기</a>';
+  }
+  if (path === '/mypage/trades') {
+    return '<a href="/mypage">← 마이페이지</a><h1>내 교환글</h1><nav aria-label="내 교환글 상태 필터"><button aria-pressed="true">전체</button></nav><section aria-live="polite"><ul><li><a href="/trade/42" aria-label="테스트 거래글 보기">내 교환글</a></li></ul></section>';
+  }
+  if (path === '/trade') {
+    return '<h1>거래/교환</h1><button id="photoLauncher">사진 크게 보기</button><section aria-live="polite"><h2>최신순</h2><div><a href="/trade/42">교환 물품</a><a href="/trade/99">다른 교환 물품</a></div></section><a href="/trade/new">교환글 작성</a>';
+  }
   return '<h1>거래/교환</h1><button id="photoLauncher">사진 크게 보기</button>';
 }
 
-function scrollFixture(path, pending) {
-  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}main{min-height:3600px;padding:16px}button{min-height:40px}</style></head><body><main id="routeRoot">${scrollPageContent(path, pending)}</main></body></html>`;
+const scrollAnchor = '<section id="requested-section" style="margin-top:1200px">요청한 위치</section>';
+
+function scrollFixture(path, pending, withAnchor = false) {
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}main{min-height:3600px;padding:16px}button{min-height:40px}</style></head><body><main id="routeRoot">${scrollPageContent(path, pending)}${withAnchor ? scrollAnchor : ''}</main></body></html>`;
 }
 
 async function connectPage(browser) {
@@ -156,8 +204,12 @@ async function connectPage(browser) {
     browser.once('error', error => { clearTimeout(timer); reject(error); });
     browser.once('exit', code => { clearTimeout(timer); reject(new Error(`Chromium exited ${code}: ${output}`)); });
   });
-  const targets = await (await fetch(`${address}/json`)).json();
-  const target = targets.find(item => item.type === 'page');
+  let target;
+  for (let attempt = 0; attempt < 100 && !target; attempt++) {
+    const targets = await (await fetch(`${address}/json`)).json();
+    target = targets.find(item => item.type === 'page');
+    if (!target) await new Promise(resolve => setTimeout(resolve, 20));
+  }
   assert.ok(target, 'Chromium must expose an initial page');
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
@@ -196,13 +248,23 @@ async function connectPage(browser) {
 
 test('Android WebView preserves web layout, overlays, navigation, drafts and scroll in Chromium', { timeout: 120000 }, async t => {
   assert.ok(chromePath && existsSync(chromePath), 'Set ANDROID_TEST_CHROME to an installed Chromium executable');
+  const profileFixtureBundle = await buildProfileFixture();
   const temporaryProfile = await mkdtemp(join(tmpdir(), 'gachi-web-shell-browser-'));
   const server = createServer((request, response) => {
     const url = new URL(request.url, 'http://localhost');
+    if (url.pathname === '/profile-fixture.js') {
+      response.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+      response.end(profileFixtureBundle);
+      return;
+    }
     if (url.pathname === '/broken.png') { response.writeHead(404).end(); return; }
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    if (url.searchParams.has('react-profile-fixture')) {
+      response.end('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script src="/profile-fixture.js"></script></body></html>');
+      return;
+    }
     response.end(url.searchParams.has('scroll-fixture')
-      ? scrollFixture(url.pathname, url.searchParams.has('pending'))
+      ? scrollFixture(url.pathname, url.searchParams.has('pending'), url.searchParams.has('anchor-fixture'))
       : fixture(url.pathname === '/chat' ? 'chat' : 'profile', url.searchParams.get('mode') || 'broken'));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -591,6 +653,130 @@ test('Android WebView preserves web layout, overlays, navigation, drafts and scr
       });
     });
 
+    await t.test('native file-picker cancellation preserves the React profile draft and the next close action', async t => {
+      const firstPhoto = join(temporaryProfile, 'chosen-profile.png');
+      const secondPhoto = join(temporaryProfile, 'replacement-profile.png');
+      const photoBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=', 'base64');
+      await writeFile(firstPhoto, photoBytes);
+      await writeFile(secondPhoto, photoBytes);
+      const openProfile = async () => {
+        await navigate('/mypage?react-profile-fixture', 393);
+        assert.equal(await page.evaluate('document.querySelector("dialog").open && window.profileFixture.open'), true);
+      };
+      const chooseFiles = async files => {
+        const { root } = await page.send('DOM.getDocument');
+        const { nodeId } = await page.send('DOM.querySelector', { nodeId: root.nodeId, selector: '#profileFile' });
+        assert.ok(nodeId, 'React must have mounted the current file input');
+        await page.send('DOM.setFileInputFiles', { nodeId, files });
+        await settle();
+      };
+      const setText = async (id, value) => {
+        await page.evaluate(`(() => { const input=document.getElementById(${JSON.stringify(id)}); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)}); input.dispatchEvent(new Event('input',{bubbles:true})); })()`);
+        await settle();
+      };
+      const cancelSelection = async () => {
+        const count = await page.evaluate('window.profileCancelEvents.length');
+        // DOM.setFileInputFiles([]) only clears files; it does not cancel an
+        // open chooser. CDP's cancel interception invokes the browser's actual
+        // picker dismissal, producing a trusted event with normal propagation.
+        await page.send('Page.setInterceptFileChooserDialog', { enabled: true, cancel: true });
+        try {
+          const result = await page.send('Runtime.evaluate', { expression: 'document.getElementById("profileFile").showPicker()', userGesture: true });
+          assert.equal(result.exceptionDetails, undefined);
+          await settle();
+        } finally {
+          await page.send('Page.setInterceptFileChooserDialog', { enabled: false });
+        }
+        assert.deepEqual(await page.evaluate(`window.profileCancelEvents.slice(${count})`), [{ target: 'INPUT', trusted: true }], 'Exercise the browser file-cancel event, not a synthetic dialog close');
+      };
+      const assertDraft = async () => {
+        assert.deepEqual(await page.evaluate(`({
+          open: document.querySelector('dialog').open && window.profileFixture.open,
+          nickname: window.profileFixture.nickname,
+          place: window.profileFixture.place,
+          sameFile: window.profileFixture.file === window.savedProfileFile,
+          samePreview: window.profileFixture.preview === window.savedProfilePreview && document.getElementById('profilePreview').src === window.savedProfilePreview,
+          fileInputEmpty: document.getElementById('profileFile').files.length === 0,
+          closeCount: window.profileCloseEvents.length,
+        })`), { open: true, nickname: '저장하지 않은 닉네임', place: '홍대입구역', sameFile: true, samePreview: true, fileInputEmpty: true, closeCount: 0 });
+      };
+      await t.test('without the adapter a trusted input cancel closes the React dialog', async () => {
+        await openProfile();
+        await cancelSelection();
+        assert.equal(await page.evaluate('document.querySelector("dialog").open'), false, 'Baseline must reproduce the reported gallery dismissal');
+        assert.equal(await page.evaluate('window.profileCloseEvents.length'), 1);
+      });
+      await t.test('bootstrap/runtime install once and preserve controlled fields, File identity and blob preview', async () => {
+        await openProfile();
+        await page.evaluate(`window.cancelGuardRegistrations=0;const originalAdd=document.addEventListener;document.addEventListener=function(type,...args){if(type==='cancel')window.cancelGuardRegistrations++;return originalAdd.call(this,type,...args)}`);
+        await page.evaluate(createWebShellBootstrapScript(null));
+        await page.evaluate(createWebShellBootstrapScript(null));
+        await inject();
+        await inject();
+        assert.equal(await page.evaluate('window.cancelGuardRegistrations'), 1, 'Reinjection must not accumulate cancellation listeners');
+        await setText('profileNickname', '저장하지 않은 닉네임');
+        await setText('profilePlace', '홍대입구역');
+        await chooseFiles([firstPhoto]);
+        assert.deepEqual(await page.evaluate('window.profileChangeEvents'), ['chosen-profile.png'], 'The adapter must leave the React change handler intact');
+        await page.evaluate('window.savedProfileFile=window.profileFixture.file;window.savedProfilePreview=window.profileFixture.preview');
+        assert.match(await page.evaluate('window.savedProfilePreview'), /^blob:/);
+        await assertDraft();
+        await cancelSelection();
+        await cancelSelection();
+        await assertDraft();
+        await page.evaluate('window.previousFileInput=document.getElementById("profileFile");document.getElementById("remountProfileFile").click()');
+        await settle();
+        assert.equal(await page.evaluate('window.previousFileInput !== document.getElementById("profileFile")'), true);
+        await cancelSelection();
+        await assertDraft();
+        await chooseFiles([secondPhoto]);
+        assert.deepEqual(await page.evaluate('window.profileChangeEvents'), ['chosen-profile.png', 'replacement-profile.png']);
+        assert.equal(await page.evaluate('window.profileFixture.file.name'), 'replacement-profile.png');
+        await page.evaluate('window.savedProfileFile=window.profileFixture.file;window.savedProfilePreview=window.profileFixture.preview');
+        await cancelSelection();
+        await assertDraft();
+        await screenshot('profile-gallery-cancel-draft-preserved');
+      });
+      await t.test('explicit save receives the retained File and edited fields after picker cancellation', async () => {
+        await openProfile();
+        await inject();
+        await setText('profileNickname', '저장하지 않은 닉네임');
+        await setText('profilePlace', '홍대입구역');
+        await chooseFiles([firstPhoto]);
+        await page.evaluate('window.savedProfileFile=window.profileFixture.file;window.savedProfilePreview=window.profileFixture.preview');
+        await cancelSelection();
+        await assertDraft();
+        await page.evaluate('document.getElementById("saveProfile").click()');
+        await settle();
+        assert.deepEqual(await page.evaluate(`window.profileSaveEvents.map(saved => ({ nickname:saved.nickname, place:saved.place, fileName:saved.file.name, sameFile:saved.file===window.savedProfileFile, samePreview:saved.preview===window.savedProfilePreview }))`), [{ nickname: '저장하지 않은 닉네임', place: '홍대입구역', fileName: 'chosen-profile.png', sameFile: true, samePreview: true }]);
+        assert.equal(await page.evaluate('document.querySelector("dialog").open'), false);
+        assert.equal(await page.evaluate('window.profileCloseEvents.length'), 1);
+      });
+      for (const action of ['dialog cancel', 'close button', 'cancel button', 'Android Back']) {
+        await t.test(`the next ${action} closes exactly once after gallery cancellation`, async () => {
+          await openProfile();
+          await inject();
+          await cancelSelection();
+          assert.equal(await page.evaluate('document.querySelector("dialog").open'), true);
+          if (action === 'dialog cancel') {
+            await page.evaluate('document.querySelector("dialog").requestClose()');
+          } else if (action === 'Android Back') {
+            await expectBackHandled(610);
+          } else {
+            await page.evaluate(`document.getElementById('${action === 'close button' ? 'closeProfile' : 'cancelProfile'}').click()`);
+          }
+          await settle();
+          assert.equal(await page.evaluate('document.querySelector("dialog").open'), false);
+          assert.equal(await page.evaluate('window.profileCloseEvents.length'), 1);
+          assert.equal(await page.evaluate('location.pathname'), '/mypage');
+          if (action === 'dialog cancel') {
+            assert.deepEqual(await page.evaluate('window.profileCancelEvents.at(-1)'), { target: 'DIALOG', trusted: true }, 'A genuine browser dialog cancel is still delivered');
+          }
+          if (action === 'Android Back') await expectBackHandled(611, false);
+        });
+      }
+    });
+
     await t.test('same-member token refresh after gallery return preserves the native profile dialog and File draft', async () => {
       await navigate('/mypage?mode=valid', 393);
       const token = serial => `test.${Buffer.from(JSON.stringify({ type: 'access', memberId: 42, serial })).toString('base64url')}.signature`;
@@ -646,7 +832,7 @@ test('Android WebView preserves web layout, overlays, navigation, drafts and scr
         await setScroll(800);
         await commitRoute('/trade/42/edit');
         await setScroll(1300);
-        await page.evaluate(`window.addEventListener('popstate',()=>{document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))};requestAnimationFrame(()=>scrollTo(0,800))},{once:true});history.back()`);
+        await page.evaluate(`window.addEventListener('popstate',()=>{document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))}},{once:true});history.back()`);
         for (let i = 0; i < 100; i++) {
           if (await page.evaluate("location.pathname === '/trade/42'")) break;
           await new Promise(resolve => setTimeout(resolve, 20));
@@ -667,19 +853,6 @@ test('Android WebView preserves web layout, overlays, navigation, drafts and scr
         await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42/edit'))}`);
         await assertScroll(0, 'Edit readiness is its actual trade-edit-form marker');
       });
-      await t.test('returning to the list preserves browser-restored list position', async () => {
-        await navigate('/trade?scroll-fixture', 393);
-        await inject();
-        await setScroll(1250);
-        await commitRoute('/trade/42');
-        await assertScroll(0, 'Detail navigation starts at top');
-        await page.evaluate(`window.addEventListener('popstate',()=>{document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade'))};requestAnimationFrame(()=>scrollTo(0,1250))},{once:true});history.back()`);
-        for (let i = 0; i < 100; i++) {
-          if (await page.evaluate("location.pathname === '/trade'")) break;
-          await new Promise(resolve => setTimeout(resolve, 20));
-        }
-        await assertScroll(1250, 'Android does not override native/browser list restoration');
-      });
       await t.test('late detail content and final-frame hash changes cannot hijack another destination', async () => {
         await navigate('/trade?scroll-fixture', 393);
         await inject();
@@ -691,6 +864,180 @@ test('Android WebView preserves web layout, overlays, navigation, drafts and scr
         await commitRoute('/trade');
         await page.evaluate(`history.pushState({},'','/trade/42');document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))};requestAnimationFrame(()=>history.replaceState({},'','/trade/42#trade-comments-title'))`);
         await assertScroll(1100, 'A hash selected before the reset frame cancels the queued detail reset');
+      });
+    });
+
+    await t.test('new pages start at top and trade-list history survives a real loading-height collapse', async t => {
+      const waitForRoute = async path => {
+        for (let attempt = 0; attempt < 100; attempt++) {
+          if (await page.evaluate(`location.pathname + location.search === ${JSON.stringify(path)}`)) return;
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        assert.fail(`History did not reach ${path}`);
+      };
+      const historyToLoading = async (path, direction = 'back') => {
+        // React first renders a short loading screen. Native auto restoration
+        // cannot reach the old position while the document has no scroll range.
+        // This handler never sets a scroll offset or fakes browser restoration.
+        await page.evaluate(`window.addEventListener('popstate',()=>{const root=document.getElementById('routeRoot');root.style.minHeight='0px';root.innerHTML='<p role="status">교환 게시글을 불러오는 중...</p>'},{once:true});history.${direction}()`);
+        await waitForRoute(path);
+        await settle();
+        assert.equal(await page.evaluate('scrollY'), 0, 'The loading screen must genuinely clamp native scrolling to zero');
+        assert.equal(await page.evaluate('document.scrollingElement.scrollHeight <= innerHeight'), true, 'The pending fixture must have no hidden tall spacer');
+      };
+      const renderReadyList = async (path = '/trade') => {
+        await page.evaluate(`(() => {const root=document.getElementById('routeRoot');root.innerHTML=${JSON.stringify(scrollPageContent(path))};root.style.minHeight='3600px'})()`);
+        await settle();
+      };
+      const enterScrolledListDetail = async (path = '/trade') => {
+        await navigate(`${path}?scroll-fixture`, 393);
+        await inject();
+        await setScroll(1250);
+        await commitRoute('/trade/42');
+        await assertScroll(0, 'A newly opened detail starts at top');
+      };
+
+      for (const [from, to] of [['/mypage', '/mypage/trades'], ['/trade', '/trade/new']]) {
+        await t.test(`${from} → ${to} waits for its actual page marker before starting at top`, async () => {
+          await navigate(`${from}?scroll-fixture`, 393);
+          await inject();
+          await setScroll(1250);
+          await commitRoute(to, 'pushState', true);
+          await assertScroll(1250, 'The old page is retained while the destination is pending');
+          await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent(to))}`);
+          await assertScroll(0, 'The new page must not inherit the previous page offset');
+          await setScroll(500);
+          await page.evaluate("document.getElementById('routeRoot').insertAdjacentHTML('beforeend','<p>나중에 도착한 내용</p>')");
+          await assertScroll(500, 'Later renders preserve deliberate reading position');
+        });
+      }
+      await t.test('without the adapter Chromium loses the old list offset when loading collapses its scroll range', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await setScroll(1250);
+        await commitRoute('/trade/42');
+        await setScroll(0);
+        await historyToLoading('/trade?scroll-fixture');
+        await renderReadyList();
+        await assertScroll(0, 'The fixture must reproduce lost native restoration without supplying a replacement offset');
+      });
+      for (const path of ['/trade', '/mypage/trades']) {
+        await t.test(`detail Back restores ${path} y=1250 after the loading placeholder clamps native restoration`, async () => {
+          await enterScrolledListDetail(path);
+          await historyToLoading(`${path}?scroll-fixture`);
+          await renderReadyList(path);
+          await assertScroll(1250, 'The list restores its saved position after enough content returns');
+          await page.evaluate("document.getElementById('routeRoot').insertAdjacentHTML('beforeend','<p>이미지 로드</p>')");
+          await assertScroll(1250, 'Late content must not replace the restored list position');
+        });
+      }
+      await t.test('two list search history entries keep different offsets through back and forward', async () => {
+        const first = '/trade?scroll-fixture&keyword=one';
+        const second = '/trade?keyword=two';
+        await navigate(first, 393);
+        await inject();
+        await setScroll(1250);
+        await commitRoute(second);
+        await setScroll(650);
+        await commitRoute('/trade/42');
+        await assertScroll(0, 'Detail starts at top after the second search');
+        await historyToLoading(second);
+        await renderReadyList();
+        await assertScroll(650, 'The second query restores its own offset');
+        await historyToLoading(first);
+        await renderReadyList();
+        await assertScroll(1250, 'The first query does not reuse the second query offset');
+        await historyToLoading(second, 'forward');
+        await renderReadyList();
+        await assertScroll(650, 'Forward navigation retains the second query entry');
+      });
+      await t.test('saved pagination restores a second-page card through the existing load-more button', async t => {
+        const cards = (start, end) => Array.from({ length: end - start + 1 }, (_, index) => {
+          const id = start + index;
+          return `<a href="/trade/${id}" style="display:block;box-sizing:border-box;height:100px">교환 물품 ${id}</a>`;
+        }).join('');
+        const list = (count, headerHeight) => `<h1 style="height:${headerHeight}px;margin:0">거래/교환</h1><section aria-live="polite"><div id="pagedCards">${cards(1, count)}</div>${count < 40 ? '<button id="moreTrades" type="button">더보기</button>' : ''}</section>`;
+        for (const outcome of ['success', 'no-progress', 'failure']) {
+          await t.test(outcome, async () => {
+            await navigate('/trade?scroll-fixture', 393);
+            await page.evaluate(`(() => {const root=document.getElementById('routeRoot');root.style.minHeight='0px';root.innerHTML=${JSON.stringify(list(40, 60))}})()`);
+            await inject();
+            const originalOffset = await page.evaluate('document.querySelector(\'a[href="/trade/25"]\').getBoundingClientRect().top + scrollY - 72');
+            await setScroll(originalOffset);
+            assert.equal(await page.evaluate('document.querySelector(\'a[href="/trade/25"]\').getBoundingClientRect().top'), 72);
+            await commitRoute('/trade/25');
+            await assertScroll(0, 'A second-page card still opens its detail at top');
+            await historyToLoading('/trade?scroll-fixture');
+
+            // React remounts only page one. The web button owns its asynchronous
+            // fetch result; the adapter may only invoke that existing handler.
+            // The changed header height also proves anchor-relative restoration
+            // rather than copying an obsolete absolute document offset.
+            await page.evaluate(`(() => {
+              const root=document.getElementById('routeRoot');
+              root.innerHTML=${JSON.stringify(list(20, 140))};
+              window.paginationCalls=0;
+              window.paginationCompleted=false;
+              const button=document.getElementById('moreTrades');
+              button.onclick=()=>{
+                window.paginationCalls++;
+                button.disabled=true;
+                button.textContent='불러오는 중...';
+                setTimeout(()=>{
+                  if (${JSON.stringify(outcome)}==='success') {
+                    document.getElementById('pagedCards').insertAdjacentHTML('beforeend',${JSON.stringify(cards(21, 40))});
+                    button.remove();
+                  } else {
+                    button.disabled=false;
+                    button.textContent='더보기';
+                    if (${JSON.stringify(outcome)}==='failure') button.insertAdjacentHTML('beforebegin','<p role="alert">추가 글을 불러오지 못했어요.</p>');
+                  }
+                  window.paginationCompleted=true;
+                },80);
+              };
+            })()`);
+            for (let attempt = 0; attempt < 100 && !await page.evaluate('window.paginationCompleted'); attempt++) {
+              await new Promise(resolve => setTimeout(resolve, 20));
+            }
+            assert.equal(await page.evaluate('window.paginationCompleted'), true, 'Restoration invokes the actual existing load-more handler');
+            await settle();
+            assert.equal(await page.evaluate('window.paginationCalls'), 1);
+            assert.equal(await page.evaluate('document.querySelectorAll("#pagedCards a").length'), outcome === 'success' ? 40 : 20);
+            if (outcome === 'success') {
+              assert.equal(await page.evaluate('document.querySelector(\'a[href="/trade/25"]\').getBoundingClientRect().top'), 72, 'The same second-page card returns to the same viewport offset');
+              await assertScroll(originalOffset + 80, 'A taller header is accounted for by the saved card anchor');
+            } else {
+              for (let mutation = 0; mutation < 3; mutation++) {
+                await page.evaluate("document.querySelector('main > section').insertAdjacentHTML('beforeend','<span>다른 렌더링</span>')");
+                await settle();
+                assert.equal(await page.evaluate('window.paginationCalls'), 1, 'Errors and unchanged page results must not start an automatic retry loop');
+              }
+              await assertScroll(0, 'Failed restoration does not jump to a clamped replacement position');
+            }
+          });
+        }
+      });
+      await t.test('a trusted user scroll gesture cancels delayed list restoration', async () => {
+        await enterScrolledListDetail();
+        await historyToLoading('/trade?scroll-fixture');
+        await page.evaluate("window.scrollGestureTrusted=null;window.addEventListener('wheel',event=>window.scrollGestureTrusted=event.isTrusted,{once:true})");
+        await page.send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 150, y: 200, deltaX: 0, deltaY: 100 });
+        await settle();
+        assert.equal(await page.evaluate('window.scrollGestureTrusted'), true);
+        await renderReadyList();
+        await assertScroll(0, 'Content arriving after user input must not jump back to the stored offset');
+      });
+      await t.test('initial and SPA hashes remain outside top-reset and list-restore behavior', async () => {
+        for (const path of ['/mypage/trades', '/trade/new', '/trade']) {
+          await navigate(`${path}?scroll-fixture&anchor-fixture#requested-section`, 393);
+          const anchorOffset = await page.evaluate('scrollY');
+          assert.ok(anchorOffset > 800, 'Native initial fragment navigation must find the real anchor');
+          await inject();
+          await assertScroll(anchorOffset, 'An initial deep link keeps the browser-selected position');
+          await commitRoute('/search');
+          await page.evaluate(`history.pushState({},'',${JSON.stringify(path)});document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent(path) + scrollAnchor)};location.hash='requested-section'`);
+          await settle();
+          assert.ok(await page.evaluate('scrollY > 800 && Math.abs(document.getElementById("requested-section").getBoundingClientRect().top) <= 1'), 'Native fragment navigation must win over queued top resets or old list offsets');
+        }
       });
     });
 
@@ -747,7 +1094,7 @@ test('Android WebView preserves web layout, overlays, navigation, drafts and scr
     // ANDROID_TEST_LIVE_ORIGIN=https://dev.gachigacha.kro.kr
     // ANDROID_TEST_SCREENSHOT_DIR=/tmp/gachi-android-live-back
     if (process.env.ANDROID_TEST_LIVE_ORIGIN) {
-      await t.test('deployed public web photo and category back smoke', async () => {
+      await t.test('deployed public web trade-list scroll, photo and category back smoke', async () => {
         const liveOrigin = new URL(process.env.ANDROID_TEST_LIVE_ORIGIN).origin;
         assert.equal(new URL(liveOrigin).protocol, 'https:', 'Live verification uses HTTPS');
         const waitFor = async (expression, description) => {
@@ -760,7 +1107,20 @@ test('Android WebView preserves web layout, overlays, navigation, drafts and scr
         await size(393);
         await page.send('Page.navigate', { url: `${liveOrigin}/trade` });
         await waitFor("[...document.querySelectorAll('a[href]')].some(a=>/^\\/trade\\/\\d+$/.test(a.getAttribute('href')))", 'a public trade detail link');
-        const detailPath = await page.evaluate("[...document.querySelectorAll('a[href]')].find(a=>/^\\/trade\\/\\d+$/.test(a.getAttribute('href'))).getAttribute('href')");
+        await inject();
+        const listOffset = await page.evaluate('Math.min(1250, document.scrollingElement.scrollHeight - innerHeight)');
+        assert.ok(listOffset > 0, 'The public trade list must have enough cards to exercise scroll restoration');
+        await setScroll(listOffset);
+        const detailPath = await page.evaluate("[...document.querySelectorAll('a[href]')].find(a=>/^\\/trade\\/\\d+$/.test(a.getAttribute('href')) && a.getBoundingClientRect().bottom>0 && a.getBoundingClientRect().top<innerHeight).getAttribute('href')");
+        await screenshot('live-dev-trade-list-before-detail');
+        await page.evaluate(`[...document.querySelectorAll('a[href]')].find(a=>a.getAttribute('href')===${JSON.stringify(detailPath)}).click()`);
+        await waitFor(`location.pathname===${JSON.stringify(detailPath)} && !!document.querySelector('main #trade-comments-title')`, 'the clicked public trade detail');
+        await assertScroll(0, 'Clicking a public trade card must open its detail at top');
+        await screenshot('live-dev-trade-detail-at-top');
+        await page.evaluate('history.back()');
+        await waitFor("location.pathname==='/trade' && [...document.querySelectorAll('main a[href]')].some(a=>/^\\/trade\\/\\d+$/.test(a.getAttribute('href')))", 'the public trade list after Back');
+        await waitFor(`Math.abs(scrollY-${listOffset})<=1`, 'the original public list scroll position');
+        await screenshot('live-dev-trade-list-after-back');
         await page.send('Page.navigate', { url: `${liveOrigin}${detailPath}` });
         await waitFor("[...document.querySelectorAll('button[aria-label]')].some(b=>/상품 사진 크게 보기$/.test(b.getAttribute('aria-label')))", 'a real product photo launcher');
         await inject();

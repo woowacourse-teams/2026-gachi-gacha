@@ -1,10 +1,12 @@
 import type { AuthTokens, MobileOAuthProvider } from '../auth/authTypes';
 import { createWebShellBackNavigationScript } from './webShellBackNavigation.ts';
+import { createWebShellFilePickerScript } from './webShellFilePicker.ts';
 import { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
 import { createWebShellSessionSnapshotBridgeScript } from './webShellSessionBridge.ts';
 
 export { createWebShellOverlayBackScript, createWebShellConfirmLeaveScript } from './webShellBackNavigation.ts';
 export { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
+export { createWebShellFilePickerScript } from './webShellFilePicker.ts';
 export { createWebShellSessionSyncScript } from './webShellSessionBridge.ts';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
@@ -411,6 +413,8 @@ export function createWebShellApiCompatibilityScript(): string {
 function createWebShellRuntimeBody(): string {
   return `
     document.documentElement.dataset.gachigachaNativePlatform = 'android';
+
+    ${createWebShellFilePickerScript()}
 
     ${createWebShellApiCompatibilityScript()}
 
