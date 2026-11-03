@@ -16,6 +16,7 @@ test('development uses the dev site and bundle ID', () => {
   const config = createConfig({ config: {} });
   assert.equal(config.extra.webBaseUrl, 'https://dev.gachigacha.kro.kr');
   assert.equal(config.ios.bundleIdentifier, 'com.dev.gachigacha.app');
+  assert.equal(config.ios.icon, './assets/app-icon.png');
   assert.deepEqual(config.platforms, ['ios']);
   assert.deepEqual(config.plugins, ['./plugins/withPodfileUtf8Paths']);
 });
@@ -25,6 +26,7 @@ test('production uses the production site and bundle ID', () => {
   const config = createConfig({ config: {} });
   assert.equal(config.extra.webBaseUrl, 'https://gachigacha.kro.kr');
   assert.equal(config.ios.bundleIdentifier, 'com.gachigacha.app');
+  assert.equal(config.ios.icon, './assets/app-icon.png');
 });
 
 test('unknown variant fails rather than silently using production', () => {

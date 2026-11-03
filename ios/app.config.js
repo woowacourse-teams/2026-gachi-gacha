@@ -34,6 +34,7 @@ function createConfig({ config }) {
     platforms: ['ios'],
     plugins: ['./plugins/withPodfileUtf8Paths'],
     ios: {
+      icon: './assets/app-icon.png',
       bundleIdentifier: settings.bundleIdentifier,
       supportsTablet: false,
       infoPlist: {
