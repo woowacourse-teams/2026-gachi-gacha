@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router';
 
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
-import { shouldShowSiteFooter, SiteFooter } from './SiteFooter';
+import { shouldShowSiteFooter, SITE_FOOTER_ID, SiteFooter } from './SiteFooter';
 
 describe('SiteFooter', () => {
   it('실제로 제공하는 정책과 문의 링크만 표시한다', () => {
@@ -34,6 +34,10 @@ describe('SiteFooter', () => {
     expect(
       screen.getByText('© 2026 GachiGacha. 전국의 가챠를 한 곳에서.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toHaveAttribute(
+      'id',
+      SITE_FOOTER_ID,
+    );
   });
 
   it.each([
