@@ -5,7 +5,10 @@ import { Link } from 'react-router';
 import logoIcon from '@/assets/gacha_logo.png';
 import logoWordmark from '@/assets/gachigacha.png';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
+import {
+  SUPPORT_EMAIL,
+  SUPPORT_INSTAGRAM_URL,
+} from '@/shared/contact/supportContact';
 import { color } from '@/shared/styles/tokens';
 
 const FOOTERLESS_ROUTE_ROOTS = ['/map', '/chat', '/oauth'] as const;
@@ -53,16 +56,14 @@ export function SiteFooter() {
           협업 문의
         </ExternalLink>
         <ExternalLink
-          href={SUPPORT_INSTAGRAM_URL}
-          target="_blank"
-          rel="noreferrer"
+          href={`mailto:${SUPPORT_EMAIL}`}
           onClick={() => {
             captureAnalyticsEvent('footer_contact_selected', {
               target: 'support',
             });
           }}
         >
-          고객센터
+          고객센터: {SUPPORT_EMAIL}
         </ExternalLink>
       </Navigation>
     </Wrapper>
