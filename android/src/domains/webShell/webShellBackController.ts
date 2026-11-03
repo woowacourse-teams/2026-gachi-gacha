@@ -41,7 +41,9 @@ export function createWebShellBackController({
       try {
         if (!dispatch(id, Date.now() + 500)) resolve(id, false);
       } catch {
-        resolve(id, false);
+        // A failed injection is not an explicit "no overlay" response.
+        cancel();
+        onUnresponsive?.();
       }
     },
   };

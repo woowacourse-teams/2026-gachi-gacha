@@ -9,9 +9,14 @@ import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
 import {
+  createWebShellConfirmLeaveScript,
   createWebShellOverlayBackScript,
   createWebShellRuntimeScript,
 } from '../src/domains/webShell/webShellPolicy.ts';
+import {
+  createWebShellSessionSnapshotBridgeScript,
+  createWebShellSessionSyncScript,
+} from '../src/domains/webShell/webShellSessionBridge.ts';
 
 // No browser package dependency: use an installed Chromium through its CDP API.
 // The fixtures preserve the relevant DOM and CSS from web main/frontend-dev:
@@ -127,7 +132,10 @@ function scrollPageContent(path, pending = false) {
     return '<h1>업데이트 소식</h1><ol aria-label="서비스 업데이트 목록"><li>최근 소식</li></ol>';
   }
   if (/^\/trade\/\d+$/.test(path)) {
-    return `<h1>교환 물품</h1><a href="${path}/edit">수정하기</a>`;
+    return `<h1>교환 물품</h1><a href="${path}/edit">수정하기</a><section><h2 id="trade-comments-title">댓글 0</h2></section>`;
+  }
+  if (/^\/trade\/\d+\/edit$/.test(path)) {
+    return '<h1>교환글 수정</h1><form id="trade-edit-form"><label>제목<input name="title" value="원래 제목"></label><label>설명<textarea name="description">원래 설명</textarea></label><button type="submit">수정하기</button></form>';
   }
   return '<h1>거래/교환</h1><button id="photoLauncher">사진 크게 보기</button>';
 }
@@ -186,7 +194,7 @@ async function connectPage(browser) {
   return { send, evaluate, close: () => socket.close() };
 }
 
-test('Android runtime preserves real web avatar dimensions and chat scrolling in Chromium', { timeout: 120000 }, async t => {
+test('Android WebView preserves web layout, overlays, navigation, drafts and scroll in Chromium', { timeout: 120000 }, async t => {
   assert.ok(chromePath && existsSync(chromePath), 'Set ANDROID_TEST_CHROME to an installed Chromium executable');
   const temporaryProfile = await mkdtemp(join(tmpdir(), 'gachi-web-shell-browser-'));
   const server = createServer((request, response) => {
@@ -215,6 +223,16 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
       await settle();
     };
     const inject = async () => { await page.evaluate(runtimeScript); await settle(); };
+    const captureBackMessages = () => page.evaluate('window.backResults=[];window.ReactNativeWebView={postMessage:value=>window.backResults.push(JSON.parse(value))};true');
+    const pressBack = async requestId => {
+      await captureBackMessages();
+      await page.evaluate(createWebShellOverlayBackScript(requestId));
+      await settle();
+      return page.evaluate("window.backResults.filter(item=>item.type==='gachigacha:overlay-back-result')");
+    };
+    const expectBackHandled = async (requestId, handled = true) => {
+      assert.deepEqual(await pressBack(requestId), [{ type: 'gachigacha:overlay-back-result', requestId, handled }]);
+    };
     const setScroll = async (top = 1200) => {
       await page.evaluate(`scrollTo({top:${top},left:0,behavior:'instant'})`);
       await settle();
@@ -362,13 +380,13 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
           assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:overlay-back-result', requestId: index + 11, handled: false }]);
         });
       }
-      await t.test('hidden, disabled and unrelated dialogs are not mistaken for a photo viewer', async () => {
+      await t.test('a visible disabled or unknown modal consumes back instead of leaving its page', async () => {
         await navigate('/trade?scroll-fixture', 393);
         const label = labels[0];
         const controls = `<section role="dialog" aria-modal="true" hidden><button aria-label="${label}">hidden</button></section><section role="dialog" aria-modal="true" style="visibility:hidden"><button aria-label="${label}">invisible</button></section><section role="dialog" aria-modal="true"><button disabled aria-label="${label}">disabled</button><button aria-label="프로필 수정 닫기">profile</button></section><button aria-label="${label}">outside dialog</button>`;
         await page.evaluate(`window.backResults=[];window.ReactNativeWebView={postMessage:value=>window.backResults.push(JSON.parse(value))};document.body.insertAdjacentHTML('beforeend',${JSON.stringify(controls)})`);
         await page.evaluate(createWebShellOverlayBackScript(99));
-        assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:overlay-back-result', requestId: 99, handled: false }]);
+        assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:overlay-back-result', requestId: 99, handled: true }]);
       });
       await t.test('an expired queued back request cannot close a newer viewer or send a stale response', async () => {
         await navigate('/trade?scroll-fixture', 393);
@@ -382,7 +400,221 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
       });
     });
 
-    await t.test('returning from an edit resets only the same detail after its content commits', async t => {
+    await t.test('real web native dialogs and popovers close only the uppermost layer', async t => {
+      const labels = ['프로필 수정 창 닫기', '회원 탈퇴 창 닫기', '선호 거래 지역 선택 창 닫기', '구매 매장 선택 창 닫기', '거래 장소 선택 창 닫기', '교환 장소 선택 창 닫기'];
+      for (const [index, label] of labels.entries()) {
+        await t.test(`native showModal: ${label}`, async () => {
+          await navigate('/trade?scroll-fixture', 393);
+          await inject();
+          await setScroll(700);
+          // Native <dialog> has an implicit accessibility role; the real web does
+          // NOT add role="dialog" or aria-modal attributes to this DOM element.
+          await page.evaluate(`document.body.insertAdjacentHTML('beforeend',${JSON.stringify(`<dialog id="nativeDialog" aria-labelledby="nativeTitle"><h2 id="nativeTitle">장소 선택</h2><button type="button" aria-label="${label}">×</button><input value="입력 중"></dialog>`)});window.closeCount=0;document.querySelector('#nativeDialog button').onclick=()=>{window.closeCount++;document.getElementById('nativeDialog').close()};document.getElementById('nativeDialog').showModal()`);
+          await expectBackHandled(200 + index);
+          assert.equal(await page.evaluate('window.closeCount'), 1);
+          assert.equal(await page.evaluate('document.getElementById("nativeDialog").open'), false);
+          assert.equal(await page.evaluate('location.pathname'), '/trade');
+          await assertScroll(700, 'Closing a native dialog preserves the underlying list');
+          await expectBackHandled(220 + index, false);
+        });
+      }
+      await t.test('nested place picker closes before profile and preserves its unfinished input', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`document.body.insertAdjacentHTML('beforeend','<dialog id="profile"><h2>프로필 수정</h2><button aria-label="프로필 수정 창 닫기">×</button><input id="nicknameDraft" value="저장 전 닉네임"></dialog><dialog id="place"><h2>선호 거래 지역 선택</h2><button aria-label="선호 거래 지역 선택 창 닫기">×</button></dialog>');for(const id of ['profile','place']){const dialog=document.getElementById(id);dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal()}`);
+        await expectBackHandled(240);
+        assert.deepEqual(await page.evaluate("['profile','place'].map(id=>document.getElementById(id).open)"), [true, false]);
+        assert.equal(await page.evaluate('document.getElementById("nicknameDraft").value'), '저장 전 닉네임');
+        await expectBackHandled(241);
+        assert.equal(await page.evaluate('document.getElementById("profile").open'), false);
+        await expectBackHandled(242, false);
+      });
+      await t.test('native top layer wins over a later DOM photo overlay with a high z-index', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`document.body.insertAdjacentHTML('beforeend','<dialog id="nativeTop"><button aria-label="거래 장소 선택 창 닫기">×</button></dialog><section id="photoBehind" role="dialog" aria-modal="true" style="position:fixed;inset:0;z-index:999999"><button aria-label="상품 사진 크게 보기 닫기">×</button></section>');document.querySelector('#nativeTop button').onclick=()=>document.getElementById('nativeTop').close();document.querySelector('#photoBehind button').onclick=()=>document.getElementById('photoBehind').remove();document.getElementById('nativeTop').showModal()`);
+        await expectBackHandled(250);
+        assert.equal(await page.evaluate('document.getElementById("nativeTop").open'), false);
+        assert.ok(await page.evaluate('!!document.getElementById("photoBehind")'));
+        await expectBackHandled(251);
+        assert.equal(await page.evaluate('!!document.getElementById("photoBehind")'), false);
+      });
+      await t.test('CSS overlay stacking closes the visibly highest layer rather than the first DOM match', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`document.body.insertAdjacentHTML('beforeend','<section id="high" role="dialog" aria-modal="true" style="position:fixed;inset:30px;z-index:500;background:white"><button aria-label="신고 창 닫기">×</button></section><section id="low" role="dialog" aria-modal="true" style="position:fixed;inset:20px;z-index:100;background:white"><button aria-label="상품 사진 크게 보기 닫기">×</button></section>');for(const id of ['high','low'])document.querySelector('#'+id+' button').onclick=()=>document.getElementById(id).remove()`);
+        await expectBackHandled(260);
+        assert.equal(await page.evaluate('!!document.getElementById("high")'), false);
+        assert.ok(await page.evaluate('!!document.getElementById("low")'));
+      });
+      for (const [index, control] of [
+        { container: 'role="dialog" aria-labelledby="noticeTitle" aria-live="polite"', label: '알림 닫기' },
+        { container: 'aria-label="가챠 검색 결과"', label: '검색 결과 닫기' },
+      ].entries()) {
+        await t.test(`nonmodal popover: ${control.label}`, async () => {
+          await navigate('/trade?scroll-fixture', 393);
+          await inject();
+          await page.evaluate(`document.body.insertAdjacentHTML('beforeend',${JSON.stringify(`<section id="popover" ${control.container} style="position:fixed;inset:60px 10px"><h2 id="noticeTitle">알림</h2><button aria-label="${control.label}">×</button></section>`)});document.querySelector('#popover button').onclick=()=>document.getElementById('popover').remove()`);
+          await expectBackHandled(270 + index);
+          assert.equal(await page.evaluate('!!document.getElementById("popover")'), false);
+        });
+      }
+      await t.test('confirmation cancels safely and never clicks the destructive action', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`window.confirmCount=0;document.body.insertAdjacentHTML('beforeend','<section id="confirmation" role="alertdialog" aria-modal="true" style="position:fixed;inset:40px"><h2>삭제할까요?</h2><button type="button" id="cancelDelete">취소</button><button type="button" id="confirmDelete">삭제하기</button></section>');document.getElementById('cancelDelete').onclick=()=>document.getElementById('confirmation').remove();document.getElementById('confirmDelete').onclick=()=>window.confirmCount++`);
+        await expectBackHandled(280);
+        assert.equal(await page.evaluate('window.confirmCount'), 0);
+        assert.equal(await page.evaluate('!!document.getElementById("confirmation")'), false);
+      });
+      await t.test('the actual user safety menu without aria-controls closes through its own trigger', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`window.destructiveCount=0;document.body.insertAdjacentHTML('beforeend','<section id="parentDialog" role="dialog" aria-modal="true" style="position:fixed;inset:20px"><button aria-label="채팅 닫기">×</button><div id="userMenuRoot"><button id="userMenuTrigger" aria-label="상대방 사용자 메뉴" aria-haspopup="menu" aria-expanded="true">•••</button><div role="menu"><button role="menuitem">신고하기</button><button role="menuitem">차단하기</button></div></div></section>');document.querySelector('#parentDialog > button').onclick=()=>document.getElementById('parentDialog').remove();document.getElementById('userMenuTrigger').onclick=()=>{document.querySelector('#userMenuRoot [role=menu]').remove();document.getElementById('userMenuTrigger').setAttribute('aria-expanded','false')};for(const b of document.querySelectorAll('[role=menuitem]'))b.onclick=()=>window.destructiveCount++`);
+        await expectBackHandled(285);
+        assert.equal(await page.evaluate('!!document.querySelector("[role=menu]")'), false);
+        assert.equal(await page.evaluate('document.getElementById("userMenuTrigger").getAttribute("aria-expanded")'), 'false');
+        assert.ok(await page.evaluate('!!document.getElementById("parentDialog")'), 'Closing a nested menu must not close its chat dialog');
+        assert.equal(await page.evaluate('window.destructiveCount'), 0);
+      });
+      await t.test('pending submission and internally guarded profile close remain in place', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`document.body.insertAdjacentHTML('beforeend','<section id="pending" role="dialog" aria-modal="true" aria-labelledby="trade-submission-title" style="position:fixed;inset:20px"><h2 id="trade-submission-title">게시글 등록 중</h2></section>')`);
+        await expectBackHandled(290);
+        assert.ok(await page.evaluate('!!document.getElementById("pending")'));
+        await page.evaluate(`document.getElementById('pending').remove();document.body.insertAdjacentHTML('beforeend','<dialog id="savingProfile"><button aria-label="프로필 수정 창 닫기">×</button><button disabled>저장 중...</button></dialog>');document.querySelector('#savingProfile button').onclick=()=>{};document.getElementById('savingProfile').showModal()`);
+        await expectBackHandled(291);
+        assert.equal(await page.evaluate('document.getElementById("savingProfile").open'), true, 'The web saving guard must not be bypassed by force-closing the DOM');
+      });
+    });
+
+    await t.test('search category back restores one actual category selection at a time', async () => {
+      await navigate('/search?scroll-fixture', 393);
+      await inject();
+      // The feed can arrive after the app runtime: model its lazy React commit.
+      await page.evaluate(`document.getElementById('routeRoot').innerHTML='<nav aria-label="가챠 카테고리"><button aria-pressed="true">산리오</button><button aria-pressed="false">치이카와</button><button aria-pressed="false">포켓몬</button></nav><h2 id="categoryHeading">산리오</h2>';for(const b of document.querySelectorAll('nav button'))b.onclick=()=>{for(const sibling of b.parentElement.children)sibling.setAttribute('aria-pressed',String(sibling===b));document.getElementById('categoryHeading').textContent=b.textContent}`);
+      await settle();
+      await page.evaluate("document.querySelectorAll('nav button')[1].click()");
+      await settle();
+      await page.evaluate("document.querySelectorAll('nav button')[2].click()");
+      await settle();
+      await expectBackHandled(300);
+      assert.equal(await page.evaluate('document.getElementById("categoryHeading").textContent'), '치이카와');
+      await expectBackHandled(301);
+      assert.equal(await page.evaluate('document.getElementById("categoryHeading").textContent'), '산리오');
+      await expectBackHandled(302, false);
+      assert.equal(await page.evaluate('location.pathname'), '/search', 'Category changes do not manufacture route navigation');
+      await page.evaluate("document.querySelectorAll('nav button')[1].click()");
+      await settle();
+      await page.evaluate("history.pushState({},'', '/trade');document.getElementById('routeRoot').innerHTML='';history.pushState({},'', '/search');document.getElementById('routeRoot').innerHTML='<nav aria-label=\"가챠 카테고리\"><button aria-pressed=\"true\">산리오</button><button aria-pressed=\"false\">치이카와</button></nav>'");
+      await settle();
+      await expectBackHandled(303, false);
+    });
+
+    await t.test('dirty trade form asks once and cancel preserves fields while explicit approval navigates', async () => {
+      await navigate('/trade?scroll-fixture', 393);
+      await inject();
+      await commitRoute('/trade/42');
+      await commitRoute('/trade/42/edit');
+      await page.evaluate("const input=document.querySelector('#trade-edit-form input');input.value='수정 중인 제목';input.dispatchEvent(new Event('input',{bubbles:true}))");
+      await expectBackHandled(310);
+      const confirm = await page.evaluate("window.backResults.find(item=>item.type==='gachigacha:confirm-leave-trade')");
+      assert.ok(confirm, 'Dirty-form Back must ask the native confirmation, not navigate immediately');
+      assert.equal(confirm.requestId, 310);
+      assert.equal(confirm.path, '/trade/42/edit');
+      await page.evaluate(createWebShellConfirmLeaveScript(310, false));
+      await settle();
+      assert.equal(await page.evaluate('location.pathname'), '/trade/42/edit');
+      assert.equal(await page.evaluate('document.querySelector("#trade-edit-form input").value'), '수정 중인 제목');
+      await expectBackHandled(311);
+      await page.evaluate(createWebShellConfirmLeaveScript(310, true));
+      await settle();
+      assert.equal(await page.evaluate('location.pathname'), '/trade/42/edit', 'An obsolete confirmation request cannot approve the newer prompt');
+      await page.evaluate(createWebShellConfirmLeaveScript(311, true));
+      for (let i = 0; i < 100 && await page.evaluate("location.pathname === '/trade/42/edit'"); i++) await new Promise(resolve => setTimeout(resolve, 20));
+      assert.equal(await page.evaluate('location.pathname'), '/trade/42');
+    });
+
+    await t.test('trade creation guards hidden place values, photo-only drafts, and safe link navigation', async t => {
+      const prepareCreateForm = async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await page.evaluate(`history.pushState({idx:1},'', '/trade/new');document.getElementById('routeRoot').innerHTML='<h1>교환글 작성</h1><form id="trade-create-form"><input name="title" value=""><textarea name="description"></textarea><input type="hidden" name="tradePlace.address" value=""><input type="checkbox" name="categoryIds" value="1"><input type="file" accept="image/*"><div id="draftPhotos"></div><button type="submit">등록하기</button></form><a id="leaveDraft" href="/search">검색</a>';document.getElementById('leaveDraft').onclick=event=>{event.preventDefault();history.pushState({idx:2},'', '/search');document.getElementById('routeRoot').innerHTML='<h1>검색</h1>'}`);
+        await settle();
+      };
+      await t.test('pristine fields pass through, selected places ask, and restoring values clears dirty state', async () => {
+        await prepareCreateForm();
+        await expectBackHandled(320, false);
+        await page.evaluate(`document.querySelector('input[name="tradePlace.address"]').value='서울 마포구 양화로 160'`);
+        await expectBackHandled(321);
+        assert.equal(await page.evaluate("window.backResults.find(item=>item.type==='gachigacha:confirm-leave-trade').path"), '/trade/new');
+        await page.evaluate(createWebShellConfirmLeaveScript(321, false));
+        await page.evaluate(`document.querySelector('input[name="tradePlace.address"]').value=''`);
+        await expectBackHandled(322, false);
+      });
+      await t.test('a selected photo remains guarded after React clears its file input', async () => {
+        await prepareCreateForm();
+        await page.evaluate(`const photo=document.querySelector('input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File(['draft'], 'draft.png', {type:'image/png'}));photo.files=transfer.files;photo.dispatchEvent(new Event('change',{bubbles:true}));photo.value='';document.getElementById('draftPhotos').innerHTML='<div data-trade-photo-index="0"><img alt="사진 미리보기" src="${validPhoto}"></div>'`);
+        await settle();
+        await expectBackHandled(323);
+        assert.equal(await page.evaluate('document.querySelector("input[type=file]").files.length'), 0);
+        await page.evaluate(createWebShellConfirmLeaveScript(323, false));
+        assert.equal(await page.evaluate('document.querySelectorAll("[data-trade-photo-index] img").length'), 1, 'Cancel must preserve the photo draft');
+      });
+      await t.test('same-origin links wait for approval and route-away invalidates an old approval', async () => {
+        await prepareCreateForm();
+        await page.evaluate(`document.querySelector('input[name=title]').value='작성 중';window.linkClicked=false;document.getElementById('leaveDraft').addEventListener('click',()=>window.linkClicked=true)`);
+        await captureBackMessages();
+        await page.evaluate('document.getElementById("leaveDraft").click()');
+        await settle();
+        const requestId = await page.evaluate("window.backResults.find(item=>item.type==='gachigacha:confirm-leave-trade').requestId");
+        assert.equal(await page.evaluate('location.pathname'), '/trade/new');
+        assert.equal(await page.evaluate('window.linkClicked'), false);
+        await page.evaluate(createWebShellConfirmLeaveScript(requestId, false));
+        await captureBackMessages();
+        await page.evaluate('document.getElementById("leaveDraft").click()');
+        await settle();
+        const approvedId = await page.evaluate("window.backResults.find(item=>item.type==='gachigacha:confirm-leave-trade').requestId");
+        await page.evaluate(createWebShellConfirmLeaveScript(approvedId, true));
+        await settle();
+        assert.equal(await page.evaluate('location.pathname'), '/search');
+        assert.equal(await page.evaluate('window.linkClicked'), true, 'Approval invokes the original web link handler');
+        await prepareCreateForm();
+        await page.evaluate(`document.querySelector('input[name=title]').value='작성 중'`);
+        await expectBackHandled(324);
+        await page.evaluate(`history.pushState({},'', '/mypage');document.getElementById('routeRoot').innerHTML='<h1>마이페이지</h1>'`);
+        await settle();
+        await page.evaluate(createWebShellConfirmLeaveScript(324, true));
+        await settle();
+        assert.equal(await page.evaluate('location.pathname'), '/mypage', 'A confirmation cannot navigate after its form is gone');
+      });
+    });
+
+    await t.test('same-member token refresh after gallery return preserves the native profile dialog and File draft', async () => {
+      await navigate('/mypage?mode=valid', 393);
+      const token = serial => `test.${Buffer.from(JSON.stringify({ type: 'access', memberId: 42, serial })).toString('base64url')}.signature`;
+      await page.evaluate(`sessionStorage.setItem('gachi-gacha:access-token',${JSON.stringify(token(1))});sessionStorage.setItem('gachi-gacha:refresh-token','old-refresh');window.galleryDraftSentinel='still-here';const dialog=document.querySelector('dialog');dialog.removeAttribute('open');dialog.showModal();const input=dialog.querySelector('input[type=file]');const transfer=new DataTransfer();transfer.items.add(new File(['profile draft'], 'chosen-profile.png', {type:'image/png'}));input.files=transfer.files;dialog.querySelector('input:not([type=file])').value='저장하지 않은 닉네임'`);
+      await page.evaluate(createWebShellSessionSnapshotBridgeScript());
+      await captureBackMessages();
+      await page.evaluate(createWebShellSessionSyncScript({ accessToken: token(2), refreshToken: 'new-refresh' }));
+      await settle();
+      assert.equal(await page.evaluate('window.galleryDraftSentinel'), 'still-here', 'A same-member refresh must not reload the document');
+      assert.equal(await page.evaluate('document.querySelector("dialog").open'), true);
+      assert.equal(await page.evaluate('document.querySelector("dialog input[type=file]").files[0].name'), 'chosen-profile.png');
+      assert.equal(await page.evaluate('document.querySelector("dialog input:not([type=file])").value'), '저장하지 않은 닉네임');
+      assert.equal(await page.evaluate('sessionStorage.getItem("gachi-gacha:access-token")'), token(2));
+      assert.equal(await page.evaluate('sessionStorage.getItem("gachi-gacha:refresh-token")'), 'new-refresh');
+      assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:auth-session-synced' }], 'Native writes do not echo a snapshot back and create an update loop');
+      await page.evaluate(`sessionStorage.setItem('gachi-gacha:access-token',${JSON.stringify(token(3))});sessionStorage.setItem('gachi-gacha:refresh-token','web-refresh')`);
+      await settle();
+      const snapshots = await page.evaluate("window.backResults.filter(item=>item.type==='gachigacha:auth-session-snapshot')");
+      assert.equal(snapshots.length, 1, 'The web refresh posts one complete pair, not intermediate stale credentials');
+      assert.deepEqual(snapshots[0].tokens, { accessToken: token(3), refreshToken: 'web-refresh' });
+      assert.equal(await page.evaluate('document.querySelector("dialog").open'), true);
+    });
+
+    await t.test('trade detail and edit entries reset only after their matching content commits', async t => {
       for (const method of ['pushState', 'replaceState']) {
         await t.test(`${method}: delayed detail render, later mutations and different IDs`, async () => {
           await navigate('/trade/42/edit?scroll-fixture', 393);
@@ -398,10 +630,12 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
           await commitRoute('/trade/42/edit', method);
           await setScroll(1100);
           await commitRoute('/trade/99', method);
-          await assertScroll(1100, 'Another detail is not a saved-edit return');
+          await assertScroll(0, 'A new detail also opens at its own top');
+          await setScroll(1100);
           await commitRoute('/trade', method);
           await assertScroll(1100, 'The trade list retains its existing scroll');
           await commitRoute('/trade/42/edit', method);
+          await setScroll(1100);
           await commitRoute('/trade/42#trade-comments-title', method);
           await assertScroll(1100, 'A detail comment anchor is never overridden by edit-return handling');
         });
@@ -418,6 +652,45 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
           await new Promise(resolve => setTimeout(resolve, 20));
         }
         await assertScroll(0, 'A later history restoration cannot overwrite the saved-detail top reset');
+      });
+      await t.test('list to detail and detail to edit wait for route-specific readiness markers', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await setScroll(1400);
+        await commitRoute('/trade/42', 'pushState', true);
+        await assertScroll(1400, 'The list is not scrolled while a detail is still loading');
+        await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))}`);
+        await assertScroll(0, 'Detail readiness is its actual trade-comments-title marker');
+        await setScroll(900);
+        await commitRoute('/trade/42/edit', 'pushState', true);
+        await assertScroll(900, 'An edit loading placeholder must not scroll the old detail');
+        await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42/edit'))}`);
+        await assertScroll(0, 'Edit readiness is its actual trade-edit-form marker');
+      });
+      await t.test('returning to the list preserves browser-restored list position', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await setScroll(1250);
+        await commitRoute('/trade/42');
+        await assertScroll(0, 'Detail navigation starts at top');
+        await page.evaluate(`window.addEventListener('popstate',()=>{document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade'))};requestAnimationFrame(()=>scrollTo(0,1250))},{once:true});history.back()`);
+        for (let i = 0; i < 100; i++) {
+          if (await page.evaluate("location.pathname === '/trade'")) break;
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        await assertScroll(1250, 'Android does not override native/browser list restoration');
+      });
+      await t.test('late detail content and final-frame hash changes cannot hijack another destination', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await setScroll(1100);
+        await commitRoute('/trade/42', 'pushState', true);
+        await commitRoute('/search');
+        await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))}`);
+        await assertScroll(1100, 'A late detail response cannot scroll the search route');
+        await commitRoute('/trade');
+        await page.evaluate(`history.pushState({},'','/trade/42');document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))};requestAnimationFrame(()=>history.replaceState({},'','/trade/42#trade-comments-title'))`);
+        await assertScroll(1100, 'A hash selected before the reset frame cancels the queued detail reset');
       });
     });
 
@@ -469,12 +742,52 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
         await assertScroll(1200, 'Adding a same-route hash before a queued reset fires must cancel that reset');
       });
     });
+
+    // Opt in to the actual deployed web contract, without credentials or writes:
+    // ANDROID_TEST_LIVE_ORIGIN=https://dev.gachigacha.kro.kr
+    // ANDROID_TEST_SCREENSHOT_DIR=/tmp/gachi-android-live-back
+    if (process.env.ANDROID_TEST_LIVE_ORIGIN) {
+      await t.test('deployed public web photo and category back smoke', async () => {
+        const liveOrigin = new URL(process.env.ANDROID_TEST_LIVE_ORIGIN).origin;
+        assert.equal(new URL(liveOrigin).protocol, 'https:', 'Live verification uses HTTPS');
+        const waitFor = async (expression, description) => {
+          for (let i = 0; i < 150; i++) {
+            if (await page.evaluate(expression)) return;
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+          throw new Error(`Actual web did not render ${description}`);
+        };
+        await size(393);
+        await page.send('Page.navigate', { url: `${liveOrigin}/trade` });
+        await waitFor("[...document.querySelectorAll('a[href]')].some(a=>/^\\/trade\\/\\d+$/.test(a.getAttribute('href')))", 'a public trade detail link');
+        const detailPath = await page.evaluate("[...document.querySelectorAll('a[href]')].find(a=>/^\\/trade\\/\\d+$/.test(a.getAttribute('href'))).getAttribute('href')");
+        await page.send('Page.navigate', { url: `${liveOrigin}${detailPath}` });
+        await waitFor("[...document.querySelectorAll('button[aria-label]')].some(b=>/상품 사진 크게 보기$/.test(b.getAttribute('aria-label')))", 'a real product photo launcher');
+        await inject();
+        await page.evaluate("[...document.querySelectorAll('button[aria-label]')].find(b=>/상품 사진 크게 보기$/.test(b.getAttribute('aria-label'))).click()");
+        await waitFor("!!document.querySelector('[role=dialog][aria-modal=true] button[aria-label=\"상품 사진 크게 보기 닫기\"]')", 'the deployed PhotoViewer');
+        await screenshot('live-dev-photo-before-back');
+        await expectBackHandled(500);
+        assert.equal(await page.evaluate('!!document.querySelector("[role=dialog][aria-modal=true]")'), false);
+        assert.equal(await page.evaluate('location.pathname'), detailPath);
+        await screenshot('live-dev-photo-after-back');
+        await page.send('Page.navigate', { url: `${liveOrigin}/search` });
+        await waitFor("!!document.querySelector('nav[aria-label=\"가챠 카테고리\"] button[aria-pressed=true]')", 'the deployed category navigation');
+        await inject();
+        await page.evaluate("[...document.querySelectorAll('nav[aria-label=\"가챠 카테고리\"] button')].find(b=>b.textContent==='치이카와').click()");
+        await waitFor("document.querySelector('nav[aria-label=\"가챠 카테고리\"] button[aria-pressed=true]').textContent==='치이카와'", 'the selected category');
+        await expectBackHandled(501);
+        assert.equal(await page.evaluate('document.querySelector(\'nav[aria-label="가챠 카테고리"] button[aria-pressed=true]\').textContent'), '산리오');
+        assert.equal(await page.evaluate('location.pathname'), '/search');
+        await screenshot('live-dev-category-after-back');
+      });
+    }
   } finally {
     page?.close();
     if (browser.exitCode === null) {
       await new Promise(resolve => { browser.once('exit', resolve); browser.kill('SIGTERM'); });
     }
     await new Promise(resolve => server.close(resolve));
-    await rm(temporaryProfile, { recursive: true, force: true });
+    await rm(temporaryProfile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   }
 });

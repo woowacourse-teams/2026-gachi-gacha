@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  AppState,
   BackHandler,
   Linking,
   Pressable,
@@ -19,7 +18,8 @@ import { getWebAppBaseUrl } from '../config/webShell';
 import { useAuthSession } from '../domains/auth/AuthSessionContext';
 import {
   readAuthTokens,
-  updateStoredRefreshToken,
+  storeAuthTokens,
+  subscribeAuthTokens,
 } from '../domains/auth/authTokenStorage';
 import type { AuthTokens, MobileOAuthProvider } from '../domains/auth/authTypes';
 import { loginWithMobileOAuth } from '../domains/auth/mobileOAuthLogin';
@@ -27,10 +27,15 @@ import { createPushNavigationQueue } from '../domains/notification/pushNavigatio
 import { usePushNotifications } from '../domains/notification/usePushNotifications';
 import { createWebShellBackController } from '../domains/webShell/webShellBackController';
 import {
+  createWebShellSessionSnapshotRequestScript,
+  parseWebShellSessionSnapshot,
+} from '../domains/webShell/webShellSessionBridge';
+import {
   classifyWebShellNavigation,
   createWebShellAuthenticationCompletionScript,
   createWebShellBootstrapScript,
   createWebShellChatListNavigationScript,
+  createWebShellConfirmLeaveScript,
   createWebShellNavigationScript,
   createWebShellOverlayBackScript,
   createWebShellRuntimeScript,
@@ -53,17 +58,19 @@ export function WebAppShellScreen() {
     typeof createWebShellBackController
   > | null>(null);
   const lastRootBackPressAt = useRef(0);
+  const leaveConfirmationOpenRef = useRef(false);
   const lastNonLoginUrlRef = useRef(appBaseUrl);
-  const appStateRef = useRef(AppState.currentState);
   const oauthInFlightRef = useRef(false);
+  const webLogoutInFlightRef = useRef(false);
+  const nativeSessionTokensRef = useRef<AuthTokens | null | undefined>(undefined);
+  const nativeSessionRevisionRef = useRef(0);
   const webSessionReadyFallbackRef = useRef<ReturnType<
     typeof setTimeout
   > | null>(null);
   const webViewLoadedRef = useRef(false);
   const pushNavigationQueueRef = useRef(createPushNavigationQueue());
   const topLevelUrlRef = useRef(appBaseUrl);
-  const { authenticate, logout, retry: retryAuthSession, status } =
-    useAuthSession();
+  const { authenticate, logout, status } = useAuthSession();
   const [nativeSessionTokens, setNativeSessionTokens] = useState<
     AuthTokens | null | undefined
   >(undefined);
@@ -115,15 +122,36 @@ export function WebAppShellScreen() {
 
   usePushNotifications(openPushPath);
 
-  const refreshNativeSession = useCallback(async () => {
-    const tokens = await readAuthTokens();
-    setNativeSessionTokens(tokens);
+  const updateNativeSession = useCallback((tokens: AuthTokens | null) => {
+    nativeSessionRevisionRef.current += 1;
+    nativeSessionTokensRef.current = tokens;
+    setNativeSessionTokens((current) =>
+      current?.accessToken === tokens?.accessToken &&
+      current?.refreshToken === tokens?.refreshToken && current !== undefined
+        ? current : tokens,
+    );
   }, []);
+
+  useEffect(() => subscribeAuthTokens((tokens) => {
+    // Cold boot는 기존 AuthSessionProvider 복원 완료를 기다린다.
+    if (nativeSessionTokensRef.current !== undefined) updateNativeSession(tokens);
+  }), [updateNativeSession]);
+
+  const refreshNativeSession = useCallback(async () => {
+    const revision = nativeSessionRevisionRef.current;
+    const tokens = await readAuthTokens();
+    if (revision !== nativeSessionRevisionRef.current) return;
+    updateNativeSession(tokens);
+    if (webViewLoadedRef.current && !oauthInFlightRef.current) {
+      webViewRef.current?.injectJavaScript(createWebShellSessionSyncScript(tokens));
+    }
+  }, [updateNativeSession]);
 
   useEffect(() => {
     if (
       nativeSessionTokens === undefined ||
       status === 'loading' ||
+      oauthInFlightRef.current ||
       !webViewLoadedRef.current
     ) {
       return;
@@ -142,27 +170,15 @@ export function WebAppShellScreen() {
     void refreshNativeSession();
   }, [refreshNativeSession, status]);
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      const previousState = appStateRef.current;
-      appStateRef.current = nextState;
-
-      if (
-        nextState === 'active' &&
-        (previousState === 'background' || previousState === 'inactive') &&
-        !oauthInFlightRef.current
-      ) {
-        retryAuthSession();
-      }
-    });
-
-    return () => subscription.remove();
-  }, [retryAuthSession]);
+  // 갤러리/권한 화면에서 돌아온 것은 새 앱 시작이 아니다. 살아 있는 웹 문서는
+  // 웹의 인증 갱신을 유지하고, 네이티브 토큰 변경은 위 저장소 구독으로만 맞춘다.
 
   useEffect(() => {
     const controller = createWebShellBackController({
       dispatch(requestId, expiresAt) {
-        if (!webViewLoadedRef.current || !webViewRef.current) return false;
+        // SPA/load events are not evidence that an overlay is absent. Query the
+        // live document even while loading; only its explicit ACK may navigate.
+        if (!webViewRef.current) return false;
         webViewRef.current.injectJavaScript(
           createWebShellOverlayBackScript(requestId, expiresAt),
         );
@@ -202,6 +218,7 @@ export function WebAppShellScreen() {
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
+        if (leaveConfirmationOpenRef.current) return true;
         controller.press();
         return true;
       },
@@ -232,7 +249,7 @@ export function WebAppShellScreen() {
       try {
         const tokens = await loginWithMobileOAuth(provider);
         await authenticate(tokens);
-        setNativeSessionTokens(tokens);
+        updateNativeSession(tokens);
         webViewRef.current?.injectJavaScript(
           createWebShellAuthenticationCompletionScript(
             appBaseUrl,
@@ -251,7 +268,7 @@ export function WebAppShellScreen() {
         setAuthenticatingProvider(null);
       }
     },
-    [appBaseUrl, authenticate, authenticatingProvider],
+    [appBaseUrl, authenticate, authenticatingProvider, updateNativeSession],
   );
 
   const handleNewWindow = useCallback(
@@ -293,6 +310,21 @@ export function WebAppShellScreen() {
         return;
       }
 
+      const snapshot = parseWebShellSessionSnapshot(data);
+      if (snapshot) {
+        if (oauthInFlightRef.current || webLogoutInFlightRef.current) return;
+        if (snapshot.tokens) {
+          // 웹은 인증을 새로 시작하지 않는다. 이미 인증된 세션의 회전만 보관한다.
+          if (nativeSessionTokensRef.current) {
+            void storeAuthTokens(snapshot.tokens).catch(() => undefined);
+          }
+        } else if (nativeSessionTokensRef.current) {
+          webLogoutInFlightRef.current = true;
+          void logout().finally(() => { webLogoutInFlightRef.current = false; });
+        }
+        return;
+      }
+
       const message = parseWebShellMessage(data);
 
       if (!message) {
@@ -301,6 +333,28 @@ export function WebAppShellScreen() {
 
       if (message.type === 'overlay-back-result') {
         backControllerRef.current?.resolve(message.requestId, message.handled);
+        return;
+      }
+
+      if (message.type === 'confirm-leave-trade') {
+        backControllerRef.current?.resolve(message.requestId, true);
+        if (leaveConfirmationOpenRef.current) return;
+        leaveConfirmationOpenRef.current = true;
+        const finish = (accepted: boolean) => {
+          leaveConfirmationOpenRef.current = false;
+          webViewRef.current?.injectJavaScript(
+            createWebShellConfirmLeaveScript(message.requestId, accepted),
+          );
+        };
+        Alert.alert(
+          '작성 중인 글에서 나갈까요?',
+          '지금 나가면 저장하지 않은 작성 내용이 사라집니다.',
+          [
+            { text: '계속 작성', style: 'cancel', onPress: () => finish(false) },
+            { text: '나가기', style: 'destructive', onPress: () => finish(true) },
+          ],
+          { cancelable: true, onDismiss: () => finish(false) },
+        );
         return;
       }
 
@@ -323,19 +377,9 @@ export function WebAppShellScreen() {
         return;
       }
 
-      if (message.token) {
-        const refreshToken = message.token;
-        void updateStoredRefreshToken(refreshToken);
-        setNativeSessionTokens((current) =>
-          current
-            ? { ...current, refreshToken }
-            : current,
-        );
-        return;
-      }
-
-      setNativeSessionTokens(null);
-      void logout();
+      // 구형 웹 브리지는 refresh만 보낸다. 과거 access와 섞어 echo하지 않고
+      // 현재 문서에서 access/refresh 전체를 다시 읽어 동일한 경로로 처리한다.
+      webViewRef.current?.injectJavaScript(createWebShellSessionSnapshotRequestScript());
     },
     [appBaseUrl, logout, markWebSessionReady, refreshNativeSession],
   );
@@ -424,9 +468,6 @@ export function WebAppShellScreen() {
         }}
         onLoadEnd={() => {
           webViewLoadedRef.current = true;
-          webViewRef.current?.injectJavaScript(
-            createWebShellSessionSyncScript(nativeSessionTokens),
-          );
           scheduleWebSessionReadyFallback();
           void refreshNativeSession();
         }}

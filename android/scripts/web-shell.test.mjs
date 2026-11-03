@@ -310,7 +310,7 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /data:image\/svg\+xml/);
   assert.doesNotMatch(runtimeScript, /%3Crect/);
   assert.match(runtimeScript, /bottom: 12px/);
-  assert.match(bootstrapScript, /gachigacha:auth-refresh-token/);
+  assert.match(bootstrapScript, /gachigacha:auth-session-snapshot/);
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
   assert.match(syncScript, /sessionChanged/);
   assert.match(syncScript, /window\.location\.reload/);
@@ -361,6 +361,22 @@ test('사진 닫기 응답은 유효한 요청 번호와 boolean만 받는다', 
   assert.match(WEB_APP_SHELL_SOURCE, /createWebShellOverlayBackScript\(requestId, expiresAt\)/);
 });
 
+test('작성 이탈 확인은 유효한 요청 번호와 실제 작성·수정 경로만 허용한다', () => {
+  for (const path of ['/trade/new', '/trade/42/edit']) {
+    assert.deepEqual(parseWebShellMessage(JSON.stringify({
+      type: 'gachigacha:confirm-leave-trade', requestId: 1, path,
+    })), { type: 'confirm-leave-trade', requestId: 1, path });
+  }
+  for (const path of ['/trade/42', '/mypage', 'https://example.com/trade/new']) {
+    assert.equal(parseWebShellMessage(JSON.stringify({
+      type: 'gachigacha:confirm-leave-trade', requestId: 1, path,
+    })), null);
+  }
+  assert.equal(parseWebShellMessage(JSON.stringify({
+    type: 'gachigacha:confirm-leave-trade', requestId: -1, path: '/trade/new',
+  })), null);
+});
+
 test('사진 닫기와 history 뒤로가기를 중복 실행하지 않는다', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   const requests = [];
@@ -384,7 +400,7 @@ test('사진 닫기와 history 뒤로가기를 중복 실행하지 않는다', (
   controller.cancel();
 });
 
-test('브리지 무응답은 재시도를 안내하고 로딩·오류만 즉시 뒤로가며 취소된 응답은 무시한다', (t) => {
+test('브리지 무응답·예외는 재시도를 안내하고 WebView가 없을 때만 즉시 뒤로간다', (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   let navigations = 0;
   let unresponsive = 0;
@@ -406,12 +422,15 @@ test('브리지 무응답은 재시도를 안내하고 로딩·오류만 즉시 
   assert.equal(navigations, 0);
   for (const dispatch of [() => false, () => { throw new Error('unmounted'); }]) {
     const unavailable = createWebShellBackController({
-      dispatch, onUnhandled: () => { navigations++; },
+      dispatch,
+      onUnhandled: () => { navigations++; },
+      onUnresponsive: () => { unresponsive++; },
     });
     unavailable.press();
     unavailable.cancel();
   }
-  assert.equal(navigations, 2);
+  assert.equal(navigations, 1);
+  assert.equal(unresponsive, 2);
 });
 
 test('사진을 닫은 뒤 응답만 늦어져도 상세글을 추가로 이탈하지 않는다', (t) => {

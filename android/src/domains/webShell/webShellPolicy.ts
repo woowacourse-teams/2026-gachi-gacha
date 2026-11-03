@@ -1,4 +1,11 @@
 import type { AuthTokens, MobileOAuthProvider } from '../auth/authTypes';
+import { createWebShellBackNavigationScript } from './webShellBackNavigation.ts';
+import { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
+import { createWebShellSessionSnapshotBridgeScript } from './webShellSessionBridge.ts';
+
+export { createWebShellOverlayBackScript, createWebShellConfirmLeaveScript } from './webShellBackNavigation.ts';
+export { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
+export { createWebShellSessionSyncScript } from './webShellSessionBridge.ts';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
@@ -175,6 +182,7 @@ export type WebShellMessage =
   | { type: 'native-bridge-ready' }
   | { type: 'push-token-request' }
   | { isOpen: boolean; type: 'chat-room-state' }
+  | { requestId: number; path: string; type: 'confirm-leave-trade' }
   | { requestId: number; handled: boolean; type: 'overlay-back-result' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -285,6 +293,15 @@ export function parseWebShellMessage(value: string): WebShellMessage | null {
   }
 
   if (
+    message.type === 'gachigacha:confirm-leave-trade' &&
+    typeof message.requestId === 'number' &&
+    Number.isSafeInteger(message.requestId) && message.requestId > 0 &&
+    typeof message.path === 'string' && /^\/trade\/(?:new|\d+\/edit)$/.test(message.path)
+  ) {
+    return { type: 'confirm-leave-trade', requestId: message.requestId, path: message.path };
+  }
+
+  if (
     message.type === WEB_OVERLAY_BACK_RESULT_MESSAGE &&
     typeof message.requestId === 'number' &&
     Number.isSafeInteger(message.requestId) &&
@@ -350,37 +367,6 @@ function createTokenStorageScript(tokens: AuthTokens | null): string {
   `;
 }
 
-function createTokenStorageSyncScript(tokens: AuthTokens | null): string {
-  if (!tokens) {
-    return `
-      const sessionChanged =
-        window.sessionStorage.getItem(${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)}) !== null ||
-        window.sessionStorage.getItem(${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)}) !== null;
-      if (sessionChanged) {
-        window.sessionStorage.removeItem(${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)});
-        window.sessionStorage.removeItem(${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)});
-      }
-    `;
-  }
-
-  return `
-    const nextAccessToken = ${serializeForInlineScript(tokens.accessToken)};
-    const nextRefreshToken = ${serializeForInlineScript(tokens.refreshToken)};
-    const sessionChanged =
-      window.sessionStorage.getItem(${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)}) !== nextAccessToken ||
-      window.sessionStorage.getItem(${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)}) !== nextRefreshToken;
-    if (sessionChanged) {
-      window.sessionStorage.setItem(
-        ${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)},
-        nextAccessToken,
-      );
-      window.sessionStorage.setItem(
-        ${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)},
-        nextRefreshToken,
-      );
-    }
-  `;
-}
 
 /**
  * DEV 웹 번들이 구형 회원 탈퇴 경로를 호출하더라도 현재 백엔드 계약으로 보낸다.
@@ -430,33 +416,9 @@ function createWebShellRuntimeBody(): string {
 
     ${createWebShellRouteScrollScript()}
 
-    const refreshTokenKey = ${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)};
-    const postRefreshToken = (token) => {
-      window.ReactNativeWebView?.postMessage(JSON.stringify({
-        type: ${serializeForInlineScript(WEB_AUTH_REFRESH_TOKEN_MESSAGE)},
-        token,
-      }));
-    };
+    ${createWebShellBackNavigationScript()}
 
-    if (!window.__gachigachaAndroidAuthStorageBridgeInstalled) {
-      window.__gachigachaAndroidAuthStorageBridgeInstalled = true;
-      const originalSetItem = Storage.prototype.setItem;
-      const originalRemoveItem = Storage.prototype.removeItem;
-
-      Storage.prototype.setItem = function(key, value) {
-        originalSetItem.call(this, key, value);
-        if (this === window.sessionStorage && key === refreshTokenKey) {
-          postRefreshToken(String(value));
-        }
-      };
-
-      Storage.prototype.removeItem = function(key) {
-        originalRemoveItem.call(this, key);
-        if (this === window.sessionStorage && key === refreshTokenKey) {
-          postRefreshToken(null);
-        }
-      };
-    }
+    ${createWebShellSessionSnapshotBridgeScript()}
 
     const styleId = 'gachigacha-android-webview-style';
     const installAndroidStyle = () => {
@@ -814,116 +776,6 @@ function createWebShellRuntimeBody(): string {
 }
 
 /** Reset only the requested page transitions; keep list/history/hash restoration. */
-export function createWebShellRouteScrollScript(): string {
-  return `
-    if (!window.__gachigachaAndroidRouteScrollInstalled) {
-      window.__gachigachaAndroidRouteScrollInstalled = true;
-      let previousPath = window.location.pathname;
-      let pendingScroll = null;
-      let scrollFrame = null;
-
-      const cancelScroll = () => {
-        if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
-        scrollFrame = null;
-        pendingScroll = null;
-      };
-      const tryScroll = () => {
-        if (!pendingScroll || scrollFrame !== null) return;
-        const target = pendingScroll;
-        if (window.location.pathname !== target.path || window.location.hash) {
-          cancelScroll();
-          return;
-        }
-        const ready = target.path === '/updates'
-          ? document.querySelector('[aria-label="서비스 업데이트 목록"]')
-          : document.querySelector('a[href="' + target.path + '/edit"]');
-        if (!ready) return;
-        // Run after React commits and browser popstate scroll restoration.
-        scrollFrame = window.requestAnimationFrame(() => {
-          scrollFrame = window.requestAnimationFrame(() => {
-            scrollFrame = null;
-            if (pendingScroll !== target || window.location.pathname !== target.path || window.location.hash) return;
-            pendingScroll = null;
-            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-          });
-        });
-      };
-      const checkRoute = (initial = false) => {
-        const path = window.location.pathname;
-        if (window.location.hash) cancelScroll();
-        if (!initial && path === previousPath) return;
-        const returningFromEdit = previousPath === path + '/edit' &&
-          /^\\/trade\\/\\d+$/.test(path);
-        previousPath = path;
-        cancelScroll();
-        if (!window.location.hash && (path === '/updates' || returningFromEdit)) {
-          pendingScroll = { path };
-          tryScroll();
-        }
-      };
-      for (const method of ['pushState', 'replaceState']) {
-        const original = window.history[method];
-        window.history[method] = function(...args) {
-          const result = original.apply(this, args);
-          checkRoute();
-          return result;
-        };
-      }
-      window.addEventListener('popstate', () => checkRoute());
-      window.addEventListener('hashchange', () => {
-        if (window.location.hash) cancelScroll();
-      });
-      // Do not pull the user back to the top after they deliberately start scrolling.
-      for (const event of ['touchstart', 'wheel', 'keydown']) {
-        window.addEventListener(event, cancelScroll, { passive: true });
-      }
-      new MutationObserver(tryScroll).observe(document.documentElement, {
-        childList: true, subtree: true,
-      });
-      document.addEventListener('DOMContentLoaded', tryScroll, { once: true });
-      checkRoute(true);
-    }
-  `;
-}
-
-/** Use the web viewer's own X handler so React state, focus and body lock unwind. */
-export function createWebShellOverlayBackScript(
-  requestId: number,
-  expiresAt: number = Date.now() + 500,
-): string {
-  if (
-    !Number.isSafeInteger(requestId) ||
-    requestId <= 0 ||
-    !Number.isSafeInteger(expiresAt)
-  ) {
-    throw new Error('뒤로가기 요청 번호가 올바르지 않습니다.');
-  }
-  return `
-    (() => {
-      let handled = false;
-      try {
-        // A queued script must not close a newer overlay after the request expired.
-        if (Date.now() > ${expiresAt}) return;
-        const closeButton = Array.from(document.querySelectorAll(
-          '[role="dialog"][aria-modal="true"] button[aria-label="상품 사진 크게 보기 닫기"], ' +
-          '[role="dialog"][aria-modal="true"] button[aria-label="채팅 사진 닫기"], ' +
-          '[role="dialog"][aria-modal="true"] button[aria-label="사진 전체 보기 닫기"]',
-        )).find((button) => !button.disabled && button.getClientRects().length > 0 &&
-          window.getComputedStyle(button).visibility !== 'hidden');
-        if (closeButton) {
-          closeButton.click();
-          handled = true;
-        }
-      } catch {}
-      window.ReactNativeWebView?.postMessage(JSON.stringify({
-        type: ${serializeForInlineScript(WEB_OVERLAY_BACK_RESULT_MESSAGE)},
-        requestId: ${requestId},
-        handled,
-      }));
-    })();
-    true;
-  `;
-}
 
 /**
  * Android에서 지원하지 않는 Apple 로그인을 숨기고, SecureStore 세션을 웹 세션에
@@ -945,25 +797,6 @@ export function createWebShellBootstrapScript(tokens: AuthTokens | null): string
  * document-start 주입이 누락되더라도 현재 웹 저장소를 네이티브 세션과 비교한다.
  * 실제 값이 다를 때만 다시 로드하므로 onLoadEnd마다 안전하게 실행할 수 있다.
  */
-export function createWebShellSessionSyncScript(
-  tokens: AuthTokens | null,
-): string {
-  return `
-    (() => {
-      try {
-        ${createTokenStorageSyncScript(tokens)}
-        if (sessionChanged) {
-          window.location.reload();
-        } else {
-          window.ReactNativeWebView?.postMessage(JSON.stringify({
-            type: ${serializeForInlineScript(WEB_AUTH_SESSION_SYNCED_MESSAGE)},
-          }));
-        }
-      } catch {}
-    })();
-    true;
-  `;
-}
 
 /**
  * 네이티브 OAuth가 끝나면 현재 /login 문서를 다시 로드하지 않고, 토큰을 먼저
