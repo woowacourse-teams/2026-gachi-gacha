@@ -119,6 +119,16 @@ jobs:
           ORG_GRADLE_PROJECT_GACHI_UPLOAD_KEY_PASSWORD: ${{ env.ANDROID_UPLOAD_KEY_PASSWORD }}
         run: ./gradlew bundleRelease
 
+      - name: Verify production AAB environment
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          aab_path='android/app/build/outputs/bundle/release/app-release.aab'
+          embedded_config="${RUNNER_TEMP}/gachigacha-production-app.config"
+          unzip -p "$aab_path" base/assets/app.config > "$embedded_config"
+          node scripts/verify-embedded-app-config.mjs "$embedded_config" production
+
       - name: Verify signed AAB
         working-directory: android/android
         shell: bash

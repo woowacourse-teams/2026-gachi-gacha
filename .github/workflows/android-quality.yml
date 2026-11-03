@@ -40,6 +40,7 @@ jobs:
         working-directory: android
     env:
       EXPO_NO_TELEMETRY: '1'
+      APP_VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}
       KAKAO_MAP_NATIVE_APP_KEY_DEV: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_DEV }}
       KAKAO_MAP_NATIVE_APP_KEY_PROD: ${{ secrets.ANDROID_KAKAO_MAP_NATIVE_APP_KEY_PROD }}
       ANDROID_MEMBER_REPORT_ENDPOINT: ${{ secrets.ANDROID_MEMBER_REPORT_ENDPOINT }}
@@ -67,8 +68,6 @@ jobs:
 
       - name: Restore Firebase Android config
         if: github.event_name != 'pull_request'
-        env:
-          APP_VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}
         shell: bash
         run: |
           if [[ "$APP_VARIANT" == 'production' ]]; then
@@ -94,8 +93,6 @@ jobs:
 
       - name: Generate Android native project
         if: github.event_name != 'pull_request'
-        env:
-          APP_VARIANT: ${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}
         run: npx expo prebuild --platform android --clean --no-install
 
       - name: Setup Java
@@ -119,18 +116,34 @@ jobs:
         working-directory: android/android
         run: ./gradlew assembleRelease
 
+      - name: Verify preview APK environment
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          apk_path='android/app/build/outputs/apk/release/app-release.apk'
+          embedded_config="${RUNNER_TEMP}/gachigacha-preview-app.config"
+          unzip -p "$apk_path" assets/app.config > "$embedded_config"
+          node scripts/verify-embedded-app-config.mjs "$embedded_config" "$APP_VARIANT"
+
       - name: Publish preview registration fingerprints
         if: github.event_name != 'pull_request'
         working-directory: android/android
         shell: bash
         run: |
+          if [[ "$APP_VARIANT" == 'production' ]]; then
+            package_name='com.gachigacha.app'
+          else
+            package_name='com.dev.gachigacha.app'
+          fi
           KEY_HASH="$(keytool -exportcert -alias androiddebugkey -keystore app/debug.keystore -storepass android -keypass android | openssl sha1 -binary | openssl base64)"
           APP_LINK_SHA256="$(keytool -list -v -alias androiddebugkey -keystore app/debug.keystore -storepass android -keypass android | sed -n 's/.*SHA256: //p')"
           {
             echo '### Android preview registration'
             echo ''
-            echo '- Variant: `${{ github.event_name == 'workflow_dispatch' && inputs.app_variant || 'development' }}`'
-            echo '- Package: `${{ (github.event_name == 'workflow_dispatch' && inputs.app_variant == 'production') && 'com.gachigacha.app' || 'com.dev.gachigacha.app' }}`'
+            echo "- Variant: \`$APP_VARIANT\`"
+            echo "- Package: \`$package_name\`"
             echo "- Kakao key hash: \`${KEY_HASH}\`"
             echo "- App Link certificate SHA-256: \`${APP_LINK_SHA256}\`"
           } >> "$GITHUB_STEP_SUMMARY"
