@@ -6,7 +6,7 @@ import App from '@/App';
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { ChatUnreadProvider } from '@/features/chatUnread/ChatUnreadContext';
 import { NotificationProvider } from '@/features/notifications/NotificationContext';
-import { NativePushBridge } from '@/features/pushNotifications/NativePushBridge';
+import { NativePushBridge } from '@/features/pushNotifications/NativePushBridgeComponent';
 import { initializeAnalytics } from '@/shared/analytics/analyticsClient';
 import { AppErrorBoundary } from '@/shared/errorMonitoring/AppErrorBoundary';
 import {
