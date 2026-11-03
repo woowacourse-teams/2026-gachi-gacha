@@ -13,6 +13,7 @@ import { useLocation } from 'react-router';
 import { getChatUnreadCount } from '@/domains/chat/api/chatApi';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { readAccessToken } from '@/features/auth/authTokenStorage';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 interface ChatUnreadContextValue {
   unreadCount: number;
@@ -44,15 +45,31 @@ export function ChatUnreadProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadUnreadCount = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setUnreadCount(await getChatUnreadCount(signal));
-    } catch (error) {
-      if (!isAbortError(error)) {
-        // 일시적인 조회 실패가 이미 표시 중인 수를 지우지 않도록 유지합니다.
+  const loadUnreadCount = useCallback(
+    async (signal?: AbortSignal, captureInitialLoad = false) => {
+      try {
+        setUnreadCount(await getChatUnreadCount(signal));
+
+        if (captureInitialLoad) {
+          captureAnalyticsEvent('unread_count_initial_load_completed', {
+            channel: 'chat',
+            outcome: 'success',
+          });
+        }
+      } catch (error) {
+        if (!isAbortError(error)) {
+          // 일시적인 조회 실패가 이미 표시 중인 수를 지우지 않도록 유지합니다.
+          if (captureInitialLoad) {
+            captureAnalyticsEvent('unread_count_initial_load_completed', {
+              channel: 'chat',
+              outcome: 'failure',
+            });
+          }
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (status !== 'authenticated') {
@@ -61,7 +78,7 @@ export function ChatUnreadProvider({ children }: { children: ReactNode }) {
     }
 
     const controller = new AbortController();
-    void loadUnreadCount(controller.signal);
+    void loadUnreadCount(controller.signal, true);
 
     return () => {
       controller.abort();

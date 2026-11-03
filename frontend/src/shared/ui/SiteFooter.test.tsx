@@ -1,10 +1,17 @@
-import { describe, expect, it } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, jest } from '@jest/globals';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 
 import { shouldShowSiteFooter, SITE_FOOTER_ID, SiteFooter } from './SiteFooter';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 describe('SiteFooter', () => {
   it('실제로 제공하는 정책과 문의 링크만 표시한다', () => {
@@ -37,6 +44,12 @@ describe('SiteFooter', () => {
     expect(screen.getByRole('contentinfo')).toHaveAttribute(
       'id',
       SITE_FOOTER_ID,
+    );
+
+    fireEvent.click(screen.getByRole('link', { name: '협업 문의' }));
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'footer_contact_selected',
+      { target: 'partnership' },
     );
   });
 

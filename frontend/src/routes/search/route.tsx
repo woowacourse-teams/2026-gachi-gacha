@@ -69,8 +69,13 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
   };
   const { storesState, retryStores } = useSearchStores(storeSearchParams);
   const toggleMobileHeader = useCallback(() => {
-    setIsMobileHeaderOpen((isOpen) => !isOpen);
-  }, []);
+    const nextIsOpen = !isMobileHeaderOpen;
+
+    captureAnalyticsEvent('map_mobile_header_toggled', {
+      next_state: nextIsOpen ? 'open' : 'closed',
+    });
+    setIsMobileHeaderOpen(nextIsOpen);
+  }, [isMobileHeaderOpen]);
 
   useLayoutEffect(() => {
     const mobileHeader = mobileHeaderRef.current;

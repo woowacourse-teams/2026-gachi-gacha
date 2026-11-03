@@ -2,9 +2,17 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 import { SearchRoute } from './route';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 jest.mock('./routing/useSearchRouteNavigation', () => ({
   useSearchRouteNavigation: () => ({
@@ -81,11 +89,19 @@ describe('SearchRoute 모바일 지도 헤더', () => {
     expect(headerLayer?.parentElement).toHaveStyle(
       '--mobile-map-header-offset: 0px',
     );
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'map_mobile_header_toggled',
+      { next_state: 'closed' },
+    );
     expect(scrollToSpy).not.toHaveBeenCalled();
 
     await user.click(mapBackground);
 
     expect(headerLayer).toHaveAttribute('data-state', 'open');
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenLastCalledWith(
+      'map_mobile_header_toggled',
+      { next_state: 'open' },
+    );
     expect(scrollToSpy).not.toHaveBeenCalled();
 
     scrollToSpy.mockRestore();

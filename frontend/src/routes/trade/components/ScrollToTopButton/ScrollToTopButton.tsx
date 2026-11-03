@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   breakpoint,
   color,
@@ -37,6 +38,7 @@ export default function ScrollToTopButton() {
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    captureAnalyticsEvent('trade_scroll_to_top_selected', {});
     window.scrollTo({
       top: 0,
       behavior: prefersReducedMotion ? 'auto' : 'smooth',

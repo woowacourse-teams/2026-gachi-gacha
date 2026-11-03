@@ -22,6 +22,8 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 내부·테스트 사용자 제외
 
+개발 배포는 `POSTHOG_ENABLED=false`로 고정해 PostHog를 초기화하지 않는다. 다음 절차는 운영 서비스에 접속하는 팀원 브라우저에 적용한다.
+
 1. 팀원 브라우저에서 서비스 주소에 `?analytics_internal=true`를 한 번 붙여 접속한다.
 2. 해당 브라우저에는 내부 사용자 표시가 저장되고 이후 PostHog 초기화와 이벤트 전송 자체를 중단한다.
 3. 다시 수집 대상 브라우저로 전환할 때는 `?analytics_internal=false`로 접속한다.
@@ -32,72 +34,79 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 공통·인증 이벤트
 
-| 이벤트                     | 발생 시점                          | 주요 속성                                       |
-| -------------------------- | ---------------------------------- | ----------------------------------------------- |
-| `navigation_selected`      | 헤더·독립 화면의 주요 이동 선택    | `destination`, `source`, `is_authenticated`     |
-| `auth_required_redirected` | 보호 기능에서 로그인 화면으로 이동 | `target_pathname`                               |
-| `oauth_login_started`      | 카카오·네이버 로그인 선택          | `provider`, `return_pathname`                   |
-| `oauth_login_completed`    | OAuth 콜백 처리 완료               | `provider`, `outcome`                           |
-| `recovery_action_selected` | 오류 상태에서 다시 시도            | `feature`                                       |
-| `landing_tour_step_viewed` | 랜딩 투어 단계 노출                | `tour_version`, `step_number`, `target`         |
-| `landing_tour_exited`      | 랜딩 투어 완료·건너뛰기·닫기       | `tour_version`, `exit_type`, `last_step_number` |
+| 이벤트                                | 발생 시점                          | 주요 속성                                       |
+| ------------------------------------- | ---------------------------------- | ----------------------------------------------- |
+| `navigation_selected`                 | 헤더·독립 화면의 주요 이동 선택    | `destination`, `source`, `is_authenticated`     |
+| `auth_required_redirected`            | 보호 기능에서 로그인 화면으로 이동 | `target_pathname`                               |
+| `oauth_login_started`                 | 카카오·네이버 로그인 선택          | `provider`, `return_pathname`                   |
+| `oauth_login_completed`               | OAuth 콜백 처리 완료               | `provider`, `outcome`                           |
+| `recovery_action_selected`            | 오류 상태에서 다시 시도            | `feature`                                       |
+| `landing_tour_step_viewed`            | 랜딩 투어 단계 노출                | `tour_version`, `step_number`, `target`         |
+| `landing_tour_exited`                 | 랜딩 투어 완료·건너뛰기·닫기       | `tour_version`, `exit_type`, `last_step_number` |
+| `unread_count_initial_load_completed` | 로그인 직후 미읽음 배지 조회 완료  | `channel`, `outcome`                            |
+| `notification_popover_opened`         | 헤더 알림 팝오버 열기              | `unread_count`                                  |
+| `notification_selected`               | 알림 항목 선택                     | `source`, `notification_type`, `was_read`       |
+| `footer_contact_selected`             | 푸터 협업 문의·고객센터 선택       | `target`                                        |
 
 ## 가챠 검색·지도·매장 이벤트
 
-| 이벤트                         | 발생 시점                 | 주요 속성                                                          |
-| ------------------------------ | ------------------------- | ------------------------------------------------------------------ |
-| `category_selected`            | 카테고리 탭 선택          | `category_name`                                                    |
-| `category_gacha_selected`      | 카테고리 가챠 선택        | `category_name`, `gacha_id`, `result_position`                     |
-| `category_feed_more_requested` | 다음 카테고리 페이지 요청 | `category_name`, `loaded_item_count`                               |
-| `affiliate_catalog_viewed`     | 제휴 상품 카탈로그 노출   | `category_name`, `placement_path`, `product_count`                 |
-| `affiliate_product_selected`   | 제휴 상품 링크 선택       | `product_id`, `category_name`, `placement_path`, `result_position` |
-| `gacha_search_submitted`       | 가챠 검색 제출            | `query_length`                                                     |
-| `gacha_search_results_viewed`  | 검색 결과 수신            | `query_length`, `result_count`                                     |
-| `gacha_search_failed`          | 가챠 검색 실패            | `query_length`                                                     |
-| `gacha_selected`               | 검색 결과의 가챠 선택     | `gacha_id`, `result_position`, `source`                            |
-| `store_results_loaded`         | 지도 매장 조회 성공       | `gacha_id`, `store_count`, `trigger`, `search_radius_meters`       |
-| `store_discovery_succeeded`    | 매장이 한 곳 이상 조회됨  | `gacha_id`, `store_count`, `trigger`, `search_radius_meters`       |
-| `store_results_failed`         | 지도 매장 조회 실패       | `gacha_id`, `trigger`, `search_radius_meters`                      |
-| `store_selected`               | 목록·마커에서 매장 선택   | `gacha_id`, `store_id`, `source`                                   |
-| `store_opened`                 | 매장 상세 진입            | `gacha_id`, `store_id`, `source`                                   |
-| `map_area_researched`          | 현재 지도 영역 재검색     | `gacha_id`, `search_radius_meters`                                 |
-| `store_detail_load_completed`  | 매장 상세 조회 완료       | `store_id`, `outcome`                                              |
-| `store_photo_viewed`           | 매장 사진 열기·이동       | `store_id`, `photo_index`, `photo_count`, `source`                 |
-| `store_catalog_load_completed` | 매장 보유 가챠 조회 완료  | `store_id`, `outcome`, `item_count`                                |
-| `store_catalog_more_requested` | 매장 보유 가챠 더 보기    | `store_id`, `loaded_item_count`                                    |
+| 이벤트                         | 발생 시점                  | 주요 속성                                                          |
+| ------------------------------ | -------------------------- | ------------------------------------------------------------------ |
+| `category_selected`            | 카테고리 탭 선택           | `category_name`                                                    |
+| `category_gacha_selected`      | 카테고리 가챠 선택         | `category_name`, `gacha_id`, `result_position`                     |
+| `category_feed_more_requested` | 다음 카테고리 페이지 요청  | `category_name`, `loaded_item_count`                               |
+| `affiliate_catalog_viewed`     | 제휴 상품 카탈로그 노출    | `category_name`, `placement_path`, `product_count`                 |
+| `affiliate_product_selected`   | 제휴 상품 링크 선택        | `product_id`, `category_name`, `placement_path`, `result_position` |
+| `gacha_search_submitted`       | 가챠 검색 제출             | `query_length`                                                     |
+| `gacha_search_results_viewed`  | 검색 결과 수신             | `query_length`, `result_count`                                     |
+| `gacha_search_failed`          | 가챠 검색 실패             | `query_length`                                                     |
+| `gacha_selected`               | 검색 결과의 가챠 선택      | `gacha_id`, `result_position`, `source`                            |
+| `store_results_loaded`         | 지도 매장 조회 성공        | `gacha_id`, `store_count`, `trigger`, `search_radius_meters`       |
+| `store_discovery_succeeded`    | 매장이 한 곳 이상 조회됨   | `gacha_id`, `store_count`, `trigger`, `search_radius_meters`       |
+| `store_results_failed`         | 지도 매장 조회 실패        | `gacha_id`, `trigger`, `search_radius_meters`                      |
+| `store_selected`               | 목록·마커에서 매장 선택    | `gacha_id`, `store_id`, `source`                                   |
+| `store_opened`                 | 매장 상세 진입             | `gacha_id`, `store_id`, `source`                                   |
+| `map_area_researched`          | 현재 지도 영역 재검색      | `gacha_id`, `search_radius_meters`                                 |
+| `map_mobile_header_toggled`    | 모바일 지도 헤더 열기·닫기 | `next_state`                                                       |
+| `store_detail_load_completed`  | 매장 상세 조회 완료        | `store_id`, `outcome`                                              |
+| `store_photo_viewed`           | 매장 사진 열기·이동        | `store_id`, `photo_index`, `photo_count`, `source`                 |
+| `store_catalog_load_completed` | 매장 보유 가챠 조회 완료   | `store_id`, `outcome`, `item_count`                                |
+| `store_catalog_more_requested` | 매장 보유 가챠 더 보기     | `store_id`, `loaded_item_count`                                    |
 
 `gacha_id = null`이면 특정 가챠를 고르지 않은 홍대 전체 매장 탐색이다.
 
 ## 거래·교환 이벤트
 
-| 이벤트                               | 발생 시점                  | 주요 속성                                                                           |
-| ------------------------------------ | -------------------------- | ----------------------------------------------------------------------------------- |
-| `trade_list_load_completed`          | 거래 목록 조회 완료        | `query_applied`, `outcome`, `result_count`, `total_count`                           |
-| `trade_search_submitted`             | 거래 검색 제출             | `query_length`                                                                      |
-| `trade_selected`                     | 거래 카드 선택             | `trade_id`, `status`, `source`                                                      |
-| `trade_create_started`               | 글 등록 진입               | `source`                                                                            |
-| `trade_edit_started`                 | 글 수정 진입               | `trade_id`, `source`                                                                |
-| `trade_delete_started`               | 글 삭제 확인창 열기        | `trade_id`, `source`                                                                |
-| `trade_list_more_requested`          | 다음 거래 목록 요청        | `query_applied`, `loaded_item_count`, `source`                                      |
-| `trade_detail_photo_viewer_opened`   | 거래 사진 확대 뷰어 열기   | `trade_id`, `photo_index`, `photo_count`                                            |
-| `trade_detail_photo_selected`        | 거래 사진 선택·이동        | `trade_id`, `photo_index`, `photo_count`, `source`                                  |
-| `trade_form_submitted`               | 유효한 등록·수정 폼 제출   | `mode`, 이미지·카테고리 수, 선택 필드 존재 여부                                     |
-| `trade_form_completed`               | 등록·수정 API 완료         | `mode`, `trade_id`, `outcome`                                                       |
-| `trade_category_toggled`             | 작성 폼 카테고리 선택·해제 | `mode`, `category_id`, `action`                                                     |
-| `trade_photo_selection_completed`    | 사진 선택 검증 완료        | `source`, 허용·거절·전체 파일 수                                                    |
-| `trade_photo_reordered`              | 사진 순서 변경             | `method`, `from_index`, `to_index`, `total_count`                                   |
-| `place_search_opened`                | 장소 검색창 열기           | `place_context`, `trade_form_mode`                                                  |
-| `place_search_completed`             | 장소 검색 완료             | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length`       |
-| `place_search_result_selected`       | 장소 검색 결과 선택        | `place_context`, `trade_form_mode`, `result_position`                               |
-| `place_selection_cleared`            | 선택한 장소 해제           | `place_context`, `trade_form_mode`                                                  |
-| `trade_status_update_completed`      | 거래 상태 변경 완료        | 이전·다음 상태, `outcome`                                                           |
-| `trade_delete_completed`             | 글 삭제 완료               | `trade_id`, `outcome`                                                               |
-| `trade_chat_started`                 | 거래 상세에서 채팅 선택    | `trade_id`, `is_authenticated`, `comment_context`                                   |
-| `trade_comments_load_completed`      | 댓글 목록 조회 완료        | `trade_id`, `outcome`, `comment_count`                                              |
-| `trade_comment_submission_completed` | 댓글 등록 API 완료         | `trade_id`, `author_type`, `outcome`, `comment_length`, `has_custom_guest_nickname` |
-| `mypage_trade_filter_selected`       | 내 교환글 상태 필터 선택   | `status`                                                                            |
-| `mypage_trade_list_load_completed`   | 내 교환글 목록 조회 완료   | `status`, `outcome`, `result_count`, `total_count`                                  |
-| `mypage_trade_list_more_requested`   | 다음 내 교환글 목록 요청   | `status`, `loaded_item_count`                                                       |
+| 이벤트                               | 발생 시점                         | 주요 속성                                                                           |
+| ------------------------------------ | --------------------------------- | ----------------------------------------------------------------------------------- |
+| `trade_list_load_completed`          | 거래 목록 조회 완료               | `query_applied`, `outcome`, `result_count`, `total_count`                           |
+| `trade_search_submitted`             | 거래 검색 제출                    | `query_length`                                                                      |
+| `trade_filter_selected`              | 거래 카테고리·상태·정렬 필터 선택 | `filter`, `value`                                                                   |
+| `trade_selected`                     | 거래 카드 선택                    | `trade_id`, `status`, `source`                                                      |
+| `trade_create_started`               | 글 등록 진입                      | `source`                                                                            |
+| `trade_edit_started`                 | 글 수정 진입                      | `trade_id`, `source`                                                                |
+| `trade_delete_started`               | 글 삭제 확인창 열기               | `trade_id`, `source`                                                                |
+| `trade_list_more_requested`          | 다음 거래 목록 요청               | `query_applied`, `loaded_item_count`, `source`                                      |
+| `trade_scroll_to_top_selected`       | 거래 목록 최상단 이동             | 없음                                                                                |
+| `trade_detail_photo_viewer_opened`   | 거래 사진 확대 뷰어 열기          | `trade_id`, `photo_index`, `photo_count`                                            |
+| `trade_detail_photo_selected`        | 거래 사진 선택·이동               | `trade_id`, `photo_index`, `photo_count`, `source`                                  |
+| `trade_form_submitted`               | 유효한 등록·수정 폼 제출          | `mode`, 이미지·카테고리 수, 선택 필드 존재 여부                                     |
+| `trade_form_completed`               | 등록·수정 API 완료                | `mode`, `trade_id`, `outcome`                                                       |
+| `trade_category_toggled`             | 작성 폼 카테고리 선택·해제        | `mode`, `category_id`, `action`                                                     |
+| `trade_photo_selection_completed`    | 사진 선택 검증 완료               | `source`, 허용·거절·전체 파일 수                                                    |
+| `trade_photo_reordered`              | 사진 순서 변경                    | `method`, `from_index`, `to_index`, `total_count`                                   |
+| `place_search_opened`                | 장소 검색창 열기                  | `place_context`, `trade_form_mode`                                                  |
+| `place_search_completed`             | 장소 검색 완료                    | `place_context`, `trade_form_mode`, `outcome`, `result_count`, `query_length`       |
+| `place_search_result_selected`       | 장소 검색 결과 선택               | `place_context`, `trade_form_mode`, `result_position`                               |
+| `place_selection_cleared`            | 선택한 장소 해제                  | `place_context`, `trade_form_mode`                                                  |
+| `trade_status_update_completed`      | 거래 상태 변경 완료               | 이전·다음 상태, `outcome`                                                           |
+| `trade_delete_completed`             | 글 삭제 완료                      | `trade_id`, `outcome`                                                               |
+| `trade_chat_started`                 | 거래 상세에서 채팅 선택           | `trade_id`, `is_authenticated`, `comment_context`                                   |
+| `trade_comments_load_completed`      | 댓글 목록 조회 완료               | `trade_id`, `outcome`, `comment_count`                                              |
+| `trade_comment_submission_completed` | 댓글 등록 API 완료                | `trade_id`, `author_type`, `outcome`, `comment_length`, `has_custom_guest_nickname` |
+| `mypage_trade_filter_selected`       | 내 교환글 상태 필터 선택          | `status`                                                                            |
+| `mypage_trade_list_load_completed`   | 내 교환글 목록 조회 완료          | `status`, `outcome`, `result_count`, `total_count`                                  |
+| `mypage_trade_list_more_requested`   | 다음 내 교환글 목록 요청          | `status`, `loaded_item_count`                                                       |
 
 `place_context`는 `trade_purchase_store`, `trade_exchange_place`, `profile_preferred_area` 중 하나다. 프로필 흐름에는 `trade_form_mode = null`을 사용한다.
 
@@ -112,6 +121,9 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 | `chat_room_entry_completed`          | 거래 기반 채팅방 조회·생성 완료  | `trade_id`, `room_id`, `room_was_created`, `outcome`                     |
 | `chat_room_selected`                 | 채팅 목록에서 방 선택            | `room_id`, `source`                                                      |
 | `chat_message_send_completed`        | 텍스트 메시지 전송 완료          | `room_id`, `outcome`, `message_length`                                   |
+| `chat_image_selection_completed`     | 채팅 이미지 선택 검증 완료       | `room_id`, `accepted_count`, `rejected_count`                            |
+| `chat_image_upload_completed`        | 채팅 이미지 업로드 완료          | `room_id`, `outcome`, `image_count`                                      |
+| `chat_image_viewer_opened`           | 채팅 이미지 뷰어 열기            | `room_id`, `image_index`, `image_count`                                  |
 | `chat_history_load_completed`        | 이전 메시지 조회 완료            | `room_id`, `outcome`                                                     |
 | `chat_trade_context_selected`        | 채팅방에서 거래글·신고 동선 선택 | `room_id`, `trade_id`, `action`                                          |
 | `member_safety_menu_opened`          | 사용자 안전 메뉴 열기            | `source`                                                                 |
@@ -138,6 +150,10 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 이벤트 분석에는 Instagram ID, 작성·완료 거래글 링크, 파일명·이미지 URL, memberId를 이벤트 속성으로 보내지 않는다. 로그인 회원 식별은 기존 PostHog identify 문맥을 사용하며 `track`은 이벤트 A/B 트랙 선택에 대응하는 `BASIC`, `COMPLETED`, `BOTH` 중 하나다.
 
 신고·차단 이벤트에도 대상 회원 ID, 닉네임, 신고 상세 내용이나 콘텐츠 원문을 넣지 않는다. `entry = post_block`은 차단 완료 안내에서 후속 신고 폼으로 이동한 경우를 뜻한다. 실제 신고 데이터는 접근이 제한된 신고 저장소에서만 확인한다.
+
+## Web Vitals
+
+PostHog SDK의 `$web_vitals` 자동 이벤트로 LCP, CLS, INP를 수집한다. 느린 요소의 텍스트나 DOM 원인을 추가로 보내는 attribution은 사용하지 않고 네트워크 타이밍도 수집하지 않는다. 품질 대시보드에서는 이벤트 유입 여부를 확인하고, 실제 P75 값과 경로별 분포는 PostHog Web analytics에서 확인한다.
 
 ## 핵심 지표와 해석
 
@@ -249,6 +265,8 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 - `*_completed`의 `outcome = failure` 추이
 - `gacha_search_failed`, `store_results_failed`
+- `unread_count_initial_load_completed` 중 `outcome = failure`의 채널별 추이
+- `$web_vitals` 수집 상태와 Web analytics의 LCP·CLS·INP P75
 - `recovery_action_selected`의 기능별 건수
 - 배포 후 `app_version`별 실패율 비교
 
@@ -266,11 +284,22 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 운영 체크리스트
 
-- [x] GitHub `development`, `production` Environment에 `POSTHOG_ENABLED`, `POSTHOG_API_KEY`, `POSTHOG_API_HOST` 설정
+- [x] 개발 배포에서 PostHog 초기화 비활성화
+- [x] GitHub `production` Environment에 `POSTHOG_ENABLED`, `POSTHOG_API_KEY`, `POSTHOG_API_HOST` 설정
 - [x] 운영 대시보드에 `environment = production` 기본 필터 적용
+- [x] 관리 인사이트의 내부·테스트 사용자 제외 토글 활성화
 - [ ] 팀원·테스트 계정 제외 코호트와 프로젝트 필터 생성
 - [x] 핵심 퍼널과 주간 리텐션 인사이트 생성
 - [ ] 배포 후 Live Events에서 공통 문맥과 이벤트 속성 검증
 - [ ] OAuth callback의 `$current_url`에 `code`, `state`가 남지 않는지 검증
 - [ ] 세션 리플레이에서 입력값·비공개 텍스트·이미지가 마스킹되는지 검증
 - [ ] 이벤트 사전 변경 시 코드의 타입 계약과 이 문서를 함께 수정
+
+## 변경 이력
+
+### 2026-11-03
+
+- 누락된 알림, 거래 필터, 채팅 이미지 이벤트 6종을 이벤트 사전에 추가했다.
+- 미읽음 배지 최초 조회 결과와 지도 헤더·최상단 이동·푸터 문의 행동을 추가했다.
+- 운영 Web Vitals 수집과 내부·테스트 사용자 제외 토글을 활성화하고 개발 배포 수집을 중단했다.
+- 세션 리플레이의 전체 입력·텍스트·비공개 미디어 마스킹을 회귀 테스트로 고정했다.

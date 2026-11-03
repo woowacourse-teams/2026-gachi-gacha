@@ -36,6 +36,7 @@ async function flushAnalyticsClient() {
 describe('analyticsClient', () => {
   beforeEach(() => {
     jest.resetModules();
+    jest.clearAllMocks();
     window.localStorage.clear();
     window.history.replaceState({}, '', '/');
     setAnalyticsEnabled(true);
@@ -112,6 +113,57 @@ describe('analyticsClient', () => {
     expect(sanitizedHashCapture?.properties.$current_url).toBe(
       'https://gachigacha.kro.kr/oauth/callback',
     );
+  });
+
+  it('Web Vitals를 수집하면서 텍스트·입력·비공개 미디어를 마스킹한다', async () => {
+    const { initializeAnalytics } = await import('./analyticsClient');
+
+    initializeAnalytics();
+    await flushAnalyticsClient();
+
+    const config = mockPosthogClient.init.mock.calls.at(-1)?.[1];
+
+    expect(config).toEqual(
+      expect.objectContaining({
+        capture_performance: {
+          network_timing: false,
+          web_vitals: true,
+          web_vitals_allowed_metrics: ['LCP', 'CLS', 'INP'],
+          web_vitals_attribution: false,
+        },
+        mask_all_text: true,
+        mask_personal_data_properties: true,
+        session_recording: {
+          blockSelector: '[data-private-media]',
+          maskAllInputs: true,
+          maskTextSelector: '[data-private]',
+        },
+      }),
+    );
+  });
+
+  it('내부 사용자로 표시한 브라우저는 이후 일반 주소에서도 수집하지 않는다', async () => {
+    window.history.replaceState({}, '', '/?analytics_internal=true');
+    const { initializeAnalytics } = await import('./analyticsClient');
+
+    initializeAnalytics();
+    await flushAnalyticsClient();
+
+    expect(mockPosthogClient.init).not.toHaveBeenCalled();
+    expect(
+      window.localStorage.getItem('gachi-gacha:analytics-internal-user'),
+    ).toBe('true');
+    expect(window.location.search).toBe('');
+
+    jest.resetModules();
+    window.history.replaceState({}, '', '/trade');
+    const { initializeAnalytics: initializeAgain } =
+      await import('./analyticsClient');
+
+    initializeAgain();
+    await flushAnalyticsClient();
+
+    expect(mockPosthogClient.init).not.toHaveBeenCalled();
   });
 
   it('로그인 회원은 안정적인 회원 식별자로 연결하고 로그아웃 시 초기화한다', async () => {

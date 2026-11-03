@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 
 import logoIcon from '@/assets/gacha_logo.png';
 import logoWordmark from '@/assets/gachigacha.png';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 import { color } from '@/shared/styles/tokens';
 
@@ -43,6 +44,11 @@ export function SiteFooter() {
           href={SUPPORT_INSTAGRAM_URL}
           target="_blank"
           rel="noreferrer"
+          onClick={() => {
+            captureAnalyticsEvent('footer_contact_selected', {
+              target: 'partnership',
+            });
+          }}
         >
           협업 문의
         </ExternalLink>
@@ -50,6 +56,11 @@ export function SiteFooter() {
           href={SUPPORT_INSTAGRAM_URL}
           target="_blank"
           rel="noreferrer"
+          onClick={() => {
+            captureAnalyticsEvent('footer_contact_selected', {
+              target: 'support',
+            });
+          }}
         >
           고객센터
         </ExternalLink>

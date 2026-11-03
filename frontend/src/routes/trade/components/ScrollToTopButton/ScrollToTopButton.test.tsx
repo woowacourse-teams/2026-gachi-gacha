@@ -2,7 +2,15 @@ import { afterEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+
 import ScrollToTopButton from './ScrollToTopButton';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 function setScrollY(value: number) {
   Object.defineProperty(window, 'scrollY', {
@@ -22,6 +30,7 @@ function setReducedMotion(matches: boolean) {
 afterEach(() => {
   setScrollY(0);
   jest.restoreAllMocks();
+  mockedCaptureAnalyticsEvent.mockClear();
 });
 
 describe('ScrollToTopButton', () => {
@@ -58,6 +67,10 @@ describe('ScrollToTopButton', () => {
       top: 0,
       behavior: 'smooth',
     });
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'trade_scroll_to_top_selected',
+      {},
+    );
   });
 
   it('모션 감소 환경에서는 즉시 문서 최상단으로 이동한다', async () => {

@@ -5,10 +5,18 @@ import { BrowserRouter } from 'react-router';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { server } from '@/test/server';
 
 import { ChatUnreadProvider } from './ChatUnreadContext';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 interface MockStompConfig {
   beforeConnect?: () => Promise<void>;
@@ -61,6 +69,7 @@ describe('ChatUnreadProvider', () => {
     mockDeactivate.mockReset();
     mockDeactivate.mockResolvedValue();
     mockSubscribe.mockClear();
+    mockedCaptureAnalyticsEvent.mockClear();
     storeAuthTokens({
       accessToken: ACCESS_TOKEN,
       refreshToken: 'refresh-token',
@@ -143,5 +152,33 @@ describe('ChatUnreadProvider', () => {
       }),
     ).toBeInTheDocument();
     expect(mockActivate).not.toHaveBeenCalled();
+  });
+
+  it('최초 미읽음 채팅 조회 실패를 분석 이벤트로 기록한다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/unread-count', () =>
+        HttpResponse.json(
+          { code: 'C500', message: '조회 실패', data: null },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    render(
+      <BrowserRouter>
+        <AuthSessionProvider>
+          <ChatUnreadProvider>
+            <AppHeader currentPath="/trade" />
+          </ChatUnreadProvider>
+        </AuthSessionProvider>
+      </BrowserRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+        'unread_count_initial_load_completed',
+        { channel: 'chat', outcome: 'failure' },
+      );
+    });
   });
 });
