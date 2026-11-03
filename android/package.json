@@ -48,6 +48,7 @@
     "login-ui:test": "node --no-warnings --experimental-strip-types scripts/login-provider-presentation.test.mjs",
     "place-search:test": "node --no-warnings --experimental-strip-types scripts/place-search.test.mjs",
     "web-shell:test": "node --no-warnings --experimental-strip-types scripts/web-shell.test.mjs",
+    "web-shell:layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-browser.test.mjs",
     "push-notification:test": "node --no-warnings --experimental-strip-types scripts/push-notification.test.mjs",
     "catalog:test": "node --test scripts/affiliate-catalog/catalog.test.mjs",
     "catalog:sync": "node scripts/affiliate-catalog/sync.mjs",

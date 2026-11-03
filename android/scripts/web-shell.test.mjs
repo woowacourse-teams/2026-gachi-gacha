@@ -296,11 +296,12 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /--gachigacha-android-map-header-top/);
   assert.match(runtimeScript, /addEventListener\('scroll'/);
   assert.match(runtimeScript, /data-gachigacha-android-avatar-fallback/);
-  assert.match(runtimeScript, /normalizeAvatarInitial/);
-  assert.match(runtimeScript, /createProfileFallbackImage/);
+  assert.match(runtimeScript, /defaultProfileImage/);
+  assert.match(runtimeScript, /markProfileAvatar/);
+  assert.doesNotMatch(runtimeScript, /normalizeAvatarInitial|CurrentUserInitial/);
   assert.match(runtimeScript, /전체 대화/);
   assert.match(runtimeScript, /trade-comments-title/);
-  assert.match(runtimeScript, /aria-label\$="댓글 작업"/);
+  assert.match(runtimeScript, /프로필 사진 선택/);
   assert.match(runtimeScript, /\/api\/v1\/oauth\/withdraw/);
   assert.match(runtimeScript, /\/api\/v1\/members\/me/);
   assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);

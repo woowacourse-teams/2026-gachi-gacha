@@ -30,6 +30,13 @@ feat/<issue>-android-* -> android -> main
 
 ## 환경 구분
 
+DEV QA 수정은 `Android Quality`의 `app_variant=development` APK로 검증한다.
+실기기 QA 통과 후 사용자가 명시적으로 요청할 때만 운영 AAB와 버전 번호를
+준비한다. AAB를 생성하는 것만으로 Play에 업로드되거나 버전 번호가 사용되지는
+않는다. 다음 업로드 버전은 실제 Play에 사용된 versionCode를 확인한 뒤 결정한다.
+
+### 환경별 앱
+
 | 환경 | `APP_VARIANT` | 앱 이름 | application ID | URL scheme | API 기준 주소 |
 | --- | --- | --- | --- | --- | --- |
 | 개발 | `development` | 가치가챠 Dev | `com.dev.gachigacha.app` | `gachigacha-dev` | `https://dev.gachigacha.kro.kr` |
@@ -219,6 +226,20 @@ npm run start:dev
 ```
 
 Android 앱을 실행한 상태에서는 Fast Refresh로 TypeScript/React Native 변경을 반영한다. 네이티브 설정이나 라이브러리가 바뀌면 `npm run android:dev`로 다시 빌드한다.
+
+### WebView 보정 레이아웃 회귀 테스트
+
+`npm run web-shell:layout-test`는 설치된 Chromium으로 Android 주입 스크립트를 실행한다.
+기본 경로에 Chromium이 없으면 실행 파일 경로를 지정한다.
+
+```bash
+ANDROID_TEST_CHROME=/path/to/chrome npm run web-shell:layout-test
+```
+
+웹 DOM/CSS 구조를 재현한 로컬 fixture에서 320·360·393·412·768px 화면 폭,
+정상/실패/없는 프로필 사진의 원래 크기, 채팅 목록 10번째 항목 접근,
+방 열기·닫기·경로 전환 및 키보드 높이 변화를 검증한다.
+실제 계정이나 서버 API를 호출하지 않는다. 이 검증은 실기기 WebView QA를 대체하지 않는다.
 
 ## APK와 AAB의 차이
 
