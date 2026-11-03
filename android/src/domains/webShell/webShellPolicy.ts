@@ -159,6 +159,8 @@ export const WEB_PUSH_TOKEN_REQUEST_MESSAGE =
   'gachigacha:push-token-request';
 export const WEB_CHAT_ROOM_STATE_MESSAGE =
   'gachigacha:chat-room-state';
+export const WEB_OVERLAY_BACK_RESULT_MESSAGE =
+  'gachigacha:overlay-back-result';
 
 export type WebShellNavigationDecision =
   | { type: 'allow' }
@@ -172,7 +174,8 @@ export type WebShellMessage =
   | { type: 'auth-session-synced' }
   | { type: 'native-bridge-ready' }
   | { type: 'push-token-request' }
-  | { isOpen: boolean; type: 'chat-room-state' };
+  | { isOpen: boolean; type: 'chat-room-state' }
+  | { requestId: number; handled: boolean; type: 'overlay-back-result' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -279,6 +282,20 @@ export function parseWebShellMessage(value: string): WebShellMessage | null {
 
   if (message.type === WEB_PUSH_TOKEN_REQUEST_MESSAGE) {
     return { type: 'push-token-request' };
+  }
+
+  if (
+    message.type === WEB_OVERLAY_BACK_RESULT_MESSAGE &&
+    typeof message.requestId === 'number' &&
+    Number.isSafeInteger(message.requestId) &&
+    message.requestId > 0 &&
+    typeof message.handled === 'boolean'
+  ) {
+    return {
+      type: 'overlay-back-result',
+      requestId: message.requestId,
+      handled: message.handled,
+    };
   }
 
   if (
@@ -410,6 +427,8 @@ function createWebShellRuntimeBody(): string {
     document.documentElement.dataset.gachigachaNativePlatform = 'android';
 
     ${createWebShellApiCompatibilityScript()}
+
+    ${createWebShellRouteScrollScript()}
 
     const refreshTokenKey = ${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)};
     const postRefreshToken = (token) => {
@@ -791,6 +810,118 @@ function createWebShellRuntimeBody(): string {
       );
       document.addEventListener('transitionend', scheduleAndroidPresentation);
     }
+  `;
+}
+
+/** Reset only the requested page transitions; keep list/history/hash restoration. */
+export function createWebShellRouteScrollScript(): string {
+  return `
+    if (!window.__gachigachaAndroidRouteScrollInstalled) {
+      window.__gachigachaAndroidRouteScrollInstalled = true;
+      let previousPath = window.location.pathname;
+      let pendingScroll = null;
+      let scrollFrame = null;
+
+      const cancelScroll = () => {
+        if (scrollFrame !== null) window.cancelAnimationFrame(scrollFrame);
+        scrollFrame = null;
+        pendingScroll = null;
+      };
+      const tryScroll = () => {
+        if (!pendingScroll || scrollFrame !== null) return;
+        const target = pendingScroll;
+        if (window.location.pathname !== target.path || window.location.hash) {
+          cancelScroll();
+          return;
+        }
+        const ready = target.path === '/updates'
+          ? document.querySelector('[aria-label="서비스 업데이트 목록"]')
+          : document.querySelector('a[href="' + target.path + '/edit"]');
+        if (!ready) return;
+        // Run after React commits and browser popstate scroll restoration.
+        scrollFrame = window.requestAnimationFrame(() => {
+          scrollFrame = window.requestAnimationFrame(() => {
+            scrollFrame = null;
+            if (pendingScroll !== target || window.location.pathname !== target.path || window.location.hash) return;
+            pendingScroll = null;
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          });
+        });
+      };
+      const checkRoute = (initial = false) => {
+        const path = window.location.pathname;
+        if (window.location.hash) cancelScroll();
+        if (!initial && path === previousPath) return;
+        const returningFromEdit = previousPath === path + '/edit' &&
+          /^\\/trade\\/\\d+$/.test(path);
+        previousPath = path;
+        cancelScroll();
+        if (!window.location.hash && (path === '/updates' || returningFromEdit)) {
+          pendingScroll = { path };
+          tryScroll();
+        }
+      };
+      for (const method of ['pushState', 'replaceState']) {
+        const original = window.history[method];
+        window.history[method] = function(...args) {
+          const result = original.apply(this, args);
+          checkRoute();
+          return result;
+        };
+      }
+      window.addEventListener('popstate', () => checkRoute());
+      window.addEventListener('hashchange', () => {
+        if (window.location.hash) cancelScroll();
+      });
+      // Do not pull the user back to the top after they deliberately start scrolling.
+      for (const event of ['touchstart', 'wheel', 'keydown']) {
+        window.addEventListener(event, cancelScroll, { passive: true });
+      }
+      new MutationObserver(tryScroll).observe(document.documentElement, {
+        childList: true, subtree: true,
+      });
+      document.addEventListener('DOMContentLoaded', tryScroll, { once: true });
+      checkRoute(true);
+    }
+  `;
+}
+
+/** Use the web viewer's own X handler so React state, focus and body lock unwind. */
+export function createWebShellOverlayBackScript(
+  requestId: number,
+  expiresAt: number = Date.now() + 500,
+): string {
+  if (
+    !Number.isSafeInteger(requestId) ||
+    requestId <= 0 ||
+    !Number.isSafeInteger(expiresAt)
+  ) {
+    throw new Error('뒤로가기 요청 번호가 올바르지 않습니다.');
+  }
+  return `
+    (() => {
+      let handled = false;
+      try {
+        // A queued script must not close a newer overlay after the request expired.
+        if (Date.now() > ${expiresAt}) return;
+        const closeButton = Array.from(document.querySelectorAll(
+          '[role="dialog"][aria-modal="true"] button[aria-label="상품 사진 크게 보기 닫기"], ' +
+          '[role="dialog"][aria-modal="true"] button[aria-label="채팅 사진 닫기"], ' +
+          '[role="dialog"][aria-modal="true"] button[aria-label="사진 전체 보기 닫기"]',
+        )).find((button) => !button.disabled && button.getClientRects().length > 0 &&
+          window.getComputedStyle(button).visibility !== 'hidden');
+        if (closeButton) {
+          closeButton.click();
+          handled = true;
+        }
+      } catch {}
+      window.ReactNativeWebView?.postMessage(JSON.stringify({
+        type: ${serializeForInlineScript(WEB_OVERLAY_BACK_RESULT_MESSAGE)},
+        requestId: ${requestId},
+        handled,
+      }));
+    })();
+    true;
   `;
 }
 

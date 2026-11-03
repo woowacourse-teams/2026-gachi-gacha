@@ -25,12 +25,14 @@ import type { AuthTokens, MobileOAuthProvider } from '../domains/auth/authTypes'
 import { loginWithMobileOAuth } from '../domains/auth/mobileOAuthLogin';
 import { createPushNavigationQueue } from '../domains/notification/pushNavigationQueue';
 import { usePushNotifications } from '../domains/notification/usePushNotifications';
+import { createWebShellBackController } from '../domains/webShell/webShellBackController';
 import {
   classifyWebShellNavigation,
   createWebShellAuthenticationCompletionScript,
   createWebShellBootstrapScript,
   createWebShellChatListNavigationScript,
   createWebShellNavigationScript,
+  createWebShellOverlayBackScript,
   createWebShellRuntimeScript,
   createWebShellSameOriginNavigationScript,
   createWebShellSessionSyncScript,
@@ -47,6 +49,9 @@ export function WebAppShellScreen() {
   const webViewRef = useRef<WebView>(null);
   const canGoBackRef = useRef(false);
   const isChatRoomOpenRef = useRef(false);
+  const backControllerRef = useRef<ReturnType<
+    typeof createWebShellBackController
+  > | null>(null);
   const lastRootBackPressAt = useRef(0);
   const lastNonLoginUrlRef = useRef(appBaseUrl);
   const appStateRef = useRef(AppState.currentState);
@@ -155,35 +160,58 @@ export function WebAppShellScreen() {
   }, [retryAuthSession]);
 
   useEffect(() => {
-    const subscription = BackHandler.addEventListener(
-      'hardwareBackPress',
-      () => {
+    const controller = createWebShellBackController({
+      dispatch(requestId, expiresAt) {
+        if (!webViewLoadedRef.current || !webViewRef.current) return false;
+        webViewRef.current.injectJavaScript(
+          createWebShellOverlayBackScript(requestId, expiresAt),
+        );
+        return true;
+      },
+      onUnresponsive() {
+        ToastAndroid.show(
+          '잠시 후 뒤로가기를 다시 눌러 주세요.',
+          ToastAndroid.SHORT,
+        );
+      },
+      onUnhandled() {
         if (isChatRoomOpenRef.current) {
           isChatRoomOpenRef.current = false;
           webViewRef.current?.injectJavaScript(
             createWebShellChatListNavigationScript(),
           );
-          return true;
+          return;
         }
 
         if (canGoBackRef.current) {
           webViewRef.current?.goBack();
-          return true;
+          return;
         }
 
         const now = Date.now();
         if (now - lastRootBackPressAt.current <= EXIT_CONFIRMATION_WINDOW_MS) {
           BackHandler.exitApp();
-          return true;
+          return;
         }
 
         lastRootBackPressAt.current = now;
         ToastAndroid.show('한 번 더 누르면 종료됩니다.', ToastAndroid.SHORT);
+      },
+    });
+    backControllerRef.current = controller;
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        controller.press();
         return true;
       },
     );
 
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      controller.cancel();
+      backControllerRef.current = null;
+    };
   }, []);
 
   const openOutsideApp = useCallback((url: string) => {
@@ -271,6 +299,11 @@ export function WebAppShellScreen() {
         return;
       }
 
+      if (message.type === 'overlay-back-result') {
+        backControllerRef.current?.resolve(message.requestId, message.handled);
+        return;
+      }
+
       if (message.type === 'auth-session-synced') {
         markWebSessionReady();
         return;
@@ -308,6 +341,7 @@ export function WebAppShellScreen() {
   );
 
   function retry() {
+    backControllerRef.current?.cancel();
     setHasLoadError(false);
     canGoBackRef.current = false;
     webViewLoadedRef.current = false;
@@ -383,6 +417,7 @@ export function WebAppShellScreen() {
           }
         }}
         onLoadStart={() => {
+          backControllerRef.current?.cancel();
           webViewLoadedRef.current = false;
           clearWebSessionReadyFallback();
           pushNavigationQueueRef.current.markLoading();
@@ -402,6 +437,9 @@ export function WebAppShellScreen() {
           handleNewWindow(nativeEvent.targetUrl)
         }
         onNavigationStateChange={({ canGoBack, url }) => {
+          if (url !== topLevelUrlRef.current) {
+            backControllerRef.current?.cancel();
+          }
           canGoBackRef.current = canGoBack;
           topLevelUrlRef.current = url;
 

@@ -8,7 +8,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 
-import { createWebShellRuntimeScript } from '../src/domains/webShell/webShellPolicy.ts';
+import {
+  createWebShellOverlayBackScript,
+  createWebShellRuntimeScript,
+} from '../src/domains/webShell/webShellPolicy.ts';
 
 // No browser package dependency: use an installed Chromium through its CDP API.
 // The fixtures preserve the relevant DOM and CSS from web main/frontend-dev:
@@ -114,6 +117,25 @@ function fixture(kind, mode = 'broken') {
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>${styles}</style></head><body>${content}</body></html>`;
 }
 
+// These readiness markers and photo close labels are copied from origin/main's
+// updates/route.tsx, TradeDetail.tsx and the shared PhotoViewer (2026-11-03).
+// Route commits are intentionally separate from pushState to model React's
+// asynchronous loading without pulling React or the web application into CI.
+function scrollPageContent(path, pending = false) {
+  if (pending) return '<p>불러오는 중</p>';
+  if (path === '/updates') {
+    return '<h1>업데이트 소식</h1><ol aria-label="서비스 업데이트 목록"><li>최근 소식</li></ol>';
+  }
+  if (/^\/trade\/\d+$/.test(path)) {
+    return `<h1>교환 물품</h1><a href="${path}/edit">수정하기</a>`;
+  }
+  return '<h1>거래/교환</h1><button id="photoLauncher">사진 크게 보기</button>';
+}
+
+function scrollFixture(path, pending) {
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}main{min-height:3600px;padding:16px}button{min-height:40px}</style></head><body><main id="routeRoot">${scrollPageContent(path, pending)}</main></body></html>`;
+}
+
 async function connectPage(browser) {
   const address = await new Promise((resolve, reject) => {
     let output = '';
@@ -171,7 +193,9 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
     const url = new URL(request.url, 'http://localhost');
     if (url.pathname === '/broken.png') { response.writeHead(404).end(); return; }
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    response.end(fixture(url.pathname === '/chat' ? 'chat' : 'profile', url.searchParams.get('mode') || 'broken'));
+    response.end(url.searchParams.has('scroll-fixture')
+      ? scrollFixture(url.pathname, url.searchParams.has('pending'))
+      : fixture(url.pathname === '/chat' ? 'chat' : 'profile', url.searchParams.get('mode') || 'broken'));
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;
@@ -191,6 +215,20 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
       await settle();
     };
     const inject = async () => { await page.evaluate(runtimeScript); await settle(); };
+    const setScroll = async (top = 1200) => {
+      await page.evaluate(`scrollTo({top:${top},left:0,behavior:'instant'})`);
+      await settle();
+      assert.equal(await page.evaluate('scrollY'), top, 'Fixture must be able to scroll before testing navigation');
+    };
+    const commitRoute = async (path, method = 'pushState', pending = false) => {
+      const pathname = new URL(path, origin).pathname;
+      await page.evaluate(`history.${method}({},'',${JSON.stringify(path)});document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent(pathname, pending))}`);
+      await settle();
+    };
+    const assertScroll = async (expected, message) => {
+      await settle();
+      assert.equal(await page.evaluate('scrollY'), expected, message);
+    };
     const screenshot = async name => {
       const directory = process.env.ANDROID_TEST_SCREENSHOT_DIR;
       if (!directory) return;
@@ -299,6 +337,137 @@ test('Android runtime preserves real web avatar dimensions and chat scrolling in
       assert.ok(await page.evaluate("document.getElementById('profileAvatar').hasAttribute('data-gachigacha-android-avatar-fallback-image')"));
       assert.equal(await page.evaluate("document.getElementById('profileAvatar').getBoundingClientRect().width"), 72);
       assert.equal(await page.evaluate("document.getElementById('productPhoto').getAttribute('src')"), '/broken.png', 'Non-avatar product media is outside this fallback policy');
+    });
+
+    await t.test('photo viewer system back uses the visible web close handler without navigating', async t => {
+      const labels = ['상품 사진 크게 보기 닫기', '채팅 사진 닫기', '사진 전체 보기 닫기'];
+      for (const [index, label] of labels.entries()) {
+        await t.test(label, async () => {
+          await navigate('/trade?scroll-fixture', 393);
+          await inject();
+          await setScroll();
+          const initialUrl = await page.evaluate('location.href');
+          const viewer = `<section id="photoViewer" role="dialog" aria-modal="true" style="position:fixed;inset:20px;background:white"><button aria-label="${label}">닫기</button><img src="${validPhoto}" alt="사진"></section>`;
+          await page.evaluate(`window.backResults=[];window.closeCount=0;window.ReactNativeWebView={postMessage:value=>window.backResults.push(JSON.parse(value))};document.body.style.overflow='hidden';document.body.insertAdjacentHTML('beforeend',${JSON.stringify(viewer)});document.querySelector('#photoViewer button').onclick=()=>{window.closeCount++;document.getElementById('photoViewer').remove();document.body.style.overflow='';document.getElementById('photoLauncher').focus({preventScroll:true})}`);
+          await page.evaluate(createWebShellOverlayBackScript(index + 1));
+          await settle();
+          assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:overlay-back-result', requestId: index + 1, handled: true }]);
+          assert.equal(await page.evaluate('window.closeCount'), 1, 'The web close handler, not DOM removal alone, must run');
+          assert.equal(await page.evaluate('document.body.style.overflow'), '');
+          assert.equal(await page.evaluate('document.activeElement.id'), 'photoLauncher');
+          assert.equal(await page.evaluate('location.href'), initialUrl);
+          await assertScroll(1200, 'Closing a photo preserves the underlying page scroll');
+          await page.evaluate('window.backResults=[]');
+          await page.evaluate(createWebShellOverlayBackScript(index + 11));
+          assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:overlay-back-result', requestId: index + 11, handled: false }]);
+        });
+      }
+      await t.test('hidden, disabled and unrelated dialogs are not mistaken for a photo viewer', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        const label = labels[0];
+        const controls = `<section role="dialog" aria-modal="true" hidden><button aria-label="${label}">hidden</button></section><section role="dialog" aria-modal="true" style="visibility:hidden"><button aria-label="${label}">invisible</button></section><section role="dialog" aria-modal="true"><button disabled aria-label="${label}">disabled</button><button aria-label="프로필 수정 닫기">profile</button></section><button aria-label="${label}">outside dialog</button>`;
+        await page.evaluate(`window.backResults=[];window.ReactNativeWebView={postMessage:value=>window.backResults.push(JSON.parse(value))};document.body.insertAdjacentHTML('beforeend',${JSON.stringify(controls)})`);
+        await page.evaluate(createWebShellOverlayBackScript(99));
+        assert.deepEqual(await page.evaluate('window.backResults'), [{ type: 'gachigacha:overlay-back-result', requestId: 99, handled: false }]);
+      });
+      await t.test('an expired queued back request cannot close a newer viewer or send a stale response', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        const viewer = `<section id="photoViewer" role="dialog" aria-modal="true"><button aria-label="${labels[0]}">닫기</button></section>`;
+        await page.evaluate(`window.backResults=[];window.closeCount=0;window.ReactNativeWebView={postMessage:value=>window.backResults.push(JSON.parse(value))};document.body.insertAdjacentHTML('beforeend',${JSON.stringify(viewer)});document.querySelector('#photoViewer button').onclick=()=>{window.closeCount++;document.getElementById('photoViewer').remove()}`);
+        await page.evaluate(createWebShellOverlayBackScript(100, Date.now() - 1000));
+        await settle();
+        assert.equal(await page.evaluate('window.closeCount'), 0);
+        assert.ok(await page.evaluate("!!document.getElementById('photoViewer')"));
+        assert.deepEqual(await page.evaluate('window.backResults'), []);
+      });
+    });
+
+    await t.test('returning from an edit resets only the same detail after its content commits', async t => {
+      for (const method of ['pushState', 'replaceState']) {
+        await t.test(`${method}: delayed detail render, later mutations and different IDs`, async () => {
+          await navigate('/trade/42/edit?scroll-fixture', 393);
+          await inject();
+          await setScroll();
+          await commitRoute('/trade/42', method, true);
+          await assertScroll(1200, 'Wait for the detail DOM instead of scrolling the loading screen');
+          await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))}`);
+          await assertScroll(0, 'The saved detail opens at its top once ready');
+          await setScroll(900);
+          await page.evaluate("document.getElementById('routeRoot').insertAdjacentHTML('beforeend','<p>댓글 갱신</p>')");
+          await assertScroll(900, 'Later rendering on the same detail does not undo user scrolling');
+          await commitRoute('/trade/42/edit', method);
+          await setScroll(1100);
+          await commitRoute('/trade/99', method);
+          await assertScroll(1100, 'Another detail is not a saved-edit return');
+          await commitRoute('/trade', method);
+          await assertScroll(1100, 'The trade list retains its existing scroll');
+          await commitRoute('/trade/42/edit', method);
+          await commitRoute('/trade/42#trade-comments-title', method);
+          await assertScroll(1100, 'A detail comment anchor is never overridden by edit-return handling');
+        });
+      }
+      await t.test('popstate reset runs after browser history restoration', async () => {
+        await navigate('/trade/42?scroll-fixture', 393);
+        await inject();
+        await setScroll(800);
+        await commitRoute('/trade/42/edit');
+        await setScroll(1300);
+        await page.evaluate(`window.addEventListener('popstate',()=>{document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/trade/42'))};requestAnimationFrame(()=>scrollTo(0,800))},{once:true});history.back()`);
+        for (let i = 0; i < 100; i++) {
+          if (await page.evaluate("location.pathname === '/trade/42'")) break;
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        await assertScroll(0, 'A later history restoration cannot overwrite the saved-detail top reset');
+      });
+    });
+
+    await t.test('updates start at the top without hijacking hashes, other routes or later scrolling', async t => {
+      await t.test('initial document and SPA entry wait for actual updates content', async () => {
+        await navigate('/updates?scroll-fixture', 393);
+        await setScroll();
+        await inject();
+        await assertScroll(0, 'An initially restored updates document also starts at top');
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await setScroll();
+        await commitRoute('/updates', 'pushState', true);
+        await assertScroll(1200, 'Pending updates do not scroll the previous screen early');
+        await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/updates'))}`);
+        await assertScroll(0, 'Updates reset after delayed content arrives');
+        await setScroll(900);
+        await commitRoute('/updates?filter=all', 'replaceState');
+        await assertScroll(900, 'Same-path query changes are not a fresh entry');
+        await page.evaluate("document.getElementById('routeRoot').insertAdjacentHTML('beforeend','<p>이미지 로드</p>')");
+        await assertScroll(900, 'Late content and photo closing do not repeatedly force top');
+      });
+      await t.test('route-away and deliberate user scroll cancel a pending reset', async () => {
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await setScroll();
+        await commitRoute('/updates', 'pushState', true);
+        await commitRoute('/search');
+        await page.evaluate(`document.getElementById('routeRoot').insertAdjacentHTML('beforeend',${JSON.stringify(scrollPageContent('/updates'))})`);
+        await assertScroll(1200, 'A stale updates response cannot scroll another route');
+        await navigate('/trade?scroll-fixture', 393);
+        await inject();
+        await setScroll();
+        await commitRoute('/updates', 'pushState', true);
+        await page.evaluate("window.dispatchEvent(new WheelEvent('wheel',{deltaY:100}))");
+        await page.evaluate(`document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/updates'))}`);
+        await assertScroll(1200, 'Explicit user scrolling cancels a delayed top reset');
+      });
+      await t.test('initial and SPA hash destinations preserve scroll, including a queued reset', async () => {
+        await navigate('/updates?scroll-fixture#release-note', 393);
+        await setScroll();
+        await inject();
+        await assertScroll(1200, 'Initial deep links keep their anchor position');
+        await commitRoute('/trade');
+        await commitRoute('/updates#release-note');
+        await assertScroll(1200, 'SPA deep links keep their anchor position');
+        await commitRoute('/trade');
+        await page.evaluate(`history.pushState({},'','/updates');document.getElementById('routeRoot').innerHTML=${JSON.stringify(scrollPageContent('/updates'))};requestAnimationFrame(()=>history.replaceState({},'','/updates#release-note'))`);
+        await assertScroll(1200, 'Adding a same-route hash before a queued reset fires must cancel that reset');
+      });
     });
   } finally {
     page?.close();

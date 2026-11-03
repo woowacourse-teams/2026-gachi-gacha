@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { createWebShellBackController } from '../src/domains/webShell/webShellBackController.ts';
 
 import {
   classifyWebShellNavigation,
@@ -9,6 +10,7 @@ import {
   createWebShellBootstrapScript,
   createWebShellChatListNavigationScript,
   createWebShellNavigationScript,
+  createWebShellOverlayBackScript,
   createWebShellRuntimeScript,
   createWebShellSameOriginNavigationScript,
   createWebShellSessionSyncScript,
@@ -343,6 +345,92 @@ test('Android 뒤로가기는 열린 채팅방을 목록으로 먼저 닫는다'
     WEB_APP_SHELL_SOURCE,
     /createWebShellChatListNavigationScript\(\)/,
   );
+});
+
+test('사진 닫기 응답은 유효한 요청 번호와 boolean만 받는다', () => {
+  const result = { type: 'gachigacha:overlay-back-result', requestId: 1, handled: true };
+  assert.deepEqual(parseWebShellMessage(JSON.stringify(result)), {
+    type: 'overlay-back-result', requestId: 1, handled: true,
+  });
+  for (const requestId of [0, -1, 0.5, '1', null, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(parseWebShellMessage(JSON.stringify({ ...result, requestId })), null);
+    assert.throws(() => createWebShellOverlayBackScript(requestId));
+  }
+  assert.equal(parseWebShellMessage(JSON.stringify({ ...result, handled: 'true' })), null);
+  assert.doesNotThrow(() => new Function(createWebShellOverlayBackScript(1)));
+  assert.match(WEB_APP_SHELL_SOURCE, /createWebShellOverlayBackScript\(requestId, expiresAt\)/);
+});
+
+test('사진 닫기와 history 뒤로가기를 중복 실행하지 않는다', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const requests = [];
+  let navigations = 0;
+  const controller = createWebShellBackController({
+    dispatch: id => { requests.push(id); return true; },
+    onUnhandled: () => { navigations++; },
+  });
+  controller.press();
+  controller.press();
+  assert.deepEqual(requests, [1]);
+  controller.resolve(99, false);
+  controller.resolve(1, true);
+  t.mock.timers.tick(1000);
+  assert.equal(navigations, 0);
+  controller.press();
+  controller.resolve(1, false);
+  controller.resolve(2, false);
+  controller.resolve(2, false);
+  assert.equal(navigations, 1);
+  controller.cancel();
+});
+
+test('브리지 무응답은 재시도를 안내하고 로딩·오류만 즉시 뒤로가며 취소된 응답은 무시한다', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let navigations = 0;
+  let unresponsive = 0;
+  const controller = createWebShellBackController({
+    dispatch: () => true,
+    onUnhandled: () => { navigations++; },
+    onUnresponsive: () => { unresponsive++; },
+  });
+  controller.press();
+  t.mock.timers.tick(500);
+  assert.equal(navigations, 0);
+  assert.equal(unresponsive, 1);
+  controller.resolve(1, false);
+  assert.equal(navigations, 0);
+  controller.press();
+  controller.cancel();
+  controller.resolve(2, false);
+  t.mock.timers.tick(1000);
+  assert.equal(navigations, 0);
+  for (const dispatch of [() => false, () => { throw new Error('unmounted'); }]) {
+    const unavailable = createWebShellBackController({
+      dispatch, onUnhandled: () => { navigations++; },
+    });
+    unavailable.press();
+    unavailable.cancel();
+  }
+  assert.equal(navigations, 2);
+});
+
+test('사진을 닫은 뒤 응답만 늦어져도 상세글을 추가로 이탈하지 않는다', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const actions = [];
+  let requestId;
+  const controller = createWebShellBackController({
+    dispatch: id => { requestId = id; return true; },
+    onUnhandled: () => actions.push('history'),
+  });
+  controller.press();
+  t.mock.timers.tick(400);
+  actions.push('photo-closed');
+  t.mock.timers.tick(200);
+  controller.resolve(requestId, true);
+  assert.deepEqual(actions, ['photo-closed']);
+  controller.press();
+  controller.resolve(requestId, false);
+  assert.deepEqual(actions, ['photo-closed', 'history']);
 });
 
 test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다시 로드한다', () => {
