@@ -25,6 +25,15 @@ const {
   addExifInterfaceDependency,
 } = require('../plugins/withAndroidExifInterface.js');
 const {
+  MATERIAL_COMPONENTS_DEPENDENCY,
+  MATERIAL_COMPONENTS_MODULE,
+  RELEASE_OPTIMIZATION_PROPERTIES,
+  SCREEN_ORIENTATION_ATTRIBUTE,
+  addMaterialComponentsDependency,
+  removeOrientationRestriction,
+  setReleaseOptimization,
+} = require('../plugins/withAndroidPlayCompatibility.js');
+const {
   SIGNING_MARKER,
   SIGNING_PROPERTIES,
   addReleaseSigning,
@@ -84,10 +93,16 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
   const notificationPlugin = config.plugins?.find(
     (plugin) => Array.isArray(plugin) && plugin[0] === 'expo-notifications',
   );
+  const playCompatibilityPlugin = config.plugins?.find(
+    (plugin) =>
+      Array.isArray(plugin) &&
+      plugin[0] === './plugins/withAndroidPlayCompatibility',
+  );
   const actual = {
     name: config.name,
     package: config.android?.package,
     scheme: config.scheme,
+    orientation: config.orientation,
     icon: config.icon,
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
     softwareKeyboardLayoutMode: config.android?.softwareKeyboardLayoutMode,
@@ -109,6 +124,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     pushNotificationChannelId:
       config.extra?.pushNotificationChannelId,
     notificationPlugin,
+    playCompatibilityPlugin,
     tradeFeaturesEnabled: config.extra?.tradeFeaturesEnabled,
   };
 
@@ -116,6 +132,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     name: expected.name,
     package: expected.package,
     scheme: expected.scheme,
+    orientation: 'default',
     icon: './assets/lucha-app-icon.png',
     adaptiveForegroundImage: './assets/lucha-app-icon.png',
     softwareKeyboardLayoutMode: 'resize',
@@ -142,6 +159,12 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
       {
         color: '#d93b54',
         defaultChannel: PUSH_NOTIFICATION_CHANNEL_ID,
+      },
+    ],
+    playCompatibilityPlugin: [
+      './plugins/withAndroidPlayCompatibility',
+      {
+        enableReleaseOptimization: variant === 'production',
       },
     ],
     tradeFeaturesEnabled: variant === 'development',
@@ -407,6 +430,91 @@ if (
 
 console.log(
   '✓ AndroidX ExifInterface is added once to the generated Android app runtime',
+);
+
+const appBuildGradleWithMaterial = addMaterialComponentsDependency(appBuildGradle);
+const appBuildGradleWithUpdatedMaterial = addMaterialComponentsDependency(
+  appBuildGradle.replace(
+    'implementation("com.facebook.react:react-android")',
+    'implementation("com.google.android.material:material:1.13.0")',
+  ),
+);
+
+if (
+  !appBuildGradleWithMaterial.includes(MATERIAL_COMPONENTS_DEPENDENCY) ||
+  addMaterialComponentsDependency(appBuildGradleWithMaterial) !==
+    appBuildGradleWithMaterial ||
+  appBuildGradleWithMaterial.split(MATERIAL_COMPONENTS_MODULE).length !== 2 ||
+  !appBuildGradleWithUpdatedMaterial.includes(MATERIAL_COMPONENTS_DEPENDENCY) ||
+  appBuildGradleWithUpdatedMaterial.includes('material:1.13.0')
+) {
+  throw new Error(
+    'Material Components 1.14.0 must replace older versions exactly once.',
+  );
+}
+
+const orientationManifest = {
+  manifest: {
+    application: [
+      {
+        activity: [
+          {
+            $: {
+              'android:name': '.MainActivity',
+              [SCREEN_ORIENTATION_ATTRIBUTE]: 'portrait',
+            },
+            'intent-filter': [
+              {
+                action: [{ $: { 'android:name': 'android.intent.action.MAIN' } }],
+                category: [
+                  { $: { 'android:name': 'android.intent.category.LAUNCHER' } },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+removeOrientationRestriction(orientationManifest);
+if (
+  orientationManifest.manifest.application[0].activity[0].$[
+    SCREEN_ORIENTATION_ATTRIBUTE
+  ] !== undefined
+) {
+  throw new Error('Android MainActivity orientation restriction must be removed.');
+}
+
+const optimizedGradleProperties = setReleaseOptimization(
+  [
+    {
+      type: 'property',
+      key: 'android.enableMinifyInReleaseBuilds',
+      value: 'false',
+    },
+  ],
+  true,
+);
+
+if (
+  RELEASE_OPTIMIZATION_PROPERTIES.some(
+    (key) =>
+      optimizedGradleProperties.filter(
+        (property) => property.type === 'property' && property.key === key,
+      ).length !== 1 ||
+      optimizedGradleProperties.find(
+        (property) => property.type === 'property' && property.key === key,
+      )?.value !== 'true',
+  )
+) {
+  throw new Error(
+    'Production release minification and resource shrinking must be enabled exactly once.',
+  );
+}
+
+console.log(
+  '✓ Android Play compatibility removes orientation lock, selects Material 1.14.0, and enables production R8',
 );
 
 const releaseGradle = `def jscFlavor = 'io.github.react-native-community:jsc-android-intl:+'

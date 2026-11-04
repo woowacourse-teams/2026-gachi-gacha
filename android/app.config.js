@@ -250,7 +250,7 @@ function createConfig({ config }) {
     slug: 'gachi-gacha-android',
     scheme: variantConfig.scheme,
     version,
-    orientation: 'portrait',
+    orientation: 'default',
     icon: './assets/lucha-app-icon.png',
     userInterfaceStyle: 'light',
     android: {
@@ -289,6 +289,12 @@ function createConfig({ config }) {
       'expo-web-browser',
       './plugins/withAndroidExifInterface',
       './plugins/withAndroidReleaseSigning',
+      [
+        './plugins/withAndroidPlayCompatibility',
+        {
+          enableReleaseOptimization: variant === PRODUCTION_VARIANT,
+        },
+      ],
       [
         './plugins/withKakaoMapsAndroid',
         { nativeAppKey: kakaoMapNativeAppKey ?? '' },

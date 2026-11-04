@@ -30,6 +30,9 @@
 
 Play Console에 첫 AAB를 올린 뒤 package는 변경할 수 없다. 이후에는 같은 package와 서명을 유지하고 업로드할 때마다 versionCode를 증가시킨다.
 
+Android 15 edge-to-edge, Android 16 대형 화면, 운영 DEX 최적화 대응과 회전·태블릿
+QA는 [Google Play Android 15·16 호환성 대응](./play-console-compatibility.md)을 따른다.
+
 ## 역할 구분
 
 ### Android 저장소에서 준비된 것
