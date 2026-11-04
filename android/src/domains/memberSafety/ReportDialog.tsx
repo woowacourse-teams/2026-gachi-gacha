@@ -104,7 +104,15 @@ export function ReportDialog({ target, onClose, onSubmit }: ReportDialogProps) {
             <View accessibilityLiveRegion="polite" style={styles.submitted}>
               <Text style={styles.submittedTitle}>신고를 접수했어요.</Text>
               <Text style={styles.description}>확인 후 필요한 조치를 진행할게요.</Text>
-              <Pressable accessibilityRole="button" onPress={onClose} style={styles.primaryButton}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onClose}
+                style={({ pressed }) => [
+                  styles.primaryButton,
+                  styles.submittedButton,
+                  pressed && styles.primaryButtonPressed,
+                ]}
+              >
                 <Text style={styles.primaryButtonText}>확인</Text>
               </Pressable>
             </View>
@@ -261,7 +269,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   primaryButtonText: { color: colors.background, fontSize: 14, fontWeight: '800' },
+  primaryButtonPressed: { backgroundColor: colors.primaryPressed },
   disabled: { opacity: 0.42 },
-  submitted: { minHeight: 230, alignItems: 'center', justifyContent: 'center' },
+  submitted: {
+    minHeight: 230,
+    marginTop: 18,
+    paddingVertical: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   submittedTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
+  submittedButton: {
+    minWidth: 124,
+    marginTop: 18,
+    flex: 0,
+    alignSelf: 'center',
+  },
 });

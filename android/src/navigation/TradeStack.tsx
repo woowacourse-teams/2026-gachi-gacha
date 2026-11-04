@@ -1,7 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { TradeDetailScreen } from '../screens/TradeDetailScreen';
-import { BlockedMembersScreen } from '../screens/BlockedMembersScreen';
 import { TradeScreen } from '../screens/TradeScreen';
 import { TradeCreateScreen, TradeEditScreen } from '../screens/TradeWriteScreen';
 import { colors } from '../theme/colors';
@@ -11,7 +10,6 @@ export type TradeStackParamList = {
   TradeDetail: { tradeId: number };
   TradeCreate: undefined;
   TradeEdit: { tradeId: number };
-  BlockedMembers: undefined;
 };
 
 const Stack = createNativeStackNavigator<TradeStackParamList>();
@@ -34,11 +32,6 @@ export function TradeStack() {
         name="TradeEdit"
         component={TradeEditScreen}
         options={{ title: '교환글 수정', headerTintColor: colors.text, headerShadowVisible: false }}
-      />
-      <Stack.Screen
-        name="BlockedMembers"
-        component={BlockedMembersScreen}
-        options={{ title: '차단한 사용자', headerTintColor: colors.text, headerShadowVisible: false }}
       />
     </Stack.Navigator>
   );
