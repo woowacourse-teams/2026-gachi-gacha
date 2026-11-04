@@ -1,8 +1,11 @@
 # Google Play 내부·비공개 테스트 출시 가이드
 
-> 마지막 점검: 2026-11-02
+> 마지막 점검: 2026-11-04
 
 현재 운영 빌드는 단순 지도 앱이 아니다. 지도·가챠 검색뿐 아니라 카카오/네이버 로그인, 거래글과 댓글, 채팅, 알림, 신고·차단, 프로필과 계정 삭제까지 포함한 전체 서비스를 WebView와 Android 네이티브 기능이 함께 제공한다. Play Console 응답과 심사용 안내도 이 실제 동작을 기준으로 작성한다.
+
+DEV APK와 운영 내부 테스트의 검증은 [실기기 통합 QA 체크리스트](./release-qa-checklist.md)로
+구분해 기록한다. AAB 빌드 성공만으로 운영 실기기 QA가 완료된 것은 아니다.
 
 ## 현재 제출 범위
 
@@ -22,8 +25,8 @@
 | 운영 package | `com.gachigacha.app` |
 | 개발 package | `com.dev.gachigacha.app` |
 | 운영 웹/API origin | `https://gachigacha.kro.kr` |
-| 내부 테스트 기본 버전 | `0.1.0` / versionCode `1` |
-| 정식 출시 예시 | `1.0.0` / 이전보다 큰 versionCode |
+| 기존 Play 업로드 버전 | `0.1.0` / versionCode `1` |
+| 이번 운영 내부 테스트 준비 버전 | `1.0.0` / versionCode `2` |
 | target/compile SDK | API 36 |
 | 개인정보처리방침 | `https://gachigacha.kro.kr/privacy` |
 | 외부 계정 삭제 경로 | `https://gachigacha.kro.kr/account-deletion` |
@@ -126,8 +129,11 @@ keystore, 비밀번호, Firebase 설정 원문은 저장소·이슈·PR에 올�
 
 GitHub Actions에서 `Android Play Release`를 수동 실행한다.
 
-- `version_name`: 사용자에게 보이는 버전. 내부 테스트 예: `0.1.0`
-- `version_code`: Play 업로드마다 증가하는 양의 정수. 첫 제출 예: `1`
+- 실행 브랜치: `android`. AAB 생성에 `main` 병합은 필요하지 않다.
+- `version_name`: 이번 내부 테스트는 `1.0.0`.
+- `version_code`: 기존 Play 업로드는 `1`뿐이므로 이번 파일은 `2`.
+- CI에서 파일만 만들고 업로드하지 않았다면 그 빌드가 Play 버전 코드를 소비하지 않는다.
+- workflow는 파일 생성까지만 수행한다. Play 업로드·출시와 Console 설문 변경은 별도 승인 후 진행한다.
 
 workflow는 운영 package와 origin으로 clean prebuild하고, Firebase 설정과 upload key를 주입한 뒤, 서명된 `app-release.aab`와 검증 결과를 artifact/Summary로 제공한다. 일반 `Android Quality`의 APK는 실기기 QA용이며 Play 제출 파일이 아니다.
 
