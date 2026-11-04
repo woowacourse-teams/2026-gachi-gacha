@@ -23,3 +23,8 @@
   Do not rely on a fixed bottom padding alone.
 - Follow `docs/web-mobile-parity.md` and verify gesture navigation, three-button
   navigation, small screens, large text, and the open keyboard where relevant.
+
+- DEV 실기기 QA가 완료되고 사용자가 운영 AAB 준비를 명시적으로 요청하기 전에는
+  AAB를 생성하거나 운영 versionName/versionCode를 변경하지 않는다.
+  QA 수정 산출물은 DEV APK로 제공한다. AAB 생성과 Play 업로드는 별개이며,
+  업로드/출시에는 별도 승인이 필요하다.

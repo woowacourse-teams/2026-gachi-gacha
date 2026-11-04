@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { createWebShellBackController } from '../src/domains/webShell/webShellBackController.ts';
 
 import {
   classifyWebShellNavigation,
@@ -9,6 +10,7 @@ import {
   createWebShellBootstrapScript,
   createWebShellChatListNavigationScript,
   createWebShellNavigationScript,
+  createWebShellOverlayBackScript,
   createWebShellRuntimeScript,
   createWebShellSameOriginNavigationScript,
   createWebShellSessionSyncScript,
@@ -296,18 +298,19 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /--gachigacha-android-map-header-top/);
   assert.match(runtimeScript, /addEventListener\('scroll'/);
   assert.match(runtimeScript, /data-gachigacha-android-avatar-fallback/);
-  assert.match(runtimeScript, /normalizeAvatarInitial/);
-  assert.match(runtimeScript, /createProfileFallbackImage/);
+  assert.match(runtimeScript, /defaultProfileImage/);
+  assert.match(runtimeScript, /markProfileAvatar/);
+  assert.doesNotMatch(runtimeScript, /normalizeAvatarInitial|CurrentUserInitial/);
   assert.match(runtimeScript, /전체 대화/);
   assert.match(runtimeScript, /trade-comments-title/);
-  assert.match(runtimeScript, /aria-label\$="댓글 작업"/);
+  assert.match(runtimeScript, /프로필 사진 선택/);
   assert.match(runtimeScript, /\/api\/v1\/oauth\/withdraw/);
   assert.match(runtimeScript, /\/api\/v1\/members\/me/);
   assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);
   assert.match(runtimeScript, /data:image\/svg\+xml/);
   assert.doesNotMatch(runtimeScript, /%3Crect/);
   assert.match(runtimeScript, /bottom: 12px/);
-  assert.match(bootstrapScript, /gachigacha:auth-refresh-token/);
+  assert.match(bootstrapScript, /gachigacha:auth-session-snapshot/);
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
   assert.match(syncScript, /sessionChanged/);
   assert.match(syncScript, /window\.location\.reload/);
@@ -342,6 +345,111 @@ test('Android 뒤로가기는 열린 채팅방을 목록으로 먼저 닫는다'
     WEB_APP_SHELL_SOURCE,
     /createWebShellChatListNavigationScript\(\)/,
   );
+});
+
+test('사진 닫기 응답은 유효한 요청 번호와 boolean만 받는다', () => {
+  const result = { type: 'gachigacha:overlay-back-result', requestId: 1, handled: true };
+  assert.deepEqual(parseWebShellMessage(JSON.stringify(result)), {
+    type: 'overlay-back-result', requestId: 1, handled: true,
+  });
+  for (const requestId of [0, -1, 0.5, '1', null, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(parseWebShellMessage(JSON.stringify({ ...result, requestId })), null);
+    assert.throws(() => createWebShellOverlayBackScript(requestId));
+  }
+  assert.equal(parseWebShellMessage(JSON.stringify({ ...result, handled: 'true' })), null);
+  assert.doesNotThrow(() => new Function(createWebShellOverlayBackScript(1)));
+  assert.match(WEB_APP_SHELL_SOURCE, /createWebShellOverlayBackScript\(requestId, expiresAt\)/);
+});
+
+test('작성 이탈 확인은 유효한 요청 번호와 실제 작성·수정 경로만 허용한다', () => {
+  for (const path of ['/trade/new', '/trade/42/edit']) {
+    assert.deepEqual(parseWebShellMessage(JSON.stringify({
+      type: 'gachigacha:confirm-leave-trade', requestId: 1, path,
+    })), { type: 'confirm-leave-trade', requestId: 1, path });
+  }
+  for (const path of ['/trade/42', '/mypage', 'https://example.com/trade/new']) {
+    assert.equal(parseWebShellMessage(JSON.stringify({
+      type: 'gachigacha:confirm-leave-trade', requestId: 1, path,
+    })), null);
+  }
+  assert.equal(parseWebShellMessage(JSON.stringify({
+    type: 'gachigacha:confirm-leave-trade', requestId: -1, path: '/trade/new',
+  })), null);
+});
+
+test('사진 닫기와 history 뒤로가기를 중복 실행하지 않는다', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const requests = [];
+  let navigations = 0;
+  const controller = createWebShellBackController({
+    dispatch: id => { requests.push(id); return true; },
+    onUnhandled: () => { navigations++; },
+  });
+  controller.press();
+  controller.press();
+  assert.deepEqual(requests, [1]);
+  controller.resolve(99, false);
+  controller.resolve(1, true);
+  t.mock.timers.tick(1000);
+  assert.equal(navigations, 0);
+  controller.press();
+  controller.resolve(1, false);
+  controller.resolve(2, false);
+  controller.resolve(2, false);
+  assert.equal(navigations, 1);
+  controller.cancel();
+});
+
+test('브리지 무응답·예외는 재시도를 안내하고 WebView가 없을 때만 즉시 뒤로간다', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  let navigations = 0;
+  let unresponsive = 0;
+  const controller = createWebShellBackController({
+    dispatch: () => true,
+    onUnhandled: () => { navigations++; },
+    onUnresponsive: () => { unresponsive++; },
+  });
+  controller.press();
+  t.mock.timers.tick(500);
+  assert.equal(navigations, 0);
+  assert.equal(unresponsive, 1);
+  controller.resolve(1, false);
+  assert.equal(navigations, 0);
+  controller.press();
+  controller.cancel();
+  controller.resolve(2, false);
+  t.mock.timers.tick(1000);
+  assert.equal(navigations, 0);
+  for (const dispatch of [() => false, () => { throw new Error('unmounted'); }]) {
+    const unavailable = createWebShellBackController({
+      dispatch,
+      onUnhandled: () => { navigations++; },
+      onUnresponsive: () => { unresponsive++; },
+    });
+    unavailable.press();
+    unavailable.cancel();
+  }
+  assert.equal(navigations, 1);
+  assert.equal(unresponsive, 2);
+});
+
+test('사진을 닫은 뒤 응답만 늦어져도 상세글을 추가로 이탈하지 않는다', (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout'] });
+  const actions = [];
+  let requestId;
+  const controller = createWebShellBackController({
+    dispatch: id => { requestId = id; return true; },
+    onUnhandled: () => actions.push('history'),
+  });
+  controller.press();
+  t.mock.timers.tick(400);
+  actions.push('photo-closed');
+  t.mock.timers.tick(200);
+  controller.resolve(requestId, true);
+  assert.deepEqual(actions, ['photo-closed']);
+  controller.press();
+  controller.resolve(requestId, false);
+  assert.deepEqual(actions, ['photo-closed', 'history']);
 });
 
 test('WebView 세션은 실제 토큰이 다를 때만 갱신하고 한 번 다시 로드한다', () => {

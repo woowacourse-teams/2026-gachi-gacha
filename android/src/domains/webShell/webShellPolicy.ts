@@ -1,9 +1,22 @@
 import type { AuthTokens, MobileOAuthProvider } from '../auth/authTypes';
+import { createWebShellBackNavigationScript } from './webShellBackNavigation.ts';
+import { createWebShellFilePickerScript } from './webShellFilePicker.ts';
+import { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
+import { createWebShellSessionSnapshotBridgeScript } from './webShellSessionBridge.ts';
+
+export { createWebShellOverlayBackScript, createWebShellConfirmLeaveScript } from './webShellBackNavigation.ts';
+export { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
+export { createWebShellFilePickerScript } from './webShellFilePicker.ts';
+export { createWebShellSessionSyncScript } from './webShellSessionBridge.ts';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
 const LEGACY_ACCOUNT_DELETION_PATH = '/api/v1/oauth/withdraw';
 const CURRENT_ACCOUNT_DELETION_PATH = '/api/v1/members/me';
+// Reuse the original Android silhouette. Never derive an avatar from page text:
+// the same missing photo must not change when another route loads the nickname.
+const DEFAULT_PROFILE_IMAGE_DATA_URI =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='31' r='14' fill='%23c8899d'/%3E%3Cpath d='M25 79c1-17 10-27 23-27s22 10 23 27' fill='%23c8899d'/%3E%3C/svg%3E";
 
 const ANDROID_WEB_SHELL_STYLES = `
   @keyframes gachigacha-android-dismiss-location-error {
@@ -21,11 +34,19 @@ const ANDROID_WEB_SHELL_STYLES = `
     display: none !important;
   }
 
-  html[data-gachigacha-native-platform="android"] img[data-gachigacha-android-avatar-fallback-image] {
-    display: block !important;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important;
+  /* Only the artwork changes. The web owns avatar dimensions, flex and grid. */
+  html[data-gachigacha-native-platform="android"] [data-gachigacha-android-avatar-fallback] {
+    background-color: transparent !important;
+    background-image: url("${DEFAULT_PROFILE_IMAGE_DATA_URI}") !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+    color: transparent !important;
+    text-shadow: none !important;
+  }
+
+  html[data-gachigacha-native-platform="android"] [data-gachigacha-android-avatar-fallback] > * {
+    visibility: hidden !important;
   }
 
   @media (max-width: 767px) {
@@ -147,6 +168,8 @@ export const WEB_PUSH_TOKEN_REQUEST_MESSAGE =
   'gachigacha:push-token-request';
 export const WEB_CHAT_ROOM_STATE_MESSAGE =
   'gachigacha:chat-room-state';
+export const WEB_OVERLAY_BACK_RESULT_MESSAGE =
+  'gachigacha:overlay-back-result';
 
 export type WebShellNavigationDecision =
   | { type: 'allow' }
@@ -160,7 +183,9 @@ export type WebShellMessage =
   | { type: 'auth-session-synced' }
   | { type: 'native-bridge-ready' }
   | { type: 'push-token-request' }
-  | { isOpen: boolean; type: 'chat-room-state' };
+  | { isOpen: boolean; type: 'chat-room-state' }
+  | { requestId: number; path: string; type: 'confirm-leave-trade' }
+  | { requestId: number; handled: boolean; type: 'overlay-back-result' };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -270,6 +295,29 @@ export function parseWebShellMessage(value: string): WebShellMessage | null {
   }
 
   if (
+    message.type === 'gachigacha:confirm-leave-trade' &&
+    typeof message.requestId === 'number' &&
+    Number.isSafeInteger(message.requestId) && message.requestId > 0 &&
+    typeof message.path === 'string' && /^\/trade\/(?:new|\d+\/edit)$/.test(message.path)
+  ) {
+    return { type: 'confirm-leave-trade', requestId: message.requestId, path: message.path };
+  }
+
+  if (
+    message.type === WEB_OVERLAY_BACK_RESULT_MESSAGE &&
+    typeof message.requestId === 'number' &&
+    Number.isSafeInteger(message.requestId) &&
+    message.requestId > 0 &&
+    typeof message.handled === 'boolean'
+  ) {
+    return {
+      type: 'overlay-back-result',
+      requestId: message.requestId,
+      handled: message.handled,
+    };
+  }
+
+  if (
     message.type === WEB_CHAT_ROOM_STATE_MESSAGE &&
     typeof message.isOpen === 'boolean'
   ) {
@@ -321,37 +369,6 @@ function createTokenStorageScript(tokens: AuthTokens | null): string {
   `;
 }
 
-function createTokenStorageSyncScript(tokens: AuthTokens | null): string {
-  if (!tokens) {
-    return `
-      const sessionChanged =
-        window.sessionStorage.getItem(${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)}) !== null ||
-        window.sessionStorage.getItem(${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)}) !== null;
-      if (sessionChanged) {
-        window.sessionStorage.removeItem(${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)});
-        window.sessionStorage.removeItem(${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)});
-      }
-    `;
-  }
-
-  return `
-    const nextAccessToken = ${serializeForInlineScript(tokens.accessToken)};
-    const nextRefreshToken = ${serializeForInlineScript(tokens.refreshToken)};
-    const sessionChanged =
-      window.sessionStorage.getItem(${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)}) !== nextAccessToken ||
-      window.sessionStorage.getItem(${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)}) !== nextRefreshToken;
-    if (sessionChanged) {
-      window.sessionStorage.setItem(
-        ${serializeForInlineScript(ACCESS_TOKEN_STORAGE_KEY)},
-        nextAccessToken,
-      );
-      window.sessionStorage.setItem(
-        ${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)},
-        nextRefreshToken,
-      );
-    }
-  `;
-}
 
 /**
  * DEV 웹 번들이 구형 회원 탈퇴 경로를 호출하더라도 현재 백엔드 계약으로 보낸다.
@@ -397,35 +414,15 @@ function createWebShellRuntimeBody(): string {
   return `
     document.documentElement.dataset.gachigachaNativePlatform = 'android';
 
+    ${createWebShellFilePickerScript()}
+
     ${createWebShellApiCompatibilityScript()}
 
-    const refreshTokenKey = ${serializeForInlineScript(REFRESH_TOKEN_STORAGE_KEY)};
-    const postRefreshToken = (token) => {
-      window.ReactNativeWebView?.postMessage(JSON.stringify({
-        type: ${serializeForInlineScript(WEB_AUTH_REFRESH_TOKEN_MESSAGE)},
-        token,
-      }));
-    };
+    ${createWebShellRouteScrollScript()}
 
-    if (!window.__gachigachaAndroidAuthStorageBridgeInstalled) {
-      window.__gachigachaAndroidAuthStorageBridgeInstalled = true;
-      const originalSetItem = Storage.prototype.setItem;
-      const originalRemoveItem = Storage.prototype.removeItem;
+    ${createWebShellBackNavigationScript()}
 
-      Storage.prototype.setItem = function(key, value) {
-        originalSetItem.call(this, key, value);
-        if (this === window.sessionStorage && key === refreshTokenKey) {
-          postRefreshToken(String(value));
-        }
-      };
-
-      Storage.prototype.removeItem = function(key) {
-        originalRemoveItem.call(this, key);
-        if (this === window.sessionStorage && key === refreshTokenKey) {
-          postRefreshToken(null);
-        }
-      };
-    }
+    ${createWebShellSessionSnapshotBridgeScript()}
 
     const styleId = 'gachigacha-android-webview-style';
     const installAndroidStyle = () => {
@@ -456,177 +453,88 @@ function createWebShellRuntimeBody(): string {
       });
     };
 
-    const normalizeAvatarInitial = (value, fallback = 'G') =>
-      Array.from(String(value || '').trim())[0] || fallback;
-    const escapeAvatarText = (value) => String(value)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&apos;');
-    const createProfileFallbackImage = (initial) => {
-      const label = escapeAvatarText(normalizeAvatarInitial(initial));
-      const svg =
-        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'>" +
-        "<rect width='96' height='96' rx='48' fill='#fce9ef'/>" +
-        "<text x='48' y='52' fill='#963c5d' font-family='sans-serif' " +
-        "font-size='34' font-weight='700' text-anchor='middle' " +
-        "dominant-baseline='middle'>" + label + "</text></svg>";
-
-      return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-    };
-    const useDefaultProfileImage = (image, container) => {
+    const defaultProfileImage = ${serializeForInlineScript(DEFAULT_PROFILE_IMAGE_DATA_URI)};
+    const useDefaultProfileImage = (image) => {
       if (!(image instanceof HTMLImageElement)) return;
-      const initial = normalizeAvatarInitial(
-        image.dataset.gachigachaAndroidAvatarInitial,
-      );
-      const fallbackImage = createProfileFallbackImage(initial);
-      if (
-        image.dataset.gachigachaAndroidAvatarFallbackImage !== undefined &&
-        image.src === fallbackImage
-      ) {
-        return;
-      }
+      if (image.src === defaultProfileImage) return;
 
       image.dataset.gachigachaAndroidAvatarFallbackImage = '';
-      container?.setAttribute('data-gachigacha-android-avatar-fallback', '');
       image.removeAttribute('srcset');
-      image.src = fallbackImage;
+      image.src = defaultProfileImage;
     };
 
-    const watchProfileImage = (image, container = image, initial = 'G') => {
+    const watchProfileImage = (image) => {
       if (!(image instanceof HTMLImageElement)) return;
 
-      image.dataset.gachigachaAndroidAvatarInitial =
-        normalizeAvatarInitial(initial);
       image.setAttribute('data-gachigacha-android-avatar-image', '');
       if (image.dataset.gachigachaAndroidAvatarListener === undefined) {
         image.dataset.gachigachaAndroidAvatarListener = '';
-        image.addEventListener('error', () => {
-          useDefaultProfileImage(image, container);
-        });
+        image.addEventListener('error', () => useDefaultProfileImage(image));
         image.addEventListener('load', () => {
-          const expectedFallback = createProfileFallbackImage(
-            image.dataset.gachigachaAndroidAvatarInitial,
-          );
-          if (
-            image.src !== expectedFallback &&
-            image.naturalWidth > 0
-          ) {
+          if (image.src !== defaultProfileImage && image.naturalWidth > 0) {
             delete image.dataset.gachigachaAndroidAvatarFallbackImage;
-            container?.removeAttribute(
-              'data-gachigacha-android-avatar-fallback',
-            );
           }
         });
       }
 
-      if (image.dataset.gachigachaAndroidAvatarFallbackImage !== undefined) {
-        const nextFallbackImage = createProfileFallbackImage(
-          image.dataset.gachigachaAndroidAvatarInitial,
-        );
-        if (
-          image.src.startsWith('data:image/svg+xml') &&
-          image.src !== nextFallbackImage
-        ) {
-          image.src = nextFallbackImage;
-        }
-        return;
-      }
-
       if (image.complete && image.naturalWidth === 0) {
-        useDefaultProfileImage(image, container);
+        useDefaultProfileImage(image);
+      }
+    };
+
+    // Leave React-owned nodes/text and web sizing intact. A background replaces
+    // just the visual initial; removing the marker restores the web presentation.
+    const markProfileAvatar = (avatar) => {
+      if (!avatar) return;
+      const image = avatar.matches('img') ? avatar : avatar.querySelector('img');
+      if (image) {
+        avatar.removeAttribute('data-gachigacha-android-avatar-fallback');
+        watchProfileImage(image);
+      } else {
+        avatar.setAttribute('data-gachigacha-android-avatar-fallback', '');
       }
     };
 
     const markProfileImages = () => {
-      const ownCommentAction = document.querySelector(
-        '[aria-label$="댓글 작업"]',
-      );
-      const ownCommentNickname = ownCommentAction
-        ?.getAttribute('aria-label')
-        ?.replace(/\\s*댓글 작업$/, '')
-        .trim();
-      if (ownCommentNickname) {
-        window.__gachigachaAndroidCurrentUserInitial =
-          normalizeAvatarInitial(ownCommentNickname);
-      }
-
       const accountLink = document.querySelector('a[aria-label="마이페이지"]');
-      const accountImage = accountLink?.querySelector('img');
-      if (accountImage) {
-        watchProfileImage(
-          accountImage,
-          accountLink,
-          window.__gachigachaAndroidCurrentUserInitial || 'G',
-        );
-      }
+      markProfileAvatar(accountLink?.querySelector('img, svg'));
 
       const profileEditButton = Array.from(
         document.querySelectorAll('button'),
       ).find((button) => button.textContent?.trim() === '프로필 수정');
       const profileIdentity = profileEditButton?.previousElementSibling;
-      const myProfileAvatar = profileIdentity?.firstElementChild;
-      const profileNickname =
-        profileIdentity?.children?.[1]?.firstElementChild?.textContent?.trim();
-      if (profileNickname) {
-        window.__gachigachaAndroidCurrentUserInitial =
-          normalizeAvatarInitial(profileNickname);
-      }
-      if (myProfileAvatar) {
-        const profileImage = myProfileAvatar.matches('img')
-          ? myProfileAvatar
-          : myProfileAvatar.querySelector('img');
-
-        if (profileImage) {
-          watchProfileImage(
-            profileImage,
-            myProfileAvatar,
-            profileNickname || 'G',
-          );
-        }
-      }
+      markProfileAvatar(profileIdentity?.firstElementChild);
 
       document
         .querySelectorAll(
           'img[alt="현재 프로필 사진"], img[alt="새 프로필 사진 미리보기"]',
         )
-        .forEach((image) =>
-          watchProfileImage(
-            image,
-            image,
-            window.__gachigachaAndroidCurrentUserInitial || 'G',
-          ),
-        );
+        .forEach((image) => watchProfileImage(image));
+      const photoPicker = document.querySelector(
+        'input[aria-label="프로필 사진 선택"]',
+      );
+      const photoActions = photoPicker?.closest('label')?.parentElement;
+      markProfileAvatar(photoActions?.previousElementSibling);
 
       const conversationHeading = Array.from(
         document.querySelectorAll('h1, h2'),
       ).find((heading) => heading.textContent?.trim() === '전체 대화');
       const conversationList = conversationHeading?.closest('aside');
-      conversationList?.querySelectorAll('button').forEach((button) => {
-        const avatar = button.firstElementChild;
-        const image = avatar?.querySelector('img');
-        const nickname = button.querySelector('strong')?.textContent;
-        if (image) {
-          watchProfileImage(image, avatar, nickname || 'G');
-        }
+      conversationList?.querySelectorAll('button[data-selected]').forEach((button) => {
+        markProfileAvatar(button.firstElementChild);
       });
 
       const commentsSection = document
         .getElementById('trade-comments-title')
         ?.closest('section');
       commentsSection
-        ?.querySelectorAll('img[data-private-media]')
-        .forEach((image) => {
-          const avatar = image.parentElement;
-          const nickname = avatar?.parentElement
-            ?.querySelector('strong')
-            ?.textContent?.trim();
-          watchProfileImage(
-            image,
-            avatar || image,
-            nickname || window.__gachigachaAndroidCurrentUserInitial || 'G',
-          );
+        ?.querySelectorAll('div[aria-hidden="true"]')
+        .forEach((avatar) => {
+          // The web comment avatar is a frame with an image or an initials span.
+          const child = avatar.firstElementChild;
+          if (child?.matches('img[data-private-media], span[aria-hidden="true"]')) {
+            markProfileAvatar(avatar);
+          }
         });
     };
 
@@ -640,46 +548,46 @@ function createWebShellRuntimeBody(): string {
     };
 
     const markChatPresentation = () => {
-      if (!window.location.pathname.startsWith('/chat')) {
-        postChatRoomState(false);
-        return;
-      }
-
-      const conversationHeading = Array.from(
-        document.querySelectorAll('h1, h2'),
-      ).find((heading) => heading.textContent?.trim() === '전체 대화');
-      const conversationList = conversationHeading?.closest('aside');
-      const composer = document.querySelector(
-        'form[aria-label="메시지 입력 영역"]',
-      );
+      const isChatRoute = window.location.pathname === '/chat' ||
+        window.location.pathname.startsWith('/chat/');
+      const composer = isChatRoute
+        ? Array.from(document.querySelectorAll(
+          'form[aria-label="메시지 입력 영역"]',
+        )).find((element) =>
+          element.getClientRects().length > 0 &&
+          window.getComputedStyle(element).visibility !== 'hidden',
+        )
+        : null;
       const chatRoom = composer?.closest('section');
-      if (chatRoom) {
-        chatRoom.setAttribute('data-gachigacha-android-chat-room', '');
-      }
-
       const chatSurface = chatRoom?.parentElement;
-      const chatMain = conversationList?.parentElement?.tagName === 'MAIN'
-        ? conversationList.parentElement
-        : chatSurface?.tagName === 'MAIN'
-          ? chatSurface
-          : null;
+      const chatMain = chatSurface?.tagName === 'MAIN'
+        ? chatSurface
+        : null;
       const chatDrawer = chatSurface?.tagName === 'ASIDE'
         ? chatSurface
         : null;
-      chatMain?.setAttribute('data-gachigacha-android-chat-main', '');
-      chatDrawer?.setAttribute('data-gachigacha-android-chat-drawer', '');
+      const composerArea = composer?.parentElement;
+      const presentationTargets = [
+        ['data-gachigacha-android-chat-main', chatMain],
+        ['data-gachigacha-android-chat-drawer', chatDrawer],
+        ['data-gachigacha-android-chat-room', chatRoom],
+        ['data-gachigacha-android-chat-composer', composer],
+        ['data-gachigacha-android-chat-composer-area', composerArea],
+        ['data-gachigacha-android-chat-messages', composerArea?.previousElementSibling],
+      ];
 
-      if (composer) {
-        composer.setAttribute('data-gachigacha-android-chat-composer', '');
-        const composerArea = composer.parentElement;
-        composerArea?.setAttribute(
-          'data-gachigacha-android-chat-composer-area',
-          '',
-        );
-        composerArea?.previousElementSibling?.setAttribute(
-          'data-gachigacha-android-chat-messages',
-          '',
-        );
+      // Only an open room owns a constrained viewport. The conversation list
+      // follows the web's content height and document scrolling, including
+      // after React reuses its main element when a room is closed.
+      for (const [marker, target] of presentationTargets) {
+        document.querySelectorAll('[' + marker + ']').forEach((element) => {
+          if (element === target) return;
+          element.removeAttribute(marker);
+          if (marker.endsWith('-main') || marker.endsWith('-drawer')) {
+            element.style.removeProperty('--gachigacha-android-chat-height');
+          }
+        });
+        target?.setAttribute(marker, '');
       }
 
       const chatViewport = chatMain || chatDrawer;
@@ -723,6 +631,9 @@ function createWebShellRuntimeBody(): string {
         } else if (!isKeyboardVisible) {
           window.__gachigachaAndroidChatKeyboardHeight = null;
         }
+      } else {
+        window.__gachigachaAndroidChatViewportBaseline = null;
+        window.__gachigachaAndroidChatKeyboardHeight = null;
       }
 
       postChatRoomState(Boolean(chatRoom && composer));
@@ -868,6 +779,8 @@ function createWebShellRuntimeBody(): string {
   `;
 }
 
+/** Reset only the requested page transitions; keep list/history/hash restoration. */
+
 /**
  * Android에서 지원하지 않는 Apple 로그인을 숨기고, SecureStore 세션을 웹 세션에
  * 복원한다. 스크립트는 GachiGacha의 허용된 HTTPS origin에만 주입한다.
@@ -888,25 +801,6 @@ export function createWebShellBootstrapScript(tokens: AuthTokens | null): string
  * document-start 주입이 누락되더라도 현재 웹 저장소를 네이티브 세션과 비교한다.
  * 실제 값이 다를 때만 다시 로드하므로 onLoadEnd마다 안전하게 실행할 수 있다.
  */
-export function createWebShellSessionSyncScript(
-  tokens: AuthTokens | null,
-): string {
-  return `
-    (() => {
-      try {
-        ${createTokenStorageSyncScript(tokens)}
-        if (sessionChanged) {
-          window.location.reload();
-        } else {
-          window.ReactNativeWebView?.postMessage(JSON.stringify({
-            type: ${serializeForInlineScript(WEB_AUTH_SESSION_SYNCED_MESSAGE)},
-          }));
-        }
-      } catch {}
-    })();
-    true;
-  `;
-}
 
 /**
  * 네이티브 OAuth가 끝나면 현재 /login 문서를 다시 로드하지 않고, 토큰을 먼저
