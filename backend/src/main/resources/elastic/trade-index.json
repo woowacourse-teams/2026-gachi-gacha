@@ -57,6 +57,11 @@
         "type": "text", "analyzer": "korean", "search_analyzer": "korean_synonym",
         "fields": { "keyword": { "type": "keyword" } }
       },
+      "description": {
+        "type": "text",
+        "analyzer": "korean",
+        "search_analyzer": "korean_synonym"
+      },
       "createdAt":     { "type": "date" }
     }
   }

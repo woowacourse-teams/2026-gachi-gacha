@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -64,8 +66,10 @@ public class TradeIndexService {
                     .filter(i -> i.error() != null)
                     .map(i -> i.id() + ":" + i.error().reason())
                     .toList();
+            log.error("ES bulk 색인 실패 index={} requested={} failed={} items={}",
+                    INDEX, tradeIds.size(), failed.size(), failed.stream().limit(20).toList());
             throw new TradeIndexingException(ErrorCode.ELASTICSEARCH_INDEX_FAILED,
-                    "ES bulk 색인 실패 count=" + failed.size() + " " + abbreviate(failed));
+                    "ES bulk 색인 실패 count=" + failed.size() + " " + summarizeFailures(failed));
         }
     }
 
@@ -82,12 +86,13 @@ public class TradeIndexService {
         return tradeImageJpaRepository.findFirstImagesByTradeIdIn(tradeIds).stream()
                 .collect(Collectors.toMap(
                         image -> image.getTrade().getId(),
-                        TradeImage::getImageUrl
+                        TradeImage::getImageUrl,
+                        (first, second) -> first
                 ));
     }
 
-    private String abbreviate(final List<String> failed) {
-        return failed.stream().limit(5).collect(Collectors.joining(", "))
-                + (failed.size() > 5 ? " ..." : "");
+    private String summarizeFailures(final List<String> failed) {
+        return failed.stream().limit(20).collect(Collectors.joining(", "))
+                + (failed.size() > 20 ? " ..." : "");
     }
 }
