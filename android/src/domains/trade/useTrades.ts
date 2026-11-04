@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { getTrades } from './tradeApi';
-import type { TradeStatus, TradeSummary, TradeSummaryPage } from './tradeTypes';
+import type { TradeSummary, TradeSummaryPage } from './tradeTypes';
 
-export function useTrades(keyword: string, tradeStatus: TradeStatus | null) {
+export function useTrades(keyword: string) {
   const [items, setItems] = useState<TradeSummary[]>([]);
   const [page, setPage] = useState<TradeSummaryPage | null>(null);
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -20,7 +20,7 @@ export function useTrades(keyword: string, tradeStatus: TradeStatus | null) {
     setIsLoadingMore(false);
     setLoadMoreErrorMessage(null);
     try {
-      const result = await getTrades({ keyword, status: tradeStatus ?? undefined });
+      const result = await getTrades({ keyword });
       if (requestIdRef.current !== requestId) return;
       setItems(result.content);
       setPage(result);
@@ -34,7 +34,7 @@ export function useTrades(keyword: string, tradeStatus: TradeStatus | null) {
     } finally {
       if (requestIdRef.current === requestId) setIsRefreshing(false);
     }
-  }, [keyword, tradeStatus]);
+  }, [keyword]);
 
   useEffect(() => {
     void loadFirstPage();
@@ -56,7 +56,6 @@ export function useTrades(keyword: string, tradeStatus: TradeStatus | null) {
       const result = await getTrades({
         keyword,
         page: page.pageNumber + 1,
-        status: tradeStatus ?? undefined,
       });
       if (requestIdRef.current !== requestId) return;
 
@@ -72,14 +71,15 @@ export function useTrades(keyword: string, tradeStatus: TradeStatus | null) {
     } finally {
       if (requestIdRef.current === requestId) setIsLoadingMore(false);
     }
-  }, [isLoadingMore, keyword, loadMoreErrorMessage, page, status, tradeStatus]);
+  }, [isLoadingMore, keyword, loadMoreErrorMessage, page, status]);
 
   const refresh = useCallback(() => loadFirstPage(true), [loadFirstPage]);
   const retry = useCallback(() => loadFirstPage(), [loadFirstPage]);
   const retryLoadMore = useCallback(() => loadMore(true), [loadMore]);
+  const hasMore = Boolean(page && page.pageNumber + 1 < page.totalPages);
 
   return {
     status, items, errorMessage, isRefreshing, isLoadingMore, loadMoreErrorMessage,
-    refresh, retry, loadMore, retryLoadMore,
+    hasMore, refresh, retry, loadMore, retryLoadMore,
   };
 }

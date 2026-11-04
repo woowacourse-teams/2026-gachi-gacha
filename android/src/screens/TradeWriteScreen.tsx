@@ -321,8 +321,8 @@ function TradeWriteForm({
         <TextInput maxLength={255} onChangeText={setDesiredProduction} placeholder="비워두면 제안을 받을 수 있어요" placeholderTextColor={colors.textMuted} style={styles.input} value={desiredProduction} />
 
         <Text style={styles.sectionTitle}>장소</Text>
-        <PlaceField label="구매 매장" onClear={() => setPurchaseStore(null)} onOpen={() => setPlaceTarget('purchaseStore')} value={purchaseStore} />
-        <PlaceField label="거래 장소" onClear={() => setTradePlace(null)} onOpen={() => setPlaceTarget('tradePlace')} value={tradePlace} />
+        <PlaceField label="구매 매장" onClear={() => setPurchaseStore(null)} onOpen={() => setPlaceTarget('purchaseStore')} placeholder="구매 매장을 선택해 주세요" value={purchaseStore} />
+        <PlaceField label="거래 장소" onClear={() => setTradePlace(null)} onOpen={() => setPlaceTarget('tradePlace')} placeholder="거래 장소를 선택해 주세요" value={tradePlace} />
 
         {errorMessage && <Text accessibilityLiveRegion="polite" style={styles.submitError}>{errorMessage}</Text>}
         <Pressable accessibilityRole="button" disabled={isSubmitting} onPress={() => void submit()} style={({ pressed }) => [styles.submitButton, (pressed || isSubmitting) && styles.pressed]}>
@@ -341,13 +341,13 @@ function TradeWriteForm({
   );
 }
 
-function PlaceField({ label, onClear, onOpen, value }: { label: string; onClear: () => void; onOpen: () => void; value: TradePlaceInput | null }) {
+function PlaceField({ label, onClear, onOpen, placeholder, value }: { label: string; onClear: () => void; onOpen: () => void; placeholder: string; value: TradePlaceInput | null }) {
   return (
     <View style={styles.placeField}>
       <Text style={styles.label}>{label} (선택)</Text>
       <Pressable accessibilityRole="button" onPress={onOpen} style={styles.placeButton}>
         <View style={styles.placeCopy}>
-          <Text style={[styles.placeName, !value && styles.placeholder]}>{value?.name || value?.address || `${label}을 선택해 주세요`}</Text>
+          <Text style={[styles.placeName, !value && styles.placeholder]}>{value?.name || value?.address || placeholder}</Text>
           {value?.name && <Text style={styles.placeAddress}>{value.address}</Text>}
         </View>
         <Text aria-hidden style={styles.chevron}>›</Text>

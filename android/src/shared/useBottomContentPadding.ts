@@ -5,8 +5,10 @@ export const DEFAULT_BOTTOM_CONTENT_GAP = 24;
 export function resolveBottomContentPadding(
   bottomInset: number,
   contentGap = DEFAULT_BOTTOM_CONTENT_GAP,
+  includeInset = true,
 ): number {
-  return Math.max(0, bottomInset) + Math.max(0, contentGap);
+  const safeInset = includeInset ? Math.max(0, bottomInset) : 0;
+  return safeInset + Math.max(0, contentGap);
 }
 
 /**
@@ -15,7 +17,8 @@ export function resolveBottomContentPadding(
  */
 export function useBottomContentPadding(
   contentGap = DEFAULT_BOTTOM_CONTENT_GAP,
+  includeInset = true,
 ): number {
   const { bottom } = useSafeAreaInsets();
-  return resolveBottomContentPadding(bottom, contentGap);
+  return resolveBottomContentPadding(bottom, contentGap, includeInset);
 }

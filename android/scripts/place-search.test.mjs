@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
+import { getKakaoPlaceSearchFailureMessage } from '../src/domains/place/kakaoPlaceSearchError.ts';
 import { parseKakaoPlaceSearchResponse } from '../src/domains/place/kakaoPlaceSearchParser.ts';
 
 test('카카오 장소 검색 응답을 웹과 같은 장소 선택 값으로 변환한다', () => {
@@ -66,5 +67,16 @@ test('documents가 없는 응답은 안전하게 거부한다', () => {
   assert.throws(
     () => parseKakaoPlaceSearchResponse({}),
     /응답 형식이 올바르지 않습니다/,
+  );
+});
+
+test('장소 검색 권한 오류는 내부 설정을 노출하지 않고 안내한다', () => {
+  assert.equal(
+    getKakaoPlaceSearchFailureMessage(403),
+    '지금은 장소 검색을 사용할 수 없어요. 잠시 후 다시 시도해 주세요.',
+  );
+  assert.equal(
+    getKakaoPlaceSearchFailureMessage(429),
+    '장소 검색 요청이 많아요. 잠시 후 다시 시도해 주세요.',
   );
 });
