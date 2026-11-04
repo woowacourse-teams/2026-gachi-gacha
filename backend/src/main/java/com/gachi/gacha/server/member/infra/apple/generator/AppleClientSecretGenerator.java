@@ -26,15 +26,11 @@ public class AppleClientSecretGenerator {
     }
 
     public String generate() {
-        return generate(config.clientId());
-    }
-
-    public String generate(final String clientId) {
         Date now = new Date();
         return JWT.create()
                 .withKeyId(config.keyId())
                 .withIssuer(config.teamId())
-                .withSubject(clientId)
+                .withSubject(config.clientId())
                 .withAudience(AUDIENCE)
                 .withIssuedAt(now)
                 .withExpiresAt(new Date(now.getTime() + Duration.ofMinutes(5).toMillis()))

@@ -9,6 +9,10 @@ function shouldForwardActionLinkProp(propertyName: string) {
   return propertyName !== '$isActive' && propertyName !== '$isAccount';
 }
 
+function shouldForwardActionButtonProp(propertyName: string) {
+  return propertyName !== '$isActive';
+}
+
 export const Header = styled.header`
   position: sticky;
   z-index: 40;
@@ -177,6 +181,11 @@ export const Actions = styled.nav`
   }
 `;
 
+export const NotificationMenu = styled.div`
+  position: relative;
+  display: inline-flex;
+`;
+
 export const ActionLink = styled(Link, {
   shouldForwardProp: shouldForwardActionLinkProp,
 })<{
@@ -228,6 +237,66 @@ export const ActionLink = styled(Link, {
     gap: 4px;
     font-size: 12px;
   }
+`;
+
+export const ActionButton = styled('button', {
+  shouldForwardProp: shouldForwardActionButtonProp,
+})<{ $isActive: boolean }>`
+  position: relative;
+  display: inline-flex;
+  min-width: 42px;
+  height: 42px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid
+    ${({ $isActive }) =>
+      $isActive
+        ? 'var(--color-primary, #d93b54)'
+        : 'var(--color-border, #e8e6e3)'};
+  border-radius: 999px;
+  background: ${({ $isActive }) =>
+    $isActive ? 'var(--color-primary, #d93b54)' : '#ffffff'};
+  color: ${({ $isActive }) =>
+    $isActive ? '#ffffff' : 'var(--color-text, #242122)'};
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-primary, #d93b54);
+    background: ${({ $isActive }) =>
+      $isActive
+        ? 'var(--color-primary-hover, #c73149)'
+        : 'var(--color-primary-soft, #fff1f3)'};
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgb(217 59 84 / 24%);
+    outline-offset: 2px;
+  }
+
+  @media (max-width: 520px) {
+    min-width: 36px;
+    height: 36px;
+  }
+`;
+
+export const NotificationBadge = styled.span`
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: var(--color-primary, #d93b54);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 `;
 
 export const ActionIcon = styled.svg`

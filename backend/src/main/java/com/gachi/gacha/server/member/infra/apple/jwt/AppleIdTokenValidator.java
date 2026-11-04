@@ -36,16 +36,6 @@ public class AppleIdTokenValidator {
     }
 
     public AppleIdTokenClaims validate(final String idToken, final String expectedNonce) {
-        return validate(idToken, expectedNonce, config.clientId());
-    }
-
-    public AppleIdTokenClaims validateMobile(final String idToken, final String expectedNonce) {
-        String audience = config.mobileClientId() != null && !config.mobileClientId().isBlank()
-                ? config.mobileClientId() : config.clientId();
-        return validate(idToken, expectedNonce, audience);
-    }
-
-    private AppleIdTokenClaims validate(final String idToken, final String expectedNonce, final String audience) {
         try {
             DecodedJWT unverified = JWT.decode(idToken);
             Jwk jwk = jwkProvider.get(unverified.getKeyId());
@@ -53,7 +43,7 @@ public class AppleIdTokenValidator {
 
             DecodedJWT decoded = JWT.require(algorithm)
                     .withIssuer(ISSUER)
-                    .withAudience(audience)
+                    .withAudience(config.clientId())
                     .withClaim("nonce", expectedNonce)
                     .build()
                     .verify(idToken);

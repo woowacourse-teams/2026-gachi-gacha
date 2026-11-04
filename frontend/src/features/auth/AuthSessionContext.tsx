@@ -10,9 +10,10 @@ import {
 
 import { syncAnalyticsUser } from '@/shared/analytics/analyticsClient';
 
-import { isUnauthorizedAuthApiError } from './api/AuthApiError';
+import { AuthApiError, isUnauthorizedAuthApiError } from './api/AuthApiError';
 import { subscribeToAuthenticationExpired } from './api/authenticatedFetch';
 import { deleteCurrentMember } from './api/deleteCurrentMember';
+import { getAccountDeletionReauthenticationUrl } from './api/getAccountDeletionReauthenticationUrl';
 import { getCurrentMember } from './api/getCurrentMember';
 import { logoutAuthSession } from './api/logoutAuthSession';
 import { refreshAuthTokensOnce } from './api/refreshAuthTokens';
@@ -39,10 +40,17 @@ interface AuthSessionValue {
   errorMessage: string | null;
   authenticate: (tokens: AuthTokens) => Promise<void>;
   updateProfile: (input: UpdateCurrentMemberInput) => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  deleteAccount: () => Promise<AccountDeletionResult>;
+  completeAccountDeletion: () => void;
   logout: () => void;
   retry: () => void;
 }
+
+export type AccountDeletionResult =
+  | { status: 'deleted' }
+  | { status: 'reauthentication-required'; authorizationUrl: string };
+
+const INVALID_OAUTH_STATE_CODE = 'AUE03';
 
 interface AuthState {
   status: AuthStatus;
@@ -276,11 +284,32 @@ export function AuthSessionProvider({
     }));
   }, []);
 
-  const deleteAccount = useCallback(async () => {
-    await deleteCurrentMember();
+  const completeAccountDeletion = useCallback(() => {
     clearAuthTokens();
     setState(GUEST_STATE);
   }, []);
+
+  const deleteAccount = useCallback(async () => {
+    try {
+      await deleteCurrentMember();
+    } catch (error) {
+      if (
+        error instanceof AuthApiError &&
+        error.code === INVALID_OAUTH_STATE_CODE
+      ) {
+        return {
+          status: 'reauthentication-required' as const,
+          authorizationUrl: await getAccountDeletionReauthenticationUrl(),
+        };
+      }
+
+      throw error;
+    }
+
+    completeAccountDeletion();
+
+    return { status: 'deleted' as const };
+  }, [completeAccountDeletion]);
 
   const logout = useCallback(() => {
     const refreshToken = readRefreshToken();
@@ -301,12 +330,21 @@ export function AuthSessionProvider({
     () => ({
       ...state,
       authenticate,
+      completeAccountDeletion,
       updateProfile,
       deleteAccount,
       logout,
       retry,
     }),
-    [authenticate, deleteAccount, logout, retry, state, updateProfile],
+    [
+      authenticate,
+      completeAccountDeletion,
+      deleteAccount,
+      logout,
+      retry,
+      state,
+      updateProfile,
+    ],
   );
 
   return (

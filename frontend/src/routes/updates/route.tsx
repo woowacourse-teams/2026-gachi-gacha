@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import { SERVICE_RELEASE_NOTES } from './releaseNotes';
@@ -22,6 +25,13 @@ import {
 } from './route.styles';
 
 export function UpdatesRoute() {
+  useEffect(() => {
+    captureAnalyticsEvent('updates_page_viewed', {
+      latest_visible_version: SERVICE_RELEASE_NOTES[0].version,
+      release_count: SERVICE_RELEASE_NOTES.length,
+    });
+  }, []);
+
   return (
     <Page>
       <AppHeader currentPath="/updates" />
@@ -61,6 +71,12 @@ export function UpdatesRoute() {
                 href={release.releaseUrl}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() =>
+                  captureAnalyticsEvent('release_notes_selected', {
+                    version: release.version,
+                    is_latest: index === 0,
+                  })
+                }
               >
                 전체 변경 기록 보기
               </ReleaseSourceLink>

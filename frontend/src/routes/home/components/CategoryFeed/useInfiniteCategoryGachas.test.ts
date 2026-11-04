@@ -49,11 +49,11 @@ describe('useInfiniteCategoryGachas', () => {
           data: {
             content:
               page === 0
-                ? Array.from({ length: 12 }, (_, index) =>
+                ? Array.from({ length: 15 }, (_, index) =>
                     createGacha(index + 1),
                   )
-                : [createGacha(13)],
-            totalElements: 13,
+                : [createGacha(16)],
+            totalElements: 16,
           },
         });
       }),
@@ -74,7 +74,7 @@ describe('useInfiniteCategoryGachas', () => {
       expect(result.current.itemsState.status).toBe('success');
 
       if (result.current.itemsState.status === 'success') {
-        expect(result.current.itemsState.data).toHaveLength(13);
+        expect(result.current.itemsState.data).toHaveLength(16);
       }
 
       expect(result.current.hasNextPage).toBe(false);

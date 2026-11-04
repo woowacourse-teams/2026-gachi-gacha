@@ -13,7 +13,7 @@ describe('getCategoryGachaPage', () => {
 
         expect(searchParams.get('categoryIds')).toBe('110');
         expect(searchParams.get('page')).toBe('0');
-        expect(searchParams.get('size')).toBe('12');
+        expect(searchParams.get('size')).toBe('15');
 
         return HttpResponse.json({
           code: 'C000',

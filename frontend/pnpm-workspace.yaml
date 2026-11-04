@@ -2,7 +2,10 @@ engineStrict: true
 saveExact: true
 strictPeerDependencies: true
 autoInstallPeers: false
+overrides:
+  '@sentry/bundler-plugins': 10.75.3
 allowBuilds:
+  '@sentry/cli': true
   core-js: false
   esbuild: true
   msw: false

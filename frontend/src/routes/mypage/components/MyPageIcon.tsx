@@ -1,5 +1,6 @@
 export type MyPageIconName =
   | 'bell'
+  | 'blocked'
   | 'chevron'
   | 'delete'
   | 'edit'
@@ -114,6 +115,26 @@ export function MyPageIcon({ name, size = 22 }: MyPageIconProps) {
           strokeLinejoin="round"
         />
         <path d="m9 12 2 2 4-4" stroke="currentColor" strokeWidth="1.8" />
+      </svg>
+    );
+  }
+
+  if (name === 'blocked') {
+    return (
+      <svg {...commonProps}>
+        <circle
+          cx="12"
+          cy="12"
+          r="8.5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
+        <path
+          d="m6 6 12 12"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
       </svg>
     );
   }

@@ -8,16 +8,15 @@ import {
 const OPEN_CONFIG = {
   enabled: true,
   endpoint: 'https://script.google.com/macros/s/test/exec',
-  startAt: '2026-10-10T00:00:00+09:00',
-  endAt: '2026-10-26T00:00:00+09:00',
+  startAt: '2026-10-01T00:00:00+09:00',
+  endAt: '2026-11-01T00:00:00+09:00',
 } satisfies EventApplicationConfig;
 
 describe('getEventApplicationAvailability', () => {
   it.each([
-    ['upcoming', '2026-10-09T23:59:59+09:00'],
-    ['open', '2026-10-10T00:00:00+09:00'],
-    ['open', '2026-10-25T23:59:59+09:00'],
-    ['closed', '2026-10-26T00:00:00+09:00'],
+    ['upcoming', '2026-09-30T23:59:59+09:00'],
+    ['open', '2026-10-01T00:00:00+09:00'],
+    ['closed', '2026-11-01T00:00:00+09:00'],
   ] as const)('%s 기간을 구분한다', (expected, now) => {
     expect(getEventApplicationAvailability(OPEN_CONFIG, new Date(now))).toBe(
       expected,

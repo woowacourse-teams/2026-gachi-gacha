@@ -9,9 +9,15 @@ import {
   useParams,
 } from 'react-router';
 
-import { OAUTH_CALLBACK_PATH_PREFIX } from '@/features/auth/oauthCallbackPath';
+import { normalizeAuthReturnPath } from '@/features/auth/authReturnPath';
+import {
+  OAUTH_CALLBACK_PATH_PREFIX,
+  OAUTH_REDIRECT_CALLBACK_PATH,
+  OAUTH_WITHDRAW_CALLBACK_PATH,
+} from '@/features/auth/oauthCallbackPath';
 import { isOAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 import { HomePage } from '@/routes/home';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
@@ -20,6 +26,12 @@ const SearchRoute = lazy(async () => {
   const routeModule = await import('@/routes/search/route');
 
   return { default: routeModule.SearchRoute };
+});
+
+const LandingRoute = lazy(async () => {
+  const routeModule = await import('@/routes/landing/route');
+
+  return { default: routeModule.LandingRoute };
 });
 
 const StoreDetailRoute = lazy(async () => {
@@ -60,6 +72,12 @@ const PrivacyRoute = lazy(async () => {
   return { default: routeModule.PrivacyRoute };
 });
 
+const AccountDeletionRoute = lazy(async () => {
+  const routeModule = await import('@/routes/accountDeletion/route');
+
+  return { default: routeModule.AccountDeletionRoute };
+});
+
 const UpdatesRoute = lazy(async () => {
   const routeModule = await import('@/routes/updates/route');
 
@@ -96,6 +114,18 @@ const MyPageRoute = lazy(async () => {
   return { default: routeModule.MyPageRoute };
 });
 
+const MyTradesRoute = lazy(async () => {
+  const routeModule = await import('@/routes/mypage/trades/route');
+
+  return { default: routeModule.MyTradesRoute };
+});
+
+const BlockedMembersRoute = lazy(async () => {
+  const routeModule = await import('@/routes/mypage/blockedMembers/route');
+
+  return { default: routeModule.BlockedMembersRoute };
+});
+
 const EventApplicationRoute = lazy(async () => {
   const routeModule = await import('@/routes/eventApplication/route');
 
@@ -111,17 +141,11 @@ const TRADE_ID_PATTERN = /^[1-9]\d*$/;
 
 function RedirectToEntry() {
   const { search, hash } = useLocation();
-
-  return (
-    <Navigate
-      replace
-      to={{
-        pathname: ENTRY_PATH,
-        search,
-        hash,
-      }}
-    />
+  const safeEntryPath = normalizeAuthReturnPath(
+    `${ENTRY_PATH}${search}${hash}`,
   );
+
+  return <Navigate replace to={safeEntryPath} />;
 }
 
 function CategorySearchRoute() {
@@ -164,7 +188,7 @@ function CanonicalRoutes() {
   return (
     <>
       <Routes location={backgroundLocation ?? location}>
-        <Route path={ROOT_PATH} element={<RedirectToEntry />} />
+        <Route path={ROOT_PATH} element={<LandingRoute />} />
         <Route path={CATEGORY_SEARCH_PATH} element={<CategorySearchRoute />} />
         <Route path={MAP_PATH} element={<SearchRoute />} />
         <Route path="/stores/:storeId" element={<StoreDetailRouteElement />} />
@@ -172,10 +196,19 @@ function CanonicalRoutes() {
         <Route path="/trade/:tradeId" element={<TradeDetailRouteElement />} />
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/privacy" element={<PrivacyRoute />} />
+        <Route path="/account-deletion" element={<AccountDeletionRoute />} />
+        <Route
+          path={OAUTH_WITHDRAW_CALLBACK_PATH}
+          element={<AccountDeletionRoute />}
+        />
         <Route path="/updates" element={<UpdatesRoute />} />
         <Route
           path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}
           element={<AuthCallbackRouteElement />}
+        />
+        <Route
+          path={OAUTH_REDIRECT_CALLBACK_PATH}
+          element={<AuthCallbackRoute />}
         />
         <Route element={<ProtectedRoutes />}>
           <Route path="/trade/new" element={<TradeCreatePage />} />
@@ -191,6 +224,11 @@ function CanonicalRoutes() {
           />
           <Route path="/notifications" element={<NotificationsRoute />} />
           <Route path="/mypage" element={<MyPageRoute />} />
+          <Route path="/mypage/trades" element={<MyTradesRoute />} />
+          <Route
+            path="/mypage/blocked-members"
+            element={<BlockedMembersRoute />}
+          />
           <Route
             path="/events/popular-goods"
             element={<EventApplicationRoute />}
@@ -317,13 +355,13 @@ function AuthCallbackRouteElement() {
 
 export default function App() {
   return (
-    <>
+    <MemberBlockProvider>
       <GlobalStyles />
       <Suspense
         fallback={<PageLoadingFallback label="페이지를 준비하고 있어요." />}
       >
         <CanonicalRoutes />
       </Suspense>
-    </>
+    </MemberBlockProvider>
   );
 }

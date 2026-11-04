@@ -35,11 +35,6 @@ public class OauthMemberClientComposite {
         return getClient(oauthProviderType).fetch(authCode, nonce, name);
     }
 
-    public Member fetchMobile(final OauthProviderType provider, final String code,
-                              final String nonce, final String codeVerifier, final String name) {
-        return getClient(provider).fetchMobile(code, nonce, codeVerifier, name);
-    }
-
     private OauthMemberClient getClient(final OauthProviderType oauthProviderType) {
         return Optional.ofNullable(mapping.get(oauthProviderType))
                 .orElseThrow(() -> new UnSupportedProviderTypeException(ErrorCode.UNSUPPORTED_TYPE_ERROR));

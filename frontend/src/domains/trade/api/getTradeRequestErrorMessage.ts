@@ -6,7 +6,7 @@ export const PAYLOAD_TOO_LARGE_MESSAGE =
 const FIELD_LABELS: Record<string, string> = {
   title: '제목',
   description: '설명',
-  desiredProduction: '거래 희망 상품',
+  desiredProduction: '얻고 싶은 상품',
   categoryIds: '카테고리',
   purchaseStore: '구매 매장',
   tradePlace: '거래 장소',

@@ -34,16 +34,6 @@ public class KakaoIdTokenValidator {
     }
 
     public KakaoIdTokenClaims validate(final String idToken, final String expectedNonce) {
-        return validate(idToken, expectedNonce, kakaoOauthConfig.clientId());
-    }
-
-    public KakaoIdTokenClaims validateMobile(final String idToken, final String expectedNonce) {
-        String audience = kakaoOauthConfig.mobileClientId() != null && !kakaoOauthConfig.mobileClientId().isBlank()
-                ? kakaoOauthConfig.mobileClientId() : kakaoOauthConfig.clientId();
-        return validate(idToken, expectedNonce, audience);
-    }
-
-    private KakaoIdTokenClaims validate(final String idToken, final String expectedNonce, final String audience) {
         try {
             DecodedJWT unverified = JWT.decode(idToken);
             Jwk jwk = jwkProvider.get(unverified.getKeyId());
@@ -52,7 +42,7 @@ public class KakaoIdTokenValidator {
 
             DecodedJWT decoded = JWT.require(algorithm)
                     .withIssuer(ISSUER)
-                    .withAudience(audience)
+                    .withAudience(kakaoOauthConfig.clientId())
                     .withClaim("nonce", expectedNonce)
                     .build()
                     .verify(idToken);
