@@ -3,18 +3,18 @@ import imageCompression from 'browser-image-compression';
 import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 
 const WEBP_MIME_TYPE = 'image/webp';
-const PNG_MIME_TYPE = 'image/png';
+const JPEG_MIME_TYPE = 'image/jpeg';
 const MAX_COMPRESSED_SIZE_MB = 1;
 const MAX_WIDTH_OR_HEIGHT = 800;
 const INITIAL_QUALITY = 0.8;
 const MAX_CONCURRENT_COMPRESSION_COUNT = 2;
 
 export const TRADE_IMAGE_COMPRESSION_ERROR_MESSAGE =
-  '이미지를 최적화하지 못했습니다. Chrome 브라우저에서 다시 시도해 주세요.';
+  '이미지를 최적화하지 못했습니다. 다시 시도해 주세요.';
 
 const IMAGE_FILE_EXTENSIONS = {
   [WEBP_MIME_TYPE]: 'webp',
-  [PNG_MIME_TYPE]: 'png',
+  [JPEG_MIME_TYPE]: 'jpg',
 } as const;
 
 type SupportedCompressionMimeType = keyof typeof IMAGE_FILE_EXTENSIONS;
@@ -59,31 +59,26 @@ function createCompressedFile(sourceFile: File, compressedBlob: Blob): File {
   );
 }
 
-/** WebP를 우선 사용하고 브라우저가 인코딩하지 못하면 PNG로 한 번만 폴백한다. */
+/** WASM WebP → JPEG 순서로 압축한다. */
 async function compressImage(
   file: File,
   options: Parameters<typeof imageCompression>[1],
 ): Promise<File> {
   try {
-    const webpBlob = await imageCompression(file, {
-      ...options,
-      fileType: WEBP_MIME_TYPE,
-    });
-
-    // 일부 Safari는 WebP를 요청해도 PNG를 반환한다. 실제 안전한 형식을 존중한다.
-    if (isSupportedCompressionMimeType(webpBlob.type)) {
-      return createCompressedFile(file, webpBlob);
-    }
+    const { encodeTradeImageWithWasm } =
+      await import('./encodeTradeImageWithWasm');
+    const webpBlob = await encodeTradeImageWithWasm(file, options.signal);
+    return createCompressedFile(file, webpBlob);
   } catch {
-    // WebP 예외도 아래 PNG 폴백에서 동일하게 처리한다.
+    // WASM 로드·디코딩·인코딩 오류는 JPEG 폴백에서 처리한다.
   }
 
-  const pngBlob = await imageCompression(file, {
+  const jpegBlob = await imageCompression(file, {
     ...options,
-    fileType: PNG_MIME_TYPE,
+    fileType: JPEG_MIME_TYPE,
   });
 
-  return createCompressedFile(file, pngBlob);
+  return createCompressedFile(file, jpegBlob);
 }
 
 /** 선택 순서를 유지하면서 대기 시간을 줄이기 위해 최대 두 장씩 압축한다. */

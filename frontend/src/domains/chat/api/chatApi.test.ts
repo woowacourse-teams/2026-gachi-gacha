@@ -9,6 +9,7 @@ import {
   findChatRoomByTrade,
   getChatMessages,
   getChatRooms,
+  getChatUnreadCount,
   markChatMessagesRead,
   uploadChatImages,
 } from './chatApi';
@@ -61,6 +62,40 @@ describe('chatApi', () => {
     const rooms = await getChatRooms();
 
     expect(rooms[0]?.lastMessage?.sentAt).toBe('2026-10-01T09:20:00');
+  });
+
+  it('전체 읽지 않은 채팅 메시지 수를 불러온다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/unread-count', ({ request }) => {
+        expect(request.headers.get('Authorization')).toBe(
+          'Bearer access-token',
+        );
+
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { unreadCount: 7 },
+        });
+      }),
+    );
+
+    await expect(getChatUnreadCount()).resolves.toBe(7);
+  });
+
+  it('읽지 않은 채팅 수가 음수이면 거부한다', async () => {
+    server.use(
+      http.get('/api/v1/chat/rooms/unread-count', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: { unreadCount: -1 },
+        }),
+      ),
+    );
+
+    await expect(getChatUnreadCount()).rejects.toThrow(
+      '읽지 않은 채팅 수 응답 형식이 올바르지 않습니다.',
+    );
   });
 
   it('게시글에 기존 채팅방이 있으면 roomId를 반환한다', async () => {

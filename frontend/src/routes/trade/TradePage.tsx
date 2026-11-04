@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import {
   breakpoint,
   color,
@@ -12,18 +13,30 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 
 import CreateTradeButton from './components/CreateTradeButton';
 import ProductCard from './components/ProductCard';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import SearchHero from './components/SearchHero';
+import { TradeFilters } from './components/TradeFilters';
 import type { TradeItem } from './model/tradeItem';
+import type {
+  TradeQuickKeyword,
+  TradeSortOrder,
+} from './model/tradeListFilter';
 
 interface TradePageProps {
   items: TradeItem[];
   query?: string;
+  selectedQuickKeyword?: TradeQuickKeyword | null;
+  statusFilter?: TradeStatus | null;
+  sortOrder?: TradeSortOrder;
   status?: 'loading' | 'success' | 'error';
   errorMessage?: string | null;
   hasMore?: boolean;
   isLoadingMore?: boolean;
   loadMoreError?: string | null;
   onSearch?: (query: string) => void;
+  onSelectQuickKeyword?: (keyword: TradeQuickKeyword | null) => void;
+  onChangeStatusFilter?: (status: TradeStatus | null) => void;
+  onChangeSortOrder?: (sortOrder: TradeSortOrder) => void;
   onRetry?: () => void;
   onLoadMore?: () => void;
 }
@@ -31,15 +44,31 @@ interface TradePageProps {
 export default function TradePage({
   items,
   query = '',
+  selectedQuickKeyword = null,
+  statusFilter = null,
+  sortOrder = 'latest',
   status = 'success',
   errorMessage = null,
   hasMore = false,
   isLoadingMore = false,
   loadMoreError = null,
   onSearch = () => undefined,
+  onSelectQuickKeyword = () => undefined,
+  onChangeStatusFilter = () => undefined,
+  onChangeSortOrder = () => undefined,
   onRetry,
   onLoadMore,
 }: TradePageProps) {
+  const hasActiveFilter =
+    Boolean(query) || selectedQuickKeyword !== null || statusFilter !== null;
+  const resultsTitle = query
+    ? `‘${query}’ 검색결과`
+    : selectedQuickKeyword
+      ? `${selectedQuickKeyword} 교환글`
+      : sortOrder === 'oldest'
+        ? '오래된순'
+        : '최신순';
+
   return (
     <Page>
       <AppHeader currentPath="/trade" />
@@ -52,9 +81,16 @@ export default function TradePage({
         />
 
         <ResultsPanel aria-live="polite">
-          <ResultsTitle>
-            {query ? `‘${query}’ 검색결과` : '최신순'}
-          </ResultsTitle>
+          <TradeFilters
+            selectedQuickKeyword={selectedQuickKeyword}
+            status={statusFilter}
+            sortOrder={sortOrder}
+            onSelectQuickKeyword={onSelectQuickKeyword}
+            onChangeStatus={onChangeStatusFilter}
+            onChangeSortOrder={onChangeSortOrder}
+          />
+
+          <ResultsTitle>{resultsTitle}</ResultsTitle>
 
           {status === 'loading' ? (
             <LoadingStateMessage role="status">
@@ -97,14 +133,15 @@ export default function TradePage({
             </>
           ) : (
             <EmptyState>
-              {query
-                ? '검색어와 일치하는 게시글이 없어요.'
+              {hasActiveFilter
+                ? '선택한 조건에 맞는 교환 게시글이 없어요.'
                 : '아직 등록된 교환 게시글이 없어요.'}
             </EmptyState>
           )}
         </ResultsPanel>
       </Main>
 
+      <ScrollToTopButton />
       <CreateTradeButton />
     </Page>
   );
@@ -155,7 +192,7 @@ const ResultsPanel = styled.section`
 const ResultsTitle = styled.h2`
   width: 100%;
   max-width: var(--trade-grid-max-width);
-  margin: 0 auto;
+  margin: ${space.xl} auto 0;
   color: ${color.text};
   font-size: ${fontSize.subheading};
   font-weight: ${fontWeight.bold};

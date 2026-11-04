@@ -1,4 +1,5 @@
 import type { AuthTokens } from './authTokensType';
+import { syncNativeRefreshToken } from './nativeAuthBridge';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
@@ -65,6 +66,7 @@ export function storeAuthTokens(tokens: AuthTokens): void {
   memoryRefreshToken = refreshToken;
   storeToken(ACCESS_TOKEN_STORAGE_KEY, accessToken);
   storeToken(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+  syncNativeRefreshToken(refreshToken);
 }
 
 export function clearAuthTokens(): void {
@@ -72,4 +74,5 @@ export function clearAuthTokens(): void {
   memoryRefreshToken = null;
   removeStoredToken(ACCESS_TOKEN_STORAGE_KEY);
   removeStoredToken(REFRESH_TOKEN_STORAGE_KEY);
+  syncNativeRefreshToken(null);
 }

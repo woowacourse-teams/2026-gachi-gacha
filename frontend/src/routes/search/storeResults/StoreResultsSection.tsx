@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import type { ReactNode } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
@@ -32,7 +32,7 @@ export interface StoreResultsSectionProps {
   isSearchAreaChanged: boolean;
   onOpenStore: (storeId: number) => void;
   onRetry: () => void;
-  onRevealHeader: () => void;
+  onToggleHeader: () => void;
   onSearchArea: () => void;
   onViewportCenterChange: (center: MapCoordinate) => void;
 }
@@ -49,41 +49,28 @@ export function StoreResultsSection({
   isSearchAreaChanged,
   onOpenStore,
   onRetry,
-  onRevealHeader,
+  onToggleHeader,
   onSearchArea,
   onViewportCenterChange,
 }: StoreResultsSectionProps) {
-  const sectionRef = useRef<HTMLElement>(null);
   const stores =
     storesState.status === 'success' ? storesState.data.stores : EMPTY_STORES;
   const { selectedStoreId, selectStore } = useSelectedStore(stores);
-  const showMapAsMainContent = useCallback(() => {
-    if (!window.matchMedia('(max-width: 767px)').matches) {
-      return;
-    }
-
-    sectionRef.current?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
-  }, []);
   const selectStoreFromList = useCallback(
     (storeId: number) => {
       captureStoreSelected(gachaId, storeId, 'list');
 
       selectStore(storeId);
-      window.requestAnimationFrame(showMapAsMainContent);
     },
-    [gachaId, selectStore, showMapAsMainContent],
+    [gachaId, selectStore],
   );
   const selectStoreFromMapMarker = useCallback(
     (storeId: number) => {
       captureStoreSelected(gachaId, storeId, 'map_marker');
 
       selectStore(storeId);
-      window.requestAnimationFrame(showMapAsMainContent);
     },
-    [gachaId, selectStore, showMapAsMainContent],
+    [gachaId, selectStore],
   );
   const openStoreFromList = useCallback(
     (storeId: number) => {
@@ -97,19 +84,11 @@ export function StoreResultsSection({
       return;
     }
 
-    const mapTop = sectionRef.current?.getBoundingClientRect().top;
-
-    if (mapTop !== undefined && mapTop > 1) {
-      showMapAsMainContent();
-      return;
-    }
-
-    onRevealHeader();
-  }, [onRevealHeader, showMapAsMainContent]);
+    onToggleHeader();
+  }, [onToggleHeader]);
 
   return (
     <Section
-      ref={sectionRef}
       aria-label={
         gachaId === null ? '홍대 가챠 매장' : '가챠 보유 매장 검색 결과'
       }
@@ -135,7 +114,6 @@ export function StoreResultsSection({
           selectedStoreId={selectedStoreId}
           isSearchAreaChanged={isSearchAreaChanged}
           onBackgroundClick={toggleMobileHeader}
-          onMapDragEnd={showMapAsMainContent}
           onSelectStore={selectStoreFromMapMarker}
           onSearchArea={onSearchArea}
           onViewportCenterChange={onViewportCenterChange}

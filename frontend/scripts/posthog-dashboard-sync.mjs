@@ -77,7 +77,7 @@ function trends({
       breakdownFilter: breakdown
         ? { breakdown, breakdown_type: 'event' }
         : { breakdown_type: 'event' },
-      filterTestAccounts: false,
+      filterTestAccounts: true,
     },
   };
 }
@@ -103,7 +103,7 @@ function funnel({ series, dateFrom = '-30d' }) {
         breakdownAttributionType: 'first_touch',
       },
       breakdownFilter: { breakdown_type: 'event' },
-      filterTestAccounts: false,
+      filterTestAccounts: true,
     },
   };
 }
@@ -123,7 +123,7 @@ function retention(eventName) {
         retentionType: 'retention_first_time',
         totalIntervals: 11,
       },
-      filterTestAccounts: false,
+      filterTestAccounts: true,
     },
   };
 }
@@ -530,6 +530,24 @@ const dashboardDefinitions = [
           breakdown: 'target',
         }),
       },
+      {
+        name: '보조 UI 편의 기능 사용 [map_mobile_header_toggled 외 2종]',
+        description:
+          '모바일 지도 헤더, 거래 목록 최상단 이동, 푸터 문의 링크의 실제 사용량을 비교합니다.',
+        query: trends({
+          series: [
+            event('map_mobile_header_toggled', {
+              label: '모바일 지도 헤더 전환',
+            }),
+            event('trade_scroll_to_top_selected', {
+              label: '거래 목록 최상단 이동',
+            }),
+            event('footer_contact_selected', {
+              label: '푸터 문의 선택',
+            }),
+          ],
+        }),
+      },
     ],
   },
   {
@@ -627,6 +645,27 @@ const dashboardDefinitions = [
               properties: [exact('outcome', 'failure')],
             }),
           ],
+        }),
+      },
+      {
+        name: '미읽음 배지 최초 조회 실패 [unread_count_initial_load_completed]',
+        description:
+          '알림과 채팅 미읽음 배지의 로그인 직후 최초 조회 실패를 channel별로 확인합니다.',
+        query: trends({
+          series: [
+            event('unread_count_initial_load_completed', {
+              properties: [exact('outcome', 'failure')],
+            }),
+          ],
+          breakdown: 'channel',
+        }),
+      },
+      {
+        name: 'Web Vitals 수집 상태 [$web_vitals]',
+        description:
+          '운영 브라우저에서 LCP, CLS, INP가 포함된 $web_vitals 이벤트가 정상 유입되는지 확인합니다. 실제 P75 값은 PostHog Web analytics에서 확인합니다.',
+        query: trends({
+          series: [event('$web_vitals')],
         }),
       },
     ],

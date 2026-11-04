@@ -31,6 +31,23 @@ const refreshToken = 'test-refresh-token';
 describe('앱의 P0 인증과 라우팅 흐름', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    server.use(
+      http.get('/api/v1/categories', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            items: [
+              { categoryId: 1, name: '산리오' },
+              { categoryId: 2, name: '치이카와' },
+              { categoryId: 3, name: '포켓몬' },
+              { categoryId: 4, name: '짱구' },
+              { categoryId: 5, name: '디즈니' },
+            ],
+          },
+        }),
+      ),
+    );
   });
 
   it('비로그인 사용자도 업데이트 소식을 확인할 수 있다', async () => {
@@ -353,7 +370,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
       route: '/',
     });
 
-    for (let step = 0; step < 3; step += 1) {
+    for (let step = 0; step < 4; step += 1) {
       await user.click(
         await screen.findByRole('button', {
           name: /다음/,
@@ -511,6 +528,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(
       await screen.findByText('오늘은 어떤 가챠를 찾아볼까요?'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(window.location.pathname).toBe('/search');
   });
 
@@ -541,6 +559,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
         name: '어떤 거래글을 찾아볼까요?',
       }),
     ).toBeInTheDocument();
+    expect(screen.getByRole('contentinfo')).toBeInTheDocument();
     expect(
       screen.queryByText('중고거래 페이지를 준비하고 있어요'),
     ).not.toBeInTheDocument();

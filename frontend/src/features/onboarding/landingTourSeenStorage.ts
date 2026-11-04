@@ -1,6 +1,6 @@
 const LANDING_TOUR_SEEN_STORAGE_KEY = 'landingTourSeenVersion';
 
-export const LANDING_TOUR_VERSION = '1';
+export const LANDING_TOUR_VERSION = '2';
 
 export function hasSeenCurrentLandingTour(): boolean {
   if (typeof window === 'undefined') {

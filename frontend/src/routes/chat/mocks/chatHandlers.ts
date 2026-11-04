@@ -132,6 +132,18 @@ export const chatHandlers = [
       data: { rooms: getRooms() },
     }),
   ),
+  http.get(`${CHAT_ROOMS_PATH}/unread-count`, () =>
+    HttpResponse.json({
+      code: 'C000',
+      message: '정상',
+      data: {
+        unreadCount: getRooms().reduce(
+          (total, room) => total + room.unreadCount,
+          0,
+        ),
+      },
+    }),
+  ),
   http.get(`${CHAT_ROOMS_PATH}/existence`, ({ request }) => {
     const tradeId = Number(new URL(request.url).searchParams.get('tradeId'));
     const room = getRooms().find(
