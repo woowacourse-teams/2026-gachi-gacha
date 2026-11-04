@@ -69,6 +69,11 @@ public class TradeSearchService {
                 .query(condition.keyword())
                 .operator(Operator.And)
                 .boost(1.0f)));
+        boolQueryBuilder.should(s -> s.match(m -> m
+                .field("description")
+                .query(condition.keyword())
+                .operator(Operator.And)
+                .boost(0.3f)));
         boolQueryBuilder.minimumShouldMatch("1");
     }
 

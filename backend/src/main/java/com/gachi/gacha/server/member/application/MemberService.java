@@ -34,6 +34,7 @@ public class MemberService {
         return MemberInfo.from(member);
     }
 
+    @Transactional
     public MemberDeleteResult withdrawWithoutReauth(final Long memberId) {
         Member member = memberJpaRepository.getMemberById(memberId);
         if (member.getOauthId().getOauthProvider() == OauthProviderType.APPLE) {
