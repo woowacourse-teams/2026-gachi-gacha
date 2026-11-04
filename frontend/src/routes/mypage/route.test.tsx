@@ -1,14 +1,29 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
-import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import {
+  readAccessToken,
+  readRefreshToken,
+  storeAuthTokens,
+} from '@/features/auth/authTokenStorage';
 import {
   AUTH_STORY_REFRESH_TOKEN,
   AUTH_STORY_TOKEN,
   authenticatedMemberHandler,
 } from '@/features/auth/mocks/authHandlers';
+import {
+  assignBrowserLocation,
+  replaceBrowserLocation,
+} from '@/shared/browser/browserNavigation';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -19,6 +34,109 @@ import { MyPageRoute } from './route';
 jest.mock('@/features/eventApplication/eventApplicationConfig', () => ({
   isEventApplicationOpen: () => true,
 }));
+
+jest.mock('@/shared/browser/browserNavigation', () => ({
+  assignBrowserLocation: jest.fn(),
+  replaceBrowserLocation: jest.fn(),
+}));
+
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function showModal() {
+    this.open = true;
+  };
+
+  HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+    this.dispatchEvent(new Event('close'));
+  };
+});
+
+describe('MyPageRoute 회원 탈퇴', () => {
+  beforeEach(() => {
+    storeAuthTokens({
+      accessToken: AUTH_STORY_TOKEN,
+      refreshToken: AUTH_STORY_REFRESH_TOKEN,
+    });
+  });
+
+  it('확인 문구를 제출하면 웹 OAuth 탈퇴 API를 호출하고 토큰을 지운 뒤 거래 목록으로 이동한다', async () => {
+    const user = userEvent.setup();
+    const authorizations: Array<string | null> = [];
+
+    server.use(
+      authenticatedMemberHandler,
+      myTradesHandler,
+      http.delete('/api/v1/oauth/withdraw', ({ request }) => {
+        authorizations.push(request.headers.get('Authorization'));
+        return HttpResponse.json({ code: 'C003', message: '정상 삭제' });
+      }),
+    );
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /회원 탈퇴/ }));
+    const dialog = screen.getByRole('dialog', { name: '회원 탈퇴' });
+    const confirmationInput = within(dialog).getByRole('textbox', {
+      name: /^확인 문구/,
+    });
+    await user.type(confirmationInput, '탈퇴');
+    await user.click(within(dialog).getByRole('button', { name: '회원 탈퇴' }));
+
+    await waitFor(() => {
+      expect(replaceBrowserLocation).toHaveBeenCalledWith('/trade');
+    });
+    expect(authorizations).toEqual([`Bearer ${AUTH_STORY_TOKEN}`]);
+    expect(readAccessToken()).toBeNull();
+    expect(readRefreshToken()).toBeNull();
+    expect(assignBrowserLocation).not.toHaveBeenCalled();
+  });
+
+  it('405 응답이면 탈퇴 창과 입력·토큰을 유지하고 페이지를 이동하지 않는다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      authenticatedMemberHandler,
+      myTradesHandler,
+      http.delete('/api/v1/oauth/withdraw', () =>
+        HttpResponse.json(
+          { code: 'CE002', message: '지원하지 않는 HTTP 메서드입니다.' },
+          { status: 405 },
+        ),
+      ),
+    );
+
+    renderWithProviders(<MyPageRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage',
+    });
+
+    await user.click(await screen.findByRole('button', { name: /회원 탈퇴/ }));
+    const dialog = screen.getByRole('dialog', { name: '회원 탈퇴' });
+    const confirmationInput = within(dialog).getByRole('textbox', {
+      name: /^확인 문구/,
+    });
+    await user.type(confirmationInput, '탈퇴');
+    await user.click(within(dialog).getByRole('button', { name: '회원 탈퇴' }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+      '지원하지 않는 HTTP 메서드입니다.',
+    );
+    expect(
+      screen.getByRole('dialog', { name: '회원 탈퇴' }),
+    ).toBeInTheDocument();
+    expect(confirmationInput).toHaveValue('탈퇴');
+    expect(
+      within(dialog).getByRole('button', { name: '회원 탈퇴' }),
+    ).toBeEnabled();
+    expect(readAccessToken()).toBe(AUTH_STORY_TOKEN);
+    expect(readRefreshToken()).toBe(AUTH_STORY_REFRESH_TOKEN);
+    expect(replaceBrowserLocation).not.toHaveBeenCalled();
+    expect(assignBrowserLocation).not.toHaveBeenCalled();
+  });
+});
 
 describe('MyPageRoute 내 교환글 수정', () => {
   beforeEach(() => {
