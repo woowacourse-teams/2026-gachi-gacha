@@ -188,7 +188,7 @@ class TradeIndexReconcilerTest {
     @Test
     @DisplayName("syncRecent: 이전 성공 시각이 있으면 그 시각 − 2분부터 조회한다")
     void syncRecent_usesLastSyncedAt() {
-        LocalDateTime last = LocalDateTime.of(2026, 11, 2, 9, 0);
+        LocalDateTime last = LocalDateTime.now().minusHours(1);
         ReflectionTestUtils.setField(reconciler, "lastSyncedAt", last);
 
         reconciler.syncRecent();
@@ -236,6 +236,67 @@ class TradeIndexReconcilerTest {
         reconciler.syncRecent();
 
         verify(tradeIndexService, times(3)).indexAll(anyList());   // 500 + 500 + 200
+    }
+
+    @Test
+    @DisplayName("reconcile: 전부 성공하면 lastSyncedAt을 점검 '시작' 시각으로 갱신한다")
+    void reconcile_advancesLastSyncedAt_toStartTime_onSuccess() {
+        when(tradeJpaRepository.findIdsAfter(eq(0L), any(Pageable.class))).thenReturn(List.of(1L, 2L));
+        when(tradeJpaRepository.findIdsAfter(eq(2L), any(Pageable.class))).thenReturn(List.of());
+
+        LocalDateTime before = LocalDateTime.now();
+        reconciler.reconcile();
+        LocalDateTime after = LocalDateTime.now();
+
+        LocalDateTime synced = (LocalDateTime) ReflectionTestUtils.getField(reconciler, "lastSyncedAt");
+        assertThat(synced).isBetween(before, after);
+    }
+
+    @Test
+    @DisplayName("reconcile: 색인 배치가 실패하면 lastSyncedAt을 갱신하지 않는다")
+    void reconcile_doesNotAdvanceLastSyncedAt_onBatchFailure() throws Exception {
+        when(tradeJpaRepository.findIdsAfter(eq(0L), any(Pageable.class))).thenReturn(List.of(1L, 2L));
+        when(tradeJpaRepository.findIdsAfter(eq(2L), any(Pageable.class))).thenReturn(List.of());
+        doThrow(new IllegalStateException("색인 실패")).when(tradeIndexService).indexAll(List.of(1L, 2L));
+
+        reconciler.reconcile();
+
+        assertThat(ReflectionTestUtils.getField(reconciler, "lastSyncedAt")).isNull();
+    }
+
+    @Test
+    @DisplayName("reconcile: 고아 삭제가 실패해도 lastSyncedAt을 갱신하지 않는다")
+    void reconcile_doesNotAdvanceLastSyncedAt_onOrphanDeleteFailure() throws Exception {
+        stubSearch(page(10L));
+        doReturn(failedBulk("10")).when(esClient).bulk(any(BulkRequest.class));
+
+        reconciler.reconcile();
+
+        assertThat(ReflectionTestUtils.getField(reconciler, "lastSyncedAt")).isNull();
+    }
+
+    @Test
+    @DisplayName("reconcile: 이미 더 최신인 lastSyncedAt을 과거 시각으로 되돌리지 않는다")
+    void reconcile_doesNotMoveLastSyncedAtBackward() {
+        LocalDateTime newer = LocalDateTime.now().plusHours(1);
+        ReflectionTestUtils.setField(reconciler, "lastSyncedAt", newer);
+
+        reconciler.reconcile();
+
+        assertThat(ReflectionTestUtils.getField(reconciler, "lastSyncedAt")).isEqualTo(newer);
+    }
+
+    @Test
+    @DisplayName("syncRecent: lastSyncedAt이 24시간보다 오래됐으면 24시간 전 + 겹침(2분)으로 제한한다")
+    void syncRecent_capsLookbackAt24Hours() {
+        ReflectionTestUtils.setField(reconciler, "lastSyncedAt", LocalDateTime.now().minusDays(3));
+
+        reconciler.syncRecent();
+
+        ArgumentCaptor<LocalDateTime> captor = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(tradeJpaRepository).findIdsModifiedAfter(captor.capture());
+        LocalDateTime expected = LocalDateTime.now().minusHours(24).minusMinutes(2);
+        assertThat(captor.getValue()).isBetween(expected.minusSeconds(5), expected.plusSeconds(5));
     }
 
     // ---------- helpers ----------
