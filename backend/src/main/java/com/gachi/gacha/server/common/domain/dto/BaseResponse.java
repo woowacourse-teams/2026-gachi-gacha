@@ -26,6 +26,10 @@ public record BaseResponse<T>(
                 .build();
     }
 
+    public static ResponseEntity<Void> noContent() {
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+
     public static <T> ResponseEntity<BaseResponse<T>> created(final URI location, final T data) {
         return created(BaseCode.CREATED, location, data);
     }

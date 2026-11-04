@@ -4,6 +4,7 @@ import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.config.SwaggerConfig;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
 import com.gachi.gacha.server.common.infra.elastic.dto.SearchResult;
+import com.gachi.gacha.server.favorite.trade.application.TradeFavoriteService;
 import com.gachi.gacha.server.trade.application.TradeSearchService;
 import com.gachi.gacha.server.trade.application.TradeService;
 import com.gachi.gacha.server.trade.application.dto.TradeDocument;
@@ -12,6 +13,7 @@ import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import com.gachi.gacha.server.trade.presentation.dto.TradeCreateRequest;
+import com.gachi.gacha.server.trade.presentation.dto.TradeDocumentResponse;
 import com.gachi.gacha.server.trade.presentation.dto.TradeResponse;
 import com.gachi.gacha.server.trade.presentation.dto.TradeStatusUpdateRequest;
 import com.gachi.gacha.server.trade.presentation.dto.TradeSummaryResponse;
@@ -30,6 +32,7 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springdoc.core.annotations.ParameterObject;
@@ -63,6 +66,7 @@ public class TradeController {
     private final TradeService tradeService;
     private final TradeSearchService tradeSearchService;
     private final TradeCommentService tradeCommentService;
+    private final TradeFavoriteService tradeFavoriteService;
 
     @Operation(summary = "교환 게시글 등록")
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -204,16 +208,29 @@ public class TradeController {
         return BaseResponse.deleted(null);
     }
 
-    @Operation(summary = "교환 게시글 검색")
+    @Operation(
+            summary = "교환 게시글 검색 (로그인은 선택)",
+            description = "로그인하면 내가 찜한 게시글에 favorite=true 가 표시된다."
+    )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     @GetMapping("/search")
-    public SearchResult<TradeDocument> searchTrades(
+    public SearchResult<TradeDocumentResponse> searchTrades(
+            @Auth(required = false) final Long memberId,
             @Parameter(description = "검색어") @RequestParam(required = false) final String keyword,
             @Parameter(description = "카테고리 아이디") @RequestParam(required = false) final List<Long> categoryIds,
             @Parameter(description = "거래 상태") @RequestParam(required = false) final TradeStatus status,
             @Parameter(description = "페이지") @RequestParam(defaultValue = "0") final int page,
             @Parameter(description = "한 페이지당 게시글 수") @RequestParam(defaultValue = "20") final int size)
             throws IOException {
-        return tradeSearchService.search(
+        SearchResult<TradeDocument> result = tradeSearchService.search(
                 new TradeSearchCondition(keyword, categoryIds, status, null, page, Math.min(size, 50)));
+        List<Long> ids = result.content().stream()
+                .map(TradeDocument::tradeId)
+                .toList();
+        Set<Long> favorites = tradeFavoriteService.findFavoriteTradeIds(memberId, ids);
+        List<TradeDocumentResponse> content = result.content().stream()
+                .map(document -> TradeDocumentResponse.of(document, favorites.contains(document.tradeId())))
+                .toList();
+        return new SearchResult<>(content, result.page(), result.size(), result.hasNext());
     }
 }
