@@ -146,4 +146,5 @@ elasticsearch:
       reconcile-zone: ${ELASTIC_TRADE_RECONCILE_ZONE:Asia/Seoul}
       sync-fixed-delay: ${ELASTIC_TRADE_SYNC_FIXED_DELAY:PT5M}
       sync-initial-delay: ${ELASTIC_TRADE_SYNC_INITIAL_DELAY:PT1M}
-
+      inference-fixed-delay: ${ELASTIC_TRADE_INFERENCE_FIXED_DELAY:PT5M}
+      inference-initial-delay: ${ELASTIC_TRADE_INFERENCE_INITIAL_DEALY:PT1M}
