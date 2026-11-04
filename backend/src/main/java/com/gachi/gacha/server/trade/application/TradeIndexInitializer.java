@@ -52,8 +52,19 @@ public class TradeIndexInitializer {
         try {
             indexService.reindexAll();
         } catch (Exception e) {
-            esClient.indices().delete(request -> request.index(INDEX));
+            rollbackIndex(e);
             throw e;
+        }
+    }
+
+    private void rollbackIndex(final Exception e) {
+        try {
+            esClient.indices().delete(request -> request.index(INDEX));
+            log.warn("trade 전체 색인 실패로 인덱스를 삭제했습니다. 다음 기동에서 다시 생성합니다. index={}", INDEX);
+        } catch (Exception deleteEx) {
+            log.error("trade 인덱스 롤백 삭제 실패. 불완전한 인덱스가 남아 다음 기동에서 재색인되지 않습니다. index={}",
+                    INDEX, deleteEx);
+            e.addSuppressed(deleteEx);
         }
     }
 }
