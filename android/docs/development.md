@@ -423,18 +423,20 @@ Play Console 등록정보용 아이콘은 런처 빌드 자산과 별도로 `ass
 
 참고: [Google Play 그래픽 자산 요구사항](https://support.google.com/googleplay/android-developer/answer/9866151), [Android adaptive icon 디자인](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive)
 
-## 카카오 장소 검색
+## 비상용 네이티브 모드의 카카오 장소 검색
 
-교환글의 구매 매장·거래 장소와 프로필 선호 거래 지역 검색은 Kakao Local
-키워드 검색 REST API를 사용한다. 카카오 로그인 `client_id`로 사용하는 REST API
-키이더라도 해당 키의 `사용 가능 API`에서 Local 장소 검색 호출이 허용되어 있어야
-한다. 앱 빌드 전에 개발·운영 키 모두 다음 요청이 `200`을 반환하는지 확인한다.
+기본 WebView 모드의 교환글·프로필 장소 검색은 웹의 기존 Kakao Places 구현을 그대로
+사용한다. 아래 REST 경로는 과거 비상용 네이티브 화면에만 해당하며, 기본 앱을 위해
+별도 REST 장소 검색 설정을 추가할 필요는 없다.
+
+비상용 네이티브 모드를 다시 활성화한다면 사용하는 키의 Local API 권한·제한·쿼터와
+최신 웹 UI 일치 여부를 별도로 검증한다. REST 요청의 예시는 다음과 같다.
 
 ```text
 GET https://dapi.kakao.com/v2/local/search/keyword.json?query=홍대입구역
 Authorization: KakaoAK {REST_API_KEY}
 ```
 
-`403 NotAuthorizedError`가 반환되면 앱 코드나 검색어 문제가 아니라 카카오 콘솔의
-REST API 키 권한 설정 문제다. 사용자 화면에는 내부 설정명이나 상태 코드를 노출하지
-않고 일시적인 이용 불가 안내만 표시한다.
+`403 NotAuthorizedError`가 반환되면 응답을 기준으로 키 종류, API 권한과 호출 제한을
+확인한다. 상태 코드 하나만으로 구체적인 콘솔 설정을 단정하지 않는다. 사용자 화면에는
+내부 설정명이나 상태 코드를 노출하지 않고 이용 불가 안내만 표시한다.
