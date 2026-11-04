@@ -28,8 +28,8 @@ public class TradeIndexReconciler {
 
     private static final int BATCH_SIZE = 500;
     private static final int ORPHAN_PAGE_SIZE = 1_000;
-    private static final Duration STARTUP_LOOKBACK = Duration.ofHours(24);
     private static final Duration OVERLAP = Duration.ofMinutes(2);
+    private static final Duration MAX_LOOKBACK = Duration.ofHours(24);
 
     private volatile LocalDateTime lastSyncedAt;
 
@@ -41,6 +41,7 @@ public class TradeIndexReconciler {
     private String INDEX;
 
     public void reconcile() {
+        LocalDateTime startedAt = LocalDateTime.now();
         long lastId = 0L;
         int indexed = 0;
         int deleted = 0;
@@ -74,6 +75,28 @@ public class TradeIndexReconciler {
         }
 
         logReconcileResult(batchNo, failedBatches, indexed, deleted);
+        if (failedBatches == 0) {
+            advanceLastSyncedAt(startedAt);
+        }
+    }
+
+    public void syncRecent() {
+        LocalDateTime startedAt = LocalDateTime.now();
+        LocalDateTime floor = startedAt.minus(MAX_LOOKBACK);
+        LocalDateTime base = (lastSyncedAt == null || lastSyncedAt.isBefore(floor)) ? floor : lastSyncedAt;
+        LocalDateTime since = base.minus(OVERLAP);
+
+        List<Long> ids = tradeJpaRepository.findIdsModifiedAfter(since);
+        boolean success = ids.isEmpty() || syncAllSince(ids, since);
+        if (success) {
+            advanceLastSyncedAt(startedAt);
+        }
+    }
+
+    private synchronized void advanceLastSyncedAt(final LocalDateTime candidate) {
+        if (lastSyncedAt == null || candidate.isAfter(lastSyncedAt)) {
+            lastSyncedAt = candidate;
+        }
     }
 
     private void logReconcileResult(final int batchNo, final int failedBatches, final int indexed, final int deleted) {
@@ -81,18 +104,6 @@ public class TradeIndexReconciler {
                 batchNo, failedBatches, indexed, deleted);
         if (failedBatches > 0) {
             log.warn("trade 정합성 점검에서 실패한 배치가 있습니다. 다음 실행에서 재시도됩니다. failedBatches={}", failedBatches);
-        }
-    }
-
-    public void syncRecent() {
-        LocalDateTime startedAt = LocalDateTime.now();
-        LocalDateTime base = lastSyncedAt != null ? lastSyncedAt : startedAt.minus(STARTUP_LOOKBACK);
-        LocalDateTime since = base.minus(OVERLAP);
-
-        List<Long> ids = tradeJpaRepository.findIdsModifiedAfter(since);
-        boolean success = ids.isEmpty() || syncAllSince(ids, since);
-        if (success) {
-            lastSyncedAt = startedAt;
         }
     }
 
