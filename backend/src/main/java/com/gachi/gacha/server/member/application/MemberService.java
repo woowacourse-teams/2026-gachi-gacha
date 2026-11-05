@@ -34,14 +34,6 @@ public class MemberService {
         return MemberInfo.from(member);
     }
 
-    public MemberDeleteResult withdrawWithoutReauth(final Long memberId) {
-        Member member = memberJpaRepository.getMemberById(memberId);
-        if (member.getOauthId().getOauthProvider() == OauthProviderType.APPLE) {
-            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
-        }
-        return removeMember(memberId);
-    }
-
     @Transactional
     public MemberDeleteResult withdrawWithoutReauth(final Long memberId) {
         Member member = memberJpaRepository.getMemberById(memberId);
