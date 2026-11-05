@@ -47,11 +47,16 @@ public class AppleMemberClient implements OauthMemberClient {
     public Member fetch(final String authCode, final String nonce, final String name) {
         AppleToken token = fetchToken(authCode, config.redirectUri());
         AppleIdTokenClaims claims = validator.validate(token.idToken(), nonce);
-        return Member.builder()
-                .oauthId(new OauthId(claims.sub(), OauthProviderType.APPLE))
-                .nickname(resolveNickname(name))
-                .oauthUsername(claims.email())
-                .build();
+        return toMember(name, claims);
+    }
+
+    @Override
+    public Member fetchMobile(final String authCode, final String nonce,
+                              final String codeVerifier, final String name) {
+        String clientId = mobileClientId();
+        AppleToken token = fetchMobileToken(authCode, clientId);
+        AppleIdTokenClaims claims = validator.validateMobile(token.idToken(), nonce);
+        return toMember(name, claims);
     }
 
     @Override
@@ -62,6 +67,14 @@ public class AppleMemberClient implements OauthMemberClient {
             throw new InvalidAppleOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
         }
         revoke(token.refreshToken());
+    }
+
+    private static Member toMember(String name, AppleIdTokenClaims claims) {
+        return Member.builder()
+                .oauthId(new OauthId(claims.sub(), OauthProviderType.APPLE))
+                .nickname(resolveNickname(name))
+                .oauthUsername(claims.email())
+                .build();
     }
 
     private void revoke(final String refreshToken) {
@@ -105,5 +118,26 @@ public class AppleMemberClient implements OauthMemberClient {
         } catch (WebClientResponseException e) {
             throw new AppleApiCallFailedException(ErrorCode.APPLE_API_CALL_FAILED);
         }
+    }
+
+    private AppleToken fetchMobileToken(final String authCode, final String clientId) {
+        try {
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("grant_type", "authorization_code");
+            params.add("client_id", clientId);
+            params.add("client_secret", secretGenerator.generate(clientId));
+            params.add("code", authCode);
+            return appleApiClient.fetchToken(params);
+        } catch (WebClientResponseException.BadRequest e) {
+            log.warn("Apple 모바일 token 교환 거부: {}", e.getResponseBodyAsString());
+            throw new AppleTokenRequestFailedException(ErrorCode.APPLE_TOKEN_REQUEST_FAILED);
+        } catch (WebClientResponseException e) {
+            throw new AppleApiCallFailedException(ErrorCode.APPLE_API_CALL_FAILED);
+        }
+    }
+
+    private String mobileClientId() {
+        return config.mobileClientId() == null || config.mobileClientId().isBlank()
+                ? config.clientId() : config.mobileClientId();
     }
 }
