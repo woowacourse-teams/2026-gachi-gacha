@@ -25,6 +25,8 @@ public interface NotificationJpaRepository extends JpaRepository<Notification, L
 
     Optional<Notification> findByIdAndReceiverId(Long id, Long receiverId);
 
+    boolean existsByReceiverIdAndTradeIdAndType(Long receiverId, Long tradeId, NotificationType type);
+
     /**
      * 남의 알림과 없는 알림을 구분하지 않는다. 다른 회원의 알림 ID가 존재하는지 드러내지 않기 위해서다.
      */

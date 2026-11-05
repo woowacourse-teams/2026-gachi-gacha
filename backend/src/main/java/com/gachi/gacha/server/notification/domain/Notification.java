@@ -41,7 +41,7 @@ public class Notification extends BaseTimeEntity {
     @Column(nullable = false)
     private Long tradeId;
 
-    @Column(nullable = false)
+    @Column
     private Long commentId;
 
     @Column(nullable = false)
@@ -84,6 +84,21 @@ public class Notification extends BaseTimeEntity {
                 commentId,
                 actorName,
                 truncate(content)
+        );
+    }
+
+    public static Notification ofTradeRecommendation(
+            final Long receiverId,
+            final Long tradeId,
+            final String tradeTitle
+    ) {
+        return new Notification(
+                receiverId,
+                NotificationType.TRADE_RECOMMENDATION,
+                tradeId,
+                null,
+                "가치가챠",
+                truncate(tradeTitle)
         );
     }
 

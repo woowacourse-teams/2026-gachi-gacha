@@ -7,7 +7,9 @@ import com.gachi.gacha.server.notification.application.dto.NotificationInfo;
 import com.gachi.gacha.server.notification.application.dto.NotificationPageInfo;
 import com.gachi.gacha.server.notification.domain.Notification;
 import com.gachi.gacha.server.notification.domain.NotificationJpaRepository;
+import com.gachi.gacha.server.notification.domain.NotificationType;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +48,26 @@ public class NotificationService {
                 event.content()
         ));
         return NotificationInfo.from(notification);
+    }
+
+    @Transactional
+    public Optional<NotificationInfo> createTradeRecommendationNotification(
+            final Long receiverId,
+            final Long tradeId,
+            final String tradeTitle
+    ) {
+        if (notificationJpaRepository.existsByReceiverIdAndTradeIdAndType(
+                receiverId, tradeId, NotificationType.TRADE_RECOMMENDATION)) {
+            return Optional.empty();
+        }
+        Notification notification = notificationJpaRepository.saveAndFlush(
+                Notification.ofTradeRecommendation(receiverId, tradeId, tradeTitle));
+        return Optional.of(NotificationInfo.from(notification));
+    }
+
+    public boolean hasTradeRecommendationNotification(final Long receiverId, final Long tradeId) {
+        return notificationJpaRepository.existsByReceiverIdAndTradeIdAndType(
+                receiverId, tradeId, NotificationType.TRADE_RECOMMENDATION);
     }
 
     public long getUnreadCount(final Long memberId) {
