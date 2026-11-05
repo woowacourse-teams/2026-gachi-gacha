@@ -11,8 +11,8 @@ export interface ServiceReleaseNote {
 export const SERVICE_RELEASE_NOTES = [
   {
     version: 'v1.7.0',
-    releasedAt: '2026-11-04',
-    releasedAtLabel: '2026년 11월 4일',
+    releasedAt: '2026-11-05',
+    releasedAtLabel: '2026년 11월 5일',
     title: '원하는 교환글은 더 빠르게, 채팅과 지도는 더 편안하게',
     summary:
       '교환글을 조건별로 빠르게 찾고 긴 목록을 편하게 오가며, 모바일 지도와 채팅에서도 필요한 정보를 안정적으로 확인할 수 있도록 다듬었어요.',
