@@ -44,10 +44,15 @@ export const SearchAreaButton = styled.button`
   }
 
   @media (max-width: 767px) {
-    top: 96px;
+    top: calc(var(--mobile-map-header-offset, 120px) + 96px);
     min-height: 38px;
     padding: 0 14px;
     font-size: 12px;
+    transition: top 240ms ease;
+  }
+
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

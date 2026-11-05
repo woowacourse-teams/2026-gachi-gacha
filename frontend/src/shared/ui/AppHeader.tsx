@@ -11,12 +11,14 @@ import {
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { useOptionalChatUnread } from '@/features/chatUnread/ChatUnreadContext';
 import { useOptionalNotifications } from '@/features/notifications/NotificationContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { NavigationDestination } from '@/shared/analytics/analyticsEventType';
 
 import {
   AccountLabel,
+  ActionBadge,
   ActionButton,
   ActionIcon,
   ActionLink,
@@ -28,7 +30,6 @@ import {
   HeaderContent,
   Navigation,
   NavigationLink,
-  NotificationBadge,
   NotificationMenu,
   SearchArea,
 } from './AppHeader.styles';
@@ -41,6 +42,7 @@ import {
 export interface AppHeaderProps {
   currentPath: string;
   notificationState?: HeaderNotificationState;
+  chatUnreadCount?: number;
   onNotificationRetry?: () => void;
   onNotificationSelect?: (notification: HeaderNotification) => void;
   search?: ReactNode;
@@ -114,11 +116,13 @@ function AccountIcon() {
 export function AppHeader({
   currentPath,
   notificationState,
+  chatUnreadCount,
   onNotificationRetry,
   onNotificationSelect,
   search,
 }: AppHeaderProps) {
   const { status, member } = useAuthSession();
+  const chatUnread = useOptionalChatUnread();
   const notifications = useOptionalNotifications();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
@@ -136,6 +140,8 @@ export function AppHeader({
     notificationState ??
     notifications?.notificationState ??
     EMPTY_NOTIFICATION_STATE;
+  const resolvedChatUnreadCount =
+    chatUnreadCount ?? chatUnread?.unreadCount ?? 0;
   const unreadNotificationCount = useMemo(() => {
     if (notificationState === undefined && notifications) {
       return notifications.unreadCount;
@@ -231,11 +237,22 @@ export function AppHeader({
               <ActionLink
                 to="/chat"
                 $isActive={currentPath === '/chat'}
-                aria-label="채팅"
+                aria-label={
+                  resolvedChatUnreadCount > 0
+                    ? `채팅, 읽지 않은 메시지 ${resolvedChatUnreadCount}개`
+                    : '채팅'
+                }
                 title="채팅"
                 onClick={() => captureHeaderNavigation('chat', isAuthenticated)}
               >
                 <ChatIcon />
+                {resolvedChatUnreadCount > 0 && (
+                  <ActionBadge aria-hidden="true">
+                    {resolvedChatUnreadCount > 99
+                      ? '99+'
+                      : resolvedChatUnreadCount}
+                  </ActionBadge>
+                )}
               </ActionLink>
               <NotificationMenu ref={notificationMenuRef}>
                 <ActionButton
@@ -271,11 +288,11 @@ export function AppHeader({
                 >
                   <NotificationIcon />
                   {unreadNotificationCount > 0 && (
-                    <NotificationBadge aria-hidden="true">
+                    <ActionBadge aria-hidden="true">
                       {unreadNotificationCount > 99
                         ? '99+'
                         : unreadNotificationCount}
-                    </NotificationBadge>
+                    </ActionBadge>
                   )}
                 </ActionButton>
                 {isNotificationOpen && (

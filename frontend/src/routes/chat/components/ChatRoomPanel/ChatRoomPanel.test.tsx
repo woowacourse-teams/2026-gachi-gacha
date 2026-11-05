@@ -7,7 +7,13 @@ import {
   it,
   jest,
 } from '@jest/globals';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 
@@ -41,6 +47,41 @@ describe('ChatRoomPanel', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('대화 상대·상태·사용자 메뉴와 상품 조작을 두 행으로 구분한다', () => {
+    renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        closeHref="/trade/1"
+        onChangeTradeStatus={async () => undefined}
+      />,
+    );
+
+    const partnerHeading = screen.getByRole('heading', {
+      name: SELECTED_CHAT_ROOM.partnerName,
+    });
+    const roomHeader = partnerHeading.closest('header');
+    const productSummary = screen.getByRole('region', {
+      name: '교환 상품 정보',
+    });
+
+    expect(roomHeader).not.toBeNull();
+    expect(
+      within(roomHeader as HTMLElement).getByText('교환 가능'),
+    ).toBeInTheDocument();
+    expect(
+      within(roomHeader as HTMLElement).getByRole('button', {
+        name: `${SELECTED_CHAT_ROOM.partnerName} 사용자 메뉴`,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('교환 가능')).toHaveLength(1);
+    expect(
+      within(productSummary).getByText(SELECTED_CHAT_ROOM.itemTitle),
+    ).toBeInTheDocument();
+    expect(
+      within(productSummary).getByRole('button', { name: '예약 확정' }),
+    ).toBeInTheDocument();
   });
 
   it('메시지 날짜가 바뀌는 지점마다 날짜 구분선을 표시한다', () => {

@@ -66,6 +66,25 @@ export async function getChatRooms(
   return Array.isArray(data.rooms) ? data.rooms.map(normalizeRoom) : [];
 }
 
+export async function getChatUnreadCount(
+  signal?: AbortSignal,
+): Promise<number> {
+  const response = await authenticatedFetch(
+    `${CHAT_ROOMS_PATH}/unread-count`,
+    signal ? { signal } : {},
+  );
+  const data = await readJson<{ unreadCount?: unknown }>(
+    response,
+    '읽지 않은 채팅 수를 불러오지 못했습니다.',
+  );
+
+  if (!Number.isSafeInteger(data.unreadCount) || Number(data.unreadCount) < 0) {
+    throw new Error('읽지 않은 채팅 수 응답 형식이 올바르지 않습니다.');
+  }
+
+  return Number(data.unreadCount);
+}
+
 export async function getChatRoom(
   roomId: number,
   signal?: AbortSignal,

@@ -23,6 +23,7 @@ import { getTradeDetail } from '@/domains/trade/api/getTradeDetail';
 import { updateTradeStatus } from '@/domains/trade/api/updateTradeStatus';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { useOptionalChatUnread } from '@/features/chatUnread/ChatUnreadContext';
 import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
@@ -55,6 +56,7 @@ interface ChatRouteState {
 
 export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   const { memberId } = useAuthSession();
+  const updateUnreadCount = useOptionalChatUnread()?.updateUnreadCount;
   const { isMemberBlocked } = useMemberBlocks();
   const navigate = useNavigate();
   const [selectedListRoomId, setSelectedListRoomId] = useState<
@@ -126,7 +128,12 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     [activeRoomId, isMemberBlocked, markRead, memberId],
   );
   const receiveRoomUpdate = useCallback(
-    ({ room }: ChatRoomUpdate) => {
+    ({ room, totalUnreadCount }: ChatRoomUpdate) => {
+      updateUnreadCount?.(
+        room.roomId === activeRoomId
+          ? Math.max(0, totalUnreadCount - room.unreadCount)
+          : totalUnreadCount,
+      );
       setState((current) => {
         if (isMemberBlocked(room.otherMember.memberId)) {
           return {
@@ -161,7 +168,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
         };
       });
     },
-    [activeRoomId, isMemberBlocked],
+    [activeRoomId, isMemberBlocked, updateUnreadCount],
   );
   const {
     status: socketStatus,
@@ -286,6 +293,14 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
             ? selectedRoom
             : null;
 
+        updateUnreadCount?.(
+          visibleRooms.reduce(
+            (total, room) =>
+              total + (room.roomId === activeRoomId ? 0 : room.unreadCount),
+            0,
+          ),
+        );
+
         setState({
           status: 'success',
           rooms: activeRoomId
@@ -360,7 +375,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
     return () => {
       controller.abort();
     };
-  }, [activeRoomId, isMemberBlocked, loadAttempt]);
+  }, [activeRoomId, isMemberBlocked, loadAttempt, updateUnreadCount]);
 
   const conversations = useMemo(
     () =>

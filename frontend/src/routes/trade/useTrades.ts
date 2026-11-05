@@ -6,9 +6,13 @@ import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
+import {
+  getTradeSortParameter,
+  type TradeListFilter,
+} from './model/tradeListFilter';
+
 const DEFAULT_ERROR_MESSAGE = '교환 게시글을 불러오지 못했습니다.';
 const PAGE_SIZE = 20;
-const LATEST_SORT = 'createdAt,desc';
 const LOADING_STATE: AsyncState<TradeSummaryPage> = {
   status: 'loading',
   data: null,
@@ -19,7 +23,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-export function useTrades(keyword: string) {
+export function useTrades({ keyword, status, sortOrder }: TradeListFilter) {
   const { isMemberBlocked } = useMemberBlocks();
   const loadMoreControllerRef = useRef<AbortController | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -29,8 +33,13 @@ export function useTrades(keyword: string) {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const normalizedKeyword = keyword.trim();
   const request = useMemo(
-    () => ({ keyword: normalizedKeyword, attempt }),
-    [attempt, normalizedKeyword],
+    () => ({
+      keyword: normalizedKeyword,
+      status,
+      sort: getTradeSortParameter(sortOrder),
+      attempt,
+    }),
+    [attempt, normalizedKeyword, sortOrder, status],
   );
   const retry = useCallback(() => {
     setAttempt((currentAttempt) => currentAttempt + 1);
@@ -48,9 +57,10 @@ export function useTrades(keyword: string) {
       try {
         const data = await getTrades({
           keyword: request.keyword,
+          ...(request.status === null ? {} : { status: request.status }),
           page: 0,
           size: PAGE_SIZE,
-          sort: LATEST_SORT,
+          sort: request.sort,
           signal: controller.signal,
         });
 
@@ -114,10 +124,11 @@ export function useTrades(keyword: string) {
 
     try {
       const data = await getTrades({
-        keyword: normalizedKeyword,
+        keyword: request.keyword,
+        ...(request.status === null ? {} : { status: request.status }),
         page: nextPage,
         size: PAGE_SIZE,
-        sort: LATEST_SORT,
+        sort: request.sort,
         signal: controller.signal,
       });
 
@@ -159,7 +170,7 @@ export function useTrades(keyword: string) {
         setIsLoadingMore(false);
       }
     }
-  }, [hasMore, isLoadingMore, normalizedKeyword, state]);
+  }, [hasMore, isLoadingMore, request, state]);
 
   const visibleState = useMemo<AsyncState<TradeSummaryPage>>(() => {
     if (state.status !== 'success') {

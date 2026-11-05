@@ -18,6 +18,8 @@ const TRADE_CATEGORIES = [
   { categoryId: 4, name: '미니어처' },
   { categoryId: 5, name: '포켓몬' },
   { categoryId: 6, name: '치이카와' },
+  { categoryId: 7, name: '짱구' },
+  { categoryId: 8, name: '디즈니' },
 ];
 const MOCK_TRADE_IMAGE_URL = 'https://placehold.co/800x800/png?text=Gacha';
 let createdTrade: TradeDetail | null = null;
@@ -286,15 +288,29 @@ export const tradeHandlers = [
     const searchParams = new URL(request.url).searchParams;
     const page = Number(searchParams.get('page') ?? 0);
     const size = Number(searchParams.get('size') ?? 20);
+    const categoryIds = (searchParams.get('categoryIds') ?? '')
+      .split(',')
+      .filter(Boolean)
+      .map(Number);
+    const categoryNames = new Set(toCategoryNames(categoryIds));
+    const status = searchParams.get('status');
+    const sort = searchParams.get('sort') ?? 'createdAt,desc';
     const keyword = searchParams
       .get('keyword')
       ?.trim()
       .toLocaleLowerCase('ko-KR');
-    const content = keyword
-      ? TRADE_ITEMS.filter((trade) =>
-          trade.title.toLocaleLowerCase('ko-KR').includes(keyword),
-        )
-      : TRADE_ITEMS;
+    const content = TRADE_ITEMS.filter(
+      (trade) =>
+        (!keyword ||
+          trade.title.toLocaleLowerCase('ko-KR').includes(keyword)) &&
+        (categoryNames.size === 0 ||
+          trade.categories.some((category) => categoryNames.has(category))) &&
+        (!status || trade.status === status),
+    ).sort((left, right) => {
+      const direction = sort === 'createdAt,asc' ? 1 : -1;
+
+      return left.createdAt.localeCompare(right.createdAt) * direction;
+    });
     const pageContent = content.slice(page * size, (page + 1) * size);
     const totalPages =
       content.length > 0 ? Math.ceil(content.length / size) : 0;

@@ -138,6 +138,28 @@ export const Authenticated: Story = {
   ),
 };
 
+export const AuthenticatedWithUnreadChats: Story = {
+  args: {
+    chatUnreadCount: 12,
+  },
+  render: (args) => (
+    <MockWorkerBoundary handlers={[authenticatedMemberHandler]}>
+      <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
+        <AppHeader {...args} />
+      </AuthSessionProvider>
+    </MockWorkerBoundary>
+  ),
+};
+
+export const MobileAuthenticatedWithUnreadChats: Story = {
+  ...AuthenticatedWithUnreadChats,
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
+
 export const AuthenticatedWithNotifications: Story = {
   args: {
     notificationState: {

@@ -9,6 +9,9 @@ const meta: Meta<typeof TradePage> = {
   component: TradePage,
   args: {
     items: TRADE_ITEMS,
+    selectedQuickKeyword: null,
+    statusFilter: null,
+    sortOrder: 'latest',
   },
   parameters: {
     layout: 'fullscreen',
@@ -28,3 +31,14 @@ export default meta;
 type Story = StoryObj<typeof TradePage>;
 
 export const Default: Story = {};
+
+export const LongList: Story = {
+  args: {
+    items: Array.from({ length: 3 }, (_, groupIndex) =>
+      TRADE_ITEMS.map((item) => ({
+        ...item,
+        tradeId: item.tradeId + groupIndex * TRADE_ITEMS.length,
+      })),
+    ).flat(),
+  },
+};

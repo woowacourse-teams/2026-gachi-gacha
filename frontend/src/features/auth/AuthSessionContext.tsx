@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 
+import { unregisterNativePushToken } from '@/features/pushNotifications/nativePushBridge';
 import { syncAnalyticsUser } from '@/shared/analytics/analyticsClient';
 
 import { AuthApiError, isUnauthorizedAuthApiError } from './api/AuthApiError';
@@ -314,6 +315,8 @@ export function AuthSessionProvider({
   const logout = useCallback(() => {
     const refreshToken = readRefreshToken();
 
+    // access token을 지우기 전에 보내야 이 기기로 이전 계정의 푸시가 가지 않는다.
+    void unregisterNativePushToken().catch(() => undefined);
     clearAuthTokens();
     setState(GUEST_STATE);
 

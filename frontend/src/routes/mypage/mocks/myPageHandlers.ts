@@ -150,7 +150,7 @@ export const memberUpdateFailureHandler = http.patch(
 );
 
 export const memberDeleteSuccessHandler = http.delete(
-  CURRENT_MEMBER_API_PATH,
+  '/api/v1/oauth/withdraw',
   ({ request }) => {
     if (request.headers.get('Authorization') !== `Bearer ${AUTH_STORY_TOKEN}`) {
       return HttpResponse.json(
@@ -168,7 +168,7 @@ export const memberDeleteSuccessHandler = http.delete(
 );
 
 export const memberDeleteFailureHandler = http.delete(
-  CURRENT_MEMBER_API_PATH,
+  '/api/v1/oauth/withdraw',
   () =>
     HttpResponse.json(
       {

@@ -24,12 +24,14 @@ const DESKTOP_SNAPSHOTS = [
   desktopMap,
   desktopSearch,
   desktopChat,
+  desktopChat,
 ] as const;
 
 const MOBILE_SNAPSHOTS = [
   mobileTrade,
   mobileMap,
   mobileSearch,
+  mobileChat,
   mobileChat,
 ] as const;
 

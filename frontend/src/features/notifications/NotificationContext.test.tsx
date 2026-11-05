@@ -1,5 +1,12 @@
 import { StrictMode } from 'react';
-import { afterEach, describe, expect, it } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -10,10 +17,18 @@ import {
   clearAuthTokens,
   storeAuthTokens,
 } from '@/features/auth/authTokenStorage';
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { server } from '@/test/server';
 
 import { NotificationProvider } from './NotificationContext';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 function useAuthenticatedMemberHandler() {
   server.use(
@@ -33,6 +48,10 @@ function useAuthenticatedMemberHandler() {
 }
 
 describe('NotificationProvider', () => {
+  beforeEach(() => {
+    mockedCaptureAnalyticsEvent.mockClear();
+  });
+
   afterEach(() => {
     clearAuthTokens();
   });
@@ -174,6 +193,39 @@ describe('NotificationProvider', () => {
     await waitFor(() => {
       expect(readNotificationId).toBe('101');
       expect(unreadRequestCount).toBe(2);
+    });
+  });
+
+  it('최초 미읽음 알림 조회 실패를 분석 이벤트로 기록한다', async () => {
+    storeAuthTokens({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    });
+    useAuthenticatedMemberHandler();
+    server.use(
+      http.get('/api/v1/notifications/unread-count', () =>
+        HttpResponse.json(
+          { code: 'C500', message: '조회 실패', data: null },
+          { status: 500 },
+        ),
+      ),
+    );
+
+    render(
+      <BrowserRouter>
+        <AuthSessionProvider>
+          <NotificationProvider>
+            <AppHeader currentPath="/trade" />
+          </NotificationProvider>
+        </AuthSessionProvider>
+      </BrowserRouter>,
+    );
+
+    await waitFor(() => {
+      expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+        'unread_count_initial_load_completed',
+        { channel: 'notification', outcome: 'failure' },
+      );
     });
   });
 });

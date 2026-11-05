@@ -121,6 +121,12 @@ async function loadAnalyticsClient() {
         element_allowlist: ['a', 'button', 'form'],
       },
       before_send: sanitizeAnalyticsCapture,
+      capture_performance: {
+        network_timing: false,
+        web_vitals: true,
+        web_vitals_allowed_metrics: ['LCP', 'CLS', 'INP'],
+        web_vitals_attribution: false,
+      },
       capture_pageleave: 'if_capture_pageview',
       capture_pageview: 'history_change',
       custom_personal_data_properties: [

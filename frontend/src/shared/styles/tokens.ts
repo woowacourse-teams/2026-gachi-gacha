@@ -105,6 +105,7 @@ export const radius = {
 export const shadow = {
   float: '0 6px 18px rgb(0 0 0 / 10%)',
   card: '0 8px 24px rgb(36 33 34 / 10%)',
+  popover: '0 20px 52px rgb(35 31 32 / 18%)',
   dialog: '0 24px 80px rgb(36 33 34 / 22%)',
 } as const;
 

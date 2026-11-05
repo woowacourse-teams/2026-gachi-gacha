@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 export const Page = styled.main`
+  position: relative;
   display: flex;
   height: 100dvh;
   min-height: 100dvh;
@@ -11,8 +12,34 @@ export const Page = styled.main`
 
   @media (max-width: 767px) {
     display: block;
-    height: auto;
-    overflow: visible;
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+`;
+
+export const MobileHeaderLayer = styled.div<{ $isOpen: boolean }>`
+  position: relative;
+  z-index: 40;
+  flex: 0 0 auto;
+
+  @media (max-width: 767px) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    transform: translateY(${({ $isOpen }) => ($isOpen ? '0' : '-100%')});
+    visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
+    pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
+    transition:
+      transform 240ms ease,
+      visibility 0s ${({ $isOpen }) => ($isOpen ? '0s' : '240ms')};
+    will-change: transform;
+  }
+
+  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

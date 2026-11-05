@@ -17,6 +17,7 @@ let mockOnMessage: ((message: ChatMessage) => void) | null = null;
 let mockOnRoomUpdate: ((update: ChatRoomUpdate) => void) | null = null;
 const mockSendImageMessage =
   jest.fn<(content: string, files: ChatMessage['files']) => Promise<void>>();
+const mockUpdateUnreadCount = jest.fn<(unreadCount: number) => void>();
 
 jest.mock('@/domains/chat/compressChatImages', () => ({
   compressChatImages: jest.fn(),
@@ -42,6 +43,13 @@ jest.mock('@/domains/chat/useChatSocket', () => ({
       sendImageMessage: mockSendImageMessage,
     };
   },
+}));
+
+jest.mock('@/features/chatUnread/ChatUnreadContext', () => ({
+  useOptionalChatUnread: () => ({
+    unreadCount: 0,
+    updateUnreadCount: mockUpdateUnreadCount,
+  }),
 }));
 
 function createSocketMessage(sequence: number, senderId: number): ChatMessage {
@@ -86,6 +94,7 @@ describe('ChatRoute', () => {
     mockOnRoomUpdate = null;
     mockSendImageMessage.mockReset();
     mockSendImageMessage.mockResolvedValue();
+    mockUpdateUnreadCount.mockReset();
     mockedCompressChatImages.mockReset();
     mockedCompressChatImages.mockImplementation(async (files) => files);
     storeAuthTokens({
@@ -411,6 +420,7 @@ describe('ChatRoute', () => {
       });
     });
 
+    expect(mockUpdateUnreadCount).toHaveBeenLastCalledWith(1);
     expect(
       await screen.findByRole('button', { name: /빈방상대/ }),
     ).toHaveTextContent('첫 교환 문의예요.');
