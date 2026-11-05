@@ -11,8 +11,6 @@ export { createWebShellSessionSyncScript } from './webShellSessionBridge.ts';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
-const LEGACY_ACCOUNT_DELETION_PATH = '/api/v1/oauth/withdraw';
-const CURRENT_ACCOUNT_DELETION_PATH = '/api/v1/members/me';
 // Reuse the original Android silhouette. Never derive an avatar from page text:
 // the same missing photo must not change when another route loads the nickname.
 const DEFAULT_PROFILE_IMAGE_DATA_URI =
@@ -369,54 +367,11 @@ function createTokenStorageScript(tokens: AuthTokens | null): string {
   `;
 }
 
-
-/**
- * DEV 웹 번들이 구형 회원 탈퇴 경로를 호출하더라도 현재 백엔드 계약으로 보낸다.
- * 같은 origin의 DELETE 한 건만 보정하며, 웹 배포가 최신화되면 실행되지 않는다.
- */
-export function createWebShellApiCompatibilityScript(): string {
-  return `
-    if (
-      !window.__gachigachaAndroidApiCompatibilityInstalled &&
-      typeof window.fetch === 'function'
-    ) {
-      window.__gachigachaAndroidApiCompatibilityInstalled = true;
-      const originalFetch = window.fetch.bind(window);
-
-      window.fetch = (input, init) => {
-        let compatibleInput = input;
-
-        try {
-          const requestUrl =
-            typeof input === 'string' || input instanceof URL
-              ? String(input)
-              : '';
-          const requestMethod = String(init?.method || 'GET').toUpperCase();
-          const candidate = new URL(requestUrl, window.location.href);
-
-          if (
-            requestMethod === 'DELETE' &&
-            candidate.origin === window.location.origin &&
-            candidate.pathname === ${serializeForInlineScript(LEGACY_ACCOUNT_DELETION_PATH)}
-          ) {
-            candidate.pathname = ${serializeForInlineScript(CURRENT_ACCOUNT_DELETION_PATH)};
-            compatibleInput = candidate.toString();
-          }
-        } catch {}
-
-        return originalFetch(compatibleInput, init);
-      };
-    }
-  `;
-}
-
 function createWebShellRuntimeBody(): string {
   return `
     document.documentElement.dataset.gachigachaNativePlatform = 'android';
 
     ${createWebShellFilePickerScript()}
-
-    ${createWebShellApiCompatibilityScript()}
 
     ${createWebShellRouteScrollScript()}
 

@@ -6,7 +6,6 @@ import { createWebShellBackController } from '../src/domains/webShell/webShellBa
 import {
   classifyWebShellNavigation,
   createWebShellAuthenticationCompletionScript,
-  createWebShellApiCompatibilityScript,
   createWebShellBootstrapScript,
   createWebShellChatListNavigationScript,
   createWebShellNavigationScript,
@@ -57,27 +56,6 @@ function runSessionSyncScript(script, initialEntries) {
 
   new Function('window', script)(window);
   return { entries, messages, operations, reloadCount };
-}
-
-function runApiCompatibilityScript(requestUrl, method) {
-  const requests = [];
-  const window = {
-    fetch(input, init) {
-      requests.push({ input, init });
-      return Promise.resolve();
-    },
-    location: {
-      href: `${APP_BASE_URL}/mypage`,
-      origin: APP_BASE_URL,
-    },
-  };
-
-  const script = createWebShellApiCompatibilityScript();
-  new Function('window', 'URL', script)(window, URL);
-  new Function('window', 'URL', script)(window, URL);
-  window.fetch(requestUrl, { method });
-
-  return requests;
 }
 
 test('같은 HTTPS origin의 모든 웹 화면을 WebView 안에서 연다', () => {
@@ -231,34 +209,23 @@ test('허용된 네이티브 브리지 메시지만 파싱한다', () => {
   );
 });
 
-test('구형 회원 탈퇴 DELETE 요청만 현재 API 경로로 보정한다', () => {
-  const rewritten = runApiCompatibilityScript(
-    `${APP_BASE_URL}/api/v1/oauth/withdraw`,
-    'DELETE',
-  );
-  assert.equal(rewritten.length, 1);
-  assert.equal(
-    rewritten[0].input,
-    `${APP_BASE_URL}/api/v1/members/me`,
-  );
+test('Android 주입 스크립트는 웹이 정한 회원 탈퇴 API와 fetch를 덮어쓰지 않는다', () => {
+  const scripts = [
+    createWebShellBootstrapScript(null),
+    createWebShellBootstrapScript({
+      accessToken: 'test-access-token',
+      refreshToken: 'test-refresh-token',
+    }),
+    createWebShellRuntimeScript(),
+  ];
 
-  const samePathGet = runApiCompatibilityScript(
-    `${APP_BASE_URL}/api/v1/oauth/withdraw`,
-    'GET',
-  );
-  assert.equal(
-    samePathGet[0].input,
-    `${APP_BASE_URL}/api/v1/oauth/withdraw`,
-  );
-
-  const externalDelete = runApiCompatibilityScript(
-    'https://example.com/api/v1/oauth/withdraw',
-    'DELETE',
-  );
-  assert.equal(
-    externalDelete[0].input,
-    'https://example.com/api/v1/oauth/withdraw',
-  );
+  // The deployed web owns DELETE /api/v1/oauth/withdraw in DEV and PROD.
+  // Android must not redirect it to the profile endpoint again.
+  for (const script of scripts) {
+    assert.doesNotMatch(script, /window\.fetch\s*=/);
+    assert.doesNotMatch(script, /__gachigachaAndroidApiCompatibilityInstalled/);
+    assert.doesNotMatch(script, /\/api\/v1\/(?:oauth\/withdraw|members\/me)/);
+  }
 });
 
 test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열을 이스케이프한다', () => {
@@ -304,8 +271,6 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /전체 대화/);
   assert.match(runtimeScript, /trade-comments-title/);
   assert.match(runtimeScript, /프로필 사진 선택/);
-  assert.match(runtimeScript, /\/api\/v1\/oauth\/withdraw/);
-  assert.match(runtimeScript, /\/api\/v1\/members\/me/);
   assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);
   assert.match(runtimeScript, /data:image\/svg\+xml/);
   assert.doesNotMatch(runtimeScript, /%3Crect/);
