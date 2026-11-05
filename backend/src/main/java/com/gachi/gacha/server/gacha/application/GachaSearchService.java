@@ -59,7 +59,7 @@ public class GachaSearchService {
                 GachaDocument.class);
 
         if (response.hits().hits().isEmpty()) {
-            return null;
+            return Optional.empty();
         }
         return response.hits().hits().stream()
                 .filter(hit -> hit.source() != null)
