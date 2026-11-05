@@ -39,9 +39,22 @@ jobs:
           node-version-file: frontend/.nvmrc
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 11.9.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 현재 설치와 이후 단계 모두 RAM 기반 /tmp 대신 디스크를 사용한다.
+          export TMPDIR="${RUNNER_TEMP:?}"
+          printf 'TMPDIR=%s\n' "$TMPDIR" >> "$GITHUB_ENV"
+          # bootstrap/self-update 없이 고정 버전을 작업별 임시 경로에 설치한다.
+          gachi_pnpm_dir="$(mktemp -d "${RUNNER_TEMP:?}/gachi-pnpm.XXXXXX")"
+          npm install \
+            --prefix "$gachi_pnpm_dir" \
+            --no-save --package-lock=false --ignore-scripts --no-audit --no-fund \
+            pnpm@11.9.0
+
+          gachi_pnpm_bin="$gachi_pnpm_dir/node_modules/.bin"
+          test "$("$gachi_pnpm_bin/pnpm" --version)" = "11.9.0"
+          printf '%s\n' "$gachi_pnpm_bin" >> "$GITHUB_PATH"
 
       # pnpm 설치 후에만 pnpm store 경로를 조회하여 캐시할 수 있다.
       - name: Restore pnpm cache
