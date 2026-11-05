@@ -19,9 +19,13 @@ function isPathOrNestedRoute(pathname: string, routeRoot: string) {
   return pathname === routeRoot || pathname.startsWith(`${routeRoot}/`);
 }
 
-/** 전체 화면 상호작용·전환 경로를 제외한 일반 콘텐츠 페이지에 푸터를 표시한다. */
+/** 전체 화면 상호작용·전환·거래글 등록 경로를 제외한 일반 콘텐츠 페이지에 푸터를 표시한다. */
 export function shouldShowSiteFooter(pathname: string) {
-  if (pathname === '/') {
+  if (
+    pathname === '/' ||
+    pathname === '/trade/new' ||
+    pathname === '/trade/new/'
+  ) {
     return false;
   }
 
