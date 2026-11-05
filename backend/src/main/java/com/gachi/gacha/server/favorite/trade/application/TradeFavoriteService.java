@@ -2,6 +2,7 @@ package com.gachi.gacha.server.favorite.trade.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.favorite.trade.application.dto.TradeFavoriteInfo;
+import com.gachi.gacha.server.favorite.trade.application.event.TradeFavoriteChangedEvent;
 import com.gachi.gacha.server.favorite.trade.domain.TradeFavorite;
 import com.gachi.gacha.server.favorite.trade.domain.TradeFavoriteJpaRepository;
 import com.gachi.gacha.server.member.domain.Member;
@@ -13,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,7 @@ public class TradeFavoriteService {
     private final TradeFavoriteJpaRepository tradeFavoriteJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
     private final MemberJpaRepository memberJpaRepository;
-
+    private final ApplicationEventPublisher publisher;
     /**
      * 관심 등록. 이미 있으면 아무것도 하지 않는다(멱등).
      * 동시 요청으로 유니크 제약에 걸리면 DataIntegrityViolationException 이 밖으로 나가므로
@@ -44,11 +46,13 @@ public class TradeFavoriteService {
         Member member = memberJpaRepository.getReferenceById(memberId);
 
         tradeFavoriteJpaRepository.save(TradeFavorite.of(member, trade));
+        publisher.publishEvent(new TradeFavoriteChangedEvent(memberId, tradeId, true));
     }
 
     @Transactional
     public void remove(final Long memberId, final Long tradeId) {
         tradeFavoriteJpaRepository.deleteByMemberIdAndTradeId(memberId, tradeId);
+        publisher.publishEvent(new TradeFavoriteChangedEvent(memberId, tradeId, false));
     }
 
     public boolean isFavorite(final Long memberId, final Long tradeId) {

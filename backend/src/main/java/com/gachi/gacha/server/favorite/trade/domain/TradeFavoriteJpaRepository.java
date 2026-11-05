@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.favorite.trade.domain;
 
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -32,4 +33,8 @@ public interface TradeFavoriteJpaRepository extends JpaRepository<TradeFavorite,
             @Param("cursor") Long cursor,
             Pageable pageable
     );
+
+    Optional<TradeFavorite> findByMemberIdAndTradeId(Long memberId, Long tradeId);
+
+    List<TradeFavorite> findByTradeId(Long tradeId);
 }
