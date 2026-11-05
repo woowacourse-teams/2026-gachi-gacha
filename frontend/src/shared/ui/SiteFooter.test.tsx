@@ -57,7 +57,13 @@ describe('SiteFooter', () => {
 
   it.each([
     '/trade',
+    '/trade/',
     '/trade/15',
+    '/trade/15/',
+    '/trade/15/edit',
+    '/trade/15/edit/',
+    '/trade/newspaper',
+    '/trade/new/preview',
     '/search',
     '/stores/7',
     '/privacy',
@@ -66,6 +72,13 @@ describe('SiteFooter', () => {
   ])('%s 일반 콘텐츠 경로에는 푸터를 표시한다', (pathname) => {
     expect(shouldShowSiteFooter(pathname)).toBe(true);
   });
+
+  it.each(['/trade/new', '/trade/new/'])(
+    '%s 거래글 등록 경로에는 푸터를 표시하지 않는다',
+    (pathname) => {
+      expect(shouldShowSiteFooter(pathname)).toBe(false);
+    },
+  );
 
   it.each([
     '/',
