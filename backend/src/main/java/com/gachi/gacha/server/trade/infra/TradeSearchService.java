@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.trade.infra;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -9,8 +9,8 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.gachi.gacha.server.common.infra.elastic.dto.SearchResult;
-import com.gachi.gacha.server.trade.application.dto.TradeDocument;
-import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
+import com.gachi.gacha.server.trade.infra.dto.TradeDocument;
+import com.gachi.gacha.server.trade.infra.dto.TradeSearchCondition;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.trade.presentation.dto;
 
-import com.gachi.gacha.server.trade.application.dto.TradeDocument;
+import com.gachi.gacha.server.trade.infra.dto.TradeDocument;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import java.time.LocalDateTime;
 import java.util.List;
