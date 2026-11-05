@@ -148,3 +148,12 @@ elasticsearch:
       sync-initial-delay: ${ELASTIC_TRADE_SYNC_INITIAL_DELAY:PT1M}
       inference-fixed-delay: ${ELASTIC_TRADE_INFERENCE_FIXED_DELAY:PT5M}
       inference-initial-delay: ${ELASTIC_TRADE_INFERENCE_INITIAL_DEALY:PT1M}
+favorite:
+  signal:
+    half-life-days: 30          # 반감기
+    inference-accept-score: 0.0 # 추론 카테고리를 신호로 받아들이는 최소 점수
+notification:
+  trade-recommendation:
+    max-age-days: ${TRADE_RECOMMENDATION_MAX_AGE_DAYS:7}
+    minimum-score: ${TRADE_RECOMMENDATION_MINIMUM_SCORE:0.02}
+    dry-run: ${TRADE_RECOMMENDATION_DRY_RUN:false}
