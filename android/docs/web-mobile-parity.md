@@ -8,6 +8,35 @@ Android 기능과 UI를 구현할 때의 제품 기준은 작업 브랜치 생�
 `ANDROID_WEB_SHELL_ENABLED=false` 비상 경로에서 기존 React Native 화면을 유지하거나,
 WebView 위에 네이티브 기능을 추가할 때만 적용한다.
 
+## 거래 작성·수정의 Android 터치 보정 (#630)
+
+2026-11-05 사용자 승인에 따라 767px 이하 Android WebView에서만 다음 예외를 적용한다.
+기준 웹 소스는 `origin/main`의 `40f8d246`이며, 웹의 File 상태와 정렬·삭제 구현을 유지한다.
+
+- 사진 본문은 가로 스와이프로 탐색하고, 사진 아래 44px 높이의 `순서 변경` 손잡이로
+  정렬한다. 사진 본문의 touch/pen `pointerdown`만 React 정렬 시작에서 분리하며,
+  기본 스크롤과 `pointerup`/`pointercancel`은 막지 않는다.
+- 화면에 세 칸 정도가 보이도록 카드 폭을 88–144px로 제한한다. 두 장 이상인
+  새 업로드 사진에만 손잡이를 추가하며, 기존 서버 사진의 재정렬을 새로 구현하지 않는다.
+- 삭제·갤러리 선택·키보드 방향키 정렬은 웹 동작을 유지한다. 손잡이만 adapter가
+  소유하고, SPA 이동·데스크톱 폭 전환 시 해당 표시를 정리한다.
+- 등록/수정 버튼 바의 안쪽 여백은 상하좌우 24px다. WebView 전체가 이미 네이티브
+  `SafeAreaView`의 bottom 안에 있으므로 웹 바에 시스템 하단 인셋을 다시 더하지 않는다.
+- 사이트 공통 푸터는 이 adapter가 숨기지 않는다. `/trade/new`와 끝 슬래시 경로에서만
+  제외하는 웹 변경은 별도 승인된 #631 / frontend-dev 범위다.
+
+실제 웹 `PhotoUploader`·`StickyActionBar`를 읽기 전용으로 불러오는 회귀 테스트:
+
+```sh
+ANDROID_TEST_CHROME=<Chromium 실행 파일> \
+ANDROID_TEST_FRONTEND_SOURCE=<최신 frontend 경로> \
+ANDROID_TEST_FRONTEND_NODE_MODULES=<해당 frontend/node_modules> \
+npm run web-shell:trade-layout-test
+```
+
+브라우저 검증과 별도로 DEV APK에서 사진 1/2/5장 탐색·손잡이 정렬·삭제·갤러리 복귀,
+3버튼/제스처 내비게이션의 좌우·하단 여백, 키보드 표시와 마지막 입력을 확인한다.
+
 ## 포팅 기준
 
 1. 작업을 시작하기 전에 최신 `origin/main`을 받아 대응하는 웹 route, feature,

@@ -3,6 +3,10 @@ import { createWebShellBackNavigationScript } from './webShellBackNavigation.ts'
 import { createWebShellFilePickerScript } from './webShellFilePicker.ts';
 import { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
 import { createWebShellSessionSnapshotBridgeScript } from './webShellSessionBridge.ts';
+import {
+  ANDROID_TRADE_FORM_STYLES,
+  createWebShellTradeFormPresentationScript,
+} from './webShellTradeForm.ts';
 
 export { createWebShellOverlayBackScript, createWebShellConfirmLeaveScript } from './webShellBackNavigation.ts';
 export { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
@@ -17,6 +21,8 @@ const DEFAULT_PROFILE_IMAGE_DATA_URI =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='31' r='14' fill='%23c8899d'/%3E%3Cpath d='M25 79c1-17 10-27 23-27s22 10 23 27' fill='%23c8899d'/%3E%3C/svg%3E";
 
 const ANDROID_WEB_SHELL_STYLES = `
+  ${ANDROID_TRADE_FORM_STYLES}
+
   @keyframes gachigacha-android-dismiss-location-error {
     0%, 72% {
       opacity: 1;
@@ -379,6 +385,8 @@ function createWebShellRuntimeBody(): string {
 
     ${createWebShellSessionSnapshotBridgeScript()}
 
+    ${createWebShellTradeFormPresentationScript()}
+
     const styleId = 'gachigacha-android-webview-style';
     const installAndroidStyle = () => {
       if (document.getElementById(styleId)) return;
@@ -696,6 +704,7 @@ function createWebShellRuntimeBody(): string {
       markProfileImages();
       markChatPresentation();
       markMapOverlays();
+      markTradeFormPresentation();
     };
 
     let presentationFrame = null;
