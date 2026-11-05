@@ -3,6 +3,10 @@ import { createWebShellBackNavigationScript } from './webShellBackNavigation.ts'
 import { createWebShellFilePickerScript } from './webShellFilePicker.ts';
 import { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
 import { createWebShellSessionSnapshotBridgeScript } from './webShellSessionBridge.ts';
+import {
+  ANDROID_TRADE_FORM_STYLES,
+  createWebShellTradeFormPresentationScript,
+} from './webShellTradeForm.ts';
 
 export { createWebShellOverlayBackScript, createWebShellConfirmLeaveScript } from './webShellBackNavigation.ts';
 export { createWebShellRouteScrollScript } from './webShellRouteScroll.ts';
@@ -11,14 +15,14 @@ export { createWebShellSessionSyncScript } from './webShellSessionBridge.ts';
 
 const ACCESS_TOKEN_STORAGE_KEY = 'gachi-gacha:access-token';
 const REFRESH_TOKEN_STORAGE_KEY = 'gachi-gacha:refresh-token';
-const LEGACY_ACCOUNT_DELETION_PATH = '/api/v1/oauth/withdraw';
-const CURRENT_ACCOUNT_DELETION_PATH = '/api/v1/members/me';
 // Reuse the original Android silhouette. Never derive an avatar from page text:
 // the same missing photo must not change when another route loads the nickname.
 const DEFAULT_PROFILE_IMAGE_DATA_URI =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Ccircle cx='48' cy='31' r='14' fill='%23c8899d'/%3E%3Cpath d='M25 79c1-17 10-27 23-27s22 10 23 27' fill='%23c8899d'/%3E%3C/svg%3E";
 
 const ANDROID_WEB_SHELL_STYLES = `
+  ${ANDROID_TRADE_FORM_STYLES}
+
   @keyframes gachigacha-android-dismiss-location-error {
     0%, 72% {
       opacity: 1;
@@ -369,60 +373,19 @@ function createTokenStorageScript(tokens: AuthTokens | null): string {
   `;
 }
 
-
-/**
- * DEV 웹 번들이 구형 회원 탈퇴 경로를 호출하더라도 현재 백엔드 계약으로 보낸다.
- * 같은 origin의 DELETE 한 건만 보정하며, 웹 배포가 최신화되면 실행되지 않는다.
- */
-export function createWebShellApiCompatibilityScript(): string {
-  return `
-    if (
-      !window.__gachigachaAndroidApiCompatibilityInstalled &&
-      typeof window.fetch === 'function'
-    ) {
-      window.__gachigachaAndroidApiCompatibilityInstalled = true;
-      const originalFetch = window.fetch.bind(window);
-
-      window.fetch = (input, init) => {
-        let compatibleInput = input;
-
-        try {
-          const requestUrl =
-            typeof input === 'string' || input instanceof URL
-              ? String(input)
-              : '';
-          const requestMethod = String(init?.method || 'GET').toUpperCase();
-          const candidate = new URL(requestUrl, window.location.href);
-
-          if (
-            requestMethod === 'DELETE' &&
-            candidate.origin === window.location.origin &&
-            candidate.pathname === ${serializeForInlineScript(LEGACY_ACCOUNT_DELETION_PATH)}
-          ) {
-            candidate.pathname = ${serializeForInlineScript(CURRENT_ACCOUNT_DELETION_PATH)};
-            compatibleInput = candidate.toString();
-          }
-        } catch {}
-
-        return originalFetch(compatibleInput, init);
-      };
-    }
-  `;
-}
-
 function createWebShellRuntimeBody(): string {
   return `
     document.documentElement.dataset.gachigachaNativePlatform = 'android';
 
     ${createWebShellFilePickerScript()}
 
-    ${createWebShellApiCompatibilityScript()}
-
     ${createWebShellRouteScrollScript()}
 
     ${createWebShellBackNavigationScript()}
 
     ${createWebShellSessionSnapshotBridgeScript()}
+
+    ${createWebShellTradeFormPresentationScript()}
 
     const styleId = 'gachigacha-android-webview-style';
     const installAndroidStyle = () => {
@@ -741,6 +704,7 @@ function createWebShellRuntimeBody(): string {
       markProfileImages();
       markChatPresentation();
       markMapOverlays();
+      markTradeFormPresentation();
     };
 
     let presentationFrame = null;

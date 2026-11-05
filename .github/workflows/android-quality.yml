@@ -160,7 +160,8 @@ jobs:
   affiliate-catalog-sync:
     name: Sync Android affiliate catalog
     needs: quality
-    if: github.event_name != 'pull_request' && vars.AFFILIATE_CATALOG_SHEET_CSV_URL != ''
+    # Manual APK builds must not create unrelated catalog commits or pull requests.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/android' && vars.AFFILIATE_CATALOG_SHEET_CSV_URL != ''
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
