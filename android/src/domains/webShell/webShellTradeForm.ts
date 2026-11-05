@@ -1,12 +1,12 @@
 /** Android already places the WebView inside the native bottom safe area. */
 export const ANDROID_TRADE_FORM_STYLES = `
-  @media (max-width: 767px) {
-    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-action-bar] {
-      box-sizing: border-box !important;
-      padding: 24px !important;
-      background: #ffffff !important;
-    }
+  html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-action-bar] {
+    box-sizing: border-box !important;
+    padding: 24px !important;
+    background: #ffffff !important;
+  }
 
+  @media (max-width: 767px) {
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-photos] {
       gap: 8px !important;
       align-items: stretch !important;

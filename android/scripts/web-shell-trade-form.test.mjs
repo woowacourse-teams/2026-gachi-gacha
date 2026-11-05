@@ -101,6 +101,8 @@ test('런타임에 폼 adapter를 통합하고 안전 영역을 중복 더하지
   assert.ok(script.includes('markTradeFormPresentation();'));
   assert.doesNotThrow(() => new Function(script));
   assert.match(ANDROID_TRADE_FORM_STYLES, /padding: 24px !important/);
+  assert.ok(ANDROID_TRADE_FORM_STYLES.indexOf('padding: 24px !important') <
+    ANDROID_TRADE_FORM_STYLES.indexOf('@media'), 'Action padding must survive rotation/tablet width');
   assert.doesNotMatch(ANDROID_TRADE_FORM_STYLES, /safe-area-inset|padding-bottom/);
   assert.match(ANDROID_TRADE_FORM_STYLES, /touch-action: auto !important/);
   assert.match(ANDROID_TRADE_FORM_STYLES, /min-height: 44px/);

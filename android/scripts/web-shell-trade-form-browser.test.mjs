@@ -207,7 +207,7 @@ test('Android trade form uses the real web upload and action components', { time
     })()`);
 
     for (const route of ['/trade/new', '/trade/42/edit']) {
-      for (const width of [320, 360, 393, 412]) {
+      for (const width of [320, 360, 393, 412, 820]) {
         await t.test(`${route} ${width}px has equal action margins before and after viewport resizing`, async () => {
           await navigate(route, width);
           const assertMargins = async () => {
@@ -359,7 +359,7 @@ test('Android trade form uses the real web upload and action components', { time
       await size(768);
       await settle();
       assert.equal(await page.evaluate('document.querySelectorAll("[data-gachigacha-android-trade-photos], [data-gachigacha-android-photo-handle]").length'), 0);
-      assert.equal((await actionGeometry()).paddingBottom, 16, 'Desktop-width layout stays web-owned');
+      assert.equal((await actionGeometry()).paddingBottom, 24, 'The already-safe Android viewport uses the same action padding after rotation');
       await size(767);
       await settle();
       assert.equal(await page.evaluate(`document.querySelectorAll(${JSON.stringify(handleSelector)}).length`), 5);
@@ -373,6 +373,20 @@ test('Android trade form uses the real web upload and action components', { time
       await inject();
       assert.deepEqual(await actionGeometry(), before);
       assert.equal(await page.evaluate('document.querySelectorAll("[data-gachigacha-android-trade-photos], [data-gachigacha-android-photo-handle], [data-gachigacha-android-trade-action-bar]").length'), 0);
+    });
+
+    await t.test('tablet-width action padding keeps the original maximum content width', async () => {
+      await navigate('/trade/new', 1024);
+      const geometry = await actionGeometry();
+      assert.equal(geometry.paddingBottom, 24);
+      assert.equal(geometry.bottom, 24);
+      assert.equal(await page.evaluate(`(() => {
+        const button=document.querySelector('button[type="submit"][form]');
+        const css=getComputedStyle(button.closest('footer'));
+        return css.paddingLeft === '24px' && css.paddingRight === '24px' && button.getBoundingClientRect().width <= 960;
+      })()`), true);
+      assert.equal(await page.evaluate(`document.querySelectorAll(${JSON.stringify(handleSelector)}).length`), 0);
+      assert.equal(await page.evaluate('getComputedStyle(document.getElementById("unrelatedFooter")).paddingBottom'), '9px');
     });
 
   } finally {
