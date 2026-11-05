@@ -89,7 +89,7 @@ describe('외부 회원 탈퇴 페이지', () => {
     ).toHaveAttribute('href', '/api/v1/oauth/apple');
   });
 
-  it('로그인 사용자가 확인 문구를 입력하면 현재 회원 API로 계정을 삭제한다', async () => {
+  it('로그인 사용자가 확인 문구를 입력하면 웹 OAuth 회원 탈퇴 API로 계정을 삭제한다', async () => {
     const user = userEvent.setup();
     let requestedAuthorization: string | null = null;
 
@@ -100,7 +100,7 @@ describe('외부 회원 탈퇴 페이지', () => {
 
     server.use(
       http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
-      http.delete('/api/v1/members/me', ({ request }) => {
+      http.delete('/api/v1/oauth/withdraw', ({ request }) => {
         requestedAuthorization = request.headers.get('Authorization');
 
         return HttpResponse.json({
@@ -151,7 +151,7 @@ describe('외부 회원 탈퇴 페이지', () => {
 
     server.use(
       http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
-      http.delete('/api/v1/members/me', () =>
+      http.delete('/api/v1/oauth/withdraw', () =>
         HttpResponse.json(
           {
             code: 'S001',
@@ -183,6 +183,61 @@ describe('외부 회원 탈퇴 페이지', () => {
     expect(confirmationInput).toHaveValue('탈퇴');
   });
 
+  it('405 응답에는 다른 탈퇴 경로나 Apple 재인증으로 우회하지 않고 로그인과 입력을 유지한다', async () => {
+    const user = userEvent.setup();
+    const deletePaths: string[] = [];
+    const reauthenticationPaths: string[] = [];
+
+    storeAuthTokens({
+      accessToken: ACCESS_TOKEN,
+      refreshToken: 'account-deletion-refresh-token',
+    });
+
+    server.use(
+      http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
+      http.delete(/\/api\/v1\//, ({ request }) => {
+        deletePaths.push(new URL(request.url).pathname);
+        return HttpResponse.json(
+          { code: 'CE002', message: '지원하지 않는 HTTP 메서드입니다.' },
+          { status: 405 },
+        );
+      }),
+      http.get(/\/api\/v1\/oauth\/withdraw/, ({ request }) => {
+        reauthenticationPaths.push(new URL(request.url).pathname);
+        return HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: 'https://appleid.apple.com/auth/authorize',
+        });
+      }),
+    );
+
+    renderWithProviders(<App />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/account-deletion',
+    });
+
+    await user.click(
+      await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
+    );
+    const confirmationInput = screen.getByRole('textbox', {
+      name: /^확인 문구/,
+    });
+    await user.type(confirmationInput, '탈퇴');
+    await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '지원하지 않는 HTTP 메서드입니다.',
+    );
+    expect(deletePaths).toEqual(['/api/v1/oauth/withdraw']);
+    expect(reauthenticationPaths).toEqual([]);
+    expect(mockedAssignBrowserLocation).not.toHaveBeenCalled();
+    expect(readAccessToken()).toBe(ACCESS_TOKEN);
+    expect(readRefreshToken()).toBe('account-deletion-refresh-token');
+    expect(confirmationInput).toHaveValue('탈퇴');
+    expect(screen.getByRole('button', { name: '회원 탈퇴' })).toBeEnabled();
+  });
+
   it('Apple 회원은 재인증이 필요하면 서버가 발급한 Apple 인증 주소로 이동한다', async () => {
     const user = userEvent.setup();
     const authorizationUrl =
@@ -195,7 +250,7 @@ describe('외부 회원 탈퇴 페이지', () => {
 
     server.use(
       http.get('/api/v1/members/me', () => HttpResponse.json(MEMBER_RESPONSE)),
-      http.delete('/api/v1/members/me', () =>
+      http.delete('/api/v1/oauth/withdraw', () =>
         HttpResponse.json(
           {
             code: 'AUE03',
@@ -204,7 +259,7 @@ describe('외부 회원 탈퇴 페이지', () => {
           { status: 400 },
         ),
       ),
-      http.get('/api/v1/oauth/withdraw/apple/url', () =>
+      http.get('/api/v1/oauth/withdraw-url', () =>
         HttpResponse.json({
           code: 'C000',
           message: '정상',
@@ -232,7 +287,86 @@ describe('외부 회원 탈퇴 페이지', () => {
         authorizationUrl,
       );
     });
+    expect(readAccessToken()).toBe(ACCESS_TOKEN);
+    expect(readRefreshToken()).toBe('account-deletion-refresh-token');
   });
+
+  it.each([
+    {
+      caseName: '재인증 주소 조회가 실패하면',
+      responseStatus: 500,
+      responseBody: {
+        code: 'S001',
+        message: '회원 탈퇴 본인 확인 주소를 불러오지 못했습니다.',
+      },
+      errorMessage: '회원 탈퇴 본인 확인 주소를 불러오지 못했습니다.',
+    },
+    {
+      caseName: 'Apple 이외의 주소를 받으면',
+      responseStatus: 200,
+      responseBody: {
+        code: 'C000',
+        message: '정상',
+        data: 'https://example.com/auth/authorize',
+      },
+      errorMessage: '회원 탈퇴 본인 확인 주소가 올바르지 않습니다.',
+    },
+    {
+      caseName: 'HTTPS가 아닌 Apple 주소를 받으면',
+      responseStatus: 200,
+      responseBody: {
+        code: 'C000',
+        message: '정상',
+        data: 'http://appleid.apple.com/auth/authorize',
+      },
+      errorMessage: '회원 탈퇴 본인 확인 주소가 올바르지 않습니다.',
+    },
+  ])(
+    '$caseName 이동하지 않고 로그인과 입력을 유지한다',
+    async ({ responseStatus, responseBody, errorMessage }) => {
+      const user = userEvent.setup();
+      storeAuthTokens({
+        accessToken: ACCESS_TOKEN,
+        refreshToken: 'account-deletion-refresh-token',
+      });
+
+      server.use(
+        http.get('/api/v1/members/me', () =>
+          HttpResponse.json(MEMBER_RESPONSE),
+        ),
+        http.delete('/api/v1/oauth/withdraw', () =>
+          HttpResponse.json(
+            { code: 'AUE03', message: '로그인 요청이 유효하지 않습니다.' },
+            { status: 400 },
+          ),
+        ),
+        http.get('/api/v1/oauth/withdraw-url', () =>
+          HttpResponse.json(responseBody, { status: responseStatus }),
+        ),
+      );
+
+      renderWithProviders(<App />, {
+        initialAccessToken: ACCESS_TOKEN,
+        route: '/account-deletion',
+      });
+
+      await user.click(
+        await screen.findByRole('button', { name: '회원 탈퇴 계속하기' }),
+      );
+      const confirmationInput = screen.getByRole('textbox', {
+        name: /^확인 문구/,
+      });
+      await user.type(confirmationInput, '탈퇴');
+      await user.click(screen.getByRole('button', { name: '회원 탈퇴' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(errorMessage);
+      expect(mockedAssignBrowserLocation).not.toHaveBeenCalled();
+      expect(readAccessToken()).toBe(ACCESS_TOKEN);
+      expect(readRefreshToken()).toBe('account-deletion-refresh-token');
+      expect(confirmationInput).toHaveValue('탈퇴');
+      expect(screen.getByRole('button', { name: '회원 탈퇴' })).toBeEnabled();
+    },
+  );
 
   it('Apple 회원 탈퇴 콜백 성공 시 토큰을 삭제하고 완료 화면을 보여준다', async () => {
     storeAuthTokens({
