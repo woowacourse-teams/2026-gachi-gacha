@@ -39,6 +39,35 @@ public class KakaoMemberClient implements OauthMemberClient {
         return toMember(claims);
     }
 
+    @Override
+    public Member fetchMobile(final String authCode, final String nonce,
+                              final String codeVerifier, final String name) {
+        KakaoToken tokenInfo = fetchMobileToken(authCode, codeVerifier);
+        return toMember(kakaoIdTokenValidator.validateMobile(tokenInfo.idToken(), nonce));
+    }
+
+    private KakaoToken fetchMobileToken(final String authCode, final String codeVerifier) {
+        try {
+            if (kakaoOauthConfig.mobileRedirectUri() == null || kakaoOauthConfig.mobileRedirectUri().isBlank()) {
+                throw new KakaoTokenRequestFailedException(ErrorCode.KAKAO_TOKEN_REQUEST_FAILED);
+            }
+            MultiValueMap<String, String> params = tokenRequestParams(authCode);
+            params.set("redirect_uri", kakaoOauthConfig.mobileRedirectUri());
+            if (kakaoOauthConfig.mobileClientId() != null && !kakaoOauthConfig.mobileClientId().isBlank()) {
+                params.set("client_id", kakaoOauthConfig.mobileClientId());
+            }
+            if (kakaoOauthConfig.mobileClientSecret() != null && !kakaoOauthConfig.mobileClientSecret().isBlank()) {
+                params.set("client_secret", kakaoOauthConfig.mobileClientSecret());
+            }
+            params.add("code_verifier", codeVerifier);
+            return kakaoApiClient.fetchToken(params);
+        } catch (WebClientResponseException.BadRequest e) {
+            throw new KakaoTokenRequestFailedException(ErrorCode.KAKAO_TOKEN_REQUEST_FAILED);
+        } catch (WebClientResponseException e) {
+            throw new KakaoApiCallFailedException(ErrorCode.KAKAO_API_CALL_FAILED);
+        }
+    }
+
     private static Member toMember(final KakaoIdTokenClaims claims) {
         return Member.builder()
                 .oauthId(new OauthId(claims.sub(), OauthProviderType.KAKAO))

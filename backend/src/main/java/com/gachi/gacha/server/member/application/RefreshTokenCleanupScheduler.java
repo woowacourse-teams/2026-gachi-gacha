@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.member.application;
 
 import com.gachi.gacha.server.member.domain.auth.token.RefreshTokenJpaRepository;
+import com.gachi.gacha.server.member.domain.auth.nonce.MobileOauthNonceJpaRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ public class RefreshTokenCleanupScheduler {
     private static final int RETENTION_DAYS = 7;
 
     private final RefreshTokenJpaRepository refreshTokenJpaRepository;
+    private final MobileOauthNonceJpaRepository mobileOauthNonceJpaRepository;
 
     @Scheduled(cron = "${jwt.refresh-cleanup.cron:0 0 4 * * *}", zone = "Asia/Seoul")
     @Transactional
@@ -23,5 +25,14 @@ public class RefreshTokenCleanupScheduler {
         LocalDateTime threshold = LocalDateTime.now().minusDays(RETENTION_DAYS);
         int deleted = refreshTokenJpaRepository.deleteAllExpiredBefore(threshold);
         log.info("만료된 refresh token 정리 완료: {}건 삭제 (기준: {} 이전 만료)", deleted, threshold);
+    }
+
+    @Scheduled(fixedDelayString = "${oauth.mobile-nonce-cleanup-delay-ms:60000}")
+    @Transactional
+    public void cleanupExpiredMobileNonces() {
+        int deleted = mobileOauthNonceJpaRepository.deleteExpired(LocalDateTime.now());
+        if (deleted > 0) {
+            log.info("만료된 모바일 OAuth nonce 정리 완료: {}건 삭제", deleted);
+        }
     }
 }
