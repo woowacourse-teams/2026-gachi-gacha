@@ -44,16 +44,22 @@ public class TradeInference {
     @Column(name = "category_id")
     private Set<Long> inferredCategoryIds = new HashSet<>();
 
+    @ElementCollection
+    @CollectionTable(name = "trade_inferred_keyword", joinColumns = @JoinColumn(name = "trade_id"))
+    @Column(name = "keyword", length = 100)
+    private Set<String> inferredKeywords = new HashSet<>();
+
     public static TradeInference of(
             final Long tradeId,
             final Gacha inferredGacha,
             final Double score,
             final Set<Long> inferredCategoryIds,
+            final Set<String> inferredKeywords,
             final LocalDateTime inferredAt
     ) {
         TradeInference inference = new TradeInference();
         inference.tradeId = tradeId;
-        inference.apply(inferredGacha, score, inferredCategoryIds, inferredAt);
+        inference.apply(inferredGacha, score, inferredCategoryIds, inferredKeywords, inferredAt);
         return inference;
     }
 
@@ -62,15 +68,17 @@ public class TradeInference {
             final Gacha inferredGacha,
             final Double score,
             final Set<Long> inferredCategoryIds,
+            final Set<String> inferredKeywords,
             final LocalDateTime inferredAt
     ) {
-        apply(inferredGacha, score, inferredCategoryIds, inferredAt);
+        apply(inferredGacha, score, inferredCategoryIds, inferredKeywords, inferredAt);
     }
 
     private void apply(
             final Gacha inferredGacha,
             final Double score,
             final Set<Long> inferredCategoryIds,
+            final Set<String> inferredKeywords,
             final LocalDateTime inferredAt
     ) {
         this.inferredGacha = inferredGacha;
@@ -78,5 +86,7 @@ public class TradeInference {
         this.inferredAt = inferredAt;
         this.inferredCategoryIds.clear();
         this.inferredCategoryIds.addAll(inferredCategoryIds);
+        this.inferredKeywords.clear();
+        this.inferredKeywords.addAll(inferredKeywords);
     }
 }

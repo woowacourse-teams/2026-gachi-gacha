@@ -35,7 +35,7 @@ public class TradeInferenceFacade {
 
         InferenceGacha inferred = gachaSearchService.infer(GachaSearchCondition.toCondition(source)).orElse(null);
 
-        tradeInferenceService.save(tradeId, source.readAt(), inferred);
+        tradeInferenceService.save(tradeId, source.readAt(), source.keywords(), inferred);
         log.info("trade 추론 완료 tradeId={} keyword={} gachaId={} score={}",
                 tradeId,
                 source.keyword(),

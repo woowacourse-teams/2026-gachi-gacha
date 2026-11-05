@@ -1,7 +1,10 @@
 package com.gachi.gacha.server.trade.util;
 
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -12,7 +15,7 @@ public class TradeKeywordCleaner {
                     "팝니다", "삽니다", "구해요", "구합니다", "양도", "교환", "교환해요", "교환합니다", "원해요",
                     "급전", "에눌", "미개봉", "개봉", "전시",
                     "택배", "반택", "일택", "준등기", "우체국", "직거래", "가능", "거래완료", "완료",
-                    "가격", "급처", "처분", "메지루시")
+                    "가격", "급처", "처분", "메지루시", "가챠", "캡슐", "랜덤")
             .sorted(Comparator.comparingInt(String::length).reversed())
             .toList();
 
@@ -37,5 +40,21 @@ public class TradeKeywordCleaner {
 
         // 3. 다중 공백 정리
         return cleaned.replaceAll("\\s+", " ").trim();
+    }
+
+    /** 정제된 검색어에서 저장·매칭에 사용할 고유 키워드를 순서대로 추출한다. */
+    public static Set<String> extractKeywords(final String text) {
+        String cleaned = clean(text);
+        if (cleaned.isBlank()) {
+            return Set.of();
+        }
+
+        Set<String> keywords = new LinkedHashSet<>();
+        for (String token : cleaned.split("\\s+")) {
+            if (!token.isBlank() && token.length() <= 100) {
+                keywords.add(token.toLowerCase(Locale.ROOT));
+            }
+        }
+        return keywords;
     }
 }
