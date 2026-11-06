@@ -49,6 +49,10 @@ public class TradeRecommendationNotificationService {
         }
 
         List<TradeFavoriteCandidate> candidates = tradeFavoriteMatcher.findCandidates(tradeId);
+        alarm(tradeId, candidates, trade);
+    }
+
+    private void alarm(Long tradeId, List<TradeFavoriteCandidate> candidates, Trade trade) {
         int notified = 0;
         int skipped = 0;
         for (TradeFavoriteCandidate candidate : candidates) {
@@ -77,7 +81,7 @@ public class TradeRecommendationNotificationService {
     }
 
     private boolean isEligible(final Trade trade) {
-        return trade.getStatus() == TradeStatus.AVAILABLE
+        return (trade.getStatus() == TradeStatus.AVAILABLE)
                 && trade.getCreatedAt() != null
                 && !trade.getCreatedAt().isBefore(LocalDateTime.now().minusDays(maxAgeDays));
     }

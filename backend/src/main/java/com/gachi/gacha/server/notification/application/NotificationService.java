@@ -56,8 +56,7 @@ public class NotificationService {
             final Long tradeId,
             final String tradeTitle
     ) {
-        if (notificationJpaRepository.existsByReceiverIdAndTradeIdAndType(
-                receiverId, tradeId, NotificationType.TRADE_RECOMMENDATION)) {
+        if (hasTradeRecommendationNotification(receiverId, tradeId)) {
             return Optional.empty();
         }
         Notification notification = notificationJpaRepository.saveAndFlush(
