@@ -299,7 +299,7 @@ function TradeDetailRouteElement() {
     return <RedirectToEntry />;
   }
 
-  return <TradeDetailRoute tradeId={Number(tradeId)} />;
+  return <TradeDetailRoute key={tradeId} tradeId={Number(tradeId)} />;
 }
 
 function TradeEditRouteElement() {

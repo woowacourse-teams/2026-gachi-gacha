@@ -27,7 +27,7 @@ describe('TradeDetail', () => {
     );
 
     expect(
-      screen.getByText('가지고 있는 것', { selector: 'p' }),
+      screen.getByText('가지고 있는 것', { selector: 'dt' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: '가지고 있는 상품 설명' }),

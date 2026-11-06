@@ -1,5 +1,11 @@
+import { useLayoutEffect } from 'react';
 import styled from '@emotion/styled';
-import { Link, useLocation, useNavigate } from 'react-router';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+} from 'react-router';
 
 import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetailType';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
@@ -43,6 +49,8 @@ interface TradeDetailPageProps {
   onTradeAuthorBlocked?: () => void;
 }
 
+const detailScrollByVisit = new Map<string, number>();
+
 export default function TradeDetailPage({
   detail,
   action = 'chat',
@@ -64,9 +72,36 @@ export default function TradeDetailPage({
 }: TradeDetailPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const navigationType = useNavigationType();
+
+  useLayoutEffect(() => {
+    const root = document.scrollingElement;
+
+    if (!root) {
+      return;
+    }
+
+    const previousScroll =
+      navigationType === 'POP' ? detailScrollByVisit.get(location.key) : null;
+
+    root.scrollTo({ top: previousScroll ?? 0, behavior: 'instant' });
+
+    return () => {
+      // Keep recent history entries without retaining every detail visit.
+      detailScrollByVisit.delete(location.key);
+      detailScrollByVisit.set(location.key, root.scrollTop);
+
+      if (detailScrollByVisit.size > 50) {
+        const oldestVisit = detailScrollByVisit.keys().next().value;
+        if (oldestVisit !== undefined) {
+          detailScrollByVisit.delete(oldestVisit);
+        }
+      }
+    };
+  }, [location.key, navigationType]);
 
   return (
-    <Page data-owner={action === 'edit' || undefined}>
+    <Page>
       <DesktopHeader>
         <AppHeader currentPath="/trade" />
       </DesktopHeader>
@@ -196,10 +231,8 @@ const RelatedSection = styled.section`
   border-top: 1px solid #e9e9ec;
 
   @media (min-width: 901px) {
-    [data-owner] & {
-      padding-top: 0;
-      border-top: 0;
-    }
+    padding-top: 0;
+    border-top: 0;
   }
 
   @media (max-width: 767px) {
