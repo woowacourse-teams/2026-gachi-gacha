@@ -18,6 +18,7 @@ export interface DropdownSelectOption<Value extends string> {
 
 interface DropdownSelectProps<Value extends string> {
   ariaLabel: string;
+  showInlineLabel?: boolean;
   value: Value;
   options: readonly DropdownSelectOption<Value>[];
   onChange: (value: Value) => void;
@@ -25,6 +26,7 @@ interface DropdownSelectProps<Value extends string> {
 
 export function DropdownSelect<Value extends string>({
   ariaLabel,
+  showInlineLabel = false,
   value,
   options,
   onChange,
@@ -165,6 +167,11 @@ export function DropdownSelect<Value extends string>({
         }}
         onKeyDown={handleTriggerKeyDown}
       >
+        {showInlineLabel && (
+          <span data-select-label aria-hidden="true">
+            {ariaLabel}
+          </span>
+        )}
         <SelectedValue>{selectedOption?.label}</SelectedValue>
         <ChevronBadge aria-hidden="true">
           <Chevron />

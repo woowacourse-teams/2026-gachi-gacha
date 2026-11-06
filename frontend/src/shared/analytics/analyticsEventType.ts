@@ -167,7 +167,7 @@ export interface AnalyticsEventPropertiesMap {
     source: 'trade_list' | 'related_list' | 'mypage';
   };
   trade_create_started: {
-    source: 'floating_button' | 'empty_state';
+    source: 'floating_button' | 'empty_state' | 'header';
   };
   trade_edit_started: {
     trade_id: number;

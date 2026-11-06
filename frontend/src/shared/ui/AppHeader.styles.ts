@@ -24,6 +24,20 @@ export const Header = styled.header`
   @media (max-width: 767px) {
     position: relative;
     top: auto;
+
+    &[data-mobile-tabs]:not([data-mobile-search-open])
+      [data-header-search-slot] {
+      display: none;
+    }
+
+    &[data-mobile-tabs] {
+      border-bottom-width: 1px;
+
+      nav[aria-label='주요 메뉴'],
+      [data-mobile-tab-action] {
+        display: none;
+      }
+    }
   }
 `;
 
@@ -35,6 +49,21 @@ export const HeaderContent = styled.div<{ $hasSearch: boolean }>`
   grid-template-columns: minmax(210px, 1fr) minmax(280px, 720px) 258px auto;
   grid-template-areas: 'brand search navigation actions';
   column-gap: 20px;
+
+  @media (min-width: 1181px) {
+    header[data-mobile-tabs] & {
+      min-height: 72px;
+      padding: 8px 40px;
+      grid-template-columns: auto auto minmax(0, 1fr) auto;
+      grid-template-areas: 'brand navigation search actions';
+      column-gap: 24px;
+
+      [data-header-search-slot] form {
+        background: #f5f4f3;
+        box-shadow: none;
+      }
+    }
+  }
 
   @media (max-width: 1180px) {
     min-height: 0;
@@ -325,4 +354,58 @@ export const Avatar = styled.img`
   height: 28px;
   border-radius: 50%;
   object-fit: cover;
+`;
+
+export const MobileTabBar = styled.nav`
+  display: none;
+
+  @media (max-width: 767px) {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--color-border, #e8e6e3);
+    background: white;
+  }
+`;
+
+export const MobileTab = styled(Link)`
+  position: relative;
+  display: flex;
+  min-height: var(--trade-mobile-tab-height, 56px);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  color: inherit;
+  font-size: 12px;
+  text-decoration: none;
+
+  &[aria-current='page'] {
+    color: var(--color-primary, #bf4355);
+    font-weight: 700;
+  }
+
+  & > span {
+    right: auto;
+    left: calc(50% + 3px);
+  }
+`;
+
+export const MobileHomeAction = styled(ActionButton)`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: inline-flex;
+  }
+`;
+
+export const MobileNotificationLink = styled(ActionLink)`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: inline-flex;
+  }
 `;

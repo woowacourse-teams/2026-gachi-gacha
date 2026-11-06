@@ -1,3 +1,6 @@
 import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 
-export type TradeItem = TradeSummary;
+export type TradeItem = TradeSummary & {
+  likeCount?: number;
+  commentCount?: number;
+};

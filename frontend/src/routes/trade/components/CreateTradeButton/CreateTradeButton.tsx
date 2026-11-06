@@ -91,7 +91,11 @@ function useSiteFooterOverlap() {
  * 교환 탭 우측 하단에 고정되는 글 등록 버튼.
  * 비로그인 사용자는 /trade/new의 인증 경계가 로그인 후 등록 화면으로 돌려보낸다.
  */
-export default function CreateTradeButton() {
+export default function CreateTradeButton({
+  placement = 'floating',
+}: {
+  placement?: 'floating' | 'header' | 'mobile';
+}) {
   const footerOverlap = useSiteFooterOverlap();
   const footerAwareStyle: FooterAwareStyle = {
     '--site-footer-overlap': `${footerOverlap}px`,
@@ -100,15 +104,17 @@ export default function CreateTradeButton() {
   return (
     <FloatingLink
       to={CREATE_TRADE_PATH}
+      data-placement={placement}
       aria-label="교환 글 등록"
       style={footerAwareStyle}
       onClick={() =>
         captureAnalyticsEvent('trade_create_started', {
-          source: 'floating_button',
+          source: placement === 'header' ? 'header' : 'floating_button',
         })
       }
     >
       <PlusIcon aria-hidden="true" />
+      {placement !== 'floating' && '글쓰기'}
     </FloatingLink>
   );
 }
@@ -153,9 +159,44 @@ const FloatingLink = styled(Link)`
     box-shadow: ${focusRing}, ${shadow.card};
   }
 
+  &[data-placement='header'] {
+    position: static;
+    display: inline-flex;
+    width: auto;
+    height: 40px;
+    align-items: center;
+    gap: 4px;
+    padding: 0 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: none;
+  }
+
+  &[data-placement='mobile'] {
+    display: none;
+  }
+
   @media (max-width: ${breakpoint.mobile}) {
+    &[data-placement='header'] {
+      display: none;
+    }
+
+    &[data-placement='mobile'] {
+      display: inline-flex;
+      width: 102px;
+      height: 52px;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      border-radius: 999px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
     bottom: calc(
-      16px + env(safe-area-inset-bottom) + var(--site-footer-overlap)
+      16px + env(safe-area-inset-bottom) + var(--site-footer-overlap) +
+        var(--trade-mobile-tab-height, 0px)
     );
   }
 
