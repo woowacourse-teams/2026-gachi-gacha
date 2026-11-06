@@ -2,6 +2,7 @@ import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
 import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetailType';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { AppHeader } from '@/shared/ui/AppHeader';
@@ -23,6 +24,7 @@ export type TradeDetailAction = 'chat' | 'login' | 'edit' | null;
 interface TradeDetailPageProps {
   detail: TradeDetailData;
   action?: TradeDetailAction;
+  onChangeStatus?: ((status: TradeStatus) => Promise<void>) | undefined;
   hasSubmittedComment?: boolean;
   relatedItems?: TradeItem[];
   hasMoreRelatedItems?: boolean;
@@ -44,6 +46,7 @@ interface TradeDetailPageProps {
 export default function TradeDetailPage({
   detail,
   action = 'chat',
+  onChangeStatus,
   hasSubmittedComment = false,
   relatedItems = [],
   hasMoreRelatedItems = false,
@@ -63,7 +66,7 @@ export default function TradeDetailPage({
   const navigate = useNavigate();
 
   return (
-    <Page>
+    <Page data-owner={action === 'edit' || undefined}>
       <DesktopHeader>
         <AppHeader currentPath="/trade" />
       </DesktopHeader>
@@ -100,8 +103,12 @@ export default function TradeDetailPage({
 
       <Main>
         <TradeDetail
+          key={detail.tradeId}
           detail={detail}
+          onChangeStatus={onChangeStatus}
           action={action}
+          owner={action === 'edit' ? commentViewer : null}
+          commentCount={commentsStatus === 'success' ? comments.length : null}
           hasSubmittedComment={hasSubmittedComment}
           showSafetyActions={showSafetyActions && action === 'chat'}
           onAuthorBlocked={onTradeAuthorBlocked}
@@ -187,6 +194,13 @@ const Main = styled.main`
 const RelatedSection = styled.section`
   padding-top: 48px;
   border-top: 1px solid #e9e9ec;
+
+  @media (min-width: 901px) {
+    [data-owner] & {
+      padding-top: 0;
+      border-top: 0;
+    }
+  }
 
   @media (max-width: 767px) {
     padding: 20px 0 0;
