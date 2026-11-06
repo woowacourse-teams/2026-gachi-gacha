@@ -307,8 +307,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     await user.click(await screen.findByRole('button', { name: 'SKIP' }));
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -339,8 +339,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -385,8 +385,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     );
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -428,8 +428,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -460,8 +460,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -493,8 +493,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -555,8 +555,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('searchbox', {
+        name: '교환 게시글 검색어',
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
