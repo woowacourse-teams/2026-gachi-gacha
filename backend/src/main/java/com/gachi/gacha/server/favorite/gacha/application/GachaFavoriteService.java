@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.favorite.gacha.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.favorite.gacha.application.event.GachaFavoriteChangedEvent;
 import com.gachi.gacha.server.favorite.gacha.domain.GachaFavorite;
 import com.gachi.gacha.server.favorite.gacha.domain.GachaFavoriteJpaRepository;
 import com.gachi.gacha.server.gacha.domain.Gacha;

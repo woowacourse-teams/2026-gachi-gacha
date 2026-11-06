@@ -1,5 +1,6 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.trade.application.schedule;
 
+import com.gachi.gacha.server.trade.application.TradeInferenceFacade;
 import com.gachi.gacha.server.trade.domain.TradeInferenceJpaRepository;
 import java.time.Duration;
 import java.time.LocalDateTime;

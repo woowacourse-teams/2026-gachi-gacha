@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.trade.application.schedule;
 
 import com.gachi.gacha.server.trade.infra.TradeIndexReconciler;
 import lombok.RequiredArgsConstructor;
