@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.Optional;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface StoreFavoriteJpaRepository extends JpaRepository<StoreFavorite, Long> {
 
     boolean existsByMemberIdAndStoreId(Long memberId, Long storeId);
