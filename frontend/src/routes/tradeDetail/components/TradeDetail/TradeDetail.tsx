@@ -171,7 +171,7 @@ export default function TradeDetail({
   );
 
   return (
-    <Wrapper data-owner={action === 'edit' || undefined}>
+    <Wrapper>
       <Summary>
         <Gallery>
           <MainImage>
@@ -261,12 +261,8 @@ export default function TradeDetail({
         </Gallery>
 
         <Info>
-          {action !== 'edit' && <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>}
           <InfoHeader>
-            {action === 'edit' && (
-              <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
-            )}
-            {action !== 'edit' && <ItemRole>가지고 있는 것</ItemRole>}
+            <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
             {action === 'edit' && (
               <OwnerMenu
                 ref={ownerMenu}
@@ -355,14 +351,11 @@ export default function TradeDetail({
             </OwnerIdentity>
           )}
           <Meta>
-            {action === 'edit' && <TradeStatusBadge status={detail.status} />}
+            <TradeStatusBadge status={detail.status} />
             <span>
               {formatRelativeTime(detail.createdAt)}
-              {action === 'edit' &&
-                commentCount !== null &&
-                ` · 댓글 ${commentCount}`}
+              {commentCount !== null && ` · 댓글 ${commentCount}`}
             </span>
-            {action !== 'edit' && <TradeStatusBadge status={detail.status} />}
           </Meta>
 
           <Divider />
@@ -371,9 +364,7 @@ export default function TradeDetail({
             <OfferedItem>
               <InfoLabel>가지고 있는 것</InfoLabel>
               <InfoValue>{detail.title}</InfoValue>
-              {action === 'edit' && (
-                <ExchangeIcon aria-hidden="true">⇄</ExchangeIcon>
-              )}
+              <ExchangeIcon aria-hidden="true">⇄</ExchangeIcon>
             </OfferedItem>
             <InfoRow data-desired-item>
               <InfoLabel>얻고 싶은 것</InfoLabel>
@@ -391,11 +382,7 @@ export default function TradeDetail({
                 {formatPlace(detail.purchaseStore, '구매 매장 미등록')}
               </InfoValue>
             </InfoRow>
-            <InfoRow
-              data-empty-owner-time={
-                (action === 'edit' && !detail.availableTime) || undefined
-              }
-            >
+            <InfoRow data-empty-time={!detail.availableTime || undefined}>
               <InfoLabel>가능 시간</InfoLabel>
               <InfoValue>{formatAvailableTime(detail.availableTime)}</InfoValue>
             </InfoRow>
@@ -523,10 +510,8 @@ const Wrapper = styled.article`
   padding-bottom: 56px;
 
   @media (min-width: 901px) {
-    &[data-owner] {
-      margin-bottom: 56px;
-      padding-bottom: 0;
-    }
+    margin-bottom: 56px;
+    padding-bottom: 0;
   }
 `;
 
@@ -558,8 +543,14 @@ const Gallery = styled.div`
 const MainImage = styled.div`
   position: relative;
   display: grid;
+  box-sizing: border-box;
   width: 100%;
   aspect-ratio: 1 / 1;
+  overflow: hidden;
+  place-items: center;
+  border: 1px solid #ececef;
+  border-radius: 12px;
+  background: #f3f3f5;
 
   @media (max-width: 767px) {
     aspect-ratio: 390 / 340;
@@ -570,31 +561,15 @@ const MainImage = styled.div`
   @media (min-width: 901px) {
     aspect-ratio: 672 / 560;
   }
-  overflow: hidden;
-  place-items: center;
-  border: 1px solid #ececef;
-
-  @media (min-width: 901px) {
-    [data-owner] & {
-      box-sizing: border-box;
-      border-radius: 12px;
-      background: #fff;
-    }
-  }
-
-  border-radius: 20px;
-  background: #f3f3f5;
 `;
 
 const MainPhotoButton = styled.button`
   position: absolute;
-  display: grid;
+  inset: 0;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: zoom-in;
-  inset: 0;
-  place-items: center;
 
   &:focus-visible {
     z-index: 1;
@@ -604,9 +579,12 @@ const MainPhotoButton = styled.button`
 `;
 
 const MainPhoto = styled.img`
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
 `;
 
 const GalleryDirectionButton = styled.button<{
@@ -700,6 +678,7 @@ const ThumbnailPhoto = styled.img`
 
 const Info = styled.div`
   grid-area: info;
+  min-width: 0;
   padding-top: 8px;
 
   @media (max-width: 767px) {
@@ -708,29 +687,14 @@ const Info = styled.div`
 `;
 
 const InfoHeader = styled.div`
-  [data-owner] & {
-    min-height: 32px;
-    align-items: center;
-
-    > p:first-child {
-      margin: 0;
-    }
-  }
-
   display: flex;
-  min-height: 36px;
-  align-items: flex-start;
+  min-height: 32px;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-`;
 
-const ItemRole = styled.p`
-  margin: 0 0 8px;
-  color: #ed174c;
-  font-size: 14px;
-  font-weight: 800;
-  @media (max-width: 767px) {
-    display: none;
+  > p:first-child {
+    margin: 0;
   }
 `;
 
@@ -749,10 +713,8 @@ const Category = styled.span`
 
 const Title = styled.h1`
   @media (min-width: 901px) {
-    [data-owner] & {
-      margin: 12px 0 20px;
-      font-size: 30px;
-    }
+    margin: 12px 0 20px;
+    font-size: 30px;
   }
 
   margin: 0 0 12px;
@@ -812,10 +774,8 @@ const Divider = styled.hr`
   border-top: 1px solid #ececef;
 
   @media (min-width: 901px) {
-    [data-owner] & {
-      margin: 20px 0 0;
-      border: 0;
-    }
+    margin: 20px 0 0;
+    border: 0;
   }
 
   @media (max-width: 767px) {
@@ -830,53 +790,51 @@ const InfoList = styled.dl`
   gap: 18px;
 
   @media (min-width: 901px) {
-    [data-owner] & {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 0;
+
+    > div {
+      grid-column: 1 / -1;
+      grid-template-columns: auto minmax(0, 1fr);
+
+      > dd {
+        text-align: right;
+      }
+    }
+
+    > div:first-child,
+    > [data-desired-item] {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px 0;
+      grid-column: auto;
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+      gap: 4px;
+      padding: 20px;
+      background: #faf9f8;
 
-      > div {
-        grid-column: 1 / -1;
-        grid-template-columns: auto minmax(0, 1fr);
-
-        > dd {
-          text-align: right;
-        }
+      > dt {
+        color: #d73352;
       }
 
-      > div:first-child,
-      > [data-desired-item] {
-        display: grid;
-        grid-column: auto;
-        grid-template-columns: minmax(0, 1fr);
-        align-content: start;
-        gap: 4px;
-        padding: 20px;
-        background: #faf9f8;
-
-        > dt {
-          color: #d73352;
-        }
-
-        > dd {
-          font-size: 17px;
-          text-align: left;
-        }
+      > dd {
+        font-size: 17px;
+        text-align: left;
       }
+    }
 
-      > div:first-child {
-        padding-right: 26px;
-        border-radius: 12px 0 0 12px;
-      }
+    > div:first-child {
+      padding-right: 26px;
+      border-radius: 12px 0 0 12px;
+    }
 
-      > [data-desired-item] {
-        padding-left: 26px;
-        border-radius: 0 12px 12px 0;
-      }
+    > [data-desired-item] {
+      padding-left: 26px;
+      border-radius: 0 12px 12px 0;
+    }
 
-      > [data-empty-owner-time] {
-        display: none;
-      }
+    > [data-empty-time] {
+      display: none;
     }
   }
 
