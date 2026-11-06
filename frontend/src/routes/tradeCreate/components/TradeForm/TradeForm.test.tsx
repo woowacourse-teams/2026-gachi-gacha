@@ -1,11 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router';
@@ -290,8 +284,8 @@ describe('TradeForm', () => {
       screen.getByRole('textbox', { name: /제목/ }),
       screen.getByRole('textbox', { name: /설명/ }),
       screen.getByRole('searchbox', { name: /카테고리/ }),
-      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
       screen.getByRole('button', { name: /구매 매장/ }),
+      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
       screen.getByRole('button', { name: /거래 장소/ }),
     ];
 
@@ -513,16 +507,20 @@ describe('TradeForm', () => {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
+    let requests = 0;
     server.use(
-      http.post('/api/v1/trades', () =>
-        HttpResponse.json(
-          { code: 'CE001', message: '교환 게시글을 등록할 수 없습니다.' },
-          { status: 400 },
-        ),
-      ),
+      http.post('/api/v1/trades', () => {
+        requests += 1;
+        return requests === 1
+          ? HttpResponse.json(
+              { code: 'CE001', message: '교환 게시글을 등록할 수 없습니다.' },
+              { status: 400 },
+            )
+          : HttpResponse.json(createTradeResponse(), { status: 201 });
+      }),
     );
     const user = userEvent.setup();
-    const { container } = renderTradeForm();
+    const { container } = renderTradeFormWithDetailRoute();
 
     await completeRequiredFields(user, container);
     await user.click(screen.getByRole('button', { name: '등록하기' }));
@@ -530,8 +528,16 @@ describe('TradeForm', () => {
     const alert = await screen.findByRole('alert');
 
     expect(alert).toHaveTextContent('교환 게시글을 등록할 수 없습니다.');
+    expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(
+      '쿠로미 피규어 교환해요',
+    );
+    expect(screen.getByRole('textbox', { name: /설명/ })).toHaveValue(
+      '개봉만 한 상품입니다.',
+    );
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
     expect(
-      within(container).getByRole('button', { name: '등록하기' }),
-    ).toBeEnabled();
+      await screen.findByText('등록된 거래 게시글 상세'),
+    ).toBeInTheDocument();
+    expect(requests).toBe(2);
   });
 });

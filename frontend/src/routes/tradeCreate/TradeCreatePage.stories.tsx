@@ -46,3 +46,19 @@ export default meta;
 type Story = StoryObj<typeof TradeCreatePage>;
 
 export const Default: Story = {};
+
+export const Mobile = {
+  parameters: {
+    viewport: {
+      options: {
+        mobileTradeForm: {
+          name: 'Mobile 390px',
+          styles: { width: '390px', height: '844px' },
+        },
+      },
+    },
+  },
+  globals: {
+    viewport: { value: 'mobileTradeForm', isRotated: false },
+  },
+} satisfies Story;

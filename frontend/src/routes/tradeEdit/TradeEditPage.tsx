@@ -1,12 +1,10 @@
-import styled from '@emotion/styled';
-
 import type { TradeCategory } from '@/domains/trade/tradeCategoryType';
 import type { TradePlaceInput } from '@/domains/trade/tradeCreateType';
 import type { TradeDetail } from '@/domains/trade/tradeDetailType';
-import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
 import TradeForm, {
   type TradeFormInitialValues,
 } from '@/routes/tradeCreate/components/TradeForm/TradeForm';
+import TradeFormLayout from '@/routes/tradeCreate/components/TradeFormLayout';
 
 interface TradeEditPageProps {
   detail: TradeDetail;
@@ -44,63 +42,16 @@ export default function TradeEditPage({
   };
 
   return (
-    <Page>
-      <AppGachaSearchHeader currentPath="/trade" />
-
-      <Main>
-        <Heading>
-          <Title>거래 글 수정</Title>
-          <Description>
-            등록한 거래 정보를 확인하고 수정할 수 있어요.
-          </Description>
-        </Heading>
-
-        <TradeForm
-          mode="edit"
-          tradeId={detail.tradeId}
-          initialValues={initialValues}
-        />
-      </Main>
-    </Page>
+    <TradeFormLayout
+      title="거래 글 수정"
+      backTo={`/trade/${detail.tradeId}`}
+      backLabel="거래 상세로 돌아가기"
+    >
+      <TradeForm
+        mode="edit"
+        tradeId={detail.tradeId}
+        initialValues={initialValues}
+      />
+    </TradeFormLayout>
   );
 }
-
-const Page = styled.div`
-  display: flex;
-  box-sizing: border-box;
-  min-height: 100dvh;
-  padding-bottom: 85px;
-  flex-direction: column;
-  background: #ffffff;
-`;
-
-const Main = styled.main`
-  box-sizing: border-box;
-  width: min(100%, 960px);
-  margin: 0 auto;
-  padding: 48px 24px 72px;
-  flex: 1;
-
-  @media (max-width: 680px) {
-    padding: 32px 16px 48px;
-  }
-`;
-
-const Heading = styled.div`
-  margin-bottom: 36px;
-`;
-
-const Title = styled.h1`
-  margin: 0 0 10px;
-  color: #202126;
-  font-size: clamp(28px, 3vw, 38px);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-`;
-
-const Description = styled.p`
-  margin: 0;
-  color: #73757e;
-  font-size: 16px;
-  line-height: 1.6;
-`;
