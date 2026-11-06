@@ -1,8 +1,9 @@
-package com.gachi.gacha.server.favorite.signal.application;
+package com.gachi.gacha.server.favorite.signal.application.event;
 
+import com.gachi.gacha.server.favorite.signal.application.FavoriteSignalService;
 import com.gachi.gacha.server.favorite.trade.application.event.TradeFavoriteChangedEvent;
-import com.gachi.gacha.server.favorite.gacha.application.GachaFavoriteChangedEvent;
-import com.gachi.gacha.server.favorite.store.application.StoreFavoriteChangedEvent;
+import com.gachi.gacha.server.favorite.gacha.application.event.GachaFavoriteChangedEvent;
+import com.gachi.gacha.server.favorite.store.application.event.StoreFavoriteChangedEvent;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteType;
 import com.gachi.gacha.server.trade.application.event.TradeInferenceCompletedEvent;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +30,6 @@ public class FavoriteSignalEventListener {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
-    public void handleTradeInferenceCompletedEvent(final TradeInferenceCompletedEvent event) {
-        favoriteSignalService.rebuildForTrade(event.tradeId());
-    }
-
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Async
     public void handleGachaFavoriteChangedEvent(final GachaFavoriteChangedEvent event) {
         if (!event.favorite()) {
             favoriteSignalService.removeSignalsForTarget(event.memberId(), FavoriteType.GACHA, event.gachaId());
@@ -51,5 +46,11 @@ public class FavoriteSignalEventListener {
             return;
         }
         favoriteSignalService.rebuildForStoreFavorite(event.memberId(), event.storeId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleTradeInferenceCompletedEvent(final TradeInferenceCompletedEvent event) {
+        favoriteSignalService.rebuildForTrade(event.tradeId());
     }
 }
