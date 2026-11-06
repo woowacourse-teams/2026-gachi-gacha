@@ -41,6 +41,14 @@ public final class CategorySignalExtractor {
         return weights;
     }
 
+    /**
+     *
+     * @param userCategoryIds
+     * @param inferredCategoryIds
+     * @param inferenceScore
+     * @param acceptScore
+     * @return 사용자 카테고리가 있으면 사용자 카테고리를 사용, 없으면 추론 카테고리 사용
+     */
     private static Set<Long> choose(
             final Collection<Long> userCategoryIds,
             final Collection<Long> inferredCategoryIds,
@@ -50,7 +58,7 @@ public final class CategorySignalExtractor {
         if (userCategoryIds != null && !userCategoryIds.isEmpty()) {
             return new LinkedHashSet<>(userCategoryIds);
         }
-        boolean accepted = inferredCategoryIds != null
+        boolean accepted = (inferredCategoryIds != null)
                 && !inferredCategoryIds.isEmpty()
                 && inferenceScore != null
                 && inferenceScore >= acceptScore;
