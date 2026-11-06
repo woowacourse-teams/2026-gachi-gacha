@@ -26,7 +26,9 @@ describe('TradeDetail', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('가지고 있는 것')).toBeInTheDocument();
+    expect(
+      screen.getByText('가지고 있는 것', { selector: 'p' }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: '가지고 있는 상품 설명' }),
     ).toBeInTheDocument();

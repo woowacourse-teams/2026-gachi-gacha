@@ -58,3 +58,19 @@ export const ChiikawaAffiliateCatalog: Story = {
     },
   },
 };
+
+export const MobileDetail: Story = {
+  parameters: {
+    viewport: {
+      options: {
+        mobileDetail: {
+          name: 'Mobile 390px',
+          styles: { width: '390px', height: '844px' },
+        },
+      },
+    },
+  },
+  globals: {
+    viewport: { value: 'mobileDetail', isRotated: false },
+  },
+};

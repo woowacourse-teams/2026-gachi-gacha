@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { Link, useLocation, useNavigate } from 'react-router';
 
 import type { TradeDetail as TradeDetailData } from '@/domains/trade/tradeDetailType';
 import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
@@ -58,9 +59,44 @@ export default function TradeDetailPage({
   showSafetyActions = false,
   onTradeAuthorBlocked,
 }: TradeDetailPageProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   return (
     <Page>
-      <AppHeader currentPath="/trade" />
+      <DesktopHeader>
+        <AppHeader currentPath="/trade" />
+      </DesktopHeader>
+      <MobileHeader>
+        <BackLink
+          to="/trade"
+          aria-label="목록으로 돌아가기"
+          onClick={(event) => {
+            if (
+              location.state?.fromTradeList &&
+              !event.metaKey &&
+              !event.ctrlKey &&
+              !event.altKey &&
+              !event.shiftKey
+            ) {
+              event.preventDefault();
+              void navigate(-1);
+            }
+          }}
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            aria-hidden="true"
+          >
+            <path d="m14 5-7 7 7 7" />
+          </svg>
+        </BackLink>
+      </MobileHeader>
 
       <Main>
         <TradeDetail
@@ -69,17 +105,18 @@ export default function TradeDetailPage({
           hasSubmittedComment={hasSubmittedComment}
           showSafetyActions={showSafetyActions && action === 'chat'}
           onAuthorBlocked={onTradeAuthorBlocked}
-        />
-
-        <TradeComments
-          comments={comments}
-          commentsStatus={commentsStatus}
-          commentsErrorMessage={commentsErrorMessage}
-          viewer={commentViewer}
-          onSubmit={onSubmitComment}
-          onRetryComments={onRetryComments}
-          onCommentAction={onCommentAction}
-          showSafetyActions={showSafetyActions}
+          comments={
+            <TradeComments
+              comments={comments}
+              commentsStatus={commentsStatus}
+              commentsErrorMessage={commentsErrorMessage}
+              viewer={commentViewer}
+              onSubmit={onSubmitComment}
+              onRetryComments={onRetryComments}
+              onCommentAction={onCommentAction}
+              showSafetyActions={showSafetyActions}
+            />
+          }
         />
 
         <AffiliateCatalogSlot
@@ -102,6 +139,7 @@ export default function TradeDetailPage({
                     key={item.tradeId}
                     item={item}
                     source="related_list"
+                    homeLayout
                   />
                 ))}
               </ProductGrid>
@@ -137,18 +175,23 @@ const Page = styled.div`
 
 const Main = styled.main`
   box-sizing: border-box;
-  width: min(100%, 1240px);
+  width: min(100%, 1264px);
   margin: 0 auto;
-  padding: 36px 32px 80px;
+  padding: 32px 32px 64px;
 
-  @media (max-width: 680px) {
-    padding: 24px 16px 56px;
+  @media (max-width: 767px) {
+    padding: 0 0 calc(88px + env(safe-area-inset-bottom));
   }
 `;
 
 const RelatedSection = styled.section`
   padding-top: 48px;
   border-top: 1px solid #e9e9ec;
+
+  @media (max-width: 767px) {
+    padding: 20px 0 0;
+    border-top: 8px solid #f5f4f3;
+  }
 `;
 
 const RelatedContent = styled.div`
@@ -159,6 +202,10 @@ const RelatedHeader = styled.div`
   display: flex;
   align-items: center;
   margin-bottom: 24px;
+
+  @media (max-width: 767px) {
+    margin: 0 24px 14px;
+  }
 `;
 
 const RelatedTitle = styled.h2`
@@ -170,21 +217,21 @@ const RelatedTitle = styled.h2`
 
 const ProductGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 205px));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   justify-content: start;
   gap: 40px 24px;
-
-  @media (max-width: 1184px) {
-    grid-template-columns: repeat(4, minmax(0, 205px));
-  }
 
   @media (max-width: 900px) {
     grid-template-columns: repeat(3, minmax(0, 205px));
   }
 
-  @media (max-width: 620px) {
-    grid-template-columns: repeat(2, minmax(0, 205px));
-    gap: 30px 14px;
+  @media (max-width: 767px) {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 132px;
+    overflow-x: auto;
+    padding: 0 24px 8px;
+    gap: 10px;
   }
 `;
 
@@ -210,4 +257,35 @@ const MoreButton = styled.button`
     cursor: wait;
     opacity: 0.6;
   }
+`;
+
+const DesktopHeader = styled.div`
+  display: contents;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+const MobileHeader = styled.header`
+  display: none;
+
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    min-height: 48px;
+    padding: 0 8px;
+    align-items: center;
+    background: white;
+  }
+`;
+
+const BackLink = styled(Link)`
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: inherit;
 `;

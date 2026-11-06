@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { type ReactNode, useCallback, useState } from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
@@ -22,6 +22,7 @@ import type { TradeDetailAction } from '../../TradeDetailPage';
 
 interface TradeDetailProps {
   detail: TradeDetailData;
+  comments?: ReactNode;
   action?: TradeDetailAction;
   hasSubmittedComment?: boolean;
   showSafetyActions?: boolean;
@@ -51,6 +52,7 @@ function formatAvailableTime(availableTime: string | null): string {
 
 export default function TradeDetail({
   detail,
+  comments,
   action = 'chat',
   hasSubmittedComment = false,
   showSafetyActions = false,
@@ -109,8 +111,6 @@ export default function TradeDetail({
 
   return (
     <Wrapper>
-      <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
-
       <Summary>
         <Gallery>
           <MainImage>
@@ -200,6 +200,7 @@ export default function TradeDetail({
         </Gallery>
 
         <Info>
+          <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
           <InfoHeader>
             <ItemRole>가지고 있는 것</ItemRole>
             {showSafetyActions && (
@@ -221,7 +222,11 @@ export default function TradeDetail({
           <Divider />
 
           <InfoList>
-            <InfoRow>
+            <OfferedItem>
+              <InfoLabel>가지고 있는 것</InfoLabel>
+              <InfoValue>{detail.title}</InfoValue>
+            </OfferedItem>
+            <InfoRow data-desired-item>
               <InfoLabel>얻고 싶은 것</InfoLabel>
               <InfoValue>{detail.desiredProduction || '제안 받아요'}</InfoValue>
             </InfoRow>
@@ -242,20 +247,6 @@ export default function TradeDetail({
               <InfoValue>{formatAvailableTime(detail.availableTime)}</InfoValue>
             </InfoRow>
           </InfoList>
-
-          <DescriptionSection>
-            <SectionTitle>가지고 있는 상품 설명</SectionTitle>
-            <Description>
-              {detail.description || '등록된 설명이 없어요.'}
-            </Description>
-            {detail.categories.length > 0 && (
-              <CategoryList aria-label="카테고리">
-                {detail.categories.map((category) => (
-                  <Category key={category}>#{category}</Category>
-                ))}
-              </CategoryList>
-            )}
-          </DescriptionSection>
 
           {action && (
             <ActionGroup>
@@ -320,6 +311,23 @@ export default function TradeDetail({
             </ActionGroup>
           )}
         </Info>
+
+        <DetailContent>
+          <DescriptionSection>
+            <SectionTitle>가지고 있는 상품 설명</SectionTitle>
+            <Description>
+              {detail.description || '등록된 설명이 없어요.'}
+            </Description>
+            {detail.categories.length > 0 && (
+              <CategoryList aria-label="카테고리">
+                {detail.categories.map((category) => (
+                  <Category key={category}>#{category}</Category>
+                ))}
+              </CategoryList>
+            )}
+          </DescriptionSection>
+          {comments}
+        </DetailContent>
       </Summary>
 
       {action === 'edit' && (
@@ -361,16 +369,20 @@ const Breadcrumb = styled.p`
 
 const Summary = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-  gap: 56px;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-areas: 'gallery info' 'content info';
+  gap: 40px 48px;
+  align-items: start;
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-    gap: 32px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'gallery' 'info' 'content';
+    gap: 20px;
   }
 `;
 
 const Gallery = styled.div`
+  grid-area: gallery;
   min-width: 0;
 `;
 
@@ -379,6 +391,16 @@ const MainImage = styled.div`
   display: grid;
   width: 100%;
   aspect-ratio: 1 / 1;
+
+  @media (max-width: 767px) {
+    aspect-ratio: 390 / 340;
+    border: 0;
+    border-radius: 0;
+  }
+
+  @media (min-width: 901px) {
+    aspect-ratio: 672 / 560;
+  }
   overflow: hidden;
   place-items: center;
   border: 1px solid #ececef;
@@ -499,7 +521,12 @@ const ThumbnailPhoto = styled.img`
 `;
 
 const Info = styled.div`
+  grid-area: info;
   padding-top: 8px;
+
+  @media (max-width: 767px) {
+    padding: 0 24px 20px;
+  }
 `;
 
 const InfoHeader = styled.div`
@@ -515,6 +542,9 @@ const ItemRole = styled.p`
   color: #ed174c;
   font-size: 14px;
   font-weight: 800;
+  @media (max-width: 767px) {
+    display: none;
+  }
 `;
 
 const CategoryList = styled.div`
@@ -552,6 +582,10 @@ const Divider = styled.hr`
   margin: 28px 0;
   border: 0;
   border-top: 1px solid #ececef;
+
+  @media (max-width: 767px) {
+    margin: 16px 0;
+  }
 `;
 
 const InfoList = styled.dl`
@@ -559,6 +593,40 @@ const InfoList = styled.dl`
   margin: 0;
   flex-direction: column;
   gap: 18px;
+
+  @media (max-width: 767px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 0;
+
+    > div {
+      grid-column: 1 / -1;
+    }
+
+    > div:first-child,
+    > [data-desired-item] {
+      display: grid;
+      grid-column: auto;
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+      min-height: 75px;
+      padding: 16px;
+      gap: 4px;
+      background: #f7f5f4;
+
+      > dd {
+        text-align: left;
+      }
+    }
+
+    > div:first-child {
+      border-radius: 12px 0 0 12px;
+    }
+
+    > [data-desired-item] {
+      border-radius: 0 12px 12px 0;
+    }
+  }
 `;
 
 const InfoRow = styled.div`
@@ -566,10 +634,18 @@ const InfoRow = styled.div`
   grid-template-columns: 112px minmax(0, 1fr);
   gap: 16px;
 
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-    gap: 4px;
+  @media (max-width: 767px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+
+    > dd {
+      text-align: right;
+    }
   }
+`;
+
+const OfferedItem = styled(InfoRow)`
+  display: none;
 `;
 
 const InfoLabel = styled.dt`
@@ -588,6 +664,23 @@ const InfoValue = styled.dd`
 const ActionGroup = styled.div`
   display: grid;
   margin-top: 32px;
+
+  @media (max-width: 767px) {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 35;
+    margin: 0;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid #e9e9ec;
+    background: white;
+
+    a {
+      min-height: 52px;
+      background: #bf4355;
+      border-color: #bf4355;
+      color: #ffffff;
+    }
+  }
 `;
 
 const ChatLink = styled(Link)`
@@ -626,10 +719,23 @@ const DeleteButton = styled.button`
   cursor: pointer;
 `;
 
+const DetailContent = styled.div`
+  min-width: 0;
+  grid-area: content;
+
+  @media (max-width: 767px) {
+    padding-inline: 24px;
+  }
+`;
+
 const DescriptionSection = styled.section`
-  margin-top: 32px;
-  padding-top: 28px;
-  border-top: 1px solid #e9e9ec;
+  margin-bottom: 40px;
+
+  @media (max-width: 767px) {
+    margin: 0 -24px 20px;
+    padding: 20px 24px;
+    border-block: 8px solid #f5f4f3;
+  }
 `;
 
 const SectionTitle = styled.h2`
