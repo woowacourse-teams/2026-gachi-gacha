@@ -30,6 +30,10 @@ import {
   HeaderContent,
   Navigation,
   NavigationLink,
+  MobileTabBar,
+  MobileHomeAction,
+  MobileNotificationLink,
+  MobileTab,
   NotificationMenu,
   SearchArea,
 } from './AppHeader.styles';
@@ -46,6 +50,8 @@ export interface AppHeaderProps {
   onNotificationRetry?: () => void;
   onNotificationSelect?: (notification: HeaderNotification) => void;
   search?: ReactNode;
+  showMobileTabs?: boolean;
+  desktopAction?: ReactNode;
 }
 
 const EMPTY_NOTIFICATION_STATE: HeaderNotificationState = {
@@ -55,7 +61,7 @@ const EMPTY_NOTIFICATION_STATE: HeaderNotificationState = {
 };
 
 const NAVIGATION_ITEMS = [
-  { href: '/trade', label: '거래/교환', destination: 'trade' },
+  { href: '/trade', label: '홈', destination: 'trade' },
   { href: '/map', label: '지도', destination: 'map' },
   { href: '/search', label: '검색', destination: 'search' },
 ] as const;
@@ -120,10 +126,14 @@ export function AppHeader({
   onNotificationRetry,
   onNotificationSelect,
   search,
+  showMobileTabs = false,
+  desktopAction,
 }: AppHeaderProps) {
   const { status, member } = useAuthSession();
   const chatUnread = useOptionalChatUnread();
   const notifications = useOptionalNotifications();
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const mobileSearchId = useId();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
@@ -198,155 +208,265 @@ export function AppHeader({
   }, [currentPath]);
 
   return (
-    <Header>
-      <HeaderContent $hasSearch={Boolean(search)}>
-        <Brand
-          to="/trade"
-          aria-label="GachiGacha 거래/교환으로 이동"
-          onClick={() => captureHeaderNavigation('brand', isAuthenticated)}
-        >
-          <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
-          <span>GachiGacha</span>
-        </Brand>
+    <>
+      <Header
+        data-mobile-tabs={showMobileTabs || undefined}
+        data-mobile-search-open={isMobileSearchOpen || undefined}
+      >
+        <HeaderContent $hasSearch={Boolean(search)}>
+          <Brand
+            to="/trade"
+            aria-label="GachiGacha 홈으로 이동"
+            onClick={() => captureHeaderNavigation('brand', isAuthenticated)}
+          >
+            <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
+            <span>GachiGacha</span>
+          </Brand>
 
-        <SearchArea data-header-search-slot>{search}</SearchArea>
+          <SearchArea id={mobileSearchId} data-header-search-slot>
+            {search}
+          </SearchArea>
 
-        <Navigation aria-label="주요 메뉴">
-          {NAVIGATION_ITEMS.map(({ href, label, destination }) => {
-            const isActive = currentPath === href;
+          <Navigation aria-label="주요 메뉴">
+            {NAVIGATION_ITEMS.map(({ href, label, destination }) => {
+              const isActive = currentPath === href;
 
-            return (
-              <NavigationLink
-                key={href}
-                to={href}
-                $isActive={isActive}
-                aria-current={isActive ? 'page' : undefined}
-                onClick={() =>
-                  captureHeaderNavigation(destination, isAuthenticated)
-                }
-              >
-                {label}
-              </NavigationLink>
-            );
-          })}
-        </Navigation>
-
-        <Actions aria-label="사용자 메뉴">
-          {isAuthenticated && (
-            <>
-              <ActionLink
-                to="/chat"
-                $isActive={currentPath === '/chat'}
-                aria-label={
-                  resolvedChatUnreadCount > 0
-                    ? `채팅, 읽지 않은 메시지 ${resolvedChatUnreadCount}개`
-                    : '채팅'
-                }
-                title="채팅"
-                onClick={() => captureHeaderNavigation('chat', isAuthenticated)}
-              >
-                <ChatIcon />
-                {resolvedChatUnreadCount > 0 && (
-                  <ActionBadge aria-hidden="true">
-                    {resolvedChatUnreadCount > 99
-                      ? '99+'
-                      : resolvedChatUnreadCount}
-                  </ActionBadge>
-                )}
-              </ActionLink>
-              <NotificationMenu ref={notificationMenuRef}>
-                <ActionButton
-                  ref={notificationButtonRef}
-                  type="button"
-                  $isActive={isNotificationOpen}
-                  aria-label={
-                    unreadNotificationCount > 0
-                      ? `알림, 읽지 않은 알림 ${unreadNotificationCount}개`
-                      : '알림'
+              return (
+                <NavigationLink
+                  key={href}
+                  to={href}
+                  $isActive={isActive}
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() =>
+                    captureHeaderNavigation(destination, isAuthenticated)
                   }
-                  aria-controls={
-                    isNotificationOpen ? notificationPopoverId : undefined
-                  }
-                  aria-expanded={isNotificationOpen}
-                  aria-haspopup="dialog"
-                  title="알림"
-                  onClick={() => {
-                    const willOpen = !isNotificationOpen;
-
-                    if (willOpen) {
-                      if (notificationState === undefined) {
-                        notifications?.loadNotifications();
-                      }
-
-                      captureAnalyticsEvent('notification_popover_opened', {
-                        unread_count: unreadNotificationCount,
-                      });
-                    }
-
-                    setIsNotificationOpen(willOpen);
-                  }}
                 >
-                  <NotificationIcon />
-                  {unreadNotificationCount > 0 && (
+                  {label}
+                </NavigationLink>
+              );
+            })}
+          </Navigation>
+
+          <Actions aria-label="사용자 메뉴">
+            {desktopAction}
+            {showMobileTabs && search && (
+              <MobileHomeAction
+                $isActive={isMobileSearchOpen}
+                type="button"
+                aria-label="거래글 검색"
+                aria-expanded={isMobileSearchOpen}
+                aria-controls={mobileSearchId}
+                onClick={() => setIsMobileSearchOpen((open) => !open)}
+              >
+                <ActionIcon
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  aria-hidden="true"
+                >
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m16 16 4 4" />
+                </ActionIcon>
+              </MobileHomeAction>
+            )}
+            {showMobileTabs && !isAuthenticated && (
+              <MobileNotificationLink
+                to={createLoginUrl('/notifications')}
+                $isActive={false}
+                aria-label="알림"
+              >
+                <NotificationIcon />
+              </MobileNotificationLink>
+            )}
+            {isAuthenticated && (
+              <>
+                <ActionLink
+                  data-mobile-tab-action
+                  to="/chat"
+                  $isActive={currentPath === '/chat'}
+                  aria-label={
+                    resolvedChatUnreadCount > 0
+                      ? `채팅, 읽지 않은 메시지 ${resolvedChatUnreadCount}개`
+                      : '채팅'
+                  }
+                  title="채팅"
+                  onClick={() =>
+                    captureHeaderNavigation('chat', isAuthenticated)
+                  }
+                >
+                  <ChatIcon />
+                  {resolvedChatUnreadCount > 0 && (
                     <ActionBadge aria-hidden="true">
-                      {unreadNotificationCount > 99
+                      {resolvedChatUnreadCount > 99
                         ? '99+'
-                        : unreadNotificationCount}
+                        : resolvedChatUnreadCount}
                     </ActionBadge>
                   )}
-                </ActionButton>
-                {isNotificationOpen && (
-                  <NotificationPopover
-                    id={notificationPopoverId}
-                    titleId={notificationTitleId}
-                    notificationState={resolvedNotificationState}
-                    onClose={() => closeNotificationPopover(true)}
-                    onNotificationSelect={(selectedNotification) => {
-                      captureAnalyticsEvent('notification_selected', {
-                        source: 'popover',
-                        notification_type: selectedNotification.type,
-                        was_read: selectedNotification.isRead,
-                      });
-                      onNotificationSelect?.(selectedNotification);
-
-                      if (notificationState === undefined) {
-                        notifications?.selectNotification(selectedNotification);
-                      }
-                    }}
-                    onRetry={
-                      onNotificationRetry ?? notifications?.loadNotifications
+                </ActionLink>
+                <NotificationMenu ref={notificationMenuRef}>
+                  <ActionButton
+                    ref={notificationButtonRef}
+                    type="button"
+                    $isActive={isNotificationOpen}
+                    aria-label={
+                      unreadNotificationCount > 0
+                        ? `알림, 읽지 않은 알림 ${unreadNotificationCount}개`
+                        : '알림'
                     }
-                  />
-                )}
-              </NotificationMenu>
-            </>
-          )}
-          <ActionLink
-            to={accountHref}
-            $isActive={currentPath === '/mypage'}
-            $isAccount
-            aria-label={isAuthenticated ? '마이페이지' : '로그인'}
-            title={isAuthenticated ? '마이페이지' : '로그인'}
-            onClick={() =>
-              captureHeaderNavigation(
-                isAuthenticated ? 'mypage' : 'login',
-                isAuthenticated,
-              )
-            }
+                    aria-controls={
+                      isNotificationOpen ? notificationPopoverId : undefined
+                    }
+                    aria-expanded={isNotificationOpen}
+                    aria-haspopup="dialog"
+                    title="알림"
+                    onClick={() => {
+                      const willOpen = !isNotificationOpen;
+
+                      if (willOpen) {
+                        if (notificationState === undefined) {
+                          notifications?.loadNotifications();
+                        }
+
+                        captureAnalyticsEvent('notification_popover_opened', {
+                          unread_count: unreadNotificationCount,
+                        });
+                      }
+
+                      setIsNotificationOpen(willOpen);
+                    }}
+                  >
+                    <NotificationIcon />
+                    {unreadNotificationCount > 0 && (
+                      <ActionBadge aria-hidden="true">
+                        {unreadNotificationCount > 99
+                          ? '99+'
+                          : unreadNotificationCount}
+                      </ActionBadge>
+                    )}
+                  </ActionButton>
+                  {isNotificationOpen && (
+                    <NotificationPopover
+                      id={notificationPopoverId}
+                      titleId={notificationTitleId}
+                      notificationState={resolvedNotificationState}
+                      onClose={() => closeNotificationPopover(true)}
+                      onNotificationSelect={(selectedNotification) => {
+                        captureAnalyticsEvent('notification_selected', {
+                          source: 'popover',
+                          notification_type: selectedNotification.type,
+                          was_read: selectedNotification.isRead,
+                        });
+                        onNotificationSelect?.(selectedNotification);
+
+                        if (notificationState === undefined) {
+                          notifications?.selectNotification(
+                            selectedNotification,
+                          );
+                        }
+                      }}
+                      onRetry={
+                        onNotificationRetry ?? notifications?.loadNotifications
+                      }
+                    />
+                  )}
+                </NotificationMenu>
+              </>
+            )}
+            <ActionLink
+              data-mobile-tab-action
+              to={accountHref}
+              $isActive={currentPath === '/mypage'}
+              $isAccount
+              aria-label={isAuthenticated ? '마이페이지' : '로그인'}
+              title={isAuthenticated ? '마이페이지' : '로그인'}
+              onClick={() =>
+                captureHeaderNavigation(
+                  isAuthenticated ? 'mypage' : 'login',
+                  isAuthenticated,
+                )
+              }
+            >
+              {isAuthenticated && member?.profileImageUrl ? (
+                <Avatar
+                  src={member.profileImageUrl}
+                  alt=""
+                  data-private-media
+                />
+              ) : (
+                <AccountIcon />
+              )}
+              {!isAuthenticated && (
+                <AccountLabel>
+                  {status === 'loading' ? '확인 중' : '로그인'}
+                </AccountLabel>
+              )}
+            </ActionLink>
+          </Actions>
+        </HeaderContent>
+      </Header>
+      {showMobileTabs && (
+        <MobileTabBar aria-label="하단 메뉴">
+          <MobileTab
+            to="/trade"
+            aria-current={currentPath === '/trade' ? 'page' : undefined}
+            onClick={() => captureHeaderNavigation('trade', isAuthenticated)}
           >
-            {isAuthenticated && member?.profileImageUrl ? (
-              <Avatar src={member.profileImageUrl} alt="" data-private-media />
-            ) : (
-              <AccountIcon />
+            <ActionIcon
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <path d="m3 10 9-7 9 7v11h-6v-7H9v7H3z" />
+            </ActionIcon>
+            홈
+          </MobileTab>
+          <MobileTab
+            to="/map"
+            aria-current={currentPath === '/map' ? 'page' : undefined}
+            onClick={() => captureHeaderNavigation('map', isAuthenticated)}
+          >
+            <ActionIcon
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              aria-hidden="true"
+            >
+              <path d="m3 5 6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16m6-14v16" />
+            </ActionIcon>
+            지도
+          </MobileTab>
+          <MobileTab
+            to="/chat"
+            aria-current={currentPath === '/chat' ? 'page' : undefined}
+            aria-label={
+              resolvedChatUnreadCount > 0
+                ? `채팅, 읽지 않은 메시지 ${resolvedChatUnreadCount}개`
+                : undefined
+            }
+            onClick={() => captureHeaderNavigation('chat', isAuthenticated)}
+          >
+            <ChatIcon />
+            {isAuthenticated && resolvedChatUnreadCount > 0 && (
+              <ActionBadge aria-hidden="true">
+                {resolvedChatUnreadCount > 99 ? '99+' : resolvedChatUnreadCount}
+              </ActionBadge>
             )}
-            {!isAuthenticated && (
-              <AccountLabel>
-                {status === 'loading' ? '확인 중' : '로그인'}
-              </AccountLabel>
-            )}
-          </ActionLink>
-        </Actions>
-      </HeaderContent>
-    </Header>
+            채팅
+          </MobileTab>
+          <MobileTab
+            to="/mypage"
+            aria-current={currentPath === '/mypage' ? 'page' : undefined}
+            onClick={() => captureHeaderNavigation('mypage', isAuthenticated)}
+          >
+            <AccountIcon />
+            마이
+          </MobileTab>
+        </MobileTabBar>
+      )}
+    </>
   );
 }

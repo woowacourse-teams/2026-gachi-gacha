@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 
 describe('AppHeader', () => {
-  it('비로그인 상태에서는 거래/교환, 지도, 검색, 로그인만 노출한다', () => {
+  it('비로그인 상태에서는 홈, 지도, 검색, 로그인만 노출한다', () => {
     renderWithProviders(<AppHeader currentPath="/trade" />, {
       initialAccessToken: null,
     });
@@ -30,8 +30,11 @@ describe('AppHeader', () => {
       name: '주요 메뉴',
     });
 
-    expect(primaryNavigation).toHaveTextContent('거래/교환지도검색');
-    expect(screen.queryByRole('link', { name: '홈' })).not.toBeInTheDocument();
+    expect(primaryNavigation).toHaveTextContent('홈지도검색');
+    const homeLink = screen.getByRole('link', { name: '홈' });
+
+    expect(homeLink).toHaveAttribute('href', '/trade');
+    expect(homeLink).toHaveAttribute('aria-current', 'page');
     expect(
       screen.queryByRole('link', { name: '채팅' }),
     ).not.toBeInTheDocument();

@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import {
   DropdownSelect,
@@ -10,6 +12,9 @@ import {
   CategoryScroller,
   FilterHeading,
   FilterPanel,
+  MobileFilterButton,
+  MobileFilterSheet,
+  DesktopSelectFilters,
   SelectField,
   SelectFilters,
   SelectLabelText,
@@ -51,6 +56,35 @@ export function TradeFilters({
   onChangeStatus,
   onChangeSortOrder,
 }: TradeFiltersProps) {
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const selects = (
+    <SelectFilters>
+      <SelectField>
+        <SelectLabelText>교환 상태</SelectLabelText>
+        <DropdownSelect
+          ariaLabel="교환 상태"
+          showInlineLabel
+          value={status ?? 'ALL'}
+          options={STATUS_OPTIONS}
+          onChange={(nextStatus) =>
+            onChangeStatus(nextStatus === 'ALL' ? null : nextStatus)
+          }
+        />
+      </SelectField>
+
+      <SelectField>
+        <SelectLabelText>정렬</SelectLabelText>
+        <DropdownSelect
+          ariaLabel="정렬"
+          showInlineLabel
+          value={sortOrder}
+          options={SORT_OPTIONS}
+          onChange={onChangeSortOrder}
+        />
+      </SelectField>
+    </SelectFilters>
+  );
+
   return (
     <FilterPanel aria-label="거래 목록 필터">
       <CategoryFilter>
@@ -76,29 +110,31 @@ export function TradeFilters({
         </CategoryScroller>
       </CategoryFilter>
 
-      <SelectFilters>
-        <SelectField>
-          <SelectLabelText>교환 상태</SelectLabelText>
-          <DropdownSelect
-            ariaLabel="교환 상태"
-            value={status ?? 'ALL'}
-            options={STATUS_OPTIONS}
-            onChange={(nextStatus) =>
-              onChangeStatus(nextStatus === 'ALL' ? null : nextStatus)
-            }
-          />
-        </SelectField>
-
-        <SelectField>
-          <SelectLabelText>정렬</SelectLabelText>
-          <DropdownSelect
-            ariaLabel="정렬"
-            value={sortOrder}
-            options={SORT_OPTIONS}
-            onChange={onChangeSortOrder}
-          />
-        </SelectField>
-      </SelectFilters>
+      <DesktopSelectFilters>{selects}</DesktopSelectFilters>
+      <MobileFilterButton
+        type="button"
+        aria-label="필터"
+        aria-haspopup="dialog"
+        onClick={() => sheetRef.current?.showModal()}
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          aria-hidden="true"
+        >
+          <path d="M4 7h16M4 17h16M9 4v6m6 4v6" />
+        </svg>
+      </MobileFilterButton>
+      <MobileFilterSheet ref={sheetRef} aria-label="거래 목록 필터">
+        {selects}
+        <form method="dialog">
+          <button type="submit">닫기</button>
+        </form>
+      </MobileFilterSheet>
     </FilterPanel>
   );
 }

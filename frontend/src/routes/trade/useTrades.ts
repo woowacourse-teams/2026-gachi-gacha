@@ -23,12 +23,18 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-export function useTrades({ keyword, status, sortOrder }: TradeListFilter) {
+export function useTrades(
+  { keyword, status, sortOrder }: TradeListFilter,
+  restoredPage?: TradeSummaryPage,
+) {
   const { isMemberBlocked } = useMemberBlocks();
   const loadMoreControllerRef = useRef<AbortController | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [state, setState] =
-    useState<AsyncState<TradeSummaryPage>>(LOADING_STATE);
+  const [state, setState] = useState<AsyncState<TradeSummaryPage>>(
+    restoredPage
+      ? { status: 'success', data: restoredPage, errorMessage: null }
+      : LOADING_STATE,
+  );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const normalizedKeyword = keyword.trim();
@@ -46,6 +52,10 @@ export function useTrades({ keyword, status, sortOrder }: TradeListFilter) {
   }, []);
 
   useEffect(() => {
+    if (restoredPage && request.attempt === 0) {
+      return () => loadMoreControllerRef.current?.abort();
+    }
+
     const controller = new AbortController();
 
     loadMoreControllerRef.current?.abort();
@@ -103,7 +113,7 @@ export function useTrades({ keyword, status, sortOrder }: TradeListFilter) {
       controller.abort();
       loadMoreControllerRef.current?.abort();
     };
-  }, [request]);
+  }, [request, restoredPage]);
 
   const hasMore =
     state.status === 'success' &&

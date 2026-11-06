@@ -12,12 +12,16 @@ export interface ProductCardProps {
   item: TradeItem;
   source?: 'trade_list' | 'related_list' | 'mypage';
   eagerImage?: boolean;
+  homeLayout?: boolean;
+  onOpen?: (() => void) | undefined;
 }
 
 export default function ProductCard({
   item,
   source = 'trade_list',
   eagerImage = false,
+  homeLayout = false,
+  onOpen,
 }: ProductCardProps) {
   const place =
     item.tradePlace?.name || item.tradePlace?.address || '교환 장소 협의';
@@ -25,16 +29,27 @@ export default function ProductCard({
 
   return (
     <Card
+      data-home-card={homeLayout || undefined}
       to={`/trade/${item.tradeId}`}
-      onClick={() =>
+      state={onOpen ? { fromTradeList: true } : undefined}
+      onClick={(event) => {
+        if (
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.shiftKey &&
+          !event.altKey
+        ) {
+          onOpen?.();
+        }
+
         captureAnalyticsEvent('trade_selected', {
           trade_id: item.tradeId,
           status: item.status,
           source,
-        })
-      }
+        });
+      }}
     >
-      <Thumbnail>
+      <Thumbnail data-thumbnail>
         {item.thumbnailUrl ? (
           <Image
             src={item.thumbnailUrl}
@@ -57,7 +72,31 @@ export default function ProductCard({
           <Meta>{place}</Meta>
           <Meta>{formatRelativeTime(item.createdAt)}</Meta>
           <BadgeRow>
-            <TradeStatusBadge status={item.status} />
+            <span data-status>
+              <TradeStatusBadge status={item.status} />
+            </span>
+            {homeLayout &&
+              (item.likeCount !== undefined ||
+                item.commentCount !== undefined) && (
+                <Engagement>
+                  {item.likeCount !== undefined && (
+                    <span aria-label={`좋아요 ${item.likeCount}개`}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 20 4.5 12.5a4.5 4.5 0 0 1 6.4-6.4L12 7.2l1.1-1.1a4.5 4.5 0 0 1 6.4 6.4Z" />
+                      </svg>
+                      {item.likeCount}
+                    </span>
+                  )}
+                  {item.commentCount !== undefined && (
+                    <span aria-label={`댓글 ${item.commentCount}개`}>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M20 11.5a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z" />
+                      </svg>
+                      {item.commentCount}
+                    </span>
+                  )}
+                </Engagement>
+              )}
           </BadgeRow>
         </TradeInfo>
       </CardContent>
@@ -80,15 +119,49 @@ const Card = styled(Link)`
   box-shadow: 0 8px 22px rgb(36 33 34 / 10%);
   color: inherit;
   text-decoration: none;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
+  &[data-home-card] {
+    max-width: none;
+  }
 
-  &:hover {
-    border-color: rgb(217 59 84 / 30%);
-    box-shadow: 0 12px 28px rgb(36 33 34 / 14%);
-    transform: translateY(-2px);
+  @media (max-width: 767px) {
+    &[data-home-card] {
+      [data-thumbnail] {
+        position: relative;
+        margin: 0;
+        border-radius: 12px;
+      }
+
+      [data-thumbnail] > img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+  }
+
+  @media (min-width: 768px) {
+    &[data-home-card] {
+      position: relative;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+
+      [data-thumbnail] {
+        max-width: none;
+        margin-bottom: 8px;
+        border: 0;
+        border-radius: 12px;
+      }
+
+      [data-status] {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+      }
+    }
   }
 
   &:focus-visible {
@@ -125,6 +198,30 @@ const CardContent = styled.div`
   display: flex;
   min-width: 0;
   padding: 0 4px;
+
+  @media (max-width: 767px) {
+    [data-home-card] & {
+      padding: 0;
+      gap: 2px;
+    }
+
+    [data-home-card] & h3 {
+      font-size: 15px;
+      line-height: 20px;
+      font-weight: 700;
+    }
+
+    [data-home-card] & p {
+      font-size: 12px;
+      line-height: 16px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    [data-home-card] & {
+      padding: 0;
+    }
+  }
   flex: 1;
   flex-direction: column;
 `;
@@ -134,6 +231,18 @@ const PrimaryInfo = styled.div`
   min-width: 0;
   flex-direction: column;
   gap: 12px;
+
+  @media (max-width: 767px) {
+    [data-home-card] & {
+      gap: 2px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    [data-home-card] & {
+      gap: 4px;
+    }
+  }
 `;
 
 const TradeInfo = styled.div`
@@ -141,8 +250,36 @@ const TradeInfo = styled.div`
   min-width: 0;
   margin-top: auto;
   padding-top: 12px;
+
+  @media (min-width: 768px) {
+    [data-home-card] & {
+      margin-top: 0;
+      padding-top: 4px;
+    }
+  }
   flex-direction: column;
   gap: 12px;
+
+  @media (max-width: 767px) {
+    [data-home-card] & {
+      display: grid;
+      grid-template-columns: minmax(0, max-content) max-content minmax(0, 1fr);
+      gap: 0 4px;
+      margin-top: 0;
+      padding-top: 0;
+
+      & > p + p::before {
+        content: '·';
+        margin-right: 6px;
+      }
+    }
+  }
+
+  @media (min-width: 768px) {
+    [data-home-card] & {
+      gap: 4px;
+    }
+  }
 `;
 
 const Title = styled.h3`
@@ -155,6 +292,12 @@ const Title = styled.h3`
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+
+  @media (max-width: 767px) {
+    [data-home-card] & {
+      -webkit-line-clamp: 1;
+    }
+  }
 `;
 
 const Categories = styled.p`
@@ -167,6 +310,12 @@ const Categories = styled.p`
   line-height: 1.4;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+
+  @media (max-width: 767px) {
+    [data-home-card] & {
+      -webkit-line-clamp: 1;
+    }
+  }
 `;
 
 const Meta = styled.p`
@@ -182,4 +331,51 @@ const Meta = styled.p`
 const BadgeRow = styled.div`
   display: inline-flex;
   align-self: flex-start;
+
+  @media (max-width: 767px) {
+    [data-home-card] & {
+      grid-column: 1 / -1;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      margin-top: 6px;
+
+      [data-status] > span {
+        box-sizing: border-box;
+        min-height: 22px;
+        padding: 0 8px;
+        gap: 4px;
+        font-size: 11px;
+        line-height: 16px;
+      }
+
+      [data-status] > span > span {
+        width: 5px;
+        height: 5px;
+      }
+    }
+  }
+`;
+
+const Engagement = styled.span`
+  display: inline-flex;
+  gap: 8px;
+  color: #777173;
+  font-size: 12px;
+  line-height: 17px;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+  }
 `;
