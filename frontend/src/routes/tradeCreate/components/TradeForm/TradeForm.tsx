@@ -328,77 +328,140 @@ export default function TradeForm(props: TradeFormProps) {
             />
           </Field>
 
-          <Field>
-            <Label htmlFor="trade-category-search">
-              카테고리 <OptionalMark>(선택)</OptionalMark>
-            </Label>
-            <Input
-              id="trade-category-search"
-              type="search"
-              value={categoryKeyword}
-              autoComplete="off"
-              placeholder="카테고리를 검색해주세요"
-              onChange={(event) => setCategoryKeyword(event.target.value)}
-              onKeyDown={handleCategoryKeywordKeyDown}
-            />
+          <OfferedFields>
+            <Field>
+              <Label htmlFor="trade-category-search">
+                카테고리 <OptionalMark>(선택)</OptionalMark>
+              </Label>
+              <Input
+                id="trade-category-search"
+                type="search"
+                value={categoryKeyword}
+                autoComplete="off"
+                placeholder="카테고리를 검색해주세요"
+                onChange={(event) => setCategoryKeyword(event.target.value)}
+                onKeyDown={handleCategoryKeywordKeyDown}
+              />
 
-            {selectedCategories.length > 0 && (
-              <CategoryGroup>
-                <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
-                {selectedCategories.map((category) => (
-                  <input
-                    key={category.categoryId}
-                    type="hidden"
-                    name="categoryIds"
-                    value={category.categoryId}
-                  />
-                ))}
-                <CategoryList aria-label="선택한 카테고리">
+              {selectedCategories.length > 0 && (
+                <CategoryGroup>
+                  <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
                   {selectedCategories.map((category) => (
-                    <CategoryButton
+                    <input
                       key={category.categoryId}
-                      type="button"
-                      data-selected="true"
-                      aria-label={`${category.name} 카테고리 선택 해제`}
-                      onClick={() => removeCategory(category.categoryId)}
-                    >
-                      #{category.name} ×
-                    </CategoryButton>
+                      type="hidden"
+                      name="categoryIds"
+                      value={category.categoryId}
+                    />
                   ))}
-                </CategoryList>
-              </CategoryGroup>
-            )}
-
-            <CategoryGroup>
-              <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
-              {categoryState.status === 'idle' ? (
-                <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
-              ) : categoryState.status === 'loading' ? (
-                <CategoryMessage role="status">
-                  카테고리를 불러오는 중...
-                </CategoryMessage>
-              ) : categoryState.status === 'error' ? (
-                <CategoryMessage role="alert">
-                  {categoryState.errorMessage}
-                </CategoryMessage>
-              ) : availableCategories.length === 0 ? (
-                <CategoryMessage>검색결과가 없어요.</CategoryMessage>
-              ) : (
-                <CategoryList aria-label="카테고리 검색 결과">
-                  {availableCategories.map((category) => (
-                    <CategoryButton
-                      key={category.categoryId}
-                      type="button"
-                      data-selected="false"
-                      onClick={() => selectCategory(category)}
-                    >
-                      {category.name}
-                    </CategoryButton>
-                  ))}
-                </CategoryList>
+                  <CategoryList aria-label="선택한 카테고리">
+                    {selectedCategories.map((category) => (
+                      <CategoryButton
+                        key={category.categoryId}
+                        type="button"
+                        data-selected="true"
+                        aria-label={`${category.name} 카테고리 선택 해제`}
+                        onClick={() => removeCategory(category.categoryId)}
+                      >
+                        #{category.name} ×
+                      </CategoryButton>
+                    ))}
+                  </CategoryList>
+                </CategoryGroup>
               )}
-            </CategoryGroup>
-          </Field>
+
+              <CategoryGroup>
+                <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
+                {categoryState.status === 'idle' ? (
+                  <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
+                ) : categoryState.status === 'loading' ? (
+                  <CategoryMessage role="status">
+                    카테고리를 불러오는 중...
+                  </CategoryMessage>
+                ) : categoryState.status === 'error' ? (
+                  <CategoryMessage role="alert">
+                    {categoryState.errorMessage}
+                  </CategoryMessage>
+                ) : availableCategories.length === 0 ? (
+                  <CategoryMessage>검색결과가 없어요.</CategoryMessage>
+                ) : (
+                  <CategoryList aria-label="카테고리 검색 결과">
+                    {availableCategories.map((category) => (
+                      <CategoryButton
+                        key={category.categoryId}
+                        type="button"
+                        data-selected="false"
+                        onClick={() => selectCategory(category)}
+                      >
+                        {category.name}
+                      </CategoryButton>
+                    ))}
+                  </CategoryList>
+                )}
+              </CategoryGroup>
+            </Field>
+            <Field>
+              <Label htmlFor="purchase-store">
+                구매 매장 <OptionalMark>(선택)</OptionalMark>
+              </Label>
+              <PlaceSelectButton
+                id="purchase-store"
+                type="button"
+                onClick={() => setIsPurchaseStoreDialogOpen(true)}
+              >
+                <LocationIcon aria-hidden="true" />
+                <PlaceText>
+                  <PlacePrimary data-placeholder={!purchaseStore}>
+                    {purchaseStore?.name ||
+                      purchaseStore?.address ||
+                      '가챠를 구매한 매장을 선택해주세요'}
+                  </PlacePrimary>
+                  {purchaseStore?.name && (
+                    <PlaceSecondary>{purchaseStore.address}</PlaceSecondary>
+                  )}
+                </PlaceText>
+              </PlaceSelectButton>
+              {purchaseStore && (
+                <>
+                  <ClearPlaceButton
+                    type="button"
+                    aria-label="구매 매장 선택 해제"
+                    onClick={() => {
+                      captureAnalyticsEvent('place_selection_cleared', {
+                        place_context: 'trade_purchase_store',
+                        trade_form_mode: isEditMode ? 'edit' : 'create',
+                      });
+                      setPurchaseStore(null);
+                    }}
+                  >
+                    선택 해제
+                  </ClearPlaceButton>
+                  {purchaseStore.name && (
+                    <input
+                      type="hidden"
+                      name="purchaseStore.name"
+                      value={purchaseStore.name}
+                    />
+                  )}
+                  <input
+                    type="hidden"
+                    name="purchaseStore.address"
+                    value={purchaseStore.address}
+                  />
+                  <input
+                    type="hidden"
+                    name="purchaseStore.latitude"
+                    value={purchaseStore.latitude}
+                  />
+                  <input
+                    type="hidden"
+                    name="purchaseStore.longitude"
+                    value={purchaseStore.longitude}
+                  />
+                </>
+              )}
+            </Field>
+          </OfferedFields>
         </ItemSection>
 
         <ItemSection aria-labelledby="desired-item-heading">
@@ -424,68 +487,6 @@ export default function TradeForm(props: TradeFormProps) {
             />
           </Field>
         </ItemSection>
-
-        <Field>
-          <Label htmlFor="purchase-store">
-            구매 매장 <OptionalMark>(선택)</OptionalMark>
-          </Label>
-          <PlaceSelectButton
-            id="purchase-store"
-            type="button"
-            onClick={() => setIsPurchaseStoreDialogOpen(true)}
-          >
-            <LocationIcon aria-hidden="true" />
-            <PlaceText>
-              <PlacePrimary data-placeholder={!purchaseStore}>
-                {purchaseStore?.name ||
-                  purchaseStore?.address ||
-                  '가챠를 구매한 매장을 선택해주세요'}
-              </PlacePrimary>
-              {purchaseStore?.name && (
-                <PlaceSecondary>{purchaseStore.address}</PlaceSecondary>
-              )}
-            </PlaceText>
-          </PlaceSelectButton>
-          {purchaseStore && (
-            <>
-              <ClearPlaceButton
-                type="button"
-                aria-label="구매 매장 선택 해제"
-                onClick={() => {
-                  captureAnalyticsEvent('place_selection_cleared', {
-                    place_context: 'trade_purchase_store',
-                    trade_form_mode: isEditMode ? 'edit' : 'create',
-                  });
-                  setPurchaseStore(null);
-                }}
-              >
-                선택 해제
-              </ClearPlaceButton>
-              {purchaseStore.name && (
-                <input
-                  type="hidden"
-                  name="purchaseStore.name"
-                  value={purchaseStore.name}
-                />
-              )}
-              <input
-                type="hidden"
-                name="purchaseStore.address"
-                value={purchaseStore.address}
-              />
-              <input
-                type="hidden"
-                name="purchaseStore.latitude"
-                value={purchaseStore.latitude}
-              />
-              <input
-                type="hidden"
-                name="purchaseStore.longitude"
-                value={purchaseStore.longitude}
-              />
-            </>
-          )}
-        </Field>
 
         <Field>
           <Label htmlFor="trade-place">
@@ -557,6 +558,7 @@ export default function TradeForm(props: TradeFormProps) {
       <StickyActionBar
         isSubmitting={isSubmitting}
         formId={formId}
+        cancelTo={props.mode === 'edit' ? `/trade/${props.tradeId}` : '/trade'}
         submitLabel={isEditMode ? '수정하기' : '등록하기'}
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
       />
@@ -625,6 +627,18 @@ const ItemSection = styled.section`
   flex-direction: column;
   gap: 28px;
   border: 0;
+`;
+
+const OfferedFields = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
 `;
 
 const ItemSectionHeader = styled.div`

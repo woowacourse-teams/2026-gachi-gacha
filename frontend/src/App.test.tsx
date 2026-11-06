@@ -126,7 +126,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', { name: '거래 글쓰기' }),
+      await screen.findByRole('heading', { name: '글쓰기' }),
     ).toBeInTheDocument();
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
