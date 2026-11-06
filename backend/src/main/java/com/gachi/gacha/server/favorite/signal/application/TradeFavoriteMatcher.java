@@ -1,5 +1,7 @@
 package com.gachi.gacha.server.favorite.signal.application;
 
+import static com.gachi.gacha.server.favorite.signal.application.TradeSignalExtractor.SignalItem;
+
 import com.gachi.gacha.server.favorite.signal.application.dto.TradeFavoriteCandidate;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteSignalJpaRepository;
 import com.gachi.gacha.server.favorite.signal.domain.SignalType;
@@ -27,6 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TradeFavoriteMatcher {
 
+    private static final double CATEGORY_WEIGHT = 0.6;
+    private static final double KEYWORD_WEIGHT = 0.4;
+    private static final double INFERRED_GACHA_WEIGHT = 0.4;
+    private static final double AREA_WEIGHT = 0.1;
+
     private final FavoriteSignalJpaRepository favoriteSignalJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
     private final TradeInferenceJpaRepository tradeInferenceJpaRepository;
@@ -43,44 +50,73 @@ public class TradeFavoriteMatcher {
         Trade trade = tradeJpaRepository.getByIdWithCategories(tradeId);
         TradeInference inference = tradeInferenceJpaRepository.findById(tradeId).orElse(null);
 
-        Set<Long> userCategoryIds = trade.getTradeCategories().stream()
-                .map(tradeCategory -> tradeCategory.getCategory().getId())
-                .collect(Collectors.toSet());
-        Set<Long> inferredCategoryIds = inference == null ? Set.of() : inference.getInferredCategoryIds();
-        Double inferenceScore = inference == null ? null : inference.getScore();
-        List<String> keywords = inference == null || inference.getInferredKeywords().isEmpty()
-                ? TradeKeywordCleaner.extractKeywords(trade.getTitle()).stream().sorted().toList()
-                : inference.getInferredKeywords().stream().sorted().toList();
-
-        List<TradeSignalExtractor.SignalItem> features = new ArrayList<>(TradeSignalExtractor.extract(
-                userCategoryIds,
-                inferredCategoryIds,
-                inferenceScore,
-                inferenceAcceptScore,
-                keywords,
-                0.6,
-                0.4
-        ));
-        if (inference != null && inference.getInferredGacha() != null
-                && inferenceScore != null && inferenceScore >= inferenceAcceptScore) {
-            features.add(new TradeSignalExtractor.SignalItem(
-                    SignalType.GACHA, String.valueOf(inference.getInferredGacha().getId()), 0.4));
-        }
-        String area = areaOf(trade.getTradePlace());
-        if (area != null) {
-            features.add(new TradeSignalExtractor.SignalItem(SignalType.AREA, area, 0.1));
-        }
+        List<SignalItem> features = buildFeatures(trade, inference);
         if (features.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, Double> scores = new LinkedHashMap<>();
-        Map<SignalType, Map<String, Double>> featureWeights = features.stream()
+        Map<SignalType, Map<String, Double>> featureWeights = groupWeightsByType(features);
+        Map<Long, Double> scores = scoreMembers(featureWeights, trade);
+        return toSortedCandidates(scores);
+    }
+
+    private List<SignalItem> buildFeatures(Trade trade, TradeInference inference) {
+        Double inferenceScore = (inference == null) ? null : inference.getScore();
+        List<SignalItem> features = new ArrayList<>(TradeSignalExtractor.extract(
+                categoryIdsOf(trade),
+                (inference == null) ? Set.of() : inference.getInferredCategoryIds(),
+                inferenceScore,
+                inferenceAcceptScore,
+                keywordsOf(trade, inference),
+                CATEGORY_WEIGHT,
+                KEYWORD_WEIGHT
+        ));
+
+        if (isInferredGachaAccepted(inference, inferenceScore)) {
+            features.add(new SignalItem(
+                    SignalType.GACHA,
+                    String.valueOf(inference.getInferredGacha().getId()),
+                    INFERRED_GACHA_WEIGHT));
+        }
+
+        String area = areaOf(trade.getTradePlace());
+        if (area != null) {
+            features.add(new SignalItem(SignalType.AREA, area, AREA_WEIGHT));
+        }
+        return features;
+    }
+
+    private Set<Long> categoryIdsOf(Trade trade) {
+        return trade.getTradeCategories().stream()
+                .map(tradeCategory -> tradeCategory.getCategory().getId())
+                .collect(Collectors.toSet());
+    }
+
+    private List<String> keywordsOf(Trade trade, TradeInference inference) {
+        return (inference == null) || inference.getInferredKeywords().isEmpty()
+                ? TradeKeywordCleaner.extractKeywords(trade.getTitle()).stream().sorted().toList()
+                : inference.getInferredKeywords().stream().sorted().toList();
+    }
+
+    private boolean isInferredGachaAccepted(TradeInference inference, Double inferenceScore) {
+        return inference != null
+                && inference.getInferredGacha() != null
+                && inferenceScore != null
+                && inferenceScore >= inferenceAcceptScore;
+    }
+
+    /** 같은 타입·값의 feature는 가중치를 합쳐서 {타입 → {값 → 가중치}}로 묶는다. */
+    private Map<SignalType, Map<String, Double>> groupWeightsByType(List<SignalItem> features) {
+        return features.stream()
                 .collect(Collectors.groupingBy(
-                        TradeSignalExtractor.SignalItem::type,
+                        SignalItem::type,
                         () -> new EnumMap<>(SignalType.class),
-                        Collectors.toMap(TradeSignalExtractor.SignalItem::value,
-                                TradeSignalExtractor.SignalItem::weight, Double::sum)));
+                        Collectors.toMap(SignalItem::value,
+                                SignalItem::weight, Double::sum)));
+    }
+
+    private Map<Long, Double> scoreMembers(Map<SignalType, Map<String, Double>> featureWeights, Trade trade) {
+        Map<Long, Double> scores = new LinkedHashMap<>();
         LocalDateTime now = LocalDateTime.now();
         featureWeights.forEach((type, weightsByValue) ->
                 favoriteSignalJpaRepository.findMemberScores(
@@ -93,7 +129,10 @@ public class TradeFavoriteMatcher {
                                 scores.merge(memberId, contribution, Double::sum);
                             }
                         }));
+        return scores;
+    }
 
+    private List<TradeFavoriteCandidate> toSortedCandidates(Map<Long, Double> scores) {
         return scores.entrySet().stream()
                 .filter(entry -> entry.getValue() > 0)
                 .map(entry -> new TradeFavoriteCandidate(entry.getKey(), entry.getValue()))

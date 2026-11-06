@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.favorite.signal.application;
 
+import com.gachi.gacha.server.favorite.signal.application.TradeSignalExtractor.SignalItem;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteSignal;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteSignalJpaRepository;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteType;
@@ -20,6 +21,9 @@ import com.gachi.gacha.server.store.domain.Store;
 import com.gachi.gacha.server.store.domain.StoreJpaRepository;
 import com.gachi.gacha.server.usecase.domain.StoreGachaJpaRepository;
 import com.gachi.gacha.server.trade.util.TradeKeywordCleaner;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -40,6 +44,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FavoriteSignalService {
 
+    private static final double GACHA_SELF_WEIGHT = 0.4;
+    private static final double GACHA_CATEGORY_WEIGHT = 0.3;
+    private static final double GACHA_KEYWORD_WEIGHT = 0.3;
+
+    private static final double STORE_SELF_WEIGHT = 0.1;
+    private static final double STORE_AREA_WEIGHT = 0.1;
+    private static final double STORE_CATEGORY_WEIGHT = 0.45;
+    private static final double STORE_KEYWORD_WEIGHT = 0.45;
+    
     private final FavoriteSignalJpaRepository favoriteSignalJpaRepository;
     private final TradeFavoriteJpaRepository tradeFavoriteJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
@@ -86,17 +99,14 @@ public class FavoriteSignalService {
         if (gacha == null) {
             return;
         }
-        Set<Long> categories = gacha.getGachaCategories().stream()
-                .map(gc -> gc.getCategory().getId()).collect(Collectors.toSet());
-        List<String> keywords = TradeKeywordCleaner.extractKeywords(gacha.getName()).stream().sorted().toList();
-        List<TradeSignalExtractor.SignalItem> items = TradeSignalExtractor.extract(
-                categories, Set.of(), null, inferenceAcceptScore, keywords, 0.3, 0.3);
-        List<FavoriteSignal> signals = new java.util.ArrayList<>();
-        signals.add(FavoriteSignal.of(memberId, FavoriteType.GACHA, gachaId,
-                SignalType.GACHA, String.valueOf(gachaId), 0.4, favorite.getCreatedAt()));
-        items.forEach(item -> signals.add(FavoriteSignal.of(memberId, FavoriteType.GACHA, gachaId,
-                item.type(), item.value(), item.weight(), favorite.getCreatedAt())));
-        favoriteSignalJpaRepository.saveAll(signals);
+        List<String> keywords = TradeKeywordCleaner.extractKeywords(gacha.getName()).stream()
+                .sorted()
+                .toList();
+
+        List<SignalItem> items = new ArrayList<>();
+        items.add(new SignalItem(SignalType.GACHA, String.valueOf(gachaId), GACHA_SELF_WEIGHT));
+        items.addAll(TradeSignalExtractor.extract(categoryIdsOf(gacha), Set.of(), null, inferenceAcceptScore, keywords, GACHA_CATEGORY_WEIGHT, GACHA_KEYWORD_WEIGHT));
+        saveSignals(memberId, FavoriteType.GACHA, gachaId, items, favorite.getCreatedAt());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -111,24 +121,18 @@ public class FavoriteSignalService {
             return;
         }
         List<Gacha> gachas = storeGachaJpaRepository.findGachasWithCategoriesByStoreId(storeId);
-        Set<Long> categories = gachas.stream().flatMap(gacha -> gacha.getGachaCategories().stream())
-                .map(gc -> gc.getCategory().getId()).collect(Collectors.toSet());
+        Set<Long> categories = gachas.stream()
+                .flatMap(gacha -> categoryIdsOf(gacha).stream())
+                .collect(Collectors.toSet());
         Set<String> keywords = gachas.stream().map(Gacha::getName)
                 .flatMap(name -> TradeKeywordCleaner.extractKeywords(name).stream())
-                .collect(Collectors.toCollection(java.util.LinkedHashSet::new));
-        List<TradeSignalExtractor.SignalItem> items = TradeSignalExtractor.extract(
-                categories, Set.of(), null, inferenceAcceptScore, keywords, 0.45, 0.45);
-        List<FavoriteSignal> signals = new java.util.ArrayList<>();
-        signals.add(FavoriteSignal.of(memberId, FavoriteType.STORE, storeId,
-                SignalType.STORE, String.valueOf(storeId), 0.1, favorite.getCreatedAt()));
-        String area = store.getAddress().split("\\s+").length >= 2
-                ? String.join(" ", java.util.Arrays.copyOf(store.getAddress().split("\\s+"), 2))
-                : store.getAddress();
-        signals.add(FavoriteSignal.of(memberId, FavoriteType.STORE, storeId,
-                SignalType.AREA, area, 0.1, favorite.getCreatedAt()));
-        items.forEach(item -> signals.add(FavoriteSignal.of(memberId, FavoriteType.STORE, storeId,
-                item.type(), item.value(), item.weight(), favorite.getCreatedAt())));
-        favoriteSignalJpaRepository.saveAll(signals);
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        List<SignalItem> items = new ArrayList<>();
+        items.add(new SignalItem(SignalType.STORE, String.valueOf(storeId), STORE_SELF_WEIGHT));
+        items.add(new SignalItem(SignalType.AREA, extractArea(store.getAddress()), STORE_AREA_WEIGHT));
+        items.addAll(TradeSignalExtractor.extract(categories, Set.of(), null, inferenceAcceptScore,
+                keywords, STORE_CATEGORY_WEIGHT, STORE_KEYWORD_WEIGHT));
+        saveSignals(memberId, FavoriteType.STORE, storeId, items, favorite.getCreatedAt());
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -161,32 +165,71 @@ public class FavoriteSignalService {
         if (trade == null || favorites.isEmpty()) {
             return;
         }
-        Set<Long> userCategoryIds = trade.getTradeCategories().stream()
-                .map(tradeCategory -> tradeCategory.getCategory().getId())
-                .collect(Collectors.toSet());
         TradeInference inference = tradeInferenceJpaRepository.findById(tradeId).orElse(null);
-        List<String> keywords = (inference == null) ? List.of() : inference.getInferredKeywords().stream().sorted().toList();
-        List<TradeSignalExtractor.SignalItem> items = TradeSignalExtractor.extract(
-                userCategoryIds,
-                inference != null ? inference.getInferredCategoryIds() : Set.of(),
-                inference != null ? inference.getScore() : null,
+        List<String> keywords = (inference == null) ? List.of() : inference.getInferredKeywords().stream()
+                .sorted().toList();
+        List<SignalItem> items = TradeSignalExtractor.extract(
+                categoryIdsOf(trade),
+                (inference != null) ? inference.getInferredCategoryIds() : Set.of(),
+                (inference != null) ? inference.getScore() : null,
                 inferenceAcceptScore,
                 keywords,
                 categoryWeight,
                 keywordWeight
         );
         List<FavoriteSignal> signals = favorites.stream()
-                .flatMap(favorite -> items.stream()
-                        .map(item -> FavoriteSignal.of(
-                                favorite.getMember().getId(),
-                                FavoriteType.TRADE,
-                                tradeId,
-                                item.type(),
-                                item.value(),
-                                item.weight(),
-                                favorite.getCreatedAt()   // 찜한 시각 그대로. 재생성해도 "지금"으로 바꾸지 않는다.
-                        )))
-                .toList();
+                .flatMap(favorite -> toSignals(favorite.getMember().getId(), FavoriteType.TRADE,
+                        tradeId, items, favorite.getCreatedAt()).stream()).toList();
         favoriteSignalJpaRepository.saveAll(signals);
+    }
+
+    private Set<Long> categoryIdsOf(final Trade trade) {
+        return trade.getTradeCategories().stream()
+                .map(tradeCategory -> tradeCategory.getCategory().getId())
+                .collect(Collectors.toSet());
+    }
+
+    private Set<Long> categoryIdsOf(final Gacha gacha) {
+        return gacha.getGachaCategories().stream()
+                .map(gc -> gc.getCategory().getId())
+                .collect(Collectors.toSet());
+    }
+
+    private void saveSignals(
+            final Long memberId,
+            final FavoriteType favoriteType,
+            final Long targetId,
+            final List<SignalItem> items,
+            final LocalDateTime favoriteAt
+    ) {
+        favoriteSignalJpaRepository.saveAll(toSignals(memberId, favoriteType, targetId, items, favoriteAt));
+    }
+
+    private List<FavoriteSignal> toSignals(
+            final Long memberId,
+            final FavoriteType favoriteType,
+            final Long targetId,
+            final List<SignalItem> items,
+            final LocalDateTime favoriteAt
+    ) {
+        return items.stream()
+                .map(item -> toSignal(memberId, favoriteType, targetId, item, favoriteAt))
+                .toList();
+    }
+
+    private FavoriteSignal toSignal(
+            final Long memberId,
+            final FavoriteType favoriteType,
+            final Long targetId,
+            final SignalItem item,
+            final LocalDateTime favoriteAt
+    ) {
+        return FavoriteSignal.of(memberId, favoriteType, targetId,
+                item.type(), item.value(), item.weight(), favoriteAt);
+    }
+
+    private String extractArea(final String address) {
+        String[] tokens = address.split("\\s+");
+        return tokens.length >= 2 ? tokens[0] + " " + tokens[1] : address;
     }
 }
