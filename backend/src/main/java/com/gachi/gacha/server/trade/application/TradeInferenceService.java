@@ -75,7 +75,8 @@ public class TradeInferenceService {
         tradeInferenceJpaRepository.findById(tradeId).ifPresentOrElse(
                 existing -> existing.update(resolvedGacha, resolvedScore, resolvedCategoryIds, keywords, inferredAt),
                 () -> tradeInferenceJpaRepository.save(
-                        TradeInference.of(tradeId, resolvedGacha, resolvedScore, resolvedCategoryIds, keywords, inferredAt))
+                        TradeInference.of(tradeId, resolvedGacha, resolvedScore, resolvedCategoryIds, keywords, inferredAt)
+                )
         );
         publisher.publishEvent(new TradeInferenceCompletedEvent(tradeId));
     }
