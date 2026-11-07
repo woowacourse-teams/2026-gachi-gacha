@@ -1,6 +1,5 @@
-package com.gachi.gacha.server.favorite.signal.application;
+package com.gachi.gacha.server.favorite.signal.domain;
 
-import com.gachi.gacha.server.favorite.signal.domain.SignalType;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -12,12 +11,9 @@ import java.util.Map;
  * 가중치: 카테고리 신호 전체가 categoryWeight(0.6), 키워드 신호 전체가 keywordWeight(0.4)를 균등 분배한다.
  * 한쪽 신호가 없어도 다른 쪽으로 몰아주지 않는다. 신호가 부족한 글은 그만큼 영향이 작아야 하기 때문이다.
  */
-public final class TradeSignalExtractor {
+public final class SignalExtractor {
 
-    private TradeSignalExtractor() {
-    }
-
-    public record SignalItem(SignalType type, String value, double weight) {
+    private SignalExtractor() {
     }
 
     public static List<SignalItem> extract(
