@@ -13,14 +13,14 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TradeFavoriteJpaRepository extends JpaRepository<TradeFavorite, Long> {
 
-    boolean existsByMemberIdAndTradeId(Long memberId, Long tradeId);
+    boolean existsByMemberIdAndTradeId(final Long memberId, final Long tradeId);
 
     @Modifying
     @Query("delete from TradeFavorite f where f.member.id = :memberId and f.trade.id = :tradeId")
-    void deleteByMemberIdAndTradeId(@Param("memberId") Long memberId, @Param("tradeId") Long tradeId);
+    void deleteByMemberIdAndTradeId(@Param("memberId") final Long memberId, @Param("tradeId") final Long tradeId);
 
     @Query("select f.trade.id from TradeFavorite f where f.member.id = :memberId and f.trade.id in :tradeIds")
-    List<Long> findFavoriteTradeIds(@Param("memberId") Long memberId, @Param("tradeIds") List<Long> tradeIds);
+    List<Long> findFavoriteTradeIds(@Param("memberId") final Long memberId, @Param("tradeIds") final List<Long> tradeIds);
 
     @Query("""
             select f from TradeFavorite f
@@ -29,12 +29,12 @@ public interface TradeFavoriteJpaRepository extends JpaRepository<TradeFavorite,
             order by f.id desc
             """)
     Slice<TradeFavorite> findSliceByMemberId(
-            @Param("memberId") Long memberId,
-            @Param("cursor") Long cursor,
-            Pageable pageable
+            @Param("memberId") final Long memberId,
+            @Param("cursor") final Long cursor,
+            final Pageable pageable
     );
 
-    Optional<TradeFavorite> findByMemberIdAndTradeId(Long memberId, Long tradeId);
+    Optional<TradeFavorite> findByMemberIdAndTradeId(final Long memberId, final Long tradeId);
 
-    List<TradeFavorite> findByTradeId(Long tradeId);
+    List<TradeFavorite> findByTradeId(final Long tradeId);
 }

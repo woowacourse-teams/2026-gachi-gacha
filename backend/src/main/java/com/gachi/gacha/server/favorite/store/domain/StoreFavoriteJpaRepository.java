@@ -10,11 +10,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface StoreFavoriteJpaRepository extends JpaRepository<StoreFavorite, Long> {
 
-    boolean existsByMemberIdAndStoreId(Long memberId, Long storeId);
+    boolean existsByMemberIdAndStoreId(final Long memberId, final Long storeId);
 
-    Optional<StoreFavorite> findByMemberIdAndStoreId(Long memberId, Long storeId);
+    Optional<StoreFavorite> findByMemberIdAndStoreId(final Long memberId, final Long storeId);
 
     @Modifying
     @Query("delete from StoreFavorite f where f.member.id = :memberId and f.store.id = :storeId")
-    void deleteByMemberIdAndStoreId(@Param("memberId") Long memberId, @Param("storeId") Long storeId);
+    void deleteByMemberIdAndStoreId(@Param("memberId") final Long memberId, @Param("storeId") final Long storeId);
 }

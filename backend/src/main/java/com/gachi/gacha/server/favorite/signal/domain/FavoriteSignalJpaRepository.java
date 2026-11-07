@@ -18,9 +18,9 @@ public interface FavoriteSignalJpaRepository extends JpaRepository<FavoriteSigna
             where s.memberId = :memberId and s.favoriteType = :type and s.targetId = :targetId
             """)
     void deleteByMemberAndTarget(
-            @Param("memberId") Long memberId,
-            @Param("type") FavoriteType type,
-            @Param("targetId") Long targetId
+            @Param("memberId") final Long memberId,
+            @Param("type") final FavoriteType type,
+            @Param("targetId") final Long targetId
     );
 
     @Modifying
@@ -29,9 +29,9 @@ public interface FavoriteSignalJpaRepository extends JpaRepository<FavoriteSigna
             where s.favoriteType = :type and s.targetId = :targetId and s.memberId in :memberIds
             """)
     void deleteByTarget(
-            @Param("type") FavoriteType type,
-            @Param("targetId") Long targetId,
-            @Param("memberIds") Collection<Long> memberIds
+            @Param("type") final FavoriteType type,
+            @Param("targetId") final Long targetId,
+            @Param("memberIds") final Collection<Long> memberIds
     );
 
     /** 같은 신호를 가진 관심 등록의 가중치를 시간 감쇠와 함께 회원별로 합산한다. */
@@ -46,18 +46,15 @@ public interface FavoriteSignalJpaRepository extends JpaRepository<FavoriteSigna
             group by s.member_id, s.signal_value
             """, nativeQuery = true)
     List<MemberSignalScore> findMemberScores(
-            @Param("signalType") String signalType,
-            @Param("signalValues") Collection<String> signalValues,
-            @Param("now") LocalDateTime now,
-            @Param("halfLifeDays") double halfLifeDays
+            @Param("signalType") final String signalType,
+            @Param("signalValues") final Collection<String> signalValues,
+            @Param("now") final LocalDateTime now,
+            @Param("halfLifeDays") final double halfLifeDays
     );
 
     interface MemberSignalScore {
-
         Long getMemberId();
-
         String getSignalValue();
-
         Double getScore();
     }
 }

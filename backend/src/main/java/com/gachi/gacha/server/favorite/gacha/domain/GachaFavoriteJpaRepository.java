@@ -10,11 +10,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface GachaFavoriteJpaRepository extends JpaRepository<GachaFavorite, Long> {
 
-    boolean existsByMemberIdAndGachaId(Long memberId, Long gachaId);
+    boolean existsByMemberIdAndGachaId(final Long memberId, final Long gachaId);
 
-    Optional<GachaFavorite> findByMemberIdAndGachaId(Long memberId, Long gachaId);
+    Optional<GachaFavorite> findByMemberIdAndGachaId(final Long memberId, final Long gachaId);
 
     @Modifying
     @Query("delete from GachaFavorite f where f.member.id = :memberId and f.gacha.id = :gachaId")
-    void deleteByMemberIdAndGachaId(@Param("memberId") Long memberId, @Param("gachaId") Long gachaId);
+    void deleteByMemberIdAndGachaId(@Param("memberId") final Long memberId, @Param("gachaId") final Long gachaId);
 }
