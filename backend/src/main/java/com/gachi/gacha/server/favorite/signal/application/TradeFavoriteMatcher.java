@@ -1,9 +1,9 @@
 package com.gachi.gacha.server.favorite.signal.application;
 
-import static com.gachi.gacha.server.favorite.signal.application.TradeSignalExtractor.SignalItem;
-
 import com.gachi.gacha.server.favorite.signal.application.dto.TradeFavoriteCandidate;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteSignalJpaRepository;
+import com.gachi.gacha.server.favorite.signal.domain.SignalExtractor;
+import com.gachi.gacha.server.favorite.signal.domain.SignalItem;
 import com.gachi.gacha.server.favorite.signal.domain.SignalType;
 import com.gachi.gacha.server.trade.domain.Place;
 import com.gachi.gacha.server.trade.domain.Trade;
@@ -62,7 +62,7 @@ public class TradeFavoriteMatcher {
 
     private List<SignalItem> buildFeatures(Trade trade, TradeInference inference) {
         Double inferenceScore = (inference == null) ? null : inference.getScore();
-        List<SignalItem> features = new ArrayList<>(TradeSignalExtractor.extract(
+        List<SignalItem> features = new ArrayList<>(SignalExtractor.extract(
                 categoryIdsOf(trade),
                 (inference == null) ? Set.of() : inference.getInferredCategoryIds(),
                 inferenceScore,
