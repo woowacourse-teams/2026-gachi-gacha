@@ -65,8 +65,7 @@ public class NotificationService {
     }
 
     public boolean hasTradeRecommendationNotification(final Long receiverId, final Long tradeId) {
-        return notificationJpaRepository.existsByReceiverIdAndTradeIdAndType(
-                receiverId, tradeId, NotificationType.TRADE_RECOMMENDATION);
+        return notificationJpaRepository.existsByReceiverIdAndTradeIdAndType(receiverId, tradeId, NotificationType.TRADE_RECOMMENDATION);
     }
 
     public long getUnreadCount(final Long memberId) {

@@ -26,8 +26,8 @@ public interface TradeInferenceJpaRepository extends JpaRepository<TradeInferenc
             order by t.id desc
             """)
     List<Long> findTradeIdsNeedingInference(
-            @Param("cursor") Long cursor,
-            @Param("settledBefore") LocalDateTime settledBefore,
+            @Param("cursor") final Long cursor,
+            @Param("settledBefore") final LocalDateTime settledBefore,
             Pageable pageable
     );
 }
