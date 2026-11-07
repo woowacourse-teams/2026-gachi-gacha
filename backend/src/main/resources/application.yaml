@@ -152,6 +152,8 @@ favorite:
   signal:
     half-life-days: 30          # 반감기
     inference-accept-score: 0.0 # 추론 카테고리를 신호로 받아들이는 최소 점수
+  push:
+    daily-limit: 3
 notification:
   trade-recommendation:
     max-age-days: ${TRADE_RECOMMENDATION_MAX_AGE_DAYS:7}
