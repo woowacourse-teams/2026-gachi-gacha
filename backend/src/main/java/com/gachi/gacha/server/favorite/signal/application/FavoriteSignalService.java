@@ -1,9 +1,10 @@
 package com.gachi.gacha.server.favorite.signal.application;
 
-import com.gachi.gacha.server.favorite.signal.application.TradeSignalExtractor.SignalItem;
+import com.gachi.gacha.server.favorite.signal.domain.SignalExtractor;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteSignal;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteSignalJpaRepository;
 import com.gachi.gacha.server.favorite.signal.domain.FavoriteType;
+import com.gachi.gacha.server.favorite.signal.domain.SignalItem;
 import com.gachi.gacha.server.favorite.signal.domain.SignalType;
 import com.gachi.gacha.server.favorite.gacha.domain.GachaFavorite;
 import com.gachi.gacha.server.favorite.gacha.domain.GachaFavoriteJpaRepository;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -40,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 이벤트 리스너(AFTER_COMMIT)에서 호출되므로 REQUIRES_NEW 가 필요하다.
  * 기존 트랜잭션은 이미 끝났기 때문에 REQUIRED 로 두면 변경이 커밋되지 않는다.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FavoriteSignalService {
@@ -105,7 +108,7 @@ public class FavoriteSignalService {
 
         List<SignalItem> items = new ArrayList<>();
         items.add(new SignalItem(SignalType.GACHA, String.valueOf(gachaId), GACHA_SELF_WEIGHT));
-        items.addAll(TradeSignalExtractor.extract(categoryIdsOf(gacha), Set.of(), null, inferenceAcceptScore, keywords, GACHA_CATEGORY_WEIGHT, GACHA_KEYWORD_WEIGHT));
+        items.addAll(SignalExtractor.extract(categoryIdsOf(gacha), Set.of(), null, inferenceAcceptScore, keywords, GACHA_CATEGORY_WEIGHT, GACHA_KEYWORD_WEIGHT));
         saveSignals(memberId, FavoriteType.GACHA, gachaId, items, favorite.getCreatedAt());
     }
 
@@ -120,6 +123,7 @@ public class FavoriteSignalService {
         if (store == null) {
             return;
         }
+
         List<Gacha> gachas = storeGachaJpaRepository.findGachasWithCategoriesByStoreId(storeId);
         Set<Long> categories = gachas.stream()
                 .flatMap(gacha -> categoryIdsOf(gacha).stream())
@@ -127,11 +131,13 @@ public class FavoriteSignalService {
         Set<String> keywords = gachas.stream().map(Gacha::getName)
                 .flatMap(name -> TradeKeywordCleaner.extractKeywords(name).stream())
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+
         List<SignalItem> items = new ArrayList<>();
         items.add(new SignalItem(SignalType.STORE, String.valueOf(storeId), STORE_SELF_WEIGHT));
         items.add(new SignalItem(SignalType.AREA, extractArea(store.getAddress()), STORE_AREA_WEIGHT));
-        items.addAll(TradeSignalExtractor.extract(categories, Set.of(), null, inferenceAcceptScore,
+        items.addAll(SignalExtractor.extract(categories, Set.of(), null, inferenceAcceptScore,
                 keywords, STORE_CATEGORY_WEIGHT, STORE_KEYWORD_WEIGHT));
+
         saveSignals(memberId, FavoriteType.STORE, storeId, items, favorite.getCreatedAt());
     }
 
@@ -142,16 +148,16 @@ public class FavoriteSignalService {
 
     /** 추론 완료 직후: 그 글을 찜한 모든 사용자의 신호를 다시 만든다. 처리한 사용자 수를 반환한다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int rebuildForTrade(final Long tradeId) {
+    public void rebuildForTrade(final Long tradeId) {
         List<TradeFavorite> favorites = tradeFavoriteJpaRepository.findByTradeId(tradeId);
         if (favorites.isEmpty()) {
-            return 0;
+            return;
         }
         List<Long> memberIds = favorites.stream()
                 .map(favorite -> favorite.getMember().getId())
                 .toList();
         replaceTradeSignals(tradeId, memberIds, favorites);
-        return favorites.size();
+        log.info("{} favorite(s) rebuild for {}", favorites.size(), tradeId);
     }
 
     private void replaceTradeSignals(
@@ -168,7 +174,7 @@ public class FavoriteSignalService {
         TradeInference inference = tradeInferenceJpaRepository.findById(tradeId).orElse(null);
         List<String> keywords = (inference == null) ? List.of() : inference.getInferredKeywords().stream()
                 .sorted().toList();
-        List<SignalItem> items = TradeSignalExtractor.extract(
+        List<SignalItem> items = SignalExtractor.extract(
                 categoryIdsOf(trade),
                 (inference != null) ? inference.getInferredCategoryIds() : Set.of(),
                 (inference != null) ? inference.getScore() : null,
@@ -191,7 +197,7 @@ public class FavoriteSignalService {
 
     private Set<Long> categoryIdsOf(final Gacha gacha) {
         return gacha.getGachaCategories().stream()
-                .map(gc -> gc.getCategory().getId())
+                .map(gachaCategory -> gachaCategory.getCategory().getId())
                 .collect(Collectors.toSet());
     }
 
