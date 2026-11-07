@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.favorite.signal.application;
+package com.gachi.gacha.server.favorite.signal.domain;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
