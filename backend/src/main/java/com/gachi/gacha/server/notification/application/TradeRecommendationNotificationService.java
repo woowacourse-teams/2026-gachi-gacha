@@ -4,6 +4,7 @@ import com.gachi.gacha.server.favorite.signal.application.TradeFavoriteMatcher;
 import com.gachi.gacha.server.favorite.signal.application.dto.TradeFavoriteCandidate;
 import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.notification.application.dto.NotificationInfo;
+import com.gachi.gacha.server.notification.domain.NotificationType;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
@@ -27,6 +28,8 @@ public class TradeRecommendationNotificationService {
     private final MemberBlockService memberBlockService;
     private final NotificationService notificationService;
     private final PushService pushService;
+    private final DailyPushLimiter pushLimiter;
+
 
     @Value("${notification.trade-recommendation.max-age-days:7}")
     private int maxAgeDays;
@@ -91,16 +94,10 @@ public class TradeRecommendationNotificationService {
             final Trade trade,
             final TradeFavoriteCandidate candidate
     ) {
+        Optional<NotificationInfo> created;
         try {
-            Optional<NotificationInfo> created = notificationService.createTradeRecommendationNotification(
+            created = notificationService.createTradeRecommendationNotification(
                     receiverId, trade.getId(), trade.getTitle());
-            if (created.isEmpty()) {
-                return false;
-            }
-            pushService.sendTo(receiverId, PushMessage.from(created.get()));
-            log.debug("교환글 추천 알림 발송 완료 tradeId={} receiverId={} score={}",
-                    trade.getId(), receiverId, candidate.interestScore());
-            return true;
         } catch (DataIntegrityViolationException e) {
             // 동시 처리된 이벤트의 중복 알림은 부분 유니크 인덱스가 차단한다.
             if (notificationService.hasTradeRecommendationNotification(receiverId, trade.getId())) {
@@ -108,6 +105,25 @@ public class TradeRecommendationNotificationService {
                 return false;
             }
             throw e;
+        }
+        if (created.isEmpty()) {
+            return false;
+        }
+        pushIfAllowed(receiverId, trade.getId(), candidate, created.get());
+        return true;
+    }
+
+    private void pushIfAllowed(final Long receiverId, final Long tradeId, final TradeFavoriteCandidate candidate,
+                           final NotificationInfo created) {
+        if (!pushLimiter.canPush(receiverId, NotificationType.TRADE_RECOMMENDATION)) {
+            log.info("일일 푸시 한도 초과로 푸시 생략. tradeId={} receiverId = {}", tradeId, receiverId);
+            return;
+        }
+        try {
+            pushService.sendTo(receiverId, PushMessage.from(created));
+            log.debug("푸시 알림 발송 완료 tradeId={} receiverId={} score={}", tradeId, receiverId, candidate.interestScore());
+        } catch (Exception e) {
+            log.warn("푸시 발송 실패. 알림함에는 저장됨 tradeId={} receiverId={}", tradeId, receiverId, e);
         }
     }
 }
