@@ -40,7 +40,7 @@ public class TradeIndexService {
     @Value("${elasticsearch.index.trade}")
     private String INDEX;
 
-    public void indexAll(List<Long> tradeIds) throws IOException {
+    public void indexAll(final List<Long> tradeIds) throws IOException {
         if (tradeIds.isEmpty()) {
             return;
         }
