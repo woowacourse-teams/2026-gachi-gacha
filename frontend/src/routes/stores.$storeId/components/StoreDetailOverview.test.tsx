@@ -4,6 +4,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
 
 import { StoreDetailOverview } from './StoreDetailOverview';
+import { StoreUpdatedAt } from './StoreVisitInfo';
 
 jest.mock('./StoreGachaCatalog', () => ({
   StoreGachaCatalog: () => null,
@@ -122,4 +123,14 @@ describe('StoreDetailOverview', () => {
       screen.queryByRole('button', { name: /매장 사진 크게 보기/ }),
     ).not.toBeInTheDocument();
   });
+});
+
+describe('매장 정보 갱신일', () => {
+  it.each(['2026-10-01T00:00:00+09:00', '2026-09-30T15:00:00Z'])(
+    '동일한 순간을 한국 날짜로 표시한다: %s',
+    (updatedAt) => {
+      render(<StoreUpdatedAt updatedAt={updatedAt} />);
+      expect(screen.getByText('정보 갱신 2026년 10월 1일')).toBeInTheDocument();
+    },
+  );
 });

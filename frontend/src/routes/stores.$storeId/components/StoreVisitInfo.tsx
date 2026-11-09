@@ -35,6 +35,7 @@ interface VisitInfoItem {
 }
 
 const updatedAtFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul',
   year: 'numeric',
   month: 'long',
   day: 'numeric',
