@@ -1,13 +1,12 @@
 import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
 
 import {
-  breakpoint,
   color,
   focusRing,
   fontSize,
   fontWeight,
-  layout,
   letterSpacing,
   lineHeight,
   motion,
@@ -27,14 +26,42 @@ export const Page = styled.div`
   background: ${color.surface};
 `;
 
+export const DesktopHeader = styled.div`
+  display: contents;
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+export const MobileHeader = styled.header`
+  display: none;
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    padding: 0 8px;
+    background: white;
+  }
+`;
+export const BackLink = styled(Link)`
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  color: inherit;
+  &:focus-visible {
+    outline: 3px solid ${color.primary};
+  }
+`;
 export const Main = styled.main`
-  width: min(calc(100% - ${space.xxxl}), ${layout.contentMaxWidth});
-  padding: ${space.lg} 0 80px;
+  box-sizing: border-box;
+  width: min(100%, 1280px);
+  padding: 40px 40px 64px;
   margin: 0 auto;
-
-  @media (max-width: ${breakpoint.compact}) {
-    width: min(calc(100% - ${space.xxl}), ${layout.contentMaxWidth});
-    padding-top: ${space.md};
+  @media (max-width: 767px) {
+    padding: 0 0 32px;
   }
 `;
 
@@ -100,17 +127,4 @@ export const RetryButton = styled.button`
     outline: none;
     box-shadow: ${focusRing};
   }
-`;
-
-export const VisuallyHidden = styled.h1`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  margin: -1px;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
 `;

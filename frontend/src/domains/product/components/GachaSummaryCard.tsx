@@ -20,6 +20,7 @@ export interface GachaSummaryCardProduct {
 
 export interface GachaSummaryCardProps {
   product: GachaSummaryCardProduct;
+  variant?: 'default' | 'store';
   categoryLabel?: string;
   imageAlt?: string;
   supportingContent?: ReactNode;
@@ -43,6 +44,7 @@ function createDefaultCategoryLabel(categories: readonly string[]): string {
 
 export function GachaSummaryCard({
   product,
+  variant = 'default',
   categoryLabel,
   imageAlt = '',
   supportingContent,
@@ -55,7 +57,7 @@ export function GachaSummaryCard({
 
   return (
     <Card>
-      <GachaImageFrame>
+      <GachaImageFrame data-variant={variant}>
         <GachaImageFallback aria-hidden="true">
           <LogoImagePlaceholder />
         </GachaImageFallback>
@@ -68,7 +70,9 @@ export function GachaSummaryCard({
         />
       </GachaImageFrame>
       <GachaDetails>
-        <GachaName title={product.name}>{product.name}</GachaName>
+        <GachaName data-variant={variant} title={product.name}>
+          {product.name}
+        </GachaName>
         {visibleCategoryLabel && (
           <CategoryText
             title={product.categories?.join(', ') ?? visibleCategoryLabel}

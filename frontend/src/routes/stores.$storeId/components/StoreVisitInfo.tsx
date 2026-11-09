@@ -2,29 +2,34 @@ import { useId, type ReactNode } from 'react';
 
 import type { StoreDetailResponseDto } from '@/routes/stores.$storeId/api/storeDetailResponseType';
 
-import { StoreInfoIcon, type StoreInfoIconName } from './StoreInfoIcon';
 import {
   InfoContent,
-  InfoIcon,
-  InfoItem,
   InfoLabel,
   InfoLink,
   InfoList,
   InfoValue,
   Section,
   SectionTitle,
+  Updated,
 } from './StoreVisitInfo.styles';
 
 interface StoreVisitInfoProps {
   store: Pick<
     StoreDetailResponseDto,
-    'businessHours' | 'phoneNumber' | 'instagramId' | 'updatedAt'
+    | 'businessHours'
+    | 'phoneNumber'
+    | 'instagramId'
+    | 'paymentMethods'
+    | 'gachaMachineAmount'
+    | 'kujiAmount'
+    | 'facilities'
+    | 'hasRandomBox'
+    | 'hasSelectGacha'
   >;
 }
 
 interface VisitInfoItem {
   id: string;
-  icon: StoreInfoIconName;
   label: string;
   value: ReactNode;
 }
@@ -63,23 +68,55 @@ export function StoreVisitInfo({ store }: StoreVisitInfoProps) {
   const businessHours = store.businessHours?.trim();
   const phoneNumber = store.phoneNumber?.trim();
   const instagramId = store.instagramId?.trim();
-  const updatedAt = formatUpdatedAt(store.updatedAt);
 
   if (businessHours) {
     items.push({
       id: 'business-hours',
-      icon: 'clock',
       label: '영업시간',
       value: businessHours,
     });
   }
+
+  const payment = Array.from(
+    new Set(
+      store.paymentMethods
+        ?.split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ).join(' · ');
+  if (payment) items.push({ id: 'payment', label: '결제', value: payment });
+  const operations = [
+    store.gachaMachineAmount && store.gachaMachineAmount > 0
+      ? `가챠 ${store.gachaMachineAmount.toLocaleString('ko-KR')}대`
+      : null,
+    store.kujiAmount && store.kujiAmount > 0
+      ? `쿠지 ${store.kujiAmount.toLocaleString('ko-KR')}개`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  if (operations)
+    items.push({ id: 'operations', label: '운영', value: operations });
+  const facilities = Array.from(
+    new Set([
+      ...store.facilities.map((value) => value.trim()).filter(Boolean),
+      ...(store.hasRandomBox ? ['랜덤박스'] : []),
+      ...(store.hasSelectGacha ? ['선택 가챠'] : []),
+    ]),
+  );
+  if (facilities.length)
+    items.push({
+      id: 'facilities',
+      label: '편의시설',
+      value: facilities.join(', '),
+    });
 
   if (phoneNumber) {
     const phoneUrl = createPhoneUrl(phoneNumber);
 
     items.push({
       id: 'phone',
-      icon: 'phone',
       label: '전화번호',
       value: phoneUrl ? (
         <InfoLink href={phoneUrl}>{phoneNumber}</InfoLink>
@@ -94,7 +131,6 @@ export function StoreVisitInfo({ store }: StoreVisitInfoProps) {
 
     items.push({
       id: 'instagram',
-      icon: 'instagram',
       label: '인스타그램',
       value: instagramUrl ? (
         <InfoLink href={instagramUrl} target="_blank" rel="noreferrer">
@@ -106,15 +142,6 @@ export function StoreVisitInfo({ store }: StoreVisitInfoProps) {
     });
   }
 
-  if (updatedAt) {
-    items.push({
-      id: 'updated-at',
-      icon: 'updated',
-      label: '정보 갱신',
-      value: updatedAt,
-    });
-  }
-
   if (items.length === 0) {
     return null;
   }
@@ -123,18 +150,18 @@ export function StoreVisitInfo({ store }: StoreVisitInfoProps) {
     <Section aria-labelledby={titleId}>
       <SectionTitle id={titleId}>방문 정보</SectionTitle>
       <InfoList>
-        {items.map(({ icon, id, label, value }) => (
-          <InfoItem key={id}>
-            <InfoIcon>
-              <StoreInfoIcon name={icon} />
-            </InfoIcon>
-            <InfoContent>
-              <InfoLabel>{label}</InfoLabel>
-              <InfoValue>{value}</InfoValue>
-            </InfoContent>
-          </InfoItem>
+        {items.map(({ id, label, value }) => (
+          <InfoContent key={id}>
+            <InfoLabel>{label}</InfoLabel>
+            <InfoValue>{value}</InfoValue>
+          </InfoContent>
         ))}
       </InfoList>
     </Section>
   );
+}
+
+export function StoreUpdatedAt({ updatedAt }: { updatedAt: string }) {
+  const value = formatUpdatedAt(updatedAt);
+  return value ? <Updated>정보 갱신 {value}</Updated> : null;
 }

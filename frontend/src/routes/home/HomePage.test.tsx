@@ -1,4 +1,11 @@
-import { describe, expect, it } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -9,6 +16,13 @@ import { server } from '@/test/server';
 
 import HomePage from './HomePage';
 import { TRADE_ITEMS } from '../trade/storybook/tradeMocks';
+
+beforeEach(() => {
+  jest.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+});
+afterEach(() => {
+  jest.restoreAllMocks();
+});
 
 describe('교환글 검색', () => {
   it('URL에서 복원한 검색어를 최초 조회와 더보기 요청에 보낸다', async () => {
