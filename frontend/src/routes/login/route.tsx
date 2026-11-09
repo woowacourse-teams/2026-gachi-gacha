@@ -9,6 +9,7 @@ import {
   storeAuthReturnPath,
 } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
+import { getLoginCloseTarget } from '@/features/auth/memberOnlyPath';
 import { storeOAuthLoginProvider } from '@/features/auth/oauthLoginProviderStorage';
 import type { OAuthProvider } from '@/features/auth/oauthProviderType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
@@ -16,7 +17,6 @@ import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import {
-  Accent,
   AppleProviderIcon,
   AppleProviderLogo,
   AppleProviderLink,
@@ -24,9 +24,13 @@ import {
   BrandLogo,
   BrandName,
   Card,
+  CloseLink,
   ErrorMessage,
+  FlowNotice,
   Main,
+  Message,
   Page,
+  TopBar,
   PrivacyLink,
   PrivacyNote,
   ProviderIcon,
@@ -34,7 +38,7 @@ import {
   ProviderLink,
   ProviderList,
   RetryButton,
-  Title,
+  VisuallyHiddenTitle,
 } from './route.styles';
 
 const PROVIDERS = [
@@ -91,101 +95,126 @@ export function LoginRoute() {
     });
   }
 
+  const closeTarget = getLoginCloseTarget(returnPath);
+
   return (
     <Page>
+      <TopBar>
+        <CloseLink
+          href={closeTarget}
+          aria-label="로그인 닫기"
+          onClick={() =>
+            captureAnalyticsEvent('navigation_selected', {
+              destination: 'previous_page',
+              source: 'login_close',
+              is_authenticated: false,
+            })
+          }
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </CloseLink>
+      </TopBar>
       <Main>
         <Card aria-labelledby="login-title">
-          <Brand
-            href="/trade"
-            aria-label="GachiGacha 거래/교환으로 이동"
-            onClick={() =>
-              captureAnalyticsEvent('navigation_selected', {
-                destination: 'brand',
-                source: 'login_brand',
-                is_authenticated: false,
-              })
-            }
-          >
-            <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
-            <BrandName>GachiGacha</BrandName>
-          </Brand>
+          <VisuallyHiddenTitle id="login-title">
+            {isAccountDeletionFlow ? '회원 탈퇴 본인 확인' : '로그인'}
+          </VisuallyHiddenTitle>
 
-          <Title id="login-title">
-            {isAccountDeletionFlow ? (
-              <>
-                회원 탈퇴를 위한
-                <br />
-                <Accent>본인 확인</Accent>이 필요해요
-              </>
-            ) : (
-              <>
-                원하는 <Accent>가챠</Accent>,<br />
-                <Accent>같이</Accent> 한번 찾아봐요!
-              </>
-            )}
-          </Title>
-
-          {status === 'error' && errorMessage && (
-            <ErrorMessage role="alert">
-              {errorMessage}
-              <br />
-              <RetryButton
-                type="button"
-                onClick={() => {
-                  captureAnalyticsEvent('recovery_action_selected', {
-                    feature: 'auth_session',
-                  });
-                  retry();
-                }}
-              >
-                로그인 상태 다시 확인
-              </RetryButton>
-            </ErrorMessage>
-          )}
-
-          <ProviderList role="group" aria-label="소셜 로그인">
-            {PROVIDERS.map(({ provider, name }) => (
-              <ProviderLink
-                key={provider}
-                href={`/api/v1/oauth/${provider}`}
-                aria-label={
-                  isAccountDeletionFlow
-                    ? `${name}로 본인 확인`
-                    : `${name}로 로그인`
-                }
-                onClick={() => prepareOAuthLogin(provider)}
-              >
-                <ProviderBrandIcon provider={provider} />
-                <ProviderLabel>{name}</ProviderLabel>
-              </ProviderLink>
-            ))}
-            <AppleProviderLink
-              href="/api/v1/oauth/apple"
-              aria-label={
-                isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'
+          <Message>
+            <Brand
+              href="/trade"
+              aria-label="GachiGacha 거래/교환으로 이동"
+              onClick={() =>
+                captureAnalyticsEvent('navigation_selected', {
+                  destination: 'brand',
+                  source: 'login_brand',
+                  is_authenticated: false,
+                })
               }
-              data-apple-sign-in
-              onClick={() => prepareOAuthLogin('apple')}
             >
-              <AppleProviderIcon aria-hidden="true">
-                <AppleProviderLogo
-                  src={appleSignInLogo}
-                  alt=""
-                  width={31}
-                  height={44}
-                  data-apple-logo
-                />
-              </AppleProviderIcon>
-              <ProviderLabel>Apple</ProviderLabel>
-            </AppleProviderLink>
-          </ProviderList>
+              <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
+              <BrandName>GachiGacha</BrandName>
+            </Brand>
+
+            {isAccountDeletionFlow && (
+              <FlowNotice>회원 탈퇴를 위해 본인 확인이 필요해요.</FlowNotice>
+            )}
+
+            {status === 'error' && errorMessage && (
+              <ErrorMessage role="alert">
+                {errorMessage}
+                <br />
+                <RetryButton
+                  type="button"
+                  onClick={() => {
+                    captureAnalyticsEvent('recovery_action_selected', {
+                      feature: 'auth_session',
+                    });
+                    retry();
+                  }}
+                >
+                  로그인 상태 다시 확인
+                </RetryButton>
+              </ErrorMessage>
+            )}
+
+            <ProviderList role="group" aria-label="소셜 로그인">
+              {PROVIDERS.map(({ provider, name }) => (
+                <ProviderLink
+                  key={provider}
+                  href={`/api/v1/oauth/${provider}`}
+                  aria-label={
+                    isAccountDeletionFlow
+                      ? `${name}로 본인 확인`
+                      : `${name}로 로그인`
+                  }
+                  onClick={() => prepareOAuthLogin(provider)}
+                >
+                  <ProviderBrandIcon provider={provider} />
+                  <ProviderLabel>{name}</ProviderLabel>
+                </ProviderLink>
+              ))}
+              <AppleProviderLink
+                href="/api/v1/oauth/apple"
+                aria-label={
+                  isAccountDeletionFlow ? 'Apple로 본인 확인' : 'Apple로 로그인'
+                }
+                data-apple-sign-in
+                onClick={() => prepareOAuthLogin('apple')}
+              >
+                <AppleProviderIcon aria-hidden="true">
+                  <AppleProviderLogo
+                    src={appleSignInLogo}
+                    alt=""
+                    width={31}
+                    height={44}
+                    data-apple-logo
+                  />
+                </AppleProviderIcon>
+                <ProviderLabel>Apple</ProviderLabel>
+              </AppleProviderLink>
+            </ProviderList>
+          </Message>
 
           <PrivacyNote>
-            {isAccountDeletionFlow
-              ? '본인 확인 후 탈퇴 여부를 한 번 더 확인합니다.'
-              : '로그인하면 '}
-            {!isAccountDeletionFlow && (
+            {isAccountDeletionFlow ? (
+              '본인 확인 후 탈퇴 여부를 한 번 더 확인합니다.'
+            ) : (
               <>
+                로그인하면{' '}
                 <PrivacyLink
                   href="/privacy"
                   target="_blank"

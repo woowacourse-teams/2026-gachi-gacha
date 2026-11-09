@@ -2,27 +2,121 @@ import { css } from '@emotion/react';
 import styled from '@emotion/styled';
 
 import {
+  breakpoint,
   color,
   focusRing,
-  fontSize,
   fontWeight,
   letterSpacing,
   lineHeight,
   radius,
-  shadow,
   space,
 } from '@/shared/styles/tokens';
+
+const mobile = `@media (max-width: ${breakpoint.mobile})`;
 
 export const Page = styled.div`
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: clamp(${space.lg}, 5vh, ${space.huge}) ${space.md};
+  padding: ${space.xxxl} ${space.md};
   align-items: center;
   justify-content: center;
-  background:
-    radial-gradient(circle at 50% 42%, rgb(217 59 84 / 10%), transparent 38%),
-    ${color.surface};
+  background: #f7f5f3;
+  box-sizing: border-box;
+
+  ${mobile} {
+    padding: env(safe-area-inset-top) 0 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    background: ${color.surface};
+  }
+`;
+
+export const TopBar = styled.div`
+  display: none;
+
+  ${mobile} {
+    display: flex;
+    height: 48px;
+    padding: 0 14px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: flex-end;
+  }
+`;
+
+export const CloseLink = styled.a`
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: ${radius.circle};
+  color: ${color.text};
+
+  &:focus-visible {
+    box-shadow: ${focusRing};
+    outline: none;
+  }
+`;
+
+export const Main = styled.main`
+  display: flex;
+  width: min(100%, 520px);
+  justify-content: center;
+
+  ${mobile} {
+    width: 100%;
+    flex: 1;
+  }
+`;
+
+export const Card = styled.section`
+  display: flex;
+  width: 100%;
+  padding: 56px ${space.xxxl} ${space.huge};
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+  border: 1px solid ${color.border};
+  border-radius: ${radius.sheet};
+  background: ${color.surface};
+  box-sizing: border-box;
+  text-align: center;
+
+  @media (max-width: 560px) {
+    padding: ${space.huge} ${space.xl} ${space.xxxl};
+  }
+
+  ${mobile} {
+    padding: 0 ${space.xl} calc(28px + env(safe-area-inset-bottom));
+    gap: ${space.xl};
+    border: 0;
+    border-radius: 0;
+  }
+`;
+
+export const VisuallyHiddenTitle = styled.h1`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+`;
+
+export const Message = styled.div`
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 36px;
+
+  ${mobile} {
+    flex: 1;
+    justify-content: center;
+    gap: 44px;
+  }
 `;
 
 export const Brand = styled.a`
@@ -30,11 +124,12 @@ export const Brand = styled.a`
   width: fit-content;
   align-items: center;
   justify-content: center;
-  gap: ${space.xs};
+  gap: 10px;
   color: ${color.primary};
-  font-size: clamp(20px, 3vw, 24px);
+  font-size: 38px;
   font-weight: ${fontWeight.extraBold};
   letter-spacing: ${letterSpacing.heading};
+  line-height: 1;
   text-decoration: none;
 
   &:focus-visible {
@@ -42,76 +137,51 @@ export const Brand = styled.a`
     box-shadow: ${focusRing};
     outline: none;
   }
+
+  ${mobile} {
+    font-size: 34px;
+  }
 `;
 
 export const BrandLogo = styled.img`
   width: auto;
-  height: clamp(32px, 5vw, 40px);
+  height: 52px;
   object-fit: contain;
+
+  ${mobile} {
+    height: 46px;
+  }
 `;
 
 export const BrandName = styled.span``;
 
-export const Main = styled.main`
-  width: min(100%, 540px);
-`;
-
-export const Card = styled.section`
-  display: flex;
-  width: 100%;
-  padding: clamp(${space.xxl}, 6vw, 56px);
-  border: 1px solid ${color.border};
-  border-radius: ${radius.dialog};
-  align-items: center;
-  background: ${color.surface};
-  box-shadow: ${shadow.card};
-  flex-direction: column;
-  text-align: center;
-
-  @media (max-width: 520px) {
-    padding: ${space.xxl} ${space.lg};
-    border-radius: ${radius.card};
-  }
-`;
-
-export const Title = styled.h1`
-  margin: clamp(${space.xxl}, 6vh, ${space.huge}) 0 0;
-  color: ${color.text};
-  font-size: clamp(26px, 5vw, 36px);
-  font-weight: ${fontWeight.extraBold};
-  letter-spacing: ${letterSpacing.title};
-  line-height: 1.35;
-`;
-
-export const Accent = styled.span`
-  color: ${color.primary};
+export const FlowNotice = styled.p`
+  margin: -${space.md} 0 0;
+  color: ${color.textMuted};
+  font-size: 14px;
+  line-height: ${lineHeight.body};
 `;
 
 export const ProviderList = styled.div`
   display: flex;
-  width: 100%;
-  margin-top: clamp(${space.xxl}, 6vh, ${space.huge});
   align-items: flex-start;
   justify-content: center;
-  gap: clamp(${space.sm}, 4vw, ${space.xl});
+  gap: 28px;
 `;
 
 const providerLinkLayout = css`
   display: flex;
-  width: 64px;
   min-width: 64px;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: ${space.sm};
+  gap: 10px;
   border-radius: ${radius.control};
   color: ${color.text};
-  flex-direction: column;
-  font-size: ${fontSize.bodySmall};
-  line-height: ${lineHeight.body};
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
   text-decoration: none;
-  transition:
-    transform 160ms ease,
-    box-shadow 160ms ease;
+  transition: transform 160ms ease;
 
   &:hover {
     transform: translateY(-1px);
@@ -127,11 +197,11 @@ const providerLinkLayout = css`
   }
 `;
 
-export const AppleProviderLink = styled.a`
+export const ProviderLink = styled.a`
   ${providerLinkLayout};
 `;
 
-export const ProviderLink = styled.a`
+export const AppleProviderLink = styled.a`
   ${providerLinkLayout};
 `;
 
@@ -172,43 +242,48 @@ export const ProviderLabel = styled.span`
 `;
 
 export const ErrorMessage = styled.p`
+  margin: 0;
   padding: ${space.sm} ${space.md};
   border-radius: ${radius.control};
-  margin: ${space.lg} 0 0;
   background: ${color.primarySoft};
   color: ${color.primary};
-  font-size: ${fontSize.bodySmall};
+  font-size: 14px;
   line-height: ${lineHeight.body};
 `;
 
 export const RetryButton = styled.button`
+  margin-top: ${space.xs};
   padding: 0;
   border: 0;
-  margin-top: ${space.sm};
   background: transparent;
   color: ${color.primary};
-  cursor: pointer;
-  font-size: ${fontSize.bodySmall};
+  font-size: 14px;
   font-weight: ${fontWeight.bold};
   text-decoration: underline;
   text-underline-offset: 3px;
+  cursor: pointer;
 `;
 
 export const PrivacyNote = styled.p`
-  margin: ${space.lg} 0 0;
-  color: ${color.textSubtle};
-  font-size: ${fontSize.bodySmall};
+  margin: 0;
+  color: ${color.textMuted};
+  font-size: 13px;
   line-height: ${lineHeight.relaxed};
+  word-break: keep-all;
+
+  ${mobile} {
+    font-size: 12px;
+  }
 `;
 
 export const PrivacyLink = styled.a`
-  color: ${color.textMuted};
+  color: ${color.text};
   font-weight: ${fontWeight.bold};
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
 
   &:hover {
-    color: ${color.primary};
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 
   &:focus-visible {
