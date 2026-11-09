@@ -14,6 +14,7 @@ import type {
   TradeFormMode,
 } from '@/shared/analytics/analyticsEventType';
 import { loadKakaoMapsSdk } from '@/shared/map/loadKakaoMapsSdk';
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 
 import type { PlaceSearchSelection } from './placeSearchType';
 import {
@@ -442,6 +443,8 @@ const SearchInput = styled.input`
     border-color: #ed174c;
     box-shadow: 0 0 0 3px rgb(237 23 76 / 10%);
   }
+
+  ${preventIosInputZoom}
 `;
 
 const SearchButton = styled.button`

@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 
 import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 import {
   breakpoint,
   color,
@@ -344,6 +345,8 @@ const GuestNicknameInput = styled.input`
   &:disabled {
     cursor: not-allowed;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const GuestPrivacyNotice = styled.span`
@@ -370,6 +373,8 @@ const CommentInput = styled.textarea`
   &:disabled {
     cursor: not-allowed;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const ComposerFooter = styled.div`

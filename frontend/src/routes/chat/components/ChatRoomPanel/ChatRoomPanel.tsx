@@ -22,6 +22,7 @@ import { getTradeStatusPresentation } from '@/domains/trade/tradeStatusPresentat
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 import { breakpoint, color, focusRing, radius } from '@/shared/styles/tokens';
 
 import ChatImagePreview from './ChatImagePreview';
@@ -1010,6 +1011,8 @@ const MessageInput = styled.input`
   &:disabled {
     cursor: wait;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const SendButton = styled.button`

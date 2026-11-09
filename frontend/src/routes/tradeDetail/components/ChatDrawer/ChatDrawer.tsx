@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
+
 import type { ChatMessage, ChatRoom } from '../../model/chatRoom';
 
 interface ChatDrawerProps {
@@ -404,6 +406,8 @@ const MessageInput = styled.input`
   &:focus {
     border-color: #ed174c;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const SendButton = styled.button`
