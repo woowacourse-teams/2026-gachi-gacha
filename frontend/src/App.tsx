@@ -25,6 +25,7 @@ import { GlobalStyles } from '@/shared/ui/GlobalStyles';
 import { OfflineBanner } from '@/shared/ui/OfflineBanner';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 import { shouldShowSiteFooter, SiteFooter } from '@/shared/ui/SiteFooter';
+import { ToastProvider } from '@/shared/ui/toast';
 
 const SearchRoute = lazy(async () => {
   const routeModule = await import('@/routes/search/route');
@@ -363,12 +364,14 @@ function AuthCallbackRouteElement() {
 export default function App() {
   return (
     <MemberBlockProvider>
-      <GlobalStyles />
-      <Suspense
-        fallback={<PageLoadingFallback label="페이지를 준비하고 있어요." />}
-      >
-        <CanonicalRoutes />
-      </Suspense>
+      <ToastProvider>
+        <GlobalStyles />
+        <Suspense
+          fallback={<PageLoadingFallback label="페이지를 준비하고 있어요." />}
+        >
+          <CanonicalRoutes />
+        </Suspense>
+      </ToastProvider>
     </MemberBlockProvider>
   );
 }
