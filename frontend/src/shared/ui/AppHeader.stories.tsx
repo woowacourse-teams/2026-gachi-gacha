@@ -230,3 +230,14 @@ export const MobileSearch: Story = {
   },
   parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
+
+export const MobileChatTitle: Story = {
+  args: {
+    currentPath: '/chat',
+    mobileVariant: 'title',
+    mobileTitle: '채팅',
+    showMobileTabs: true,
+    chatUnreadCount: 2,
+  },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+};

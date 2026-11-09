@@ -65,6 +65,15 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
 
+  it('비로그인 사용자가 채팅에 진입하면 로그인 후 채팅으로 복귀하도록 안내한다', async () => {
+    renderWithProviders(<App />, { initialAccessToken: null, route: '/chat' });
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
+        '/login?returnTo=%2Fchat',
+      );
+    });
+  });
+
   it('비로그인 사용자가 마이페이지에 접근하면 복귀 주소를 포함한 로그인 화면으로 이동한다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
