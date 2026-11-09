@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
 import {
   TRADE_STATUSES,
   type TradeStatus,
   type TradeSummary,
 } from '@/domains/trade/tradeSummaryType';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import {
@@ -75,10 +72,6 @@ function getStatusFilter(value: string | null): MyTradeStatusFilter {
     : 'ALL';
 }
 
-function openGachaSearchResults(gachaId: number) {
-  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
-}
-
 export function MyTradesRoute() {
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFilter = getStatusFilter(searchParams.get('status'));
@@ -104,10 +97,7 @@ export function MyTradesRoute() {
 
   return (
     <Page>
-      <AppHeader
-        currentPath="/mypage"
-        search={<GachaSearchBar onSelect={openGachaSearchResults} />}
-      />
+      <AppHeader currentPath="/mypage" />
 
       <Main>
         <BackLink to="/mypage">← 마이페이지</BackLink>

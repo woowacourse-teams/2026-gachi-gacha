@@ -12,7 +12,6 @@ import {
   MobileHeaderLayer,
   ServiceAreaNotice,
   ServiceAreaTitle,
-  MapSearchLink,
   SelectedGachaArea,
 } from './route.styles';
 import { SelectedGachaSummary } from './selectedGacha/SelectedGachaSummary';
@@ -75,30 +74,7 @@ export function SearchRoute({ search }: SearchRouteProps) {
           : '가챠 보유 매장 검색 결과'}
       </PageTitle>
       <MobileHeaderLayer>
-        <AppHeader
-          currentPath="/map"
-          showMobileTabs
-          search={
-            <MapSearchLink
-              to="/search?tab=gacha"
-              state={{ searchFrom: '/map' }}
-            >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                aria-hidden="true"
-              >
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="m16 16 4 4" />
-              </svg>
-              교환글, 가챠, 매장 검색
-            </MapSearchLink>
-          }
-        />
+        <AppHeader currentPath="/map" showMobileTabs mobileVariant="map" />
       </MobileHeaderLayer>
       <StoreResultsSection
         center={searchCenter}

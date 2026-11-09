@@ -66,9 +66,10 @@ describe('SearchRoute 지도 검색 진입', () => {
       route: '/map',
     });
 
-    expect(
-      screen.getByRole('link', { name: '교환글, 가챠, 매장 검색' }),
-    ).toHaveAttribute('href', '/search?tab=gacha');
+    expect(screen.getByText('교환글, 가챠, 매장 검색')).toHaveAttribute(
+      'href',
+      '/search?tab=gacha',
+    );
     expect(
       screen.getByLabelText('하단 메뉴', { selector: 'nav' }),
     ).toBeInTheDocument();
@@ -83,8 +84,6 @@ describe('SearchRoute 지도 검색 진입', () => {
 
     await user.click(screen.getByRole('button', { name: '빈 지도 영역' }));
 
-    expect(
-      screen.getByRole('link', { name: '교환글, 가챠, 매장 검색' }),
-    ).toBeInTheDocument();
+    expect(screen.getByText('교환글, 가챠, 매장 검색')).toBeInTheDocument();
   });
 });

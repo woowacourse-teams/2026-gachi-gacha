@@ -1,8 +1,5 @@
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import { StoreDetailOverview } from './components/StoreDetailOverview';
@@ -31,10 +28,6 @@ function getStoreId(pathname: string): number | null {
   return Number.isSafeInteger(storeId) ? storeId : null;
 }
 
-function openGachaSearchResults(gachaId: number) {
-  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
-}
-
 export interface StoreDetailRouteProps {
   pathname?: string;
 }
@@ -48,10 +41,7 @@ export function StoreDetailRoute({
   return (
     <Page>
       <VisuallyHidden>매장 상세</VisuallyHidden>
-      <AppHeader
-        currentPath=""
-        search={<GachaSearchBar onSelect={openGachaSearchResults} />}
-      />
+      <AppHeader currentPath="" />
 
       {storeDetailState.status === 'loading' ? (
         <LoadingArea role="status" aria-label="매장 정보를 불러오는 중">

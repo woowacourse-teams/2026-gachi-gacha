@@ -81,18 +81,6 @@ function TradeRouteContent({
     setSearchParams(nextSearchParams);
   }
 
-  function searchTrades(query: string) {
-    captureAnalyticsEvent('trade_search_submitted', {
-      query_length: query.length,
-    });
-
-    updateSearchParams({
-      keyword: query || null,
-      quickKeyword: null,
-      categoryId: null,
-    });
-  }
-
   return (
     <TradePage
       items={state.status === 'success' ? state.data.content : []}
@@ -105,7 +93,6 @@ function TradeRouteContent({
       hasMore={hasMore}
       isLoadingMore={isLoadingMore}
       loadMoreError={loadMoreError}
-      onSearch={searchTrades}
       onOpenTrade={() => {
         if (state.status === 'success') {
           lastTradeVisit = {

@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
-import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+import { AppHeader } from '@/shared/ui/AppHeader';
 
 import ChatRoomPanel from './components/ChatRoomPanel';
 import ConversationList from './components/ConversationList';
@@ -85,7 +85,7 @@ export default function ChatPage({
 
     return (
       <RoomPage>
-        <AppGachaSearchHeader currentPath="/chat" />
+        <AppHeader currentPath="/chat" />
         <TradeContext aria-hidden="true">
           <TradeContextImage>
             {selectedRoom.itemImageUrl ? (
@@ -126,7 +126,7 @@ export default function ChatPage({
 
   return (
     <Page $hasSelectedRoom={Boolean(selectedRoom)}>
-      <AppGachaSearchHeader currentPath="/chat" />
+      <AppHeader currentPath="/chat" />
       {roomLoadError && (
         <RoomLoadError role="alert">
           <span>{roomLoadError} 다른 채팅방은 계속 확인할 수 있어요.</span>
