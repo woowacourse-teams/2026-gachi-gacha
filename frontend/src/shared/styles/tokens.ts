@@ -130,5 +130,7 @@ export const motion = {
 
 export const zIndex = {
   header: 40,
+  /** 화면 위에 열리는 패널(채팅 모달 등). 헤더·하단 고정 바보다 위, 확인 창·사진 보기보다 아래 */
+  modal: 60,
   overlay: 100,
 } as const;

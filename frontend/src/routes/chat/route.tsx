@@ -26,6 +26,7 @@ import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { useOptionalChatUnread } from '@/features/chatUnread/ChatUnreadContext';
 import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import { zIndex } from '@/shared/styles/tokens';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
@@ -940,7 +941,7 @@ const SecondaryButton = styled.button`
 
 const ModalStatusLayer = styled.div`
   position: fixed;
-  z-index: 20;
+  z-index: ${zIndex.modal};
   inset: 0;
 `;
 

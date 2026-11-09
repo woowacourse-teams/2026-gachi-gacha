@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 
 import type { ChatSocketStatus } from '@/domains/chat/useChatSocket';
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { zIndex } from '@/shared/styles/tokens';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import ChatRoomPanel from './components/ChatRoomPanel';
@@ -319,20 +320,20 @@ const TradeContextInfo = styled.div`
 
 const Scrim = styled(Link)`
   position: fixed;
-  z-index: 20;
+  z-index: ${zIndex.modal};
   inset: 0;
   background: rgb(24 21 22 / 54%);
 `;
 
 const ModalLayer = styled.div`
   position: fixed;
-  z-index: 20;
+  z-index: ${zIndex.modal};
   inset: 0;
 `;
 
 const ModalScrim = styled.button`
   position: fixed;
-  z-index: 20;
+  z-index: ${zIndex.modal};
   inset: 0;
   padding: 0;
   border: 0;
@@ -342,7 +343,7 @@ const ModalScrim = styled.button`
 
 const ChatDrawer = styled.aside`
   position: fixed;
-  z-index: 21;
+  z-index: ${zIndex.modal + 1};
   top: 0;
   right: 0;
   width: min(680px, 100%);
