@@ -63,10 +63,10 @@ export default function ChatMessageGallery({
 
 const Gallery = styled.div<{ $count: number }>`
   display: grid;
-  width: ${({ $count }) => ($count === 1 ? '220px' : '260px')};
+  width: ${({ $count }) => ($count === 1 ? '180px' : '240px')};
   max-width: 100%;
   grid-template-columns: repeat(${({ $count }) => ($count === 1 ? 1 : 2)}, 1fr);
-  gap: 3px;
+  gap: 4px;
 `;
 
 const ImageButton = styled.button`
@@ -74,10 +74,16 @@ const ImageButton = styled.button`
   min-width: 0;
   padding: 0;
   aspect-ratio: 1;
-  border: 0;
-  border-radius: 10px;
-  background: #eee9eb;
+  border: 1px solid rgb(36 33 34 / 10%);
+  border-radius: 14px;
+  background: #f3f1ef;
   cursor: zoom-in;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px rgb(217 59 84 / 22%);
+    outline: none;
+  }
 `;
 
 const Image = styled.img`
