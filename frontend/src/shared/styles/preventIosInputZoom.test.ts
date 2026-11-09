@@ -45,4 +45,15 @@ describe('preventIosInputZoom', () => {
     expect(fields.length).toBeGreaterThanOrEqual(12);
     expect(missing).toEqual([]);
   });
+
+  it('보이는 텍스트 입력칸은 브라우저 기본 파란 포커스 테두리를 쓰지 않는다', () => {
+    const missingOutline = listSourceFiles(SOURCE_ROOT).flatMap((file) =>
+      Array.from(readFileSync(file, 'utf8').matchAll(STYLED_FIELD_PATTERN))
+        .filter(([, name]) => !name?.startsWith('Hidden'))
+        .filter(([, , , body]) => !/outline:\s*(0|none)/.test(body ?? ''))
+        .map(([, name]) => `${relative(SOURCE_ROOT, file)}:${name}`),
+    );
+
+    expect(missingOutline).toEqual([]);
+  });
 });
