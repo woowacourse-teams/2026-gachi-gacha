@@ -22,6 +22,11 @@ type SearchTab = (typeof SEARCH_TABS)[number]['id'];
 export default function HomePage() {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
+  const storeDetailFrom =
+    typeof location.state?.storeDetailFrom === 'string' &&
+    /^\/stores\/[1-9]\d*$/.test(location.state.storeDetailFrom)
+      ? location.state.storeDetailFrom
+      : null;
   const backTo = location.state?.searchFrom === '/map' ? '/map' : '/trade';
   const keyword = params.get('keyword')?.trim() ?? '';
   const tab =
@@ -85,7 +90,10 @@ export default function HomePage() {
           <GachaSearchDetail
             key={productId}
             id={productId}
-            backTo={resultUrl(tab)}
+            backTo={storeDetailFrom ?? resultUrl(tab)}
+            backLabel={
+              storeDetailFrom ? '매장 상세로 돌아가기' : '검색 결과로 돌아가기'
+            }
           />
         ) : keyword ? (
           <Results>

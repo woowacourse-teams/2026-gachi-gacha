@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
@@ -13,15 +13,20 @@ import { SEARCH_STORE_AREA } from './SearchCatalogResults';
 export default function GachaSearchDetail({
   id,
   backTo,
+  backLabel = '검색 결과로 돌아가기',
 }: {
   id: number;
   backTo: string;
+  backLabel?: string;
 }) {
   const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   return (
     <Detail>
-      <Link to={backTo}>‹ 검색 결과로 돌아가기</Link>
+      <Link to={backTo}>‹ {backLabel}</Link>
       <GachaContent
         key={attempt}
         id={id}
