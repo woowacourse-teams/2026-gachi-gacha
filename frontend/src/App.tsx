@@ -17,9 +17,12 @@ import {
 } from '@/features/auth/oauthCallbackPath';
 import { isOAuthProvider } from '@/features/auth/oauthProviderType';
 import { RequireAuth } from '@/features/auth/RequireAuth';
+import { SessionExpiredDialog } from '@/features/auth/SessionExpiredDialog';
 import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 import { HomePage } from '@/routes/home';
+import { NotFoundRoute } from '@/routes/notFound/route';
 import { GlobalStyles } from '@/shared/ui/GlobalStyles';
+import { OfflineBanner } from '@/shared/ui/OfflineBanner';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 import { shouldShowSiteFooter, SiteFooter } from '@/shared/ui/SiteFooter';
 
@@ -188,6 +191,8 @@ function CanonicalRoutes() {
 
   return (
     <>
+      <OfflineBanner />
+      <SessionExpiredDialog />
       <Routes location={backgroundLocation ?? location}>
         <Route path={ROOT_PATH} element={<LandingRoute />} />
         <Route path={CATEGORY_SEARCH_PATH} element={<CategorySearchRoute />} />
@@ -235,7 +240,7 @@ function CanonicalRoutes() {
             element={<EventApplicationRoute />}
           />
         </Route>
-        <Route path="*" element={<RedirectToEntry />} />
+        <Route path="*" element={<NotFoundRoute />} />
       </Routes>
       {shouldShowSiteFooter(location.pathname) && <SiteFooter />}
       {backgroundLocation && (
@@ -286,7 +291,7 @@ function StoreDetailRouteElement() {
   const { storeId } = useParams<'storeId'>();
 
   if (!storeId || !STORE_ID_PATTERN.test(storeId)) {
-    return <RedirectToEntry />;
+    return <NotFoundRoute />;
   }
 
   return <StoreDetailRoute pathname={`/stores/${storeId}`} />;
@@ -296,7 +301,7 @@ function TradeDetailRouteElement() {
   const { tradeId } = useParams<'tradeId'>();
 
   if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
-    return <RedirectToEntry />;
+    return <NotFoundRoute />;
   }
 
   return <TradeDetailRoute key={tradeId} tradeId={Number(tradeId)} />;
@@ -306,7 +311,7 @@ function TradeEditRouteElement() {
   const { tradeId } = useParams<'tradeId'>();
 
   if (!tradeId || !TRADE_ID_PATTERN.test(tradeId)) {
-    return <RedirectToEntry />;
+    return <NotFoundRoute />;
   }
 
   return <TradeEditRoute tradeId={Number(tradeId)} />;
