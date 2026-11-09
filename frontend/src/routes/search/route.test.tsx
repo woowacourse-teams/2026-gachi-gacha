@@ -2,7 +2,6 @@ import { describe, expect, it, jest } from '@jest/globals';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 import { SearchRoute } from './route';
@@ -11,8 +10,6 @@ jest.mock('@/shared/analytics/analyticsClient', () => ({
   captureAnalyticsEvent: jest.fn(),
   syncAnalyticsUser: jest.fn(),
 }));
-
-const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
 
 jest.mock('./routing/useSearchRouteNavigation', () => ({
   useSearchRouteNavigation: () => ({
@@ -46,6 +43,7 @@ jest.mock('./storeResults/useSearchStores', () => ({
 jest.mock('./storeResults/useStoreSearchArea', () => ({
   useStoreSearchArea: () => ({
     searchCenter: { latitude: 37.5563, longitude: 126.9236 },
+    viewportCenter: { latitude: 37.5563, longitude: 126.9236 },
     isSearchAreaChanged: false,
     updateViewportCenter: jest.fn(),
     commitViewportCenter: jest.fn(),
@@ -61,49 +59,32 @@ jest.mock('./storeResults/StoreResultsSection', () => ({
   ),
 }));
 
-describe('SearchRoute 모바일 지도 헤더', () => {
-  it('문서를 스크롤하지 않고 헤더 레이어를 열고 닫는다', async () => {
-    const user = userEvent.setup();
-    const scrollToSpy = jest
-      .spyOn(window, 'scrollTo')
-      .mockImplementation(() => undefined);
-
+describe('SearchRoute 지도 검색 진입', () => {
+  it('지도에서 통합 검색의 가챠 탭으로 진입하고 하단 메뉴를 제공한다', () => {
     renderWithProviders(<SearchRoute />, {
       initialAccessToken: null,
       route: '/map',
     });
 
-    const headerLayer = screen.getByRole('banner').parentElement;
-    const mapBackground = screen.getByRole('button', {
-      name: '빈 지도 영역',
+    expect(
+      screen.getByRole('link', { name: '교환글, 가챠, 매장 검색' }),
+    ).toHaveAttribute('href', '/search?tab=gacha');
+    expect(
+      screen.getByLabelText('하단 메뉴', { selector: 'nav' }),
+    ).toBeInTheDocument();
+  });
+
+  it('빈 지도 영역을 눌러도 검색 진입을 유지한다', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<SearchRoute />, {
+      initialAccessToken: null,
+      route: '/map',
     });
 
-    expect(headerLayer).toHaveAttribute('data-state', 'open');
-    expect(headerLayer?.parentElement).toHaveStyle(
-      '--mobile-map-header-offset: 120px',
-    );
+    await user.click(screen.getByRole('button', { name: '빈 지도 영역' }));
 
-    await user.click(mapBackground);
-
-    expect(headerLayer).toHaveAttribute('data-state', 'closed');
-    expect(headerLayer?.parentElement).toHaveStyle(
-      '--mobile-map-header-offset: 0px',
-    );
-    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
-      'map_mobile_header_toggled',
-      { next_state: 'closed' },
-    );
-    expect(scrollToSpy).not.toHaveBeenCalled();
-
-    await user.click(mapBackground);
-
-    expect(headerLayer).toHaveAttribute('data-state', 'open');
-    expect(mockedCaptureAnalyticsEvent).toHaveBeenLastCalledWith(
-      'map_mobile_header_toggled',
-      { next_state: 'open' },
-    );
-    expect(scrollToSpy).not.toHaveBeenCalled();
-
-    scrollToSpy.mockRestore();
+    expect(
+      screen.getByRole('link', { name: '교환글, 가챠, 매장 검색' }),
+    ).toBeInTheDocument();
   });
 });
