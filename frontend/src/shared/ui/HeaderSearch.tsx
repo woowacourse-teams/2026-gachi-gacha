@@ -127,10 +127,6 @@ const Field = styled.div`
   }
   border-radius: 999px;
   background: #f5f4f3;
-
-  &:focus-within {
-    box-shadow: 0 0 0 2px rgb(217 59 84 / 24%);
-  }
 `;
 
 const Input = styled.input`
