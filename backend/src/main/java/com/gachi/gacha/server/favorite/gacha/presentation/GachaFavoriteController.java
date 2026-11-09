@@ -31,10 +31,9 @@ public class GachaFavoriteController {
         return BaseResponse.noContent();
     }
 
-    @GetMapping("/gachas/favorites/count")
+    @GetMapping("/gachas/favorite/count")
     public BaseResponse<FavoriteCountsResponse> counts(@Auth final Long memberId) {
         FavoriteCountsInfo info = favoriteService.countsByMemberId(memberId);
         return BaseResponse.ok(FavoriteCountsResponse.from(info));
     }
-
 }

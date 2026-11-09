@@ -1,5 +1,6 @@
 package com.gachi.gacha.server.favorite.gacha.domain;
 
+import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,7 +17,13 @@ public interface GachaFavoriteJpaRepository extends JpaRepository<GachaFavorite,
 
     @Modifying
     @Query("delete from GachaFavorite f where f.member.id = :memberId and f.gacha.id = :gachaId")
-    void deleteByMemberIdAndGachaId(@Param("memberId") final Long memberId, @Param("gachaId") final Long gachaId);
+    int deleteByMemberIdAndGachaId(@Param("memberId") final Long memberId, @Param("gachaId") final Long gachaId);
 
-    long countByMemberId(final Long memberId);
+    @Query("""
+        select f from GachaFavorite f
+        join fetch f.gacha g
+        where f.member.id = :memberId
+        order by f.createdAt desc
+        """)
+    List<GachaFavorite> findAllWithGachaByMemberId(@Param("memberId") Long memberId);
 }
