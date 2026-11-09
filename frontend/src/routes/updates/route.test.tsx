@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
@@ -24,7 +25,11 @@ describe('UpdatesRoute', () => {
     expect(
       screen.getByRole('heading', { name: '조금씩 더 좋아지고 있어요' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('최신 공개 버전')).toBeInTheDocument();
+    expect(
+      screen
+        .getAllByText('최신 공개 버전')
+        .filter((badge) => badge.getAttribute('aria-hidden') !== 'true'),
+    ).toHaveLength(1);
 
     const versionLabels = screen
       .getAllByText(/^v1\.[0-7]\.0$/)
@@ -65,5 +70,15 @@ describe('UpdatesRoute', () => {
         is_latest: true,
       },
     );
+  });
+
+  it('뒤로 가기는 이전 화면이 없으면 홈으로 이동한다', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(<UpdatesRoute />, { route: '/updates' });
+
+    await user.click(screen.getByRole('button', { name: '뒤로 가기' }));
+
+    expect(window.location.pathname).toBe('/trade');
   });
 });

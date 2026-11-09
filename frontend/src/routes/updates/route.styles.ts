@@ -1,169 +1,200 @@
 import styled from '@emotion/styled';
-import { Link } from 'react-router';
 
-import {
-  color,
-  focusRing,
-  fontSize,
-  fontWeight,
-  letterSpacing,
-  lineHeight,
-  radius,
-  shadow,
-  space,
-} from '@/shared/styles/tokens';
+import { breakpoint, color, radius } from '@/shared/styles/tokens';
 
-export const Page = styled.div`
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: #fffaf8;
-`;
-
-export const Main = styled.main`
-  width: min(100% - 40px, 880px);
-  padding: ${space.xl} 0 96px;
-  margin: 0 auto;
-
-  @media (max-width: 520px) {
-    width: min(100% - 24px, 880px);
-  }
-`;
-
-export const BackLink = styled(Link)`
-  color: ${color.textMuted};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.bold};
-  text-decoration: none;
-
-  &:hover {
-    color: ${color.primary};
-  }
-
-  &:focus-visible {
-    border-radius: ${radius.small};
-    box-shadow: ${focusRing};
-    outline: none;
-  }
-`;
+const mobile = `@media (max-width: ${breakpoint.mobile})`;
 
 export const Hero = styled.header`
-  padding: clamp(${space.xl}, 6vw, 56px);
-  border: 1px solid #f1c7ce;
-  border-radius: ${radius.dialog};
-  margin: ${space.lg} 0 ${space.xxl};
-  background:
-    radial-gradient(circle at 88% 20%, rgb(200 73 89 / 16%), transparent 30%),
-    linear-gradient(135deg, #fff5f7 0%, #fffaf3 100%);
-  box-shadow: ${shadow.card};
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  ${mobile} {
+    gap: 8px;
+  }
 `;
 
 export const Eyebrow = styled.span`
   color: ${color.primary};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.bold};
+  font-size: 15px;
+  font-weight: 700;
+
+  ${mobile} {
+    font-size: 13px;
+  }
 `;
 
 export const Title = styled.h1`
-  margin: ${space.sm} 0 ${space.sm};
-  font-size: clamp(34px, 6vw, 52px);
-  font-weight: ${fontWeight.extraBold};
-  letter-spacing: ${letterSpacing.title};
-  line-height: 1.14;
+  margin: 0;
+  color: ${color.text};
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.3;
+
+  ${mobile} {
+    font-size: 24px;
+  }
 `;
 
 export const Intro = styled.p`
-  max-width: 680px;
   margin: 0;
   color: ${color.textMuted};
-  font-size: ${fontSize.body};
-  line-height: ${lineHeight.relaxed};
+  font-size: 16px;
+  line-height: 1.6;
+  word-break: keep-all;
+
+  ${mobile} {
+    font-size: 14px;
+    line-height: 1.55;
+  }
 `;
 
 export const ReleaseList = styled.div`
-  display: grid;
-  gap: ${space.lg};
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+
+  ${mobile} {
+    gap: 24px;
+  }
 `;
 
 export const ReleaseCard = styled.article`
-  padding: clamp(${space.lg}, 5vw, ${space.xxl});
-  border: 1px solid ${color.border};
-  border-radius: ${radius.dialog};
-  background: ${color.surface};
-  box-shadow: ${shadow.card};
-`;
-
-export const ReleaseHeader = styled.header`
   display: flex;
+  padding-top: 32px;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: ${space.md};
+  gap: 12px;
+  border-top: 1px solid ${color.border};
 
-  @media (max-width: 520px) {
-    flex-direction: column;
+  ${mobile} {
+    padding-top: 24px;
+    gap: 10px;
   }
 `;
 
 export const ReleaseMeta = styled.div`
   display: flex;
   align-items: center;
-  color: ${color.textMuted};
-  font-size: ${fontSize.caption};
-  gap: ${space.xs};
+  gap: 10px;
+  color: ${color.textSubtle};
+  font-size: 14px;
+
+  ${mobile} {
+    gap: 8px;
+    font-size: 13px;
+  }
 `;
 
 export const Version = styled.strong`
   color: ${color.primary};
-  font-size: ${fontSize.body};
+  font-size: 16px;
+  font-weight: 700;
+
+  ${mobile} {
+    font-size: 15px;
+  }
 `;
 
 export const LatestBadge = styled.span`
-  padding: 5px 9px;
+  display: inline-flex;
+  height: 26px;
+  padding: 0 10px;
+  align-items: center;
   border-radius: ${radius.pill};
-  background: ${color.primarySoft};
+  background: #fff0f4;
   color: ${color.primary};
-  font-size: ${fontSize.caption};
-  font-weight: ${fontWeight.bold};
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  &[data-placement='below-title'] {
+    display: none;
+  }
+
+  ${mobile} {
+    &[data-placement='meta'] {
+      display: none;
+    }
+
+    &[data-placement='below-title'] {
+      display: inline-flex;
+    }
+  }
 `;
 
 export const ReleaseTitle = styled.h2`
-  margin: ${space.sm} 0 0;
-  font-size: ${fontSize.sectionTitle};
-  font-weight: ${fontWeight.extraBold};
-  line-height: ${lineHeight.heading};
+  margin: 0;
+  color: ${color.text};
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.35;
+  word-break: keep-all;
+
+  ${mobile} {
+    font-size: 18px;
+  }
 `;
 
 export const ReleaseSummary = styled.p`
-  margin: ${space.md} 0 0;
+  margin: 0;
   color: ${color.textMuted};
-  font-size: ${fontSize.body};
-  line-height: ${lineHeight.relaxed};
+  font-size: 15px;
+  line-height: 1.6;
+  word-break: keep-all;
+
+  ${mobile} {
+    font-size: 14px;
+    line-height: 1.55;
+  }
 `;
 
 export const HighlightList = styled.ul`
-  display: grid;
-  padding-left: 22px;
-  margin: ${space.md} 0 0;
-  color: ${color.text};
-  font-size: ${fontSize.bodySmall};
-  gap: ${space.xs};
-  line-height: ${lineHeight.relaxed};
+  display: flex;
+  margin: 0;
+  padding: 4px 0;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
 
-  li::marker {
-    color: ${color.primary};
+  li {
+    position: relative;
+    padding-left: 16px;
+    color: ${color.text};
+    font-size: 15px;
+    line-height: 1.6;
+    word-break: keep-all;
+  }
+
+  li::before {
+    position: absolute;
+    top: 0.75em;
+    left: 2px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: ${color.primary};
+    content: '';
+    transform: translateY(-50%);
+  }
+
+  ${mobile} {
+    li {
+      padding-left: 14px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
   }
 `;
 
 export const ReleaseSourceLink = styled.a`
-  display: inline-flex;
-  margin-top: ${space.lg};
   color: ${color.primary};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.bold};
-  text-underline-offset: 3px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
 
-  &:focus-visible {
-    border-radius: ${radius.small};
-    box-shadow: ${focusRing};
-    outline: none;
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
 `;
