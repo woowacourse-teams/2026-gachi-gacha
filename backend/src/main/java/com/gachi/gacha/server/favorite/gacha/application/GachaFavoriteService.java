@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.favorite.gacha.application;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
+import com.gachi.gacha.server.favorite.gacha.application.dto.FavoriteCountsInfo;
 import com.gachi.gacha.server.favorite.gacha.application.event.GachaFavoriteChangedEvent;
 import com.gachi.gacha.server.favorite.gacha.domain.GachaFavorite;
 import com.gachi.gacha.server.favorite.gacha.domain.GachaFavoriteJpaRepository;
@@ -18,26 +19,31 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GachaFavoriteService {
 
-    private final GachaFavoriteJpaRepository favorites;
+    private final GachaFavoriteJpaRepository gachaFavoriteJpaRepository;
     private final GachaJpaRepository gachas;
     private final MemberJpaRepository members;
     private final ApplicationEventPublisher publisher;
 
     @Transactional
     public void add(final Long memberId, final Long gachaId) {
-        if (favorites.existsByMemberIdAndGachaId(memberId, gachaId)) {
+        if (gachaFavoriteJpaRepository.existsByMemberIdAndGachaId(memberId, gachaId)) {
             return;
         }
         Gacha gacha = gachas.findByIdWithCategories(gachaId)
                 .orElseThrow(() -> new GachaNotFoundException(ErrorCode.GACHA_NOT_FOUND));
         Member member = members.getReferenceById(memberId);
-        favorites.save(GachaFavorite.of(member, gacha));
+        gachaFavoriteJpaRepository.save(GachaFavorite.of(member, gacha));
         publisher.publishEvent(new GachaFavoriteChangedEvent(memberId, gachaId, true));
     }
 
     @Transactional
     public void remove(final Long memberId, final Long gachaId) {
-        favorites.deleteByMemberIdAndGachaId(memberId, gachaId);
+        gachaFavoriteJpaRepository.deleteByMemberIdAndGachaId(memberId, gachaId);
         publisher.publishEvent(new GachaFavoriteChangedEvent(memberId, gachaId, false));
+    }
+
+    @Transactional(readOnly = true)
+    public FavoriteCountsInfo countsByMemberId(final Long memberId) {
+        return FavoriteCountsInfo.from(gachaFavoriteJpaRepository.countByMemberId(memberId));
     }
 }

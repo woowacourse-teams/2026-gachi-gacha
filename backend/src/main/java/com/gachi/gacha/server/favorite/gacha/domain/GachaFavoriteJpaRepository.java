@@ -17,4 +17,6 @@ public interface GachaFavoriteJpaRepository extends JpaRepository<GachaFavorite,
     @Modifying
     @Query("delete from GachaFavorite f where f.member.id = :memberId and f.gacha.id = :gachaId")
     void deleteByMemberIdAndGachaId(@Param("memberId") final Long memberId, @Param("gachaId") final Long gachaId);
+
+    long countByMemberId(final Long memberId);
 }
