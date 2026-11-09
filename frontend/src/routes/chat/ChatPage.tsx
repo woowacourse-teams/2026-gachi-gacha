@@ -178,6 +178,7 @@ export default function ChatPage({
             onClose={
               selectedRoom ? () => onSelectConversation?.(null) : undefined
             }
+            closeVisibility="mobile"
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}

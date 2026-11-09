@@ -169,3 +169,59 @@ export const OwnerInProgress: Story = {
     selectedRoom: { ...SELECTED_CHAT_ROOM, tradeStatus: 'IN_PROGRESS' },
   },
 };
+
+export const MobileSelectedSplit: Story = {
+  ...SelectedSplit,
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
+
+const PHOTO_URL =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360"><rect width="360" height="360" fill="#f6d5dc"/><circle cx="180" cy="160" r="72" fill="#e98fa3"/><rect x="96" y="250" width="168" height="28" rx="14" fill="#fff"/></svg>',
+  );
+
+export const SelectedSplitWithPhotos: Story = {
+  args: {
+    presentation: 'split',
+    selectedRoom: {
+      ...SELECTED_CHAT_ROOM,
+      itemImageUrl: PHOTO_URL,
+      messages: [
+        ...SELECTED_CHAT_ROOM.messages.slice(0, 2),
+        {
+          id: 'photo-other',
+          sender: 'other',
+          text: '',
+          sentAt: '오전 11:03',
+          sentDate: SELECTED_CHAT_ROOM.messages[1]?.sentDate ?? '',
+          images: [{ url: PHOTO_URL, name: '받은 사진' }],
+        },
+        {
+          id: 'photo-me',
+          sender: 'me',
+          text: '제 쪽 사진도 보내드려요.',
+          sentAt: '오전 11:05',
+          sentDate: SELECTED_CHAT_ROOM.messages[1]?.sentDate ?? '',
+          images: [
+            { url: PHOTO_URL, name: '보낸 사진 1' },
+            { url: PHOTO_URL, name: '보낸 사진 2' },
+          ],
+        },
+      ],
+    },
+  },
+};
+
+export const MobileSelectedSplitWithPhotos: Story = {
+  ...SelectedSplitWithPhotos,
+  parameters: {
+    viewport: {
+      defaultViewport: 'mobile1',
+    },
+  },
+};
