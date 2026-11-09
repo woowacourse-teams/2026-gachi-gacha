@@ -75,9 +75,12 @@ describe('외부 회원 탈퇴 페이지', () => {
       route: '/login?returnTo=%2Faccount-deletion',
     });
 
-    expect(await screen.findByRole('heading')).toHaveTextContent(
-      /회원 탈퇴를 위한\s*본인 확인\s*이 필요해요/,
-    );
+    expect(
+      await screen.findByRole('heading', { name: '회원 탈퇴 본인 확인' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('회원 탈퇴를 위해 본인 확인이 필요해요.'),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: '카카오로 본인 확인' }),
     ).toHaveAttribute('href', '/api/v1/oauth/kakao');

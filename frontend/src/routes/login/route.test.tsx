@@ -12,7 +12,7 @@ describe('LoginRoute', () => {
       route: '/login',
     });
 
-    await screen.findByRole('heading', { name: /원하는 가챠/ });
+    await screen.findByRole('heading', { name: '로그인' });
 
     const providers = [
       { name: '카카오', href: '/api/v1/oauth/kakao' },
@@ -45,7 +45,7 @@ describe('LoginRoute', () => {
       route: '/login',
     });
 
-    await screen.findByRole('heading', { name: /원하는 가챠/ });
+    await screen.findByRole('heading', { name: '로그인' });
 
     expect(
       screen.getByRole('link', {
@@ -58,5 +58,47 @@ describe('LoginRoute', () => {
     expect(appleLogo).toHaveAttribute('src');
     expect(appleLogo).toHaveAttribute('width', '31');
     expect(appleLogo).toHaveAttribute('height', '44');
+  });
+
+  it('닫기를 누르면 로그인 전 화면으로 돌아간다', async () => {
+    renderWithProviders(<LoginRoute />, {
+      initialAccessToken: null,
+      route: `/login?returnTo=${encodeURIComponent('/trade/12?from=list')}`,
+    });
+
+    expect(
+      await screen.findByRole('link', { name: '로그인 닫기', hidden: true }),
+    ).toHaveAttribute('href', '/trade/12?from=list');
+  });
+
+  it('돌아갈 화면이 회원 전용이면 닫기는 홈으로 보낸다', async () => {
+    renderWithProviders(<LoginRoute />, {
+      initialAccessToken: null,
+      route: `/login?returnTo=${encodeURIComponent('/mypage')}`,
+    });
+
+    expect(
+      await screen.findByRole('link', { name: '로그인 닫기', hidden: true }),
+    ).toHaveAttribute('href', '/trade');
+  });
+
+  it('회원 탈퇴 본인 확인 흐름에서는 안내 문구와 확인용 이름을 사용한다', async () => {
+    renderWithProviders(<LoginRoute />, {
+      initialAccessToken: null,
+      route: `/login?returnTo=${encodeURIComponent('/account-deletion')}`,
+    });
+
+    expect(
+      await screen.findByRole('heading', { name: '회원 탈퇴 본인 확인' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('회원 탈퇴를 위해 본인 확인이 필요해요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '카카오로 본인 확인' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: '개인정보처리방침' }),
+    ).not.toBeInTheDocument();
   });
 });

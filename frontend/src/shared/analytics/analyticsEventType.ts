@@ -24,7 +24,8 @@ export type NavigationDestination =
   | 'chat'
   | 'notifications'
   | 'mypage'
-  | 'login';
+  | 'login'
+  | 'previous_page';
 
 interface StoreSearchContext {
   gacha_id: number | null;
@@ -52,7 +53,12 @@ export interface AnalyticsEventPropertiesMap {
   navigation_selected: {
     destination: NavigationDestination;
     source:
-      'header' | 'login_brand' | 'mypage' | 'privacy' | 'under_construction';
+      | 'header'
+      | 'login_brand'
+      | 'login_close'
+      | 'mypage'
+      | 'privacy'
+      | 'under_construction';
     is_authenticated: boolean | null;
   };
   oauth_login_started: {
