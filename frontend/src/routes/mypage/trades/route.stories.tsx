@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import {
@@ -24,7 +25,6 @@ function AuthenticatedStory({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    window.history.replaceState(null, '', '/mypage/trades');
     storeAuthTokens({
       accessToken: AUTH_STORY_TOKEN,
       refreshToken: AUTH_STORY_REFRESH_TOKEN,
@@ -39,9 +39,11 @@ function AuthenticatedStory({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
-      {children}
-    </AuthSessionProvider>
+    <MemoryRouter initialEntries={['/mypage/trades']}>
+      <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
+        {children}
+      </AuthSessionProvider>
+    </MemoryRouter>
   );
 }
 

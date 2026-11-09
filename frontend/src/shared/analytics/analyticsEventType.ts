@@ -386,9 +386,11 @@ export interface AnalyticsEventPropertiesMap {
   };
   account_menu_selected: {
     target:
+      | 'my_trades'
       | 'updates'
       | 'privacy'
       | 'support'
+      | 'collaboration'
       | 'blocked_members'
       | 'logout'
       | 'delete_account';
