@@ -1,4 +1,5 @@
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
 
 export const Page = styled.main`
   position: relative;
@@ -7,6 +8,7 @@ export const Page = styled.main`
   min-height: 100dvh;
   flex-direction: column;
   overflow: hidden;
+  --mobile-map-header-offset: 60px;
   background: var(--color-surface, #ffffff);
   color: var(--color-text, #242122);
 
@@ -19,28 +21,57 @@ export const Page = styled.main`
   }
 `;
 
-export const MobileHeaderLayer = styled.div<{ $isOpen: boolean }>`
+export const MobileHeaderLayer = styled.div`
   position: relative;
   z-index: 40;
   flex: 0 0 auto;
 
   @media (max-width: 767px) {
     position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    transform: translateY(${({ $isOpen }) => ($isOpen ? '0' : '-100%')});
-    visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
-    pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-    transition:
-      transform 240ms ease,
-      visibility 0s ${({ $isOpen }) => ($isOpen ? '0s' : '240ms')};
-    will-change: transform;
-  }
+    inset: 0 0 auto;
+    padding: max(8px, env(safe-area-inset-top)) 12px 0;
+    pointer-events: none;
 
-  @media (max-width: 767px) and (prefers-reduced-motion: reduce) {
-    transition: none;
+    header {
+      border: 0;
+      background: transparent;
+    }
+
+    header > div:has(> [data-header-search-slot]) {
+      display: block;
+      padding: 0;
+    }
+
+    header > div > :not([data-header-search-slot]) {
+      display: none;
+    }
+
+    &&
+      header[data-mobile-tabs]:not([data-mobile-search-open])
+      [data-header-search-slot] {
+      display: block;
+      pointer-events: auto;
+    }
+
+    nav[aria-label='하단 메뉴'] {
+      pointer-events: auto;
+    }
   }
+`;
+
+export const MapSearchLink = styled(Link)`
+  display: flex;
+  min-height: 44px;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid #e7e4e2;
+  border-radius: 999px;
+  background: #fff;
+  color: #777173;
+  font-size: 14px;
+  text-decoration: none;
 `;
 
 export const PageTitle = styled.h1`
@@ -64,63 +95,20 @@ export const SelectedGachaArea = styled.div`
 `;
 
 export const ServiceAreaNotice = styled.aside`
-  box-sizing: border-box;
-  padding: 18px 20px;
-  margin-top: 20px;
-  border: 1px solid var(--color-primary-soft, #fff1f3);
-  border-radius: 16px;
-  background: linear-gradient(135deg, #fff7f8 0%, #ffffff 100%);
-  box-shadow: 0 8px 24px rgb(64 40 46 / 6%);
+  margin: 0;
+  padding: 16px 0;
 
   @media (max-width: 767px) {
-    min-height: 72px;
-    padding: 9px 12px;
-    margin-top: 0;
-    border-color: rgb(217 59 84 / 18%);
-    border-radius: 14px;
-    background: rgb(255 255 255 / 94%);
-    box-shadow: 0 8px 24px rgb(36 33 34 / 14%);
-    backdrop-filter: blur(10px);
-  }
-`;
-
-export const ServiceAreaEyebrow = styled.p`
-  margin: 0 0 5px;
-  color: var(--color-primary, #d93b54);
-  font-size: 12px;
-  font-weight: 800;
-  line-height: 1.4;
-
-  @media (max-width: 767px) {
-    margin-bottom: 2px;
-    font-size: 11px;
+    padding: 8px 0;
   }
 `;
 
 export const ServiceAreaTitle = styled.strong`
   display: block;
-  color: var(--color-text, #242122);
-  font-size: 17px;
-  line-height: 1.35;
+  color: #242122;
+  font-size: 16px;
 
   @media (max-width: 767px) {
-    font-size: 15px;
-    line-height: 1.4;
-  }
-`;
-
-export const ServiceAreaDescription = styled.p`
-  margin: 5px 0 0;
-  color: var(--color-text-muted, #696466);
-  font-size: 13px;
-  line-height: 1.5;
-
-  @media (max-width: 767px) {
-    margin-top: 2px;
-    overflow: hidden;
-    font-size: 11px;
-    line-height: 1.4;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 12px;
   }
 `;

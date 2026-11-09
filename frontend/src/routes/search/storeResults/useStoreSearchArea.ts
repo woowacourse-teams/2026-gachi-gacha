@@ -4,6 +4,7 @@ import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
 
 export interface UseStoreSearchAreaResult {
   searchCenter: MapCoordinate;
+  viewportCenter: MapCoordinate;
   isSearchAreaChanged: boolean;
   updateViewportCenter: (center: MapCoordinate) => void;
   commitViewportCenter: () => void;
@@ -46,6 +47,7 @@ export function useStoreSearchArea(
 
   return {
     searchCenter,
+    viewportCenter,
     isSearchAreaChanged,
     updateViewportCenter,
     commitViewportCenter,

@@ -13,11 +13,11 @@ export const Card = styled.article`
 export const CardButton = styled.button<{ $isSelected: boolean }>`
   display: grid;
   width: 100%;
-  padding: 20px;
-  grid-template-columns: 168px minmax(0, 1fr);
-  gap: 20px;
+  padding: 12px 4px;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px;
   border: 0;
-  border-radius: 16px;
+  border-radius: 8px;
   outline: ${({ $isSelected }) =>
     $isSelected ? '2px solid var(--color-primary, #d93b54)' : 'none'};
   outline-offset: -2px;
@@ -42,12 +42,12 @@ export const CardButton = styled.button<{ $isSelected: boolean }>`
 
   @media (max-width: 767px) {
     box-sizing: border-box;
-    height: 124px;
+    min-height: 104px;
     padding: 10px;
-    grid-template-columns: 96px minmax(0, 1fr);
+    grid-template-columns: 80px minmax(0, 1fr);
     gap: 12px;
     border: 1px solid rgb(36 33 34 / 9%);
-    border-radius: 20px;
+    border-radius: 12px;
     background: ${({ $isSelected }) =>
       $isSelected
         ? 'var(--color-primary-soft, #fbf0f2)'
@@ -60,14 +60,14 @@ export const CardButton = styled.button<{ $isSelected: boolean }>`
 export const ThumbnailFrame = styled.div`
   position: relative;
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1;
   border: 1px solid var(--color-border, #e8e6e3);
-  border-radius: 14px;
+  border-radius: 8px;
   background: var(--color-primary-soft, #fbf0f2);
 
   @media (max-width: 767px) {
-    height: 100%;
-    aspect-ratio: auto;
+    align-self: start;
+    aspect-ratio: 1;
     border-radius: 12px;
   }
 `;
@@ -102,7 +102,7 @@ export const StoreName = styled.h3`
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  font-size: 19px;
+  font-size: 14px;
   font-weight: 750;
   line-height: 1.4;
   letter-spacing: -0.02em;
@@ -117,11 +117,11 @@ export const StoreName = styled.h3`
 
 export const Address = styled.p`
   display: -webkit-box;
-  margin: 10px 0 0;
+  margin: 4px 0 0;
   overflow: hidden;
   color: var(--color-text-muted, #777173);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.45;
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -137,8 +137,8 @@ export const Address = styled.p`
 export const GachaCount = styled.p`
   margin: 4px 0 0;
   color: var(--color-text-muted, #777173);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.45;
 
   @media (max-width: 767px) {
     margin-top: 2px;
@@ -149,13 +149,12 @@ export const GachaCount = styled.p`
 
 export const SelectionHint = styled.span`
   margin-top: auto;
-  padding-top: 12px;
+  padding-top: 6px;
   color: var(--color-text-subtle, #969092);
   font-size: 12px;
   line-height: 1.4;
 
   @media (max-width: 767px) {
-    padding-top: 6px;
-    font-size: 10px;
+    display: none;
   }
 `;

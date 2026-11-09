@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
-import { Link, useSearchParams } from 'react-router';
+import { Link, useLocation, useSearchParams } from 'react-router';
 
 import { AppHeader } from '@/shared/ui/AppHeader';
 
@@ -180,6 +180,8 @@ function KeywordForm({
   onSearch: (value: string) => void;
 }) {
   const [value, setValue] = useState(keyword);
+  const location = useLocation();
+  const backTo = location.state?.searchFrom === '/map' ? '/map' : '/trade';
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -197,7 +199,7 @@ function KeywordForm({
         onSearch(value);
       }}
     >
-      <Back to="/trade" aria-label="교환 홈으로 돌아가기">
+      <Back to={backTo} aria-label="검색을 시작한 화면으로 돌아가기">
         <svg
           width="20"
           height="20"

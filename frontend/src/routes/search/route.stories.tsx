@@ -91,9 +91,15 @@ export const NoSelection: Story = {
 };
 
 export const MobileSuccess: Story = {
+  globals: { viewport: { value: 'mapMobile', isRotated: false } },
   parameters: {
     viewport: {
-      defaultViewport: 'mobile1',
+      options: {
+        mapMobile: {
+          name: 'Mobile 390px',
+          styles: { width: '390px', height: '844px' },
+        },
+      },
     },
   },
 };
@@ -108,4 +114,9 @@ export const InvalidGachaId: Story = {
   args: {
     search: '?gachaId=invalid',
   },
+};
+
+export const MobileMap: Story = {
+  ...MobileSuccess,
+  args: { search: '' },
 };

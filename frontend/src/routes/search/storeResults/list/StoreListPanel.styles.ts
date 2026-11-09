@@ -22,7 +22,7 @@ export const MobileStatusRow = styled.div<{ $showOnMobile: boolean }>`
 
   @media (max-width: 767px) {
     box-sizing: border-box;
-    display: ${({ $showOnMobile }) => ($showOnMobile ? 'flex' : 'none')};
+    display: none;
     width: 100%;
     min-height: 28px;
     padding: 0 14px;
@@ -96,7 +96,7 @@ export const Header = styled.div<{ $showOnMobile: boolean }>`
 
 export const Title = styled.h2`
   margin: 0;
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 750;
   letter-spacing: -0.02em;
 
@@ -139,7 +139,7 @@ export const List = styled.ul`
   @media (max-width: 767px) {
     display: grid;
     padding: 0 12px;
-    grid-auto-columns: calc(100vw - 24px);
+    grid-auto-columns: min(320px, calc(100vw - 48px));
     grid-auto-flow: column;
     gap: 10px;
     overflow-x: auto;
@@ -225,7 +225,7 @@ export const LoadingList = styled.div`
 
   @media (max-width: 767px) {
     padding: 0 12px;
-    grid-auto-columns: calc(100vw - 24px);
+    grid-auto-columns: min(320px, calc(100vw - 48px));
     grid-auto-flow: column;
     gap: 12px;
     overflow: hidden;

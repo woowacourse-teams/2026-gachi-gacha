@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import styled from '@emotion/styled';
 
 import { AffiliateCatalogSlot } from '@/features/affiliateCatalog/AffiliateCatalogSlot';
@@ -58,6 +59,10 @@ export function StoreListPanel({
   onSelectStore,
   onRetry,
 }: StoreListPanelProps) {
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const sheetRef = useRef<HTMLDialogElement>(null);
+  const dragStartRef = useRef<number | null>(null);
+
   const storeCount =
     storesState.status === 'success' ? storesState.data.stores.length : null;
   const activeStoreIndex =
@@ -76,6 +81,83 @@ export function StoreListPanel({
 
   return (
     <Panel aria-labelledby="search-store-list-title">
+      <ListButton
+        type="button"
+        onClick={() => {
+          setIsSheetOpen(true);
+          sheetRef.current?.showModal();
+        }}
+      >
+        ☷ 목록 보기
+      </ListButton>
+      <ListSheet
+        ref={sheetRef}
+        onClose={() => setIsSheetOpen(false)}
+        aria-label="매장 목록"
+        onClick={(event) => {
+          if (event.target === event.currentTarget) sheetRef.current?.close();
+        }}
+      >
+        {isSheetOpen && (
+          <>
+            <SheetHandle
+              type="button"
+              aria-label="매장 목록 닫기"
+              onClick={() => sheetRef.current?.close()}
+              onPointerDown={(event) => {
+                dragStartRef.current = event.clientY;
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerUp={(event) => {
+                if (
+                  dragStartRef.current !== null &&
+                  event.clientY - dragStartRef.current > 60
+                ) {
+                  sheetRef.current?.close();
+                }
+                dragStartRef.current = null;
+              }}
+            >
+              <span />
+            </SheetHandle>
+            <h2>홍대 매장{storeCount === null ? '' : ` ${storeCount}곳`}</h2>
+            {storesState.status === 'success' && (
+              <SheetList>
+                {storesState.data.stores.map((store) => (
+                  <li key={store.storeId}>
+                    <StoreCard
+                      store={store}
+                      isSelected={selectedStoreId === store.storeId}
+                      onOpen={(id) => {
+                        onSelectStore(id);
+                        sheetRef.current?.close();
+                      }}
+                      onSelect={(id) => {
+                        onSelectStore(id);
+                        sheetRef.current?.close();
+                      }}
+                    />
+                  </li>
+                ))}
+                {storesState.data.stores.length === 0 && (
+                  <li>현재 지도 영역에 매장이 없어요.</li>
+                )}
+              </SheetList>
+            )}
+            {storesState.status === 'loading' && (
+              <p role="status">매장을 불러오고 있어요.</p>
+            )}
+            {storesState.status === 'error' && (
+              <div>
+                <p role="alert">{storesState.errorMessage}</p>
+                <RetryButton type="button" onClick={onRetry}>
+                  다시 시도
+                </RetryButton>
+              </div>
+            )}
+          </>
+        )}
+      </ListSheet>
       <MobileStatusRow $showOnMobile={storeCount !== null}>
         {storesState.status === 'success' &&
           storesState.data.stores.length > 1 && (
@@ -165,5 +247,85 @@ const DesktopAffiliateSlot = styled.div`
 
   @media (max-width: ${breakpoint.mobile}) {
     display: none;
+  }
+`;
+
+const ListButton = styled.button`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: block;
+    min-height: 40px;
+    margin: 0 0 10px 12px;
+    padding: 0 14px;
+    border: 1px solid #e7e4e2;
+    border-radius: 999px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+`;
+
+const ListSheet = styled.dialog`
+  position: fixed;
+  inset: auto 0 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  height: min(70dvh, 620px);
+  max-height: 85dvh;
+  margin: 0;
+  padding: 0 16px calc(20px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: 20px 20px 0 0;
+  background: #fff;
+  color: inherit;
+
+  &::backdrop {
+    background: rgb(0 0 0 / 28%);
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: 18px;
+  }
+`;
+
+const SheetHandle = styled.button`
+  display: grid;
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  touch-action: none;
+  cursor: pointer;
+
+  span {
+    width: 40px;
+    height: 4px;
+    border-radius: 4px;
+    background: #d9d5d3;
+  }
+`;
+
+const SheetList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    border-bottom: 1px solid #ececef;
+  }
+  button {
+    min-height: 100px;
+    height: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 `;

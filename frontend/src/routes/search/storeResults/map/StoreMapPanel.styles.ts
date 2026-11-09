@@ -8,7 +8,7 @@ export const Panel = styled.div`
 
   @media (max-width: 767px) {
     min-height: 0;
-    --map-controls-bottom: 190px;
+    --map-controls-bottom: calc(208px + env(safe-area-inset-bottom));
   }
 `;
 
@@ -44,7 +44,7 @@ export const SearchAreaButton = styled.button`
   }
 
   @media (max-width: 767px) {
-    top: calc(var(--mobile-map-header-offset, 120px) + 96px);
+    top: calc(var(--mobile-map-header-offset, 60px) + 56px);
     min-height: 38px;
     padding: 0 14px;
     font-size: 12px;
