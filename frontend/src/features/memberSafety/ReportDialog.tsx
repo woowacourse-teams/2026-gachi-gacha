@@ -3,6 +3,7 @@ import styled from '@emotion/styled';
 
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 import {
   color,
   focusRing,
@@ -328,6 +329,8 @@ const DetailsInput = styled.textarea`
     box-shadow: ${focusRing};
     outline: none;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const PreparationNotice = styled.p`

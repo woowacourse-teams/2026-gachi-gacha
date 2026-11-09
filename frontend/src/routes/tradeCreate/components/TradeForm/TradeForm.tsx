@@ -15,6 +15,7 @@ import type {
 } from '@/domains/trade/tradeCreateType';
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
@@ -713,6 +714,8 @@ const Input = styled.input`
     border-color: #d80f42;
     background: #ffffff;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const PlaceSelectButton = styled.button`
@@ -840,6 +843,8 @@ const Textarea = styled.textarea`
     background: #ffffff;
     box-shadow: 0 0 0 3px rgb(237 23 76 / 10%);
   }
+
+  ${preventIosInputZoom}
 `;
 
 const SubmissionError = styled.p`

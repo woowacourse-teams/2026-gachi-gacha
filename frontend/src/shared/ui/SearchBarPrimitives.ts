@@ -1,5 +1,7 @@
 import styled from '@emotion/styled';
 
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
+
 export const SearchRoot = styled.div`
   position: relative;
   width: 100%;
@@ -55,6 +57,8 @@ export const SearchInput = styled.input`
   &::-webkit-search-cancel-button {
     cursor: pointer;
   }
+
+  ${preventIosInputZoom}
 `;
 
 export const SearchSubmitButton = styled.button`

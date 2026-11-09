@@ -1,5 +1,6 @@
 import styled from '@emotion/styled';
 
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 import {
   color,
   focusRing,
@@ -124,6 +125,8 @@ export const Input = styled.input`
     box-shadow: ${focusRing};
     outline: none;
   }
+
+  ${preventIosInputZoom}
 `;
 
 export const PlaceSelectButton = styled.button`

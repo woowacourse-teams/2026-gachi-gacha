@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
+
 export function HeaderSearch({
   keyword = '',
   backTo,
@@ -140,6 +142,8 @@ const Input = styled.input`
   &::-webkit-search-cancel-button {
     display: none;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const Submit = styled.button`
