@@ -16,10 +16,10 @@ import {
   loadingMemberHandler,
   refreshingSessionHandlers,
 } from '@/features/auth/mocks/authHandlers';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { MockWorkerBoundary } from '@/mocks/MockWorkerBoundary';
 
 import { AppHeader } from './AppHeader';
+import { HeaderSearch } from './HeaderSearch';
 import type { HeaderNotification } from './NotificationPopover';
 
 const notificationFixtures = [
@@ -58,7 +58,6 @@ const meta = {
   ],
   args: {
     currentPath: '/map',
-    search: <GachaSearchBar onSelect={() => undefined} />,
   },
   render: (args) => (
     <AuthSessionProvider initialAccessToken={null}>
@@ -111,21 +110,29 @@ export const SearchActive: Story = {
   },
 };
 
-export const StableNavigationWithSearchSlot: Story = {
-  parameters: {
-    viewport: {
-      defaultViewport: 'mobile1',
-    },
-  },
+export const DesktopRoutes: Story = {
   render: () => (
-    <div style={{ display: 'grid', gap: 24 }}>
-      <AppHeader currentPath="/trade" />
-      <AppHeader
-        currentPath="/map"
-        search={<GachaSearchBar onSelect={() => undefined} />}
-      />
-    </div>
+    <AuthSessionProvider initialAccessToken={null}>
+      <div style={{ display: 'grid', gap: 24 }}>
+        {['/trade', '/map', '/search', '/mypage', '/chat'].map((path) => (
+          <section key={path} aria-label={path}>
+            <p style={{ marginInline: 40 }}>{path}</p>
+            <AppHeader currentPath={path} />
+          </section>
+        ))}
+      </div>
+    </AuthSessionProvider>
   ),
+};
+
+export const MobileHome: Story = {
+  args: { currentPath: '/trade', showMobileTabs: true },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+};
+
+export const MobileMap: Story = {
+  args: { currentPath: '/map', showMobileTabs: true, mobileVariant: 'map' },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
 
 export const Authenticated: Story = {
@@ -207,4 +214,19 @@ export const MobileGuest: Story = {
       defaultViewport: 'mobile1',
     },
   },
+};
+
+export const MobileSearch: Story = {
+  args: {
+    currentPath: '/search',
+    mobileVariant: 'search',
+    search: (
+      <HeaderSearch
+        keyword="치이카와"
+        backTo="/trade"
+        onSearch={() => undefined}
+      />
+    ),
+  },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
 };

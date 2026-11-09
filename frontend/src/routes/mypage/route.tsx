@@ -1,11 +1,9 @@
 import { useState } from 'react';
 
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
 import { TradeDeleteDialog } from '@/domains/trade/components/TradeDeleteDialog';
 import type { TradeSummary } from '@/domains/trade/tradeSummaryType';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { isEventApplicationOpen } from '@/features/eventApplication/eventApplicationConfig';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import {
   assignBrowserLocation,
@@ -77,10 +75,6 @@ import {
 } from './route.styles';
 import { useMyPageTrades } from './useMyPageTrades';
 
-function openGachaSearchResults(gachaId: number) {
-  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
-}
-
 export function MyPageRoute() {
   const { member, deleteAccount, logout, updateProfile } = useAuthSession();
   const {
@@ -146,10 +140,7 @@ export function MyPageRoute() {
 
   return (
     <Page>
-      <AppHeader
-        currentPath="/mypage"
-        search={<GachaSearchBar onSelect={openGachaSearchResults} />}
-      />
+      <AppHeader currentPath="/mypage" />
 
       <Main>
         <PageHeader>

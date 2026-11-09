@@ -14,7 +14,6 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 import CreateTradeButton from './components/CreateTradeButton';
 import ProductCard from './components/ProductCard';
 import ScrollToTopButton from './components/ScrollToTopButton';
-import SearchHero from './components/SearchHero';
 import { TradeFilters } from './components/TradeFilters';
 import type { TradeItem } from './model/tradeItem';
 import type {
@@ -34,7 +33,6 @@ interface TradePageProps {
   isLoadingMore?: boolean;
   loadMoreError?: string | null;
   onOpenTrade?: () => void;
-  onSearch?: (query: string) => void;
   onSelectQuickKeyword?: (keyword: TradeQuickKeyword | null) => void;
   onChangeStatusFilter?: (status: TradeStatus | null) => void;
   onChangeSortOrder?: (sortOrder: TradeSortOrder) => void;
@@ -54,7 +52,6 @@ export default function TradePage({
   isLoadingMore = false,
   loadMoreError = null,
   onOpenTrade,
-  onSearch = () => undefined,
   onSelectQuickKeyword = () => undefined,
   onChangeStatusFilter = () => undefined,
   onChangeSortOrder = () => undefined,
@@ -73,12 +70,7 @@ export default function TradePage({
 
   return (
     <Page>
-      <AppHeader
-        currentPath="/trade"
-        showMobileTabs
-        desktopAction={<CreateTradeButton placement="header" />}
-        search={<SearchHero initialQuery={query} onSearch={onSearch} />}
-      />
+      <AppHeader currentPath="/trade" showMobileTabs />
 
       <Main>
         <ResultsPanel aria-live="polite">

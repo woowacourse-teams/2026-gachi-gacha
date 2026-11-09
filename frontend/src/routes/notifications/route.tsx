@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import {
   getNotifications,
   markAllNotificationsRead,
@@ -10,7 +8,6 @@ import {
 } from '@/features/notifications/api/notificationApi';
 import { useOptionalNotifications } from '@/features/notifications/NotificationContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 import { AppHeader } from '@/shared/ui/AppHeader';
@@ -39,10 +36,6 @@ import {
 } from './route.styles';
 
 const PAGE_SIZE = 20;
-
-function openGachaSearchResults(gachaId: number) {
-  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
-}
 
 function getErrorMessage(error: unknown, fallbackMessage: string): string {
   return error instanceof Error ? error.message : fallbackMessage;
@@ -220,10 +213,7 @@ export function NotificationsRoute() {
 
   return (
     <Page>
-      <AppHeader
-        currentPath="/notifications"
-        search={<GachaSearchBar onSelect={openGachaSearchResults} />}
-      />
+      <AppHeader currentPath="/notifications" />
       <Main>
         <HeadingArea>
           <div>

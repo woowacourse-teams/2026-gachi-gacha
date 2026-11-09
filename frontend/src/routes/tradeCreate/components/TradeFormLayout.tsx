@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
-import { AppGachaSearchHeader } from '@/features/gachaSearch/AppGachaSearchHeader';
+import { AppHeader } from '@/shared/ui/AppHeader';
 
 interface TradeFormLayoutProps {
   title: string;
@@ -20,7 +20,7 @@ export default function TradeFormLayout({
   return (
     <Page>
       <DesktopHeader>
-        <AppGachaSearchHeader currentPath="/trade" />
+        <AppHeader currentPath="/trade" />
       </DesktopHeader>
 
       <Main>

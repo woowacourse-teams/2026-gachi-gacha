@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useNavigate } from 'react-router';
 
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
@@ -31,12 +32,16 @@ import {
   Navigation,
   NavigationLink,
   MobileTabBar,
-  MobileHomeAction,
+  MobileSearchLink,
+  WriteLink,
+  MapSearchEntry,
+  DesktopSearch,
   MobileNotificationLink,
   MobileTab,
   NotificationMenu,
   SearchArea,
 } from './AppHeader.styles';
+import { HeaderSearch } from './HeaderSearch';
 import {
   type HeaderNotification,
   type HeaderNotificationState,
@@ -51,7 +56,7 @@ export interface AppHeaderProps {
   onNotificationSelect?: (notification: HeaderNotification) => void;
   search?: ReactNode;
   showMobileTabs?: boolean;
-  desktopAction?: ReactNode;
+  mobileVariant?: 'default' | 'search' | 'map';
 }
 
 const EMPTY_NOTIFICATION_STATE: HeaderNotificationState = {
@@ -63,7 +68,6 @@ const EMPTY_NOTIFICATION_STATE: HeaderNotificationState = {
 const NAVIGATION_ITEMS = [
   { href: '/trade', label: '홈', destination: 'trade' },
   { href: '/map', label: '지도', destination: 'map' },
-  { href: '/search', label: '검색', destination: 'search' },
 ] as const;
 
 function captureHeaderNavigation(
@@ -75,6 +79,21 @@ function captureHeaderNavigation(
     source: 'header',
     is_authenticated: isAuthenticated,
   });
+}
+
+function SearchIcon() {
+  return (
+    <ActionIcon
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="m16 16 4 4" />
+    </ActionIcon>
+  );
 }
 
 function ChatIcon() {
@@ -127,13 +146,30 @@ export function AppHeader({
   onNotificationSelect,
   search,
   showMobileTabs = false,
-  desktopAction,
+  mobileVariant = 'default',
 }: AppHeaderProps) {
   const { status, member } = useAuthSession();
   const chatUnread = useOptionalChatUnread();
   const notifications = useOptionalNotifications();
-  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-  const mobileSearchId = useId();
+  const navigate = useNavigate();
+  const searchDestination =
+    currentPath === '/map' ? '/search?tab=gacha' : '/search';
+  const searchState = {
+    searchFrom: currentPath === '/map' ? '/map' : '/trade',
+  };
+  const resolvedSearch = search ?? (
+    <HeaderSearch
+      onSearch={(value) => {
+        const keyword = value.trim();
+        navigate(
+          keyword
+            ? `/search?keyword=${encodeURIComponent(keyword)}`
+            : '/search',
+          { state: searchState },
+        );
+      }}
+    />
+  );
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationMenuRef = useRef<HTMLDivElement>(null);
   const notificationButtonRef = useRef<HTMLButtonElement>(null);
@@ -211,9 +247,9 @@ export function AppHeader({
     <>
       <Header
         data-mobile-tabs={showMobileTabs || undefined}
-        data-mobile-search-open={isMobileSearchOpen || undefined}
+        data-mobile-variant={mobileVariant}
       >
-        <HeaderContent $hasSearch={Boolean(search)}>
+        <HeaderContent>
           <Brand
             to="/trade"
             aria-label="GachiGacha 홈으로 이동"
@@ -222,10 +258,6 @@ export function AppHeader({
             <BrandLogo src={gachiGachaLogo} alt="" aria-hidden="true" />
             <span>GachiGacha</span>
           </Brand>
-
-          <SearchArea id={mobileSearchId} data-header-search-slot>
-            {search}
-          </SearchArea>
 
           <Navigation aria-label="주요 메뉴">
             {NAVIGATION_ITEMS.map(({ href, label, destination }) => {
@@ -247,30 +279,49 @@ export function AppHeader({
             })}
           </Navigation>
 
-          <Actions aria-label="사용자 메뉴">
-            {desktopAction}
-            {showMobileTabs && search && (
-              <MobileHomeAction
-                $isActive={isMobileSearchOpen}
-                type="button"
-                aria-label="거래글 검색"
-                aria-expanded={isMobileSearchOpen}
-                aria-controls={mobileSearchId}
-                onClick={() => setIsMobileSearchOpen((open) => !open)}
-              >
-                <ActionIcon
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  aria-hidden="true"
-                >
-                  <circle cx="10.5" cy="10.5" r="6.5" />
-                  <path d="m16 16 4 4" />
-                </ActionIcon>
-              </MobileHomeAction>
+          <SearchArea data-header-search-slot>
+            {mobileVariant === 'map' ? (
+              <>
+                <DesktopSearch>{resolvedSearch}</DesktopSearch>
+                <MapSearchEntry to={searchDestination} state={searchState}>
+                  <SearchIcon />
+                  교환글, 가챠, 매장 검색
+                </MapSearchEntry>
+              </>
+            ) : (
+              resolvedSearch
             )}
-            {showMobileTabs && !isAuthenticated && (
+          </SearchArea>
+
+          <Actions aria-label="사용자 메뉴">
+            <WriteLink
+              to="/trade/new"
+              aria-label="교환 글 등록"
+              onClick={() =>
+                captureAnalyticsEvent('trade_create_started', {
+                  source: 'header',
+                })
+              }
+            >
+              <ActionIcon
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </ActionIcon>
+              글쓰기
+            </WriteLink>
+            <MobileSearchLink
+              to={searchDestination}
+              state={searchState}
+              aria-label="통합 검색으로 이동"
+            >
+              <SearchIcon />
+            </MobileSearchLink>
+            {!isAuthenticated && (
               <MobileNotificationLink
                 to={createLoginUrl('/notifications')}
                 $isActive={false}
