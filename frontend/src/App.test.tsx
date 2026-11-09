@@ -446,55 +446,26 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(hasSeenCurrentLandingTour()).toBe(true);
   });
 
-  it('잘못된 URL은 쿼리와 해시를 유지한 거래/교환 화면으로 이동한다', async () => {
-    server.use(
-      http.get('/api/v1/trades', () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            number: 0,
-            size: 20,
-          },
-        }),
-      ),
-    );
-
+  it('없는 주소로 들어오면 페이지를 찾을 수 없다는 안내와 홈 이동을 보여준다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
       route: '/unknown-page?from=shared-link#results',
     });
 
     expect(
-      await screen.findByRole('search', {
-        name: '통합 검색',
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '페이지를 찾을 수 없어요',
       }),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/trade');
-    expect(window.location.search).toBe('?from=shared-link');
-    expect(window.location.hash).toBe('#results');
+    expect(screen.getByRole('link', { name: '홈으로' })).toHaveAttribute(
+      'href',
+      '/trade',
+    );
+    expect(window.location.pathname).toBe('/unknown-page');
   });
 
-  it('잘못된 URL의 인증 파라미터는 거래/교환 화면으로 전달하지 않는다', async () => {
-    server.use(
-      http.get('/api/v1/trades', () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            number: 0,
-            size: 20,
-          },
-        }),
-      ),
-    );
-
+  it('없는 주소의 인증 파라미터는 주소창에 남기지 않는다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
       route:
@@ -502,13 +473,28 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('search', {
-        name: '통합 검색',
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '페이지를 찾을 수 없어요',
       }),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/trade');
+    expect(window.location.pathname).toBe('/unknown-page');
     expect(window.location.search).toBe('?from=shared-link');
     expect(window.location.hash).toBe('');
+  });
+
+  it('잘못된 교환글 번호로 들어오면 페이지를 찾을 수 없다고 안내한다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/trade/not-a-number',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '페이지를 찾을 수 없어요',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('검색 URL에서 카테고리별 가챠 탐색 화면을 보여준다', async () => {
