@@ -29,6 +29,7 @@ import {
   BrandLogo,
   Header,
   HeaderContent,
+  MobileTitle,
   Navigation,
   NavigationLink,
   MobileTabBar,
@@ -56,7 +57,8 @@ export interface AppHeaderProps {
   onNotificationSelect?: (notification: HeaderNotification) => void;
   search?: ReactNode;
   showMobileTabs?: boolean;
-  mobileVariant?: 'default' | 'search' | 'map';
+  mobileVariant?: 'default' | 'search' | 'map' | 'title';
+  mobileTitle?: string;
 }
 
 const EMPTY_NOTIFICATION_STATE: HeaderNotificationState = {
@@ -147,6 +149,7 @@ export function AppHeader({
   search,
   showMobileTabs = false,
   mobileVariant = 'default',
+  mobileTitle,
 }: AppHeaderProps) {
   const { status, member } = useAuthSession();
   const chatUnread = useOptionalChatUnread();
@@ -250,7 +253,11 @@ export function AppHeader({
         data-mobile-variant={mobileVariant}
       >
         <HeaderContent>
+          {mobileTitle && (
+            <MobileTitle data-header-mobile-title>{mobileTitle}</MobileTitle>
+          )}
           <Brand
+            data-header-brand
             to="/trade"
             aria-label="GachiGacha 홈으로 이동"
             onClick={() => captureHeaderNavigation('brand', isAuthenticated)}
@@ -315,6 +322,7 @@ export function AppHeader({
               글쓰기
             </WriteLink>
             <MobileSearchLink
+              data-mobile-search-action
               to={searchDestination}
               state={searchState}
               aria-label="통합 검색으로 이동"

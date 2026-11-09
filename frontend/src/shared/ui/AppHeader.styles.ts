@@ -35,6 +35,23 @@ export const Header = styled.header`
       display: none;
     }
 
+    &[data-mobile-variant='title'] {
+      border-bottom: 0;
+      & > div {
+        min-height: 48px;
+        padding: 0 14px 0 24px;
+      }
+      nav[aria-label='사용자 메뉴'] > div > button,
+      nav[aria-label='사용자 메뉴'] > a {
+        min-width: 44px;
+        height: 44px;
+      }
+      [data-header-brand],
+      [data-mobile-search-action] {
+        display: none;
+      }
+    }
+
     &[data-mobile-variant='search'],
     &[data-mobile-variant='map'] {
       & > div {
@@ -462,5 +479,18 @@ export const MapSearchEntry = styled(Link)`
     color: #777173;
     font-size: 14px;
     text-decoration: none;
+  }
+`;
+
+export const MobileTitle = styled.h1`
+  display: none;
+  @media (max-width: 767px) {
+    grid-area: brand;
+    display: block;
+    margin: 0;
+    color: var(--color-text, #242122);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
   }
 `;

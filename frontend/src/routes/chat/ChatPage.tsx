@@ -7,10 +7,15 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 
 import ChatRoomPanel from './components/ChatRoomPanel';
 import ConversationList from './components/ConversationList';
+import type { ConversationListProps } from './components/ConversationList/ConversationList';
 import type { ChatConversation, ChatRoom } from './model/chat';
 
 interface ChatPageProps {
   conversations: ChatConversation[];
+  listStatus?: ConversationListProps['status'];
+  listErrorMessage?: string;
+  onRetryList?: () => void;
+  selectedConversationId?: number | undefined;
   selectedRoom?: ChatRoom | undefined;
   roomLoadError?: string;
   onRetryRoom?: () => void;
@@ -31,6 +36,10 @@ interface ChatPageProps {
 
 export default function ChatPage({
   conversations,
+  listStatus = 'success',
+  listErrorMessage,
+  onRetryList,
+  selectedConversationId,
   selectedRoom,
   roomLoadError = '',
   onRetryRoom,
@@ -126,7 +135,20 @@ export default function ChatPage({
 
   return (
     <Page $hasSelectedRoom={Boolean(selectedRoom)}>
-      <AppHeader currentPath="/chat" />
+      <AppHeader
+        currentPath="/chat"
+        mobileVariant="title"
+        mobileTitle="채팅"
+        showMobileTabs={!selectedRoom}
+        {...(listStatus === 'success'
+          ? {
+              chatUnreadCount: conversations.reduce(
+                (total, conversation) => total + conversation.unreadCount,
+                0,
+              ),
+            }
+          : {})}
+      />
       {roomLoadError && (
         <RoomLoadError role="alert">
           <span>{roomLoadError} 다른 채팅방은 계속 확인할 수 있어요.</span>
@@ -140,35 +162,55 @@ export default function ChatPage({
       <Main $hasSelectedRoom={Boolean(selectedRoom)}>
         <ConversationList
           conversations={conversations}
-          selectedConversationId={selectedRoom?.conversationId}
+          selectedConversationId={
+            selectedConversationId ?? selectedRoom?.conversationId
+          }
+          status={listStatus}
+          errorMessage={listErrorMessage}
+          onRetry={onRetryList}
           onSelectConversation={(conversationId) =>
             onSelectConversation?.(conversationId)
           }
         />
-        <ChatRoomPanel
-          room={selectedRoom}
-          onClose={
-            selectedRoom ? () => onSelectConversation?.(null) : undefined
-          }
-          socketStatus={socketStatus}
-          socketErrorMessage={socketErrorMessage}
-          onSendMessage={onSendMessage}
-          onSendImages={onSendImages}
-          hasPreviousMessages={hasPreviousMessages}
-          isLoadingPreviousMessages={isLoadingPreviousMessages}
-          previousMessagesError={previousMessagesError}
-          onLoadPreviousMessages={onLoadPreviousMessages}
-          onChangeTradeStatus={onChangeTradeStatus}
-          onPartnerBlocked={onPartnerBlocked}
-        />
+        {selectedRoom ? (
+          <ChatRoomPanel
+            room={selectedRoom}
+            onClose={
+              selectedRoom ? () => onSelectConversation?.(null) : undefined
+            }
+            socketStatus={socketStatus}
+            socketErrorMessage={socketErrorMessage}
+            onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
+            hasPreviousMessages={hasPreviousMessages}
+            isLoadingPreviousMessages={isLoadingPreviousMessages}
+            previousMessagesError={previousMessagesError}
+            onLoadPreviousMessages={onLoadPreviousMessages}
+            onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
+          />
+        ) : (
+          <ConversationPrompt>
+            <h2>대화를 선택해 주세요</h2>
+            <p>왼쪽 목록에서 채팅방을 고르면 여기에 표시돼요.</p>
+          </ConversationPrompt>
+        )}
       </Main>
     </Page>
   );
 }
 
 const Page = styled.div<{ $hasSelectedRoom?: boolean }>`
-  min-height: 100dvh;
-  background: #f7f5f6;
+  display: flex;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
+  @media (max-width: 767px) {
+    padding-bottom: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? 0 : 'calc(56px + env(safe-area-inset-bottom))')};
+    box-sizing: border-box;
+  }
 
   @media (max-width: 900px) {
     ${({ $hasSelectedRoom }) =>
@@ -187,8 +229,8 @@ const Page = styled.div<{ $hasSelectedRoom?: boolean }>`
 
 const RoomLoadError = styled.div`
   display: flex;
-  width: min(100% - 32px, 1320px);
-  margin: 24px auto 0;
+  flex: none;
+  margin: 0;
   padding: 14px 18px;
   align-items: center;
   justify-content: space-between;
@@ -311,37 +353,47 @@ const ChatDrawer = styled.aside`
 
 const Main = styled.main<{ $hasSelectedRoom: boolean }>`
   display: grid;
-  width: min(100%, 1320px);
-  min-height: 680px;
-  margin: 36px auto 64px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
   overflow: hidden;
-  grid-template-columns: 430px minmax(0, 1fr);
-  border: 1px solid #eeeaec;
-  border-radius: 22px;
-  background: #ffffff;
-
+  grid-template-columns: 380px minmax(0, 1fr);
+  background: white;
+  > section {
+    min-height: 0;
+  }
   @media (max-width: 900px) {
-    width: ${({ $hasSelectedRoom }) =>
-      $hasSelectedRoom ? '100%' : 'calc(100% - 32px)'};
-    min-height: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? '0' : '680px')};
-    height: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? '100dvh' : 'auto')};
-    margin: ${({ $hasSelectedRoom }) =>
-      $hasSelectedRoom ? '0' : '36px auto 64px'};
-    grid-template-columns: 1fr;
-    border: ${({ $hasSelectedRoom }) =>
-      $hasSelectedRoom ? '0' : '1px solid #eeeaec'};
-    border-radius: ${({ $hasSelectedRoom }) =>
-      $hasSelectedRoom ? '0' : '22px'};
-
+    grid-template-columns: minmax(0, 1fr);
     > aside {
-      display: ${({ $hasSelectedRoom }) =>
-        $hasSelectedRoom ? 'none' : 'block'};
+      display: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? 'none' : 'block')};
     }
-
     > section {
-      display: ${({ $hasSelectedRoom }) =>
-        $hasSelectedRoom ? 'grid' : 'none'};
+      display: ${({ $hasSelectedRoom }) => ($hasSelectedRoom ? 'grid' : 'none')};
       min-height: 0;
     }
+  }
+`;
+const ConversationPrompt = styled.section`
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 6px;
+  padding: 24px;
+  text-align: center;
+  h2 {
+    margin: 0;
+    color: #242122;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  p {
+    margin: 0;
+    color: #696466;
+    font-size: 14px;
+    line-height: 1.4;
   }
 `;

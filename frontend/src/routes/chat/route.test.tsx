@@ -125,6 +125,37 @@ describe('ChatRoute', () => {
     );
   });
 
+  it('목록 조회 실패 후 페이지 새로고침 없이 다시 조회한다', async () => {
+    let requests = 0;
+    server.use(
+      http.get('/api/v1/chat/rooms/me', () => {
+        requests += 1;
+        return requests === 1
+          ? HttpResponse.json({ message: '목록 조회 실패' }, { status: 503 })
+          : HttpResponse.json({
+              code: 'C000',
+              message: '정상',
+              data: { rooms: [] },
+            });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<ChatRoute />, {
+      initialAccessToken: ACCESS_TOKEN,
+      route: '/chat',
+    });
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+    expect(
+      await screen.findByText('아직 시작한 대화가 없어요.'),
+    ).toBeInTheDocument();
+    expect(requests).toBe(2);
+    expect(window.location.pathname).toBe('/chat');
+    expect(
+      screen.getByRole('navigation', { name: '주요 메뉴' }),
+    ).toBeInTheDocument();
+  });
+
   it('선택한 사진을 업로드한 뒤 이미지 메시지 메타데이터를 전송한다', async () => {
     const user = userEvent.setup();
 

@@ -56,9 +56,7 @@ describe('ChatPage', () => {
         name: `${SELECTED_CHAT_ROOM.partnerName}님과의 채팅 페이지`,
       }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: '전체 대화' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '채팅' })).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: SELECTED_CHAT_ROOM.partnerName }),
     ).toBeInTheDocument();

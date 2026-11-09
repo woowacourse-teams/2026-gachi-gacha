@@ -8,6 +8,7 @@ export interface ChatConversation {
   partnerName: string;
   partnerProfileImageUrl: string | null;
   itemTitle: string;
+  itemImageUrl: string | null;
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: number;
