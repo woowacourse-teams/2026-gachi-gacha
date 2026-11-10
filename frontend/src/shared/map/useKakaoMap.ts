@@ -3,6 +3,7 @@ import type { RefObject } from 'react';
 
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
+import { acquireKakaoMap } from './kakaoMapInstancePool';
 import { loadKakaoMapsSdk } from './loadKakaoMapsSdk';
 import type { MapCoordinate } from './mapCoordinateType';
 
@@ -53,6 +54,7 @@ export function useKakaoMap({
     }
 
     let isActive = true;
+    let releaseMap: (() => void) | null = null;
 
     async function initializeMap(mapContainer: HTMLDivElement) {
       try {
@@ -62,17 +64,12 @@ export function useKakaoMap({
           return;
         }
 
-        const { center: initialCenter, level: initialLevel } =
-          latestOptionsRef.current;
-        const map = new window.kakao.maps.Map(mapContainer, {
-          center: new window.kakao.maps.LatLng(
-            initialCenter.latitude,
-            initialCenter.longitude,
-          ),
-          draggable: true,
-          level: initialLevel,
-        });
+        const { map, release } = acquireKakaoMap(
+          mapContainer,
+          latestOptionsRef.current,
+        );
 
+        releaseMap = release;
         setMapState({ status: 'success', data: map, errorMessage: null });
       } catch (error: unknown) {
         if (isActive) {
@@ -89,6 +86,8 @@ export function useKakaoMap({
 
     return () => {
       isActive = false;
+      releaseMap?.();
+      releaseMap = null;
       container.replaceChildren();
     };
   }, [attempt]);
