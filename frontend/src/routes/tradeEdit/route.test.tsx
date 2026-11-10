@@ -82,10 +82,14 @@ describe('TradeEditRoute', () => {
       screen.getByRole('button', { name: '피규어 카테고리 선택 해제' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: '구매 매장 (선택)' }),
+      screen.getByRole('button', {
+        name: '구매 매장 (선택) 가챠샵 홍대점 서울특별시 마포구 양화로 100',
+      }),
     ).toHaveTextContent('가챠샵 홍대점');
     expect(
-      screen.getByRole('button', { name: '거래 장소 (선택)' }),
+      screen.getByRole('button', {
+        name: '거래 장소 (선택) 홍대입구역 8번 출구 서울특별시 마포구 양화로 160',
+      }),
     ).toHaveTextContent('홍대입구역 8번 출구');
     expect(
       screen.getByRole('img', { name: '기존 거래 사진 1' }),

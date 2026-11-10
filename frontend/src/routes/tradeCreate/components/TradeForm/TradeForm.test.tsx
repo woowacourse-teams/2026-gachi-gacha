@@ -153,7 +153,9 @@ async function selectCategory(user: ReturnType<typeof userEvent.setup>) {
     ),
   );
   await user.type(screen.getByRole('searchbox', { name: /카테고리/ }), '산리');
-  await user.click(await screen.findByRole('button', { name: '산리오' }));
+  await user.click(
+    await screen.findByRole('button', { name: '산리오 카테고리에 추가' }),
+  );
 }
 
 function createTradeResponse() {
@@ -217,7 +219,9 @@ describe('TradeForm', () => {
     await waitFor(() => {
       expect(requestedKeywords.at(-1)).toBe('포켓');
     });
-    await user.click(await screen.findByRole('button', { name: '포켓몬' }));
+    await user.click(
+      await screen.findByRole('button', { name: '포켓몬 카테고리에 추가' }),
+    );
 
     expect(
       screen.getByRole('button', { name: '포켓몬 카테고리 선택 해제' }),
@@ -229,7 +233,7 @@ describe('TradeForm', () => {
     ).toBeInTheDocument();
   });
 
-  it('카테고리 검색창에서 Enter를 누르면 첫 번째 검색 결과를 선택한다', async () => {
+  it('카테고리 검색창 Enter로 첫 결과를 확인한 뒤 명시적으로 추가한다', async () => {
     server.use(
       http.get('/api/v1/categories', () =>
         HttpResponse.json({
@@ -251,13 +255,65 @@ describe('TradeForm', () => {
     });
 
     await user.type(categorySearch, '포켓');
-    await screen.findByRole('button', { name: '포켓몬' });
+    const firstResult = await screen.findByRole('button', {
+      name: '포켓몬 카테고리에 추가',
+    });
+    await user.keyboard('{Enter}');
+
+    expect(firstResult).toHaveFocus();
+    expect(
+      screen.queryByRole('button', { name: '포켓몬 카테고리 선택 해제' }),
+    ).not.toBeInTheDocument();
     await user.keyboard('{Enter}');
 
     expect(
       screen.getByRole('button', { name: '포켓몬 카테고리 선택 해제' }),
     ).toBeInTheDocument();
     expect(categorySearch).toHaveValue('');
+    expect(
+      screen.getByRole('button', { name: '포켓몬 카테고리 선택 해제' }),
+    ).toHaveFocus();
+  });
+
+  it('제목 다음 동작과 설명 뒤 보조 버튼으로 입력 흐름을 이어간다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const title = screen.getByRole('textbox', { name: /제목/ });
+    const description = screen.getByRole('textbox', { name: /설명/ });
+    const category = screen.getByRole('searchbox', { name: /카테고리/ });
+
+    expect(title).toHaveAttribute('enterkeyhint', 'next');
+    await user.type(title, '치이카와{Enter}');
+    expect(description).toHaveFocus();
+    await user.type(description, '첫 줄{Enter}둘째 줄');
+    expect(description).toHaveValue('첫 줄\n둘째 줄');
+    await user.tab();
+    const next = screen.getByRole('button', {
+      name: '설명 입력을 마치고 카테고리로 이동',
+    });
+    expect(next).toHaveFocus();
+    await user.keyboard('{Enter}');
+    expect(category).toHaveFocus();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('제목의 한글 조합 확정과 단순 blur에는 다음 입력 초점을 강제하지 않는다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const title = screen.getByRole('textbox', { name: /제목/ });
+    const description = screen.getByRole('textbox', { name: /설명/ });
+    await user.click(title);
+    fireEvent.keyDown(title, { key: 'Enter', isComposing: true });
+    expect(title).toHaveFocus();
+    fireEvent.keyDown(title, { key: 'Enter', keyCode: 229 });
+    expect(title).toHaveFocus();
+    await user.click(description);
+    (description as HTMLTextAreaElement).blur();
+    expect(description).not.toHaveFocus();
+    expect(
+      screen.getByRole('searchbox', { name: /카테고리/ }),
+    ).not.toHaveFocus();
+    expect(screen.getByRole('textbox', { name: /설명/ })).toBe(description);
   });
 
   it('단일 행 입력에서는 Enter로 폼을 제출하지 않고, 설명에서는 줄바꿈한다', async () => {
@@ -387,6 +443,12 @@ describe('TradeForm', () => {
     const user = userEvent.setup();
     const { container } = renderTradeForm();
 
+    expect(
+      screen.getByRole('button', {
+        name: '구매 매장 (선택) 가챠를 구매한 매장을 선택해주세요',
+      }),
+    ).toHaveAttribute('aria-haspopup', 'dialog');
+
     await user.click(
       screen.getByRole('button', {
         name: /구매 매장/,
@@ -398,6 +460,11 @@ describe('TradeForm', () => {
 
     expect(
       container.querySelector('input[name="purchaseStore.address"]'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: '구매 매장 (선택) 홍대 가챠샵 서울특별시 마포구 양화로 100',
+      }),
     ).toBeInTheDocument();
 
     await user.click(

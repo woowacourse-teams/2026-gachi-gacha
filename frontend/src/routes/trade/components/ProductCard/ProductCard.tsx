@@ -64,14 +64,25 @@ export default function ProductCard({
 
       <CardContent>
         <PrimaryInfo>
+          <ScreenReaderText>교환글 제목: </ScreenReaderText>
           <Title>{item.title}</Title>
-          <Categories>{categories}</Categories>
+          <Categories>
+            <ScreenReaderText>카테고리: </ScreenReaderText>
+            {categories}
+          </Categories>
         </PrimaryInfo>
 
         <TradeInfo>
-          <Meta>{place}</Meta>
-          <Meta>{formatRelativeTime(item.createdAt)}</Meta>
+          <Meta>
+            <ScreenReaderText>희망 교환 장소: </ScreenReaderText>
+            {place}
+          </Meta>
+          <Meta>
+            <ScreenReaderText>교환글 등록 날짜: </ScreenReaderText>
+            {formatRelativeTime(item.createdAt)}
+          </Meta>
           <BadgeRow>
+            <ScreenReaderText>거래 상태: </ScreenReaderText>
             <span data-status>
               <TradeStatusBadge status={item.status} />
             </span>
@@ -80,19 +91,23 @@ export default function ProductCard({
                 item.commentCount !== undefined) && (
                 <Engagement>
                   {item.likeCount !== undefined && (
-                    <span aria-label={`좋아요 ${item.likeCount}개`}>
+                    <span>
+                      <ScreenReaderText>좋아요 </ScreenReaderText>
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 20 4.5 12.5a4.5 4.5 0 0 1 6.4-6.4L12 7.2l1.1-1.1a4.5 4.5 0 0 1 6.4 6.4Z" />
                       </svg>
                       {item.likeCount}
+                      <ScreenReaderText>개</ScreenReaderText>
                     </span>
                   )}
                   {item.commentCount !== undefined && (
-                    <span aria-label={`댓글 ${item.commentCount}개`}>
+                    <span>
+                      <ScreenReaderText>댓글 </ScreenReaderText>
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M20 11.5a8 8 0 0 1-8 8H4l2-4a8 8 0 1 1 14-4Z" />
                       </svg>
                       {item.commentCount}
+                      <ScreenReaderText>개</ScreenReaderText>
                     </span>
                   )}
                 </Engagement>
@@ -103,6 +118,19 @@ export default function ProductCard({
     </Card>
   );
 }
+
+// 시각적인 카드 배치는 유지하면서 링크의 각 값이 뜻하는 항목을 설명한다.
+const ScreenReaderText = styled.span`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+`;
 
 const Card = styled(Link)`
   box-sizing: border-box;

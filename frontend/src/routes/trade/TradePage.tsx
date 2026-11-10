@@ -71,6 +71,7 @@ export default function TradePage({
   return (
     <Page>
       <AppHeader currentPath="/trade" showMobileTabs />
+      <CreateTradeButton placement="mobile" />
 
       <Main>
         <ResultsPanel aria-live="polite">
@@ -137,7 +138,6 @@ export default function TradePage({
       </Main>
 
       <ScrollToTopButton />
-      <CreateTradeButton placement="mobile" />
     </Page>
   );
 }
