@@ -251,7 +251,7 @@ function createConfig({ config }) {
     scheme: variantConfig.scheme,
     version,
     orientation: 'default',
-    icon: './assets/lucha-app-icon.png',
+    icon: './assets/app-icon.png',
     userInterfaceStyle: 'light',
     android: {
       package: variantConfig.applicationId,
@@ -265,8 +265,8 @@ function createConfig({ config }) {
       softwareKeyboardLayoutMode: 'resize',
       intentFilters: createOAuthIntentFilters(oauthCallbackBaseUrl),
       adaptiveIcon: {
-        backgroundColor: '#68c4f3',
-        foregroundImage: './assets/lucha-app-icon.png',
+        backgroundColor: '#FFFFFF',
+        foregroundImage: './assets/app-icon-adaptive.png',
       },
       predictiveBackGestureEnabled: true,
     },
