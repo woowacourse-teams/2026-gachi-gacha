@@ -6,6 +6,7 @@ import { http, HttpResponse } from 'msw';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
+import { submitSearchForm } from '@/test/submitSearchForm';
 
 import { AppHeader } from './AppHeader';
 
@@ -21,7 +22,7 @@ beforeEach(() => {
 });
 
 describe('AppHeader', () => {
-  it('비로그인 상태에서는 거래/교환, 지도, 검색, 로그인만 노출한다', () => {
+  it('비로그인 상태에서는 홈·지도 메뉴와 통합 검색·글쓰기 진입을 제공한다', () => {
     renderWithProviders(<AppHeader currentPath="/trade" />, {
       initialAccessToken: null,
     });
@@ -30,8 +31,11 @@ describe('AppHeader', () => {
       name: '주요 메뉴',
     });
 
-    expect(primaryNavigation).toHaveTextContent('거래/교환지도검색');
-    expect(screen.queryByRole('link', { name: '홈' })).not.toBeInTheDocument();
+    expect(primaryNavigation).toHaveTextContent('홈지도');
+    const homeLink = screen.getByRole('link', { name: '홈' });
+
+    expect(homeLink).toHaveAttribute('href', '/trade');
+    expect(homeLink).toHaveAttribute('aria-current', 'page');
     expect(
       screen.queryByRole('link', { name: '채팅' }),
     ).not.toBeInTheDocument();
@@ -54,30 +58,58 @@ describe('AppHeader', () => {
     expect(window.location.pathname).toBe('/map');
   });
 
-  it('검색창 유무와 무관하게 동일한 헤더 그리드 슬롯을 유지한다', () => {
-    renderWithProviders(
-      <>
-        <AppHeader currentPath="/trade" />
-        <AppHeader
-          currentPath="/map"
-          search={<form aria-label="가챠 검색" />}
-        />
-      </>,
-      {
-        initialAccessToken: null,
-      },
-    );
-    const navigations = screen.getAllByRole('navigation', {
-      name: '주요 메뉴',
+  it('공통 검색창에서 공백을 정리해 통합 검색 결과로 이동한다', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AppHeader currentPath="/mypage" />, {
+      route: '/mypage',
     });
-    const searchSlots = document.querySelectorAll('[data-header-search-slot]');
-
-    expect(searchSlots).toHaveLength(2);
-    expect(searchSlots[0]?.nextElementSibling).toBe(navigations[0]);
-    expect(searchSlots[1]).toContainElement(
-      screen.getByRole('form', { name: '가챠 검색' }),
+    await user.type(
+      screen.getByRole('searchbox', { name: '검색어' }),
+      '  치이카와  ',
     );
-    expect(searchSlots[1]?.nextElementSibling).toBe(navigations[1]);
+    submitSearchForm(
+      screen.getByRole('search', { name: '통합 검색' }) as HTMLFormElement,
+    );
+    expect(window.location.pathname).toBe('/search');
+    expect(new URLSearchParams(window.location.search).get('keyword')).toBe(
+      '치이카와',
+    );
+  });
+
+  it('검색어 지우기는 현재 화면에서 입력만 비운다', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<AppHeader currentPath="/mypage" />, {
+      route: '/mypage',
+    });
+    const input = screen.getByRole('searchbox', { name: '검색어' });
+    await user.type(input, '치이카와');
+    await user.click(screen.getByRole('button', { name: '검색어 지우기' }));
+    expect(input).toHaveValue('');
+    expect(window.location.pathname).toBe('/mypage');
+  });
+
+  it('모바일 검색 진입과 글쓰기는 각 화면의 공통 경로를 사용한다', () => {
+    renderWithProviders(<AppHeader currentPath="/trade" showMobileTabs />);
+    expect(screen.getByLabelText('통합 검색으로 이동')).toHaveAttribute(
+      'href',
+      '/search',
+    );
+    expect(screen.getByRole('link', { name: '교환 글 등록' })).toHaveAttribute(
+      'href',
+      '/trade/new',
+    );
+  });
+
+  it('지도 검색은 가챠 탭과 지도 복귀 상태를 유지한다', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <AppHeader currentPath="/map" mobileVariant="map" showMobileTabs />,
+      { route: '/map' },
+    );
+    await user.click(screen.getByText('교환글, 가챠, 매장 검색'));
+    expect(window.location.pathname).toBe('/search');
+    expect(window.location.search).toBe('?tab=gacha');
+    expect(window.history.state?.usr).toEqual({ searchFrom: '/map' });
   });
 
   it('로그인 상태에서는 채팅과 알림을 함께 노출한다', async () => {

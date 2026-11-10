@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { StoreListPanel } from './StoreListPanel';
 import { nearbyStoresMockResponse } from '../../mocks/nearbyStoresMock';
@@ -91,5 +92,48 @@ describe('StoreListPanel', () => {
     expect(screen.getByTestId('affiliate-catalog-slot')).toHaveTextContent(
       '피규어|산리오캐릭터 가챠',
     );
+  });
+  it('목록 시트에서 선택하면 지도의 매장 선택을 갱신하고 시트를 닫는다', async () => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value: function (this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value: function (this: HTMLDialogElement) {
+        this.removeAttribute('open');
+        this.dispatchEvent(new Event('close'));
+      },
+    });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: jest.fn().mockReturnValue({ matches: true }),
+    });
+    const user = userEvent.setup();
+    const select = jest.fn();
+    render(
+      <StoreListPanel
+        storesState={{
+          status: 'success',
+          data: nearbyStoresMockResponse.data,
+          errorMessage: null,
+        }}
+        isGachaSelected={false}
+        selectedStoreId={null}
+        onOpenStore={noop}
+        onSelectStore={select}
+        onRetry={noop}
+      />,
+    );
+
+    await user.click(screen.getByText(/목록 보기/));
+    const sheet = screen.getByRole('dialog', { name: '매장 목록' });
+    await user.click(
+      within(sheet).getByRole('button', { name: /홍대 가챠 스테이션/ }),
+    );
+    expect(select).toHaveBeenCalledWith(1);
+    expect(sheet).not.toHaveAttribute('open');
   });
 });

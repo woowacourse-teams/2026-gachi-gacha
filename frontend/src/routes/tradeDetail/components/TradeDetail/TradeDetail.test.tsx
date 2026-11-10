@@ -26,7 +26,9 @@ describe('TradeDetail', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('가지고 있는 것')).toBeInTheDocument();
+    expect(
+      screen.getByText('가지고 있는 것', { selector: 'dt' }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: '가지고 있는 상품 설명' }),
     ).toBeInTheDocument();
@@ -120,13 +122,15 @@ describe('TradeDetail', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('작성자에게는 채팅하기 대신 수정하기 링크와 조회용 상태를 보여준다', () => {
+  it('작성자에게는 채팅하기 대신 더보기 메뉴와 현재 상태를 보여준다', async () => {
+    const user = userEvent.setup();
     render(
       <MemoryRouter>
         <TradeDetail detail={TRADE_DETAIL} action="edit" />
       </MemoryRouter>,
     );
 
+    await user.click(screen.getByRole('button', { name: '내 글 더보기' }));
     expect(screen.getByRole('link', { name: '수정하기' })).toHaveAttribute(
       'href',
       `/trade/${TRADE_DETAIL.tradeId}/edit`,

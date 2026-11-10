@@ -1,145 +1,159 @@
 import styled from '@emotion/styled';
 
-import {
-  breakpoint,
-  color,
-  focusRing,
-  fontSize,
-  fontWeight,
-  letterSpacing,
-  lineHeight,
-  radius,
-  shadow,
-  space,
-} from '@/shared/styles/tokens';
+import { color, focusRing } from '@/shared/styles/tokens';
 import { ImageWithFallback } from '@/shared/ui/ImageWithFallback';
 
-export const Heading = styled.header`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: ${space.xl};
-`;
-
-export const HeadingCopy = styled.div`
-  min-width: 0;
-`;
-
-export const Title = styled.h1`
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-size: ${fontSize.display};
-  font-weight: ${fontWeight.extraBold};
-  line-height: ${lineHeight.tight};
-  letter-spacing: ${letterSpacing.title};
-  word-break: keep-all;
-`;
-
-export const Address = styled.p`
-  margin: ${space.xs} 0 0;
-  color: ${color.textMuted};
-  font-size: ${fontSize.body};
-  line-height: ${lineHeight.body};
-`;
-
-export const Gallery = styled.section<{ $isSingle: boolean }>`
+export const Overview = styled.div`
   display: grid;
-  height: clamp(360px, 42vw, 520px);
-  margin-top: ${space.xxl};
-  grid-template-columns: ${({ $isSingle }) =>
-    $isSingle ? 'minmax(0, 1fr)' : 'minmax(0, 2fr) repeat(2, minmax(0, 1fr))'};
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: ${space.xs};
+  grid-template-columns: minmax(0, 600fr) minmax(0, 544fr);
+  grid-template-areas: 'gallery heading' 'gallery visit' 'gallery prices' 'gallery updated' 'catalog catalog';
+  column-gap: 56px;
+  align-items: start;
 
-  @media (max-width: ${breakpoint.mobile}) {
-    height: auto;
-    padding-bottom: ${space.xxs};
-    overflow-x: auto;
-    grid-auto-columns: 100%;
-    grid-auto-flow: column;
-    grid-template-columns: 100%;
-    grid-template-rows: 260px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-
-    &::-webkit-scrollbar {
-      display: none;
+  @media (max-width: 1000px) and (min-width: 768px) {
+    column-gap: 32px;
+  }
+  @media (max-width: 767px) {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    & > * {
+      width: 100%;
+      box-sizing: border-box;
     }
   }
 `;
 
-export const GalleryFrame = styled.div<{ $isMain?: boolean }>`
+export const Heading = styled.header`
+  grid-area: heading;
+  min-width: 0;
+  @media (max-width: 767px) {
+    padding: 20px 24px;
+  }
+`;
+export const HeadingCopy = styled.div`
+  min-width: 0;
+`;
+export const Title = styled.h1`
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  @media (max-width: 767px) {
+    font-size: 24px;
+  }
+`;
+export const Address = styled.p`
+  margin: 6px 0 0;
+  color: ${color.textMuted};
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+`;
+
+export const Gallery = styled.section`
+  position: relative;
+  grid-area: gallery;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  background: ${color.surfaceMuted};
+  @media (max-width: 767px) {
+    border-radius: 0;
+  }
+`;
+export const GalleryTrack = styled.div`
+  display: flex;
+  height: 440px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  &:focus-visible {
+    outline: 3px solid ${color.primary};
+    outline-offset: -3px;
+  }
+  @media (max-width: 767px) {
+    height: auto;
+    aspect-ratio: 39 / 28;
+  }
+`;
+export const GalleryFrame = styled.div`
   position: relative;
   display: grid;
   min-width: 0;
+  height: 100%;
+  flex: 0 0 100%;
   overflow: hidden;
-  border: 1px solid ${color.border};
-  border-radius: ${radius.card};
-  background: ${color.surfaceMuted};
   place-items: center;
-
-  ${({ $isMain }) =>
-    $isMain
-      ? `
-        grid-column: 1;
-        grid-row: 1 / 3;
-      `
-      : ''}
-
-  @media (max-width: ${breakpoint.mobile}) {
-    grid-column: auto;
-    grid-row: auto;
-    scroll-snap-align: center;
-  }
+  scroll-snap-align: start;
 `;
-
 export const GalleryImage = styled(ImageWithFallback)`
   position: absolute;
-  z-index: 1;
   width: 100%;
   height: 100%;
   inset: 0;
   object-fit: cover;
 `;
-
 export const GalleryOpenButton = styled.button`
   position: absolute;
-  z-index: 2;
-  display: flex;
-  padding: ${space.sm};
-  align-items: flex-end;
-  justify-content: flex-end;
+  inset: 0;
+  padding: 0;
   border: 0;
   background: transparent;
   cursor: zoom-in;
-  inset: 0;
-
   &:focus-visible {
-    outline: none;
-    outline-offset: -4px;
-    box-shadow: inset ${focusRing};
+    outline: 3px solid ${color.primary};
+    outline-offset: -3px;
   }
 `;
-
 export const PhotoCountBadge = styled.span`
-  display: inline-flex;
-  min-height: 38px;
-  padding: 0 ${space.sm};
-  align-items: center;
-  border: 1px solid color-mix(in srgb, ${color.text} 13%, transparent);
-  border-radius: ${radius.pill};
-  background: rgb(255 255 255 / 92%);
-  box-shadow: ${shadow.float};
-  color: ${color.text};
-  font-size: ${fontSize.label};
-  font-weight: ${fontWeight.extraBold};
-  backdrop-filter: blur(8px);
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 56%);
+  color: white;
+  font-size: 12px;
+  pointer-events: none;
 `;
-
+export const GalleryNavigation = styled.div`
+  position: absolute;
+  inset: 50% 12px auto;
+  display: flex;
+  justify-content: space-between;
+  transform: translateY(-50%);
+  pointer-events: none;
+  button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid ${color.border};
+    border-radius: 50%;
+    background: rgb(255 255 255 / 92%);
+    color: ${color.text};
+    cursor: pointer;
+    pointer-events: auto;
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+    &:focus-visible {
+      outline: none;
+      box-shadow: ${focusRing};
+    }
+  }
+`;
 export const EmptyGalleryLabel = styled.span`
   position: absolute;
-  bottom: 18%;
+  bottom: 20%;
   color: ${color.textMuted};
-  font-size: ${fontSize.bodySmall};
-  font-weight: ${fontWeight.bold};
+  font-size: 14px;
 `;

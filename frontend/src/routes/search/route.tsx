@@ -1,8 +1,6 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { useLocation } from 'react-router';
 
 import { createStoreDetailUrl } from '@/domains/store/storeRoute';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import type { MapCoordinate } from '@/shared/map/mapCoordinateType';
@@ -12,13 +10,10 @@ import {
   Page,
   PageTitle,
   MobileHeaderLayer,
-  ServiceAreaDescription,
-  ServiceAreaEyebrow,
   ServiceAreaNotice,
   ServiceAreaTitle,
   SelectedGachaArea,
 } from './route.styles';
-import { useSearchRouteNavigation } from './routing/useSearchRouteNavigation';
 import { SelectedGachaSummary } from './selectedGacha/SelectedGachaSummary';
 import { useSearchResults } from './selectedGacha/useSearchResults';
 import { captureMapAreaResearched } from './storeResults/analytics/storeResultsAnalytics';
@@ -37,29 +32,21 @@ const HONGDAE_SEARCH_CENTER = {
 } satisfies MapCoordinate;
 
 const STORE_SEARCH_RADIUS_METERS = 3000;
-const DEFAULT_MOBILE_HEADER_HEIGHT = 120;
 
 function openStoreDetail(storeId: number) {
   assignBrowserLocation(createStoreDetailUrl(storeId));
 }
 
-export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
-  const mobileHeaderRef = useRef<HTMLDivElement>(null);
-  const [isMobileHeaderOpen, setIsMobileHeaderOpen] = useState(true);
-  const [mobileHeaderHeight, setMobileHeaderHeight] = useState(
-    DEFAULT_MOBILE_HEADER_HEIGHT,
-  );
-  const { activeSearch, selectGacha } = useSearchRouteNavigation(
-    search,
-    onSelectGacha,
-  );
+export function SearchRoute({ search }: SearchRouteProps) {
+  const location = useLocation();
+  const activeSearch = search ?? location.search;
   const { selectedGachaId, selectedGacha } = useSearchResults(activeSearch);
   const {
     searchCenter,
+    viewportCenter,
     isSearchAreaChanged,
     updateViewportCenter,
     commitViewportCenter,
-    resetSearchArea,
   } = useStoreSearchArea(HONGDAE_SEARCH_CENTER);
   const storeSearchParams = {
     gachaId: selectedGachaId,
@@ -68,81 +55,26 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
     radius: STORE_SEARCH_RADIUS_METERS,
   };
   const { storesState, retryStores } = useSearchStores(storeSearchParams);
-  const toggleMobileHeader = useCallback(() => {
-    const nextIsOpen = !isMobileHeaderOpen;
-
-    captureAnalyticsEvent('map_mobile_header_toggled', {
-      next_state: nextIsOpen ? 'open' : 'closed',
-    });
-    setIsMobileHeaderOpen(nextIsOpen);
-  }, [isMobileHeaderOpen]);
-
-  useLayoutEffect(() => {
-    const mobileHeader = mobileHeaderRef.current;
-
-    if (!mobileHeader) {
-      return;
-    }
-
-    function updateMobileHeaderHeight() {
-      const nextHeight = Math.round(
-        mobileHeader?.getBoundingClientRect().height ?? 0,
-      );
-
-      if (nextHeight > 0) {
-        setMobileHeaderHeight(nextHeight);
-      }
-    }
-
-    updateMobileHeaderHeight();
-    window.addEventListener('resize', updateMobileHeaderHeight);
-
-    const resizeObserver =
-      typeof ResizeObserver === 'undefined'
-        ? null
-        : new ResizeObserver(updateMobileHeaderHeight);
-
-    resizeObserver?.observe(mobileHeader);
-
-    return () => {
-      window.removeEventListener('resize', updateMobileHeaderHeight);
-      resizeObserver?.disconnect();
-    };
-  }, []);
-
+  const isOutsideServiceArea =
+    Math.hypot(
+      (viewportCenter.latitude - HONGDAE_SEARCH_CENTER.latitude) * 111_000,
+      (viewportCenter.longitude - HONGDAE_SEARCH_CENTER.longitude) * 88_000,
+    ) > STORE_SEARCH_RADIUS_METERS;
   function searchCurrentMapArea() {
     captureMapAreaResearched(selectedGachaId, STORE_SEARCH_RADIUS_METERS);
 
     commitViewportCenter();
   }
 
-  function selectGachaInServiceArea(gachaId: number) {
-    resetSearchArea(HONGDAE_SEARCH_CENTER);
-    selectGacha(gachaId);
-  }
-
-  const pageStyle = {
-    '--mobile-map-header-offset': `${
-      isMobileHeaderOpen ? mobileHeaderHeight : 0
-    }px`,
-  } as CSSProperties;
-
   return (
-    <Page style={pageStyle}>
+    <Page>
       <PageTitle>
         {selectedGachaId === null
           ? '홍대 가챠 매장 지도'
           : '가챠 보유 매장 검색 결과'}
       </PageTitle>
-      <MobileHeaderLayer
-        ref={mobileHeaderRef}
-        $isOpen={isMobileHeaderOpen}
-        data-state={isMobileHeaderOpen ? 'open' : 'closed'}
-      >
-        <AppHeader
-          currentPath="/map"
-          search={<GachaSearchBar onSelect={selectGachaInServiceArea} />}
-        />
+      <MobileHeaderLayer>
+        <AppHeader currentPath="/map" showMobileTabs mobileVariant="map" />
       </MobileHeaderLayer>
       <StoreResultsSection
         center={searchCenter}
@@ -164,19 +96,15 @@ export function SearchRoute({ search, onSelectGacha }: SearchRouteProps) {
           });
           retryStores();
         }}
-        onToggleHeader={toggleMobileHeader}
+        onToggleHeader={() => undefined}
         onSearchArea={searchCurrentMapArea}
         onViewportCenterChange={updateViewportCenter}
         listHeader={
-          selectedGacha.status === 'idle' ? (
+          isOutsideServiceArea ? (
             <ServiceAreaNotice>
-              <ServiceAreaEyebrow>현재 지원 지역</ServiceAreaEyebrow>
-              <ServiceAreaTitle>홍대 주변 매장을 보여드려요</ServiceAreaTitle>
-              <ServiceAreaDescription>
-                다른 지역의 가챠 매장도 차근차근 준비하고 있어요.
-              </ServiceAreaDescription>
+              <ServiceAreaTitle>이 지역은 준비 중이에요</ServiceAreaTitle>
             </ServiceAreaNotice>
-          ) : (
+          ) : selectedGacha.status === 'idle' ? null : (
             <SelectedGachaArea>
               <SelectedGachaSummary selectedGacha={selectedGacha} />
             </SelectedGachaArea>

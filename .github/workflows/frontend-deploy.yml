@@ -40,9 +40,20 @@ jobs:
           node-version-file: frontend/.nvmrc
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 11.9.0
+        shell: bash
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          # bootstrap/self-update 없이 고정 버전을 작업별 임시 경로에 설치한다.
+          gachi_pnpm_dir="$(mktemp -d "${RUNNER_TEMP:?}/gachi-pnpm.XXXXXX")"
+          timeout --kill-after=10s 120s npm install \
+            --prefix "$gachi_pnpm_dir" \
+            --no-save --package-lock=false --ignore-scripts --no-audit --no-fund \
+            pnpm@11.9.0
+
+          gachi_pnpm_bin="$gachi_pnpm_dir/node_modules/.bin"
+          test "$(timeout --kill-after=5s 15s "$gachi_pnpm_bin/pnpm" --version)" = "11.9.0"
+          printf '%s\n' "$gachi_pnpm_bin" >> "$GITHUB_PATH"
 
       # pnpm 설치 후에만 pnpm store 경로를 조회하여 캐시할 수 있다.
       - name: Restore pnpm cache

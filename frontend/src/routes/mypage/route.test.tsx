@@ -1,4 +1,5 @@
 import {
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -28,6 +29,7 @@ import { SUPPORT_INSTAGRAM_URL } from '@/shared/contact/supportContact';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
+import { SERVICE_VERSION } from './components/MyPageMenu';
 import { myTradesHandler } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
 
@@ -138,90 +140,77 @@ describe('MyPageRoute 회원 탈퇴', () => {
   });
 });
 
-describe('MyPageRoute 내 교환글 수정', () => {
+describe('MyPageRoute 웹 메뉴와 내 글', () => {
   beforeEach(() => {
     storeAuthTokens({
       accessToken: AUTH_STORY_TOKEN,
       refreshToken: AUTH_STORY_REFRESH_TOKEN,
     });
+    server.use(authenticatedMemberHandler, myTradesHandler);
   });
 
-  it('내 교환글마다 삭제 버튼 옆에 수정 화면으로 가는 링크를 보여준다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
-
+  it('왼쪽 메뉴에서 내 글을 선택한 상태로 내 글 카드를 보여준다', async () => {
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
       route: '/mypage',
     });
 
-    const editLink = await screen.findByRole('link', {
-      name: '쿠로미 미니 피규어 vol.2 교환해요 수정',
-    });
-    const deleteButton = screen.getByRole('button', {
-      name: '쿠로미 미니 피규어 vol.2 교환해요 삭제',
-    });
-
-    expect(editLink).toHaveAttribute('href', '/trade/17/edit');
-    expect(editLink.parentElement).toBe(deleteButton.parentElement);
-  });
-
-  it('섬네일과 제목 영역에서 내 거래글 상세로 이동할 수 있다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
-
-    renderWithProviders(<MyPageRoute />, {
-      initialAccessToken: AUTH_STORY_TOKEN,
-      route: '/mypage',
-    });
+    const menu = await screen.findByRole('navigation', { name: '마이 메뉴' });
 
     expect(
+      within(menu).getByRole('link', { name: '내 글', current: 'page' }),
+    ).toHaveAttribute('href', '/mypage/trades');
+    expect(screen.getByRole('heading', { name: '내 글' })).toBeInTheDocument();
+    expect(
       await screen.findByRole('link', {
-        name: '쿠로미 미니 피규어 vol.2 교환해요 거래글 보기',
+        name: /쿠로미 미니 피규어 vol\.2 교환해요/,
       }),
     ).toHaveAttribute('href', '/trade/17');
   });
 
-  it('전체 보기를 누르면 내 교환글 전용 화면으로 이동한다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
-
+  it('닉네임만 보여주고 가입 시 실명은 노출하지 않는다', async () => {
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
       route: '/mypage',
     });
 
-    expect(
-      await screen.findByRole('link', { name: '전체 보기' }),
-    ).toHaveAttribute('href', '/mypage/trades');
+    expect(await screen.findByText('가챠러 민지')).toBeInTheDocument();
+    expect(screen.queryByText('김민지')).not.toBeInTheDocument();
   });
 
-  it('고객센터를 공식 인스타그램 문의로 연결한다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
-
+  it('메뉴를 시안 순서대로 묶고 각 화면으로 연결한다', async () => {
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
       route: '/mypage',
     });
 
+    const menu = await screen.findByRole('navigation', { name: '마이 메뉴' });
+
     expect(
-      await screen.findByRole('link', { name: /고객센터/ }),
+      within(menu)
+        .getAllByRole('heading')
+        .map((heading) => heading.textContent),
+    ).toEqual(['내 활동', '사용자 관리', '고객 지원', '앱 정보', '계정']);
+    expect(
+      within(menu).getByRole('link', { name: '차단한 사용자' }),
+    ).toHaveAttribute('href', '/mypage/blocked-members');
+    expect(
+      within(menu).getByRole('link', { name: '고객센터' }),
     ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
-  });
-
-  it('마이페이지 하단에서 업데이트 소식으로 이동할 수 있다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
-
-    renderWithProviders(<MyPageRoute />, {
-      initialAccessToken: AUTH_STORY_TOKEN,
-      route: '/mypage',
-    });
-
     expect(
-      await screen.findByRole('link', { name: /업데이트 소식/ }),
+      within(menu).getByRole('link', { name: '협업 문의' }),
+    ).toHaveAttribute('href', SUPPORT_INSTAGRAM_URL);
+    expect(
+      within(menu).getByRole('link', { name: '업데이트 소식' }),
     ).toHaveAttribute('href', '/updates');
+    expect(
+      within(menu).getByRole('link', { name: '개인정보 처리방침' }),
+    ).toHaveAttribute('href', '/privacy');
+    expect(within(menu).getByText(SERVICE_VERSION)).toBeInTheDocument();
+    expect(SERVICE_VERSION).toMatch(/^v\d+\.\d+\.\d+$/);
   });
 
-  it('이벤트 기간에는 응모 페이지 링크를 보여준다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
-
+  it('이벤트 기간에는 내 활동에 응모 링크를 보여준다', async () => {
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
       route: '/mypage',
@@ -232,60 +221,56 @@ describe('MyPageRoute 내 교환글 수정', () => {
     ).toHaveAttribute('href', '/events/popular-goods');
   });
 
-  it('준비 중인 기능을 기술 용어 없이 안내한다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
+  it('로그아웃은 확인한 뒤에만 토큰을 지우고 이동한다', async () => {
+    const user = userEvent.setup();
 
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
       route: '/mypage',
     });
 
-    expect(await screen.findAllByText('관심 기능 준비 중')).toHaveLength(2);
-    expect(screen.getAllByText('기능 준비 중')).toHaveLength(2);
-    expect(screen.queryByText(/API.*준비|준비.*API/)).not.toBeInTheDocument();
-  });
-});
+    await user.click(await screen.findByRole('button', { name: '로그아웃' }));
 
-describe('MyPageRoute 내 교환글 상태 조회', () => {
-  beforeEach(() => {
-    storeAuthTokens({
-      accessToken: AUTH_STORY_TOKEN,
-      refreshToken: AUTH_STORY_REFRESH_TOKEN,
-    });
-  });
+    const dialog = screen.getByRole('alertdialog', { name: '로그아웃할까요?' });
 
-  it('현재 상태를 배지로 보여주되 직접 변경하는 버튼은 제공하지 않는다', async () => {
-    server.use(authenticatedMemberHandler, myTradesHandler);
+    await user.click(within(dialog).getByRole('button', { name: '취소' }));
+    expect(readAccessToken()).toBe(AUTH_STORY_TOKEN);
+    expect(replaceBrowserLocation).not.toHaveBeenCalled();
 
-    renderWithProviders(<MyPageRoute />, {
-      initialAccessToken: AUTH_STORY_TOKEN,
-      route: '/mypage',
-    });
-
-    const inProgressSummary = (await screen.findByText('진행 중 교환')).closest(
-      'article',
+    await user.click(screen.getByRole('button', { name: '로그아웃' }));
+    await user.click(
+      within(
+        screen.getByRole('alertdialog', { name: '로그아웃할까요?' }),
+      ).getByRole('button', { name: '로그아웃' }),
     );
 
-    expect(inProgressSummary).not.toBeNull();
-    expect(within(inProgressSummary!).getByText('1')).toBeInTheDocument();
-    expect(screen.getByText('교환 진행 중')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: /교환 상태:/ }),
-    ).not.toBeInTheDocument();
+    expect(replaceBrowserLocation).toHaveBeenCalledWith('/trade');
+    expect(readAccessToken()).toBeNull();
   });
 });
 
-describe('MyPageRoute 내 교환글 삭제', () => {
+describe('MyPageRoute 모바일 마이 탭', () => {
   beforeEach(() => {
     storeAuthTokens({
       accessToken: AUTH_STORY_TOKEN,
       refreshToken: AUTH_STORY_REFRESH_TOKEN,
     });
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query.includes('max-width'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
   });
 
-  it('삭제를 확인하면 해당 글을 삭제하고 내 교환글을 다시 불러온다', async () => {
-    const user = userEvent.setup();
-    const deletedTradeIds: string[] = [];
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'matchMedia');
+  });
+
+  it('프로필과 메뉴 목록만 보여주고 내 글은 별도 화면으로 연결한다', async () => {
     let myTradesRequestCount = 0;
 
     server.use(
@@ -294,11 +279,6 @@ describe('MyPageRoute 내 교환글 삭제', () => {
         myTradesRequestCount += 1;
       }),
       myTradesHandler,
-      http.delete('/api/v1/trades/:tradeId', ({ params }) => {
-        deletedTradeIds.push(String(params.tradeId));
-
-        return HttpResponse.json({ code: 'C003', message: '정상 삭제' });
-      }),
     );
 
     renderWithProviders(<MyPageRoute />, {
@@ -306,64 +286,18 @@ describe('MyPageRoute 내 교환글 삭제', () => {
       route: '/mypage',
     });
 
-    await user.click(
-      await screen.findByRole('button', {
-        name: '쿠로미 미니 피규어 vol.2 교환해요 삭제',
-      }),
+    const menu = await screen.findByRole('navigation', { name: '마이 메뉴' });
+
+    expect(within(menu).getByRole('link', { name: '내 글' })).toHaveAttribute(
+      'href',
+      '/mypage/trades',
     );
-
-    const dialog = screen.getByRole('alertdialog', {
-      name: '교환 글을 삭제할까요?',
-    });
-    const requestCountBeforeDelete = myTradesRequestCount;
-
-    expect(dialog).toHaveAccessibleDescription(
-      "'쿠로미 미니 피규어 vol.2 교환해요' 글을 삭제하면 되돌릴 수 없어요.",
-    );
-
-    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
-    });
-    expect(deletedTradeIds).toEqual(['17']);
-    await waitFor(() => {
-      expect(myTradesRequestCount).toBeGreaterThan(requestCountBeforeDelete);
-    });
-  });
-
-  it('삭제에 실패하면 확인 창에 오류를 보여주고 닫지 않는다', async () => {
-    const user = userEvent.setup();
-
-    server.use(
-      authenticatedMemberHandler,
-      myTradesHandler,
-      http.delete('/api/v1/trades/:tradeId', () =>
-        HttpResponse.json(
-          { code: 'T003', message: '작성자만 삭제할 수 있습니다.' },
-          { status: 403 },
-        ),
-      ),
-    );
-
-    renderWithProviders(<MyPageRoute />, {
-      initialAccessToken: AUTH_STORY_TOKEN,
-      route: '/mypage',
-    });
-
-    await user.click(
-      await screen.findByRole('button', {
-        name: '쿠로미 미니 피규어 vol.2 교환해요 삭제',
-      }),
-    );
-
-    const dialog = screen.getByRole('alertdialog');
-
-    await user.click(within(dialog).getByRole('button', { name: '삭제' }));
-
-    expect(await within(dialog).findByRole('alert')).toHaveTextContent(
-      '작성자만 삭제할 수 있습니다.',
-    );
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(
+      within(menu).getByRole('button', { name: '프로필 수정' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '내 글' }),
+    ).not.toBeInTheDocument();
+    expect(myTradesRequestCount).toBe(0);
   });
 });

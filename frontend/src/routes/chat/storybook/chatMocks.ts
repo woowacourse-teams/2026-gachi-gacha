@@ -1,3 +1,6 @@
+import sanrioBaby from '@/mocks/assets/sanrio-baby.jpg';
+import sanrioMini from '@/mocks/assets/sanrio-mini.jpg';
+
 import type { ChatConversation, ChatRoom } from '../model/chat';
 import { toChatDateKey } from '../model/chatDate';
 
@@ -14,6 +17,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
     partnerName: '가챠좋아',
     partnerProfileImageUrl: null,
     itemTitle: '쿠로미 미니 피규어 vol.2',
+    itemImageUrl: sanrioBaby,
     lastMessage: '시나모롤 키링 사진 확인 부탁드려요.',
     lastMessageAt: '오전 9:20',
     unreadCount: 2,
@@ -25,6 +29,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
     partnerName: '피규어수집가',
     partnerProfileImageUrl: null,
     itemTitle: '마이멜로디 미니피규어',
+    itemImageUrl: sanrioMini,
     lastMessage: '내일 합정역에서 뵐게요!',
     lastMessageAt: '어제',
     unreadCount: 0,
@@ -36,6 +41,7 @@ export const CHAT_CONVERSATIONS: ChatConversation[] = [
     partnerName: '캡슐러버',
     partnerProfileImageUrl: null,
     itemTitle: '치이카와 키링 교환',
+    itemImageUrl: null,
     lastMessage: '좋은 교환 감사합니다.',
     lastMessageAt: '9월 21일',
     unreadCount: 0,

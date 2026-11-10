@@ -15,6 +15,8 @@ import type {
 } from '@/domains/trade/tradeCreateType';
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
+import { useToast } from '@/shared/ui/toast';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
@@ -44,6 +46,60 @@ type TradeFormProps =
   | { mode?: 'create'; initialValues?: TradeFormInitialValues }
   | { mode: 'edit'; tradeId: number; initialValues: TradeFormInitialValues };
 
+type RequiredField = 'photo' | 'title' | 'description' | 'category';
+
+/** 폼에 보이는 순서대로 검사해 첫 번째로 빠진 필수 항목 하나만 알린다. */
+const REQUIRED_FIELD_MESSAGES: Record<RequiredField, string> = {
+  photo: '사진을 1장 이상 등록해주세요.',
+  title: '제목을 입력해주세요.',
+  description: '설명을 입력해주세요.',
+  category: '카테고리를 1개 이상 선택해주세요.',
+};
+
+const REQUIRED_FIELD_FOCUS_TARGETS: Record<RequiredField, string> = {
+  photo: '[role="group"][aria-labelledby="trade-photo-label"] button',
+  title: '#trade-title',
+  description: '#trade-description',
+  category: '#trade-category-search',
+};
+
+function findMissingRequiredField({
+  hasPhoto,
+  title,
+  description,
+  categoryCount,
+}: {
+  hasPhoto: boolean;
+  title: string;
+  description: string;
+  categoryCount: number;
+}): RequiredField | null {
+  if (!hasPhoto) return 'photo';
+  if (!title) return 'title';
+  if (!description) return 'description';
+  if (categoryCount === 0) return 'category';
+  return null;
+}
+
+function focusRequiredField(form: HTMLFormElement, field: RequiredField) {
+  const target = form.querySelector<HTMLElement>(
+    REQUIRED_FIELD_FOCUS_TARGETS[field],
+  );
+
+  target?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  target?.focus({ preventScroll: true });
+}
+
+function createSubmissionFailureMessage(
+  isEditMode: boolean,
+  error: unknown,
+): string {
+  const summary = `${isEditMode ? '수정' : '등록'}하지 못했어요. 내용은 그대로예요.`;
+  const reason = error instanceof Error ? error.message.trim() : '';
+
+  return reason ? `${summary}\n${reason}` : summary;
+}
+
 export default function TradeForm(props: TradeFormProps) {
   const { mode = 'create', initialValues } = props;
   const navigate = useNavigate();
@@ -51,9 +107,9 @@ export default function TradeForm(props: TradeFormProps) {
   const formId = isEditMode ? 'trade-edit-form' : 'trade-create-form';
   const submittingRef = useRef(false);
   const [images, setImages] = useState<File[]>([]);
-  const [photoErrorMessage, setPhotoErrorMessage] = useState<string | null>(
-    null,
-  );
+  const { showToast, hideToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [invalidField, setInvalidField] = useState<RequiredField | null>(null);
   const [purchaseStore, setPurchaseStore] = useState<TradePlaceInput | null>(
     initialValues?.purchaseStore ?? null,
   );
@@ -67,10 +123,6 @@ export default function TradeForm(props: TradeFormProps) {
     stage: 'idle',
   });
   const isSubmitting = submissionState.stage !== 'idle';
-  const [titleErrorMessage, setTitleErrorMessage] = useState<string | null>(
-    null,
-  );
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [categoryKeyword, setCategoryKeyword] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TradeCategory[]>(
     initialValues?.categories ?? [],
@@ -88,6 +140,10 @@ export default function TradeForm(props: TradeFormProps) {
       : [];
 
   function selectCategory(category: TradeCategory) {
+    if (invalidField === 'category') {
+      setInvalidField(null);
+    }
+
     captureAnalyticsEvent('trade_category_toggled', {
       mode: isEditMode ? 'edit' : 'create',
       category_id: category.categoryId,
@@ -139,8 +195,8 @@ export default function TradeForm(props: TradeFormProps) {
   function changeImages(nextImages: File[]) {
     setImages(nextImages);
 
-    if (nextImages.length > 0) {
-      setPhotoErrorMessage(null);
+    if (nextImages.length > 0 && invalidField === 'photo') {
+      setInvalidField(null);
     }
   }
 
@@ -151,39 +207,31 @@ export default function TradeForm(props: TradeFormProps) {
       return;
     }
 
-    if (images.length === 0 && !initialValues?.imageUrls.length) {
-      setPhotoErrorMessage('사진을 1장 이상 등록해주세요.');
-      return;
-    }
+    const form = event.currentTarget;
+    const title = readFormControlText(form, 'title');
+    const description = readFormControlText(form, 'description');
+    const desiredProduction = readFormControlText(form, 'desiredProduction');
+    const missingField = findMissingRequiredField({
+      hasPhoto: images.length > 0 || Boolean(initialValues?.imageUrls.length),
+      title,
+      description,
+      categoryCount: selectedCategories.length,
+    });
 
-    const title = readFormControlText(event.currentTarget, 'title');
-    const description = readFormControlText(event.currentTarget, 'description');
-    const desiredProduction = readFormControlText(
-      event.currentTarget,
-      'desiredProduction',
-    );
-
-    if (!title) {
-      setTitleErrorMessage('제목을 입력해주세요.');
-      setSubmissionError(null);
-      return;
-    }
-
-    if (!description) {
-      setSubmissionError('설명을 입력해주세요.');
+    if (missingField) {
+      setInvalidField(missingField);
+      showToast({
+        tone: 'error',
+        message: REQUIRED_FIELD_MESSAGES[missingField],
+      });
+      focusRequiredField(form, missingField);
       return;
     }
 
     const request: CreateTradeRequest = {
       title,
       description,
-      ...(selectedCategories.length > 0
-        ? {
-            categoryIds: selectedCategories.map(
-              (category) => category.categoryId,
-            ),
-          }
-        : {}),
+      categoryIds: selectedCategories.map((category) => category.categoryId),
       ...(desiredProduction ? { desiredProduction } : {}),
       ...(purchaseStore ? { purchaseStore } : {}),
       ...(tradePlace ? { tradePlace } : {}),
@@ -192,9 +240,8 @@ export default function TradeForm(props: TradeFormProps) {
         : {}),
     };
 
-    setPhotoErrorMessage(null);
-    setTitleErrorMessage(null);
-    setSubmissionError(null);
+    setInvalidField(null);
+    hideToast();
     submittingRef.current = true;
     setSubmissionState(
       images.length > 0
@@ -249,11 +296,14 @@ export default function TradeForm(props: TradeFormProps) {
         trade_id: editingTradeId,
         outcome: 'failure',
       });
-      setSubmissionError(
-        error instanceof Error
-          ? error.message
-          : `거래 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
-      );
+      showToast({
+        tone: 'error',
+        message: createSubmissionFailureMessage(isEditMode, error),
+        action: {
+          label: '다시 시도',
+          onClick: () => formRef.current?.requestSubmit(),
+        },
+      });
       setSubmissionState({ stage: 'idle' });
     } finally {
       submittingRef.current = false;
@@ -263,6 +313,7 @@ export default function TradeForm(props: TradeFormProps) {
   return (
     <>
       <Form
+        ref={formRef}
         id={formId}
         aria-busy={isSubmitting}
         onKeyDown={preventImplicitSubmit}
@@ -283,7 +334,6 @@ export default function TradeForm(props: TradeFormProps) {
             {...(initialValues
               ? { initialImageUrls: initialValues.imageUrls }
               : {})}
-            errorMessage={photoErrorMessage ?? undefined}
             onFilesChange={changeImages}
           />
 
@@ -297,22 +347,14 @@ export default function TradeForm(props: TradeFormProps) {
               defaultValue={initialValues?.title}
               required
               maxLength={MAX_SHORT_TEXT_LENGTH}
-              aria-invalid={Boolean(titleErrorMessage)}
-              aria-describedby={
-                titleErrorMessage ? 'trade-title-error' : undefined
-              }
+              aria-invalid={invalidField === 'title' || undefined}
               placeholder="가지고 있는 가챠를 알아보기 쉽게 적어주세요"
               onChange={() => {
-                if (titleErrorMessage) {
-                  setTitleErrorMessage(null);
+                if (invalidField === 'title') {
+                  setInvalidField(null);
                 }
               }}
             />
-            {titleErrorMessage && (
-              <FieldError id="trade-title-error" role="alert">
-                {titleErrorMessage}
-              </FieldError>
-            )}
           </Field>
 
           <Field>
@@ -324,81 +366,152 @@ export default function TradeForm(props: TradeFormProps) {
               name="description"
               defaultValue={initialValues?.description}
               required
+              aria-invalid={invalidField === 'description' || undefined}
               placeholder="상품의 상태와 거래 방법을 자세히 적어주세요"
+              onChange={() => {
+                if (invalidField === 'description') {
+                  setInvalidField(null);
+                }
+              }}
             />
           </Field>
 
-          <Field>
-            <Label htmlFor="trade-category-search">
-              카테고리 <OptionalMark>(선택)</OptionalMark>
-            </Label>
-            <Input
-              id="trade-category-search"
-              type="search"
-              value={categoryKeyword}
-              autoComplete="off"
-              placeholder="카테고리를 검색해주세요"
-              onChange={(event) => setCategoryKeyword(event.target.value)}
-              onKeyDown={handleCategoryKeywordKeyDown}
-            />
+          <OfferedFields>
+            <Field>
+              <Label htmlFor="trade-category-search">
+                카테고리 <RequiredMark aria-hidden="true">*</RequiredMark>
+              </Label>
+              <Input
+                id="trade-category-search"
+                aria-required="true"
+                aria-invalid={invalidField === 'category' || undefined}
+                type="search"
+                value={categoryKeyword}
+                autoComplete="off"
+                placeholder="카테고리를 검색해주세요"
+                onChange={(event) => setCategoryKeyword(event.target.value)}
+                onKeyDown={handleCategoryKeywordKeyDown}
+              />
 
-            {selectedCategories.length > 0 && (
-              <CategoryGroup>
-                <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
-                {selectedCategories.map((category) => (
-                  <input
-                    key={category.categoryId}
-                    type="hidden"
-                    name="categoryIds"
-                    value={category.categoryId}
-                  />
-                ))}
-                <CategoryList aria-label="선택한 카테고리">
+              {selectedCategories.length > 0 && (
+                <CategoryGroup>
+                  <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
                   {selectedCategories.map((category) => (
-                    <CategoryButton
+                    <input
                       key={category.categoryId}
-                      type="button"
-                      data-selected="true"
-                      aria-label={`${category.name} 카테고리 선택 해제`}
-                      onClick={() => removeCategory(category.categoryId)}
-                    >
-                      #{category.name} ×
-                    </CategoryButton>
+                      type="hidden"
+                      name="categoryIds"
+                      value={category.categoryId}
+                    />
                   ))}
-                </CategoryList>
-              </CategoryGroup>
-            )}
-
-            <CategoryGroup>
-              <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
-              {categoryState.status === 'idle' ? (
-                <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
-              ) : categoryState.status === 'loading' ? (
-                <CategoryMessage role="status">
-                  카테고리를 불러오는 중...
-                </CategoryMessage>
-              ) : categoryState.status === 'error' ? (
-                <CategoryMessage role="alert">
-                  {categoryState.errorMessage}
-                </CategoryMessage>
-              ) : availableCategories.length === 0 ? (
-                <CategoryMessage>검색결과가 없어요.</CategoryMessage>
-              ) : (
-                <CategoryList aria-label="카테고리 검색 결과">
-                  {availableCategories.map((category) => (
-                    <CategoryButton
-                      key={category.categoryId}
-                      type="button"
-                      data-selected="false"
-                      onClick={() => selectCategory(category)}
-                    >
-                      {category.name}
-                    </CategoryButton>
-                  ))}
-                </CategoryList>
+                  <CategoryList aria-label="선택한 카테고리">
+                    {selectedCategories.map((category) => (
+                      <CategoryButton
+                        key={category.categoryId}
+                        type="button"
+                        data-selected="true"
+                        aria-label={`${category.name} 카테고리 선택 해제`}
+                        onClick={() => removeCategory(category.categoryId)}
+                      >
+                        #{category.name} ×
+                      </CategoryButton>
+                    ))}
+                  </CategoryList>
+                </CategoryGroup>
               )}
-            </CategoryGroup>
-          </Field>
+
+              <CategoryGroup>
+                <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
+                {categoryState.status === 'idle' ? (
+                  <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
+                ) : categoryState.status === 'loading' ? (
+                  <CategoryMessage role="status">
+                    카테고리를 불러오는 중...
+                  </CategoryMessage>
+                ) : categoryState.status === 'error' ? (
+                  <CategoryMessage role="alert">
+                    {categoryState.errorMessage}
+                  </CategoryMessage>
+                ) : availableCategories.length === 0 ? (
+                  <CategoryMessage>검색결과가 없어요.</CategoryMessage>
+                ) : (
+                  <CategoryList aria-label="카테고리 검색 결과">
+                    {availableCategories.map((category) => (
+                      <CategoryButton
+                        key={category.categoryId}
+                        type="button"
+                        data-selected="false"
+                        onClick={() => selectCategory(category)}
+                      >
+                        {category.name}
+                      </CategoryButton>
+                    ))}
+                  </CategoryList>
+                )}
+              </CategoryGroup>
+            </Field>
+            <Field>
+              <Label htmlFor="purchase-store">
+                구매 매장 <OptionalMark>(선택)</OptionalMark>
+              </Label>
+              <PlaceSelectButton
+                id="purchase-store"
+                type="button"
+                onClick={() => setIsPurchaseStoreDialogOpen(true)}
+              >
+                <LocationIcon aria-hidden="true" />
+                <PlaceText>
+                  <PlacePrimary data-placeholder={!purchaseStore}>
+                    {purchaseStore?.name ||
+                      purchaseStore?.address ||
+                      '가챠를 구매한 매장을 선택해주세요'}
+                  </PlacePrimary>
+                  {purchaseStore?.name && (
+                    <PlaceSecondary>{purchaseStore.address}</PlaceSecondary>
+                  )}
+                </PlaceText>
+              </PlaceSelectButton>
+              {purchaseStore && (
+                <>
+                  <ClearPlaceButton
+                    type="button"
+                    aria-label="구매 매장 선택 해제"
+                    onClick={() => {
+                      captureAnalyticsEvent('place_selection_cleared', {
+                        place_context: 'trade_purchase_store',
+                        trade_form_mode: isEditMode ? 'edit' : 'create',
+                      });
+                      setPurchaseStore(null);
+                    }}
+                  >
+                    선택 해제
+                  </ClearPlaceButton>
+                  {purchaseStore.name && (
+                    <input
+                      type="hidden"
+                      name="purchaseStore.name"
+                      value={purchaseStore.name}
+                    />
+                  )}
+                  <input
+                    type="hidden"
+                    name="purchaseStore.address"
+                    value={purchaseStore.address}
+                  />
+                  <input
+                    type="hidden"
+                    name="purchaseStore.latitude"
+                    value={purchaseStore.latitude}
+                  />
+                  <input
+                    type="hidden"
+                    name="purchaseStore.longitude"
+                    value={purchaseStore.longitude}
+                  />
+                </>
+              )}
+            </Field>
+          </OfferedFields>
         </ItemSection>
 
         <ItemSection aria-labelledby="desired-item-heading">
@@ -424,68 +537,6 @@ export default function TradeForm(props: TradeFormProps) {
             />
           </Field>
         </ItemSection>
-
-        <Field>
-          <Label htmlFor="purchase-store">
-            구매 매장 <OptionalMark>(선택)</OptionalMark>
-          </Label>
-          <PlaceSelectButton
-            id="purchase-store"
-            type="button"
-            onClick={() => setIsPurchaseStoreDialogOpen(true)}
-          >
-            <LocationIcon aria-hidden="true" />
-            <PlaceText>
-              <PlacePrimary data-placeholder={!purchaseStore}>
-                {purchaseStore?.name ||
-                  purchaseStore?.address ||
-                  '가챠를 구매한 매장을 선택해주세요'}
-              </PlacePrimary>
-              {purchaseStore?.name && (
-                <PlaceSecondary>{purchaseStore.address}</PlaceSecondary>
-              )}
-            </PlaceText>
-          </PlaceSelectButton>
-          {purchaseStore && (
-            <>
-              <ClearPlaceButton
-                type="button"
-                aria-label="구매 매장 선택 해제"
-                onClick={() => {
-                  captureAnalyticsEvent('place_selection_cleared', {
-                    place_context: 'trade_purchase_store',
-                    trade_form_mode: isEditMode ? 'edit' : 'create',
-                  });
-                  setPurchaseStore(null);
-                }}
-              >
-                선택 해제
-              </ClearPlaceButton>
-              {purchaseStore.name && (
-                <input
-                  type="hidden"
-                  name="purchaseStore.name"
-                  value={purchaseStore.name}
-                />
-              )}
-              <input
-                type="hidden"
-                name="purchaseStore.address"
-                value={purchaseStore.address}
-              />
-              <input
-                type="hidden"
-                name="purchaseStore.latitude"
-                value={purchaseStore.latitude}
-              />
-              <input
-                type="hidden"
-                name="purchaseStore.longitude"
-                value={purchaseStore.longitude}
-              />
-            </>
-          )}
-        </Field>
 
         <Field>
           <Label htmlFor="trade-place">
@@ -548,15 +599,12 @@ export default function TradeForm(props: TradeFormProps) {
             </>
           )}
         </Field>
-
-        {submissionError && (
-          <SubmissionError role="alert">{submissionError}</SubmissionError>
-        )}
       </Form>
 
       <StickyActionBar
         isSubmitting={isSubmitting}
         formId={formId}
+        cancelTo={props.mode === 'edit' ? `/trade/${props.tradeId}` : '/trade'}
         submitLabel={isEditMode ? '수정하기' : '등록하기'}
         submittingLabel={isEditMode ? '수정 중...' : '등록 중...'}
       />
@@ -625,6 +673,18 @@ const ItemSection = styled.section`
   flex-direction: column;
   gap: 28px;
   border: 0;
+`;
+
+const OfferedFields = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+
+  @media (max-width: 767px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
 `;
 
 const ItemSectionHeader = styled.div`
@@ -699,6 +759,8 @@ const Input = styled.input`
     border-color: #d80f42;
     background: #ffffff;
   }
+
+  ${preventIosInputZoom}
 `;
 
 const PlaceSelectButton = styled.button`
@@ -826,19 +888,6 @@ const Textarea = styled.textarea`
     background: #ffffff;
     box-shadow: 0 0 0 3px rgb(237 23 76 / 10%);
   }
-`;
 
-const SubmissionError = styled.p`
-  margin: -8px 0 0;
-  color: #d80f42;
-  font-size: 14px;
-  line-height: 1.5;
-  /* 서버 검증 실패 사유를 항목별로 줄바꿈해 보여준다. */
-  white-space: pre-line;
-`;
-
-const FieldError = styled.p`
-  margin: 0;
-  color: #d80f42;
-  font-size: 13px;
+  ${preventIosInputZoom}
 `;

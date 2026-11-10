@@ -2,9 +2,7 @@ import { keyframes } from '@emotion/react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
-import { GachaImageFrame } from '@/domains/product/components/GachaSummaryCard.styles';
 import {
-  breakpoint,
   color,
   focusRing,
   fontSize,
@@ -22,9 +20,16 @@ const breathe = keyframes`
 `;
 
 export const Section = styled.section`
-  padding-top: ${space.xxl};
-  margin-top: ${space.xxxl};
+  grid-area: catalog;
+  min-width: 0;
+  padding-top: 32px;
+  margin-top: 48px;
   border-top: 1px solid ${color.border};
+  @media (max-width: 767px) {
+    margin-top: 0;
+    padding: 20px 24px;
+    border-top: 8px solid #f7f5f3;
+  }
 `;
 
 export const CatalogHeader = styled.div`
@@ -36,7 +41,10 @@ export const CatalogHeader = styled.div`
 
 export const SectionTitle = styled.h2`
   margin: 0;
-  font-size: ${fontSize.sectionTitle};
+  font-size: 20px;
+  @media (max-width: 767px) {
+    font-size: 16px;
+  }
   font-weight: ${fontWeight.bold};
   line-height: ${lineHeight.heading};
   letter-spacing: ${letterSpacing.heading};
@@ -56,13 +64,9 @@ export const GachaList = styled.ul`
   gap: ${space.lg};
   list-style: none;
 
-  @media (max-width: ${breakpoint.tablet}) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  @media (max-width: ${breakpoint.compact}) {
+  @media (max-width: 767px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: ${space.sm};
+    gap: 20px 12px;
   }
 `;
 
@@ -76,12 +80,6 @@ export const GachaLink = styled(Link)`
   color: inherit;
   text-decoration: none;
 
-  &:hover ${GachaImageFrame} {
-    border-color: ${color.primary};
-    transform: translateY(-2px);
-    box-shadow: 0 9px 20px rgb(35 31 32 / 12%);
-  }
-
   &:focus-visible {
     outline: none;
     box-shadow: ${focusRing};
@@ -94,13 +92,9 @@ export const LoadingGrid = styled.div`
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: ${space.lg};
 
-  @media (max-width: ${breakpoint.tablet}) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  @media (max-width: ${breakpoint.compact}) {
+  @media (max-width: 767px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: ${space.sm};
+    gap: 20px 12px;
   }
 `;
 
@@ -167,10 +161,11 @@ export const StatusText = styled.p`
 `;
 
 export const RetryButton = styled.button`
-  min-height: 42px;
+  min-width: 240px;
+  min-height: 48px;
   padding: 0 ${space.lg};
   border: 1px solid ${color.border};
-  border-radius: ${radius.pill};
+  border-radius: 12px;
   background: ${color.surface};
   color: ${color.text};
   cursor: pointer;

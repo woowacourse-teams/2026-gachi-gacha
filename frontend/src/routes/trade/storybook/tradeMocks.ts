@@ -3,6 +3,8 @@ import type { TradeItem } from '../model/tradeItem';
 export const TRADE_ITEMS: TradeItem[] = [
   {
     tradeId: 1,
+    likeCount: 12,
+    commentCount: 3,
     memberId: 3,
     title: '산리오 캐릭터즈 캡슐토이 세트',
     status: 'AVAILABLE',
@@ -13,6 +15,8 @@ export const TRADE_ITEMS: TradeItem[] = [
   },
   {
     tradeId: 2,
+    likeCount: 5,
+    commentCount: 0,
     memberId: 4,
     title: '포켓몬 피규어 컬렉션 교환해요',
     status: 'IN_PROGRESS',
@@ -23,6 +27,8 @@ export const TRADE_ITEMS: TradeItem[] = [
   },
   {
     tradeId: 3,
+    likeCount: 8,
+    commentCount: 2,
     memberId: 5,
     title: '치이카와 미니 키링 3종',
     status: 'AVAILABLE',
@@ -33,6 +39,8 @@ export const TRADE_ITEMS: TradeItem[] = [
   },
   {
     tradeId: 4,
+    likeCount: 24,
+    commentCount: 7,
     memberId: 6,
     title: '가챠 머신 미니어처',
     status: 'COMPLETED',

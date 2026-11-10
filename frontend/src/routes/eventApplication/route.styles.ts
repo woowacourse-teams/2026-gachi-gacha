@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
+import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 import {
   color,
   focusRing,
@@ -296,6 +297,8 @@ export const Input = styled.input`
     box-shadow: ${focusRing};
     outline: none;
   }
+
+  ${preventIosInputZoom}
 `;
 
 export const ConsentLabel = styled.label`

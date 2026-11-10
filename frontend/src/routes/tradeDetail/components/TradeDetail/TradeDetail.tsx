@@ -1,4 +1,10 @@
-import { useCallback, useState } from 'react';
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import styled from '@emotion/styled';
 import { Link, useLocation, useNavigate } from 'react-router';
 
@@ -8,6 +14,10 @@ import type {
   TradeDetail as TradeDetailData,
   TradePlace,
 } from '@/domains/trade/tradeDetailType';
+import {
+  TRADE_STATUSES,
+  type TradeStatus,
+} from '@/domains/trade/tradeSummaryType';
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { UserSafetyMenu } from '@/features/memberSafety/UserSafetyMenu';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
@@ -18,11 +28,16 @@ import {
   type PhotoViewerNavigationSource,
 } from '@/shared/ui/PhotoViewer';
 
+import type { TradeCommentAuthor } from '../../model/tradeComment';
 import type { TradeDetailAction } from '../../TradeDetailPage';
 
 interface TradeDetailProps {
   detail: TradeDetailData;
+  comments?: ReactNode;
   action?: TradeDetailAction;
+  owner?: TradeCommentAuthor | null;
+  commentCount?: number | null;
+  onChangeStatus?: ((status: TradeStatus) => Promise<void>) | undefined;
   hasSubmittedComment?: boolean;
   showSafetyActions?: boolean;
   onAuthorBlocked?: (() => void) | undefined;
@@ -51,11 +66,22 @@ function formatAvailableTime(availableTime: string | null): string {
 
 export default function TradeDetail({
   detail,
+  comments,
   action = 'chat',
+  owner = null,
+  commentCount = null,
+  onChangeStatus,
   hasSubmittedComment = false,
   showSafetyActions = false,
   onAuthorBlocked,
 }: TradeDetailProps) {
+  const [isOwnerMenuOpen, setIsOwnerMenuOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const ownerMenu = useRef<HTMLDivElement>(null);
+  const statusButton = useRef<HTMLButtonElement>(null);
+  const ownerMenuButton = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -64,6 +90,43 @@ export default function TradeDetail({
   const selectedImageUrl = detail.imageUrls[selectedImageIndex];
   const categoryLabel = detail.categories.join(' · ') || '카테고리 미설정';
   const closePhotoViewer = useCallback(() => setIsPhotoViewerOpen(false), []);
+
+  useEffect(() => {
+    if (!isOwnerMenuOpen) return;
+
+    function closeOutside(event: PointerEvent) {
+      if (
+        event.target instanceof Node &&
+        !ownerMenu.current?.contains(event.target)
+      ) {
+        setIsOwnerMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOutside);
+    return () => document.removeEventListener('pointerdown', closeOutside);
+  }, [isOwnerMenuOpen]);
+
+  async function changeStatus(status: TradeStatus) {
+    if (!onChangeStatus || isChangingStatus) return;
+
+    setIsChangingStatus(true);
+    setStatusError(null);
+
+    try {
+      await onChangeStatus(status);
+      setIsStatusOpen(false);
+      statusButton.current?.focus();
+    } catch (error) {
+      setStatusError(
+        error instanceof Error
+          ? error.message
+          : '교환 상태를 변경하지 못했습니다.',
+      );
+    } finally {
+      setIsChangingStatus(false);
+    }
+  }
 
   function selectImage(
     index: number,
@@ -109,8 +172,6 @@ export default function TradeDetail({
 
   return (
     <Wrapper>
-      <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
-
       <Summary>
         <Gallery>
           <MainImage>
@@ -201,7 +262,61 @@ export default function TradeDetail({
 
         <Info>
           <InfoHeader>
-            <ItemRole>가지고 있는 것</ItemRole>
+            <Breadcrumb>교환 · {categoryLabel}</Breadcrumb>
+            {action === 'edit' && (
+              <OwnerMenu
+                ref={ownerMenu}
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) {
+                    setIsOwnerMenuOpen(false);
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    setIsOwnerMenuOpen(false);
+                    ownerMenuButton.current?.focus();
+                  }
+                }}
+              >
+                <OwnerMenuButton
+                  ref={ownerMenuButton}
+                  type="button"
+                  aria-label="내 글 더보기"
+                  aria-expanded={isOwnerMenuOpen}
+                  onClick={() => setIsOwnerMenuOpen((open) => !open)}
+                >
+                  <span aria-hidden="true">···</span>
+                </OwnerMenuButton>
+                {isOwnerMenuOpen && (
+                  <OwnerMenuItems>
+                    <Link
+                      to={`/trade/${detail.tradeId}/edit`}
+                      onClick={() =>
+                        captureAnalyticsEvent('trade_edit_started', {
+                          trade_id: detail.tradeId,
+                          source: 'trade_detail',
+                        })
+                      }
+                    >
+                      수정하기
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        captureAnalyticsEvent('trade_delete_started', {
+                          trade_id: detail.tradeId,
+                          source: 'trade_detail',
+                        });
+                        setIsOwnerMenuOpen(false);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                    >
+                      삭제
+                    </button>
+                  </OwnerMenuItems>
+                )}
+              </OwnerMenu>
+            )}
             {showSafetyActions && (
               <UserSafetyMenu
                 targetMemberId={detail.memberId}
@@ -213,15 +328,45 @@ export default function TradeDetail({
             )}
           </InfoHeader>
           <Title>{detail.title}</Title>
+          {action === 'edit' && (
+            <OwnerIdentity>
+              <OwnerAvatar>
+                {owner?.profileImageUrl ? (
+                  <img src={owner.profileImageUrl} alt="" />
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    width="16"
+                    height="16"
+                    fill="currentColor"
+                  >
+                    <circle cx="10" cy="6" r="3" />
+                    <path d="M4 17v-1a6 6 0 0 1 12 0v1z" />
+                  </svg>
+                )}
+              </OwnerAvatar>
+              {owner?.nickname && <strong>{owner.nickname}</strong>}
+              <OwnerTag>내 글</OwnerTag>
+            </OwnerIdentity>
+          )}
           <Meta>
-            <span>{formatRelativeTime(detail.createdAt)}</span>
             <TradeStatusBadge status={detail.status} />
+            <span>
+              {formatRelativeTime(detail.createdAt)}
+              {commentCount !== null && ` · 댓글 ${commentCount}`}
+            </span>
           </Meta>
 
           <Divider />
 
           <InfoList>
-            <InfoRow>
+            <OfferedItem>
+              <InfoLabel>가지고 있는 것</InfoLabel>
+              <InfoValue>{detail.title}</InfoValue>
+              <ExchangeIcon aria-hidden="true">⇄</ExchangeIcon>
+            </OfferedItem>
+            <InfoRow data-desired-item>
               <InfoLabel>얻고 싶은 것</InfoLabel>
               <InfoValue>{detail.desiredProduction || '제안 받아요'}</InfoValue>
             </InfoRow>
@@ -237,54 +382,48 @@ export default function TradeDetail({
                 {formatPlace(detail.purchaseStore, '구매 매장 미등록')}
               </InfoValue>
             </InfoRow>
-            <InfoRow>
+            <InfoRow data-empty-time={!detail.availableTime || undefined}>
               <InfoLabel>가능 시간</InfoLabel>
               <InfoValue>{formatAvailableTime(detail.availableTime)}</InfoValue>
             </InfoRow>
           </InfoList>
 
-          <DescriptionSection>
-            <SectionTitle>가지고 있는 상품 설명</SectionTitle>
-            <Description>
-              {detail.description || '등록된 설명이 없어요.'}
-            </Description>
-            {detail.categories.length > 0 && (
-              <CategoryList aria-label="카테고리">
-                {detail.categories.map((category) => (
-                  <Category key={category}>#{category}</Category>
-                ))}
-              </CategoryList>
-            )}
-          </DescriptionSection>
-
-          {action && (
+          {action && (action !== 'edit' || onChangeStatus) && (
             <ActionGroup>
               {action === 'edit' ? (
-                <OwnerActions>
-                  <EditLink
-                    to={`/trade/${detail.tradeId}/edit`}
-                    onClick={() =>
-                      captureAnalyticsEvent('trade_edit_started', {
-                        trade_id: detail.tradeId,
-                        source: 'trade_detail',
-                      })
-                    }
-                  >
-                    수정하기
-                  </EditLink>
-                  <DeleteButton
+                <>
+                  <StatusButton
+                    ref={statusButton}
                     type="button"
+                    aria-expanded={isStatusOpen}
+                    aria-busy={isChangingStatus}
+                    aria-disabled={isChangingStatus}
                     onClick={() => {
-                      captureAnalyticsEvent('trade_delete_started', {
-                        trade_id: detail.tradeId,
-                        source: 'trade_detail',
-                      });
-                      setIsDeleteDialogOpen(true);
+                      if (isChangingStatus) return;
+                      setStatusError(null);
+                      setIsStatusOpen((open) => !open);
                     }}
                   >
-                    삭제
-                  </DeleteButton>
-                </OwnerActions>
+                    {isChangingStatus ? '변경 중...' : '상태 변경'}
+                  </StatusButton>
+                  {isStatusOpen && (
+                    <StatusChoices role="group" aria-label="교환 상태 선택">
+                      {TRADE_STATUSES.map((status) => (
+                        <button
+                          key={status}
+                          type="button"
+                          disabled={
+                            isChangingStatus || status === detail.status
+                          }
+                          onClick={() => void changeStatus(status)}
+                        >
+                          <TradeStatusBadge status={status} />
+                        </button>
+                      ))}
+                      {statusError && <p role="alert">{statusError}</p>}
+                    </StatusChoices>
+                  )}
+                </>
               ) : action === 'login' ? (
                 <ChatLink
                   to={createLoginUrl(`/trade/${detail.tradeId}`)}
@@ -320,6 +459,23 @@ export default function TradeDetail({
             </ActionGroup>
           )}
         </Info>
+
+        <DetailContent>
+          <DescriptionSection>
+            <SectionTitle>가지고 있는 상품 설명</SectionTitle>
+            <Description>
+              {detail.description || '등록된 설명이 없어요.'}
+            </Description>
+            {detail.categories.length > 0 && (
+              <CategoryList aria-label="카테고리">
+                {detail.categories.map((category) => (
+                  <Category key={category}>#{category}</Category>
+                ))}
+              </CategoryList>
+            )}
+          </DescriptionSection>
+          {comments}
+        </DetailContent>
       </Summary>
 
       {action === 'edit' && (
@@ -350,7 +506,13 @@ export default function TradeDetail({
 }
 
 const Wrapper = styled.article`
+  position: relative;
   padding-bottom: 56px;
+
+  @media (min-width: 901px) {
+    margin-bottom: 56px;
+    padding-bottom: 0;
+  }
 `;
 
 const Breadcrumb = styled.p`
@@ -361,40 +523,53 @@ const Breadcrumb = styled.p`
 
 const Summary = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
-  gap: 56px;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-areas: 'gallery info' 'content info';
+  gap: 40px 48px;
+  align-items: start;
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-    gap: 32px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'gallery' 'info' 'content';
+    gap: 20px;
   }
 `;
 
 const Gallery = styled.div`
+  grid-area: gallery;
   min-width: 0;
 `;
 
 const MainImage = styled.div`
   position: relative;
   display: grid;
+  box-sizing: border-box;
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
   place-items: center;
   border: 1px solid #ececef;
-  border-radius: 20px;
+  border-radius: 12px;
   background: #f3f3f5;
+
+  @media (max-width: 767px) {
+    aspect-ratio: 390 / 340;
+    border: 0;
+    border-radius: 0;
+  }
+
+  @media (min-width: 901px) {
+    aspect-ratio: 672 / 560;
+  }
 `;
 
 const MainPhotoButton = styled.button`
   position: absolute;
-  display: grid;
+  inset: 0;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: zoom-in;
-  inset: 0;
-  place-items: center;
 
   &:focus-visible {
     z-index: 1;
@@ -404,9 +579,12 @@ const MainPhotoButton = styled.button`
 `;
 
 const MainPhoto = styled.img`
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center;
 `;
 
 const GalleryDirectionButton = styled.button<{
@@ -499,22 +677,25 @@ const ThumbnailPhoto = styled.img`
 `;
 
 const Info = styled.div`
+  grid-area: info;
+  min-width: 0;
   padding-top: 8px;
+
+  @media (max-width: 767px) {
+    padding: 0 24px 20px;
+  }
 `;
 
 const InfoHeader = styled.div`
   display: flex;
-  min-height: 36px;
-  align-items: flex-start;
+  min-height: 32px;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-`;
 
-const ItemRole = styled.p`
-  margin: 0 0 8px;
-  color: #ed174c;
-  font-size: 14px;
-  font-weight: 800;
+  > p:first-child {
+    margin: 0;
+  }
 `;
 
 const CategoryList = styled.div`
@@ -531,11 +712,50 @@ const Category = styled.span`
 `;
 
 const Title = styled.h1`
+  @media (min-width: 901px) {
+    margin: 12px 0 20px;
+    font-size: 30px;
+  }
+
   margin: 0 0 12px;
   color: #202126;
   font-size: clamp(26px, 3vw, 38px);
   line-height: 1.3;
   letter-spacing: -0.04em;
+`;
+
+const OwnerIdentity = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: #292a2f;
+  font-size: 15px;
+`;
+
+const OwnerAvatar = styled.span`
+  display: grid;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 50%;
+  background: #f3f1ef;
+  color: #77737a;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+const OwnerTag = styled.span`
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #f3f1ef;
+  color: #77737a;
+  font-size: 12px;
 `;
 
 const Meta = styled.div`
@@ -552,6 +772,15 @@ const Divider = styled.hr`
   margin: 28px 0;
   border: 0;
   border-top: 1px solid #ececef;
+
+  @media (min-width: 901px) {
+    margin: 20px 0 0;
+    border: 0;
+  }
+
+  @media (max-width: 767px) {
+    margin: 16px 0;
+  }
 `;
 
 const InfoList = styled.dl`
@@ -559,6 +788,89 @@ const InfoList = styled.dl`
   margin: 0;
   flex-direction: column;
   gap: 18px;
+
+  @media (min-width: 901px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 0;
+
+    > div {
+      grid-column: 1 / -1;
+      grid-template-columns: auto minmax(0, 1fr);
+
+      > dd {
+        text-align: right;
+      }
+    }
+
+    > div:first-child,
+    > [data-desired-item] {
+      display: grid;
+      grid-column: auto;
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+      gap: 4px;
+      padding: 20px;
+      background: #faf9f8;
+
+      > dt {
+        color: #d73352;
+      }
+
+      > dd {
+        font-size: 17px;
+        text-align: left;
+      }
+    }
+
+    > div:first-child {
+      padding-right: 26px;
+      border-radius: 12px 0 0 12px;
+    }
+
+    > [data-desired-item] {
+      padding-left: 26px;
+      border-radius: 0 12px 12px 0;
+    }
+
+    > [data-empty-time] {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 0;
+
+    > div {
+      grid-column: 1 / -1;
+    }
+
+    > div:first-child,
+    > [data-desired-item] {
+      display: grid;
+      grid-column: auto;
+      grid-template-columns: minmax(0, 1fr);
+      align-content: start;
+      min-height: 75px;
+      padding: 16px;
+      gap: 4px;
+      background: #f7f5f4;
+
+      > dd {
+        text-align: left;
+      }
+    }
+
+    > div:first-child {
+      border-radius: 12px 0 0 12px;
+    }
+
+    > [data-desired-item] {
+      border-radius: 0 12px 12px 0;
+    }
+  }
 `;
 
 const InfoRow = styled.div`
@@ -566,9 +878,32 @@ const InfoRow = styled.div`
   grid-template-columns: 112px minmax(0, 1fr);
   gap: 16px;
 
-  @media (max-width: 520px) {
-    grid-template-columns: 1fr;
-    gap: 4px;
+  @media (max-width: 767px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+
+    > dd {
+      text-align: right;
+    }
+  }
+`;
+
+const OfferedItem = styled(InfoRow)`
+  position: relative;
+  display: none;
+`;
+
+const ExchangeIcon = styled.span`
+  display: none;
+
+  @media (min-width: 901px) {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: 0;
+    display: block;
+    color: #77737a;
+    transform: translate(50%, -50%);
   }
 `;
 
@@ -586,8 +921,26 @@ const InfoValue = styled.dd`
 `;
 
 const ActionGroup = styled.div`
+  position: relative;
   display: grid;
   margin-top: 32px;
+
+  @media (max-width: 767px) {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 35;
+    margin: 0;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid #e9e9ec;
+    background: white;
+
+    a {
+      min-height: 52px;
+      background: #bf4355;
+      border-color: #bf4355;
+      color: #ffffff;
+    }
+  }
 `;
 
 const ChatLink = styled(Link)`
@@ -604,32 +957,134 @@ const ChatLink = styled(Link)`
   text-decoration: none;
 `;
 
-const EditLink = styled(ChatLink)`
-  background: #ed174c;
-  color: #ffffff;
+const OwnerMenu = styled.div`
+  position: relative;
+  margin-left: auto;
+
+  @media (max-width: 767px) {
+    position: absolute;
+    z-index: 41;
+    top: -46px;
+    right: 8px;
+  }
 `;
 
-const OwnerActions = styled.div`
+const OwnerMenuButton = styled.button`
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  color: #202126;
+  font-size: 24px;
+  cursor: pointer;
+`;
+
+const OwnerMenuItems = styled.div`
+  position: absolute;
+  z-index: 2;
+  top: 100%;
+  right: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
-  gap: 8px;
+  min-width: 120px;
+  padding: 4px;
+  border: 1px solid #e9e9ec;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+
+  a,
+  button {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #202126;
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+      background: #f5f4f3;
+    }
+  }
+
+  button {
+    color: #d80f42;
+  }
 `;
 
-const DeleteButton = styled.button`
-  min-height: 54px;
-  border: 1px solid #e2dfe0;
+const StatusButton = styled.button`
+  min-height: 56px;
+  border: 0;
   border-radius: 12px;
-  background: #ffffff;
-  color: #d80f42;
+  background: #d73352;
+  color: #fff;
   font-size: 15px;
   font-weight: 800;
   cursor: pointer;
 `;
 
+const StatusChoices = styled.div`
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 8px;
+  border: 1px solid #e9e9ec;
+  border-radius: 12px;
+  background: #fff;
+
+  @media (min-width: 768px) {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 8px);
+    inset-inline: 0;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 767px) {
+    grid-row: 1;
+  }
+
+  button {
+    min-height: 44px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+
+    &:disabled,
+    &:hover {
+      background: #f5f4f3;
+    }
+  }
+
+  p {
+    margin: 4px;
+    color: #d80f42;
+  }
+`;
+
+const DetailContent = styled.div`
+  min-width: 0;
+  grid-area: content;
+
+  @media (max-width: 767px) {
+    padding-inline: 24px;
+  }
+`;
+
 const DescriptionSection = styled.section`
-  margin-top: 32px;
-  padding-top: 28px;
-  border-top: 1px solid #e9e9ec;
+  margin-bottom: 40px;
+
+  @media (max-width: 767px) {
+    margin: 0 -24px 20px;
+    padding: 20px 24px;
+    border-block: 8px solid #f5f4f3;
+  }
 `;
 
 const SectionTitle = styled.h2`

@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 
 import type { ChatRoomSummary } from '@/domains/chat/chatType';
+import sanrioBaby from '@/mocks/assets/sanrio-baby.jpg';
 
 const CHAT_ROOMS_PATH = '/api/v1/chat/rooms';
 
@@ -16,7 +17,7 @@ const rooms: ChatRoomWire[] = [
       memberId: 3,
       title: '쿠로미 미니 피규어 vol.2',
       status: 'AVAILABLE',
-      thumbnailUrl: 'https://placehold.co/205x205/png?text=Kuromi',
+      thumbnailUrl: sanrioBaby,
     },
     otherMember: {
       memberId: 8,

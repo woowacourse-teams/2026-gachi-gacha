@@ -1,8 +1,10 @@
 import styled from '@emotion/styled';
+import { Link } from 'react-router';
 
 interface StickyActionBarProps {
   isSubmitting: boolean;
   formId?: string;
+  cancelTo: string;
   submitLabel?: string;
   submittingLabel?: string;
   disabled?: boolean;
@@ -11,6 +13,7 @@ interface StickyActionBarProps {
 export default function StickyActionBar({
   isSubmitting,
   formId = 'trade-create-form',
+  cancelTo,
   submitLabel = '등록하기',
   submittingLabel = '등록 중...',
   disabled = false,
@@ -18,6 +21,7 @@ export default function StickyActionBar({
   return (
     <Wrapper>
       <Actions>
+        <CancelLink to={cancelTo}>취소</CancelLink>
         <SubmitButton
           type="submit"
           form={formId}
@@ -38,29 +42,49 @@ const Wrapper = styled.footer`
   bottom: 0;
   left: 0;
   padding: 16px 24px;
-  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
   border-top: 1px solid #e9e9ec;
-  background: rgb(255 255 255 / 94%);
-  box-shadow: 0 -8px 24px rgb(27 28 32 / 6%);
-  backdrop-filter: blur(12px);
+  background: #fff;
 `;
 
 const Actions = styled.div`
-  display: grid;
-  width: min(100%, 960px);
+  display: flex;
+  width: min(100%, 720px);
   margin: 0 auto;
-  grid-template-columns: 1fr;
+  justify-content: flex-end;
+  gap: 12px;
 `;
 
-const ActionButton = styled.button`
-  min-height: 52px;
+const CancelLink = styled(Link)`
+  display: grid;
+  box-sizing: border-box;
+  width: 120px;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid #e9e9ec;
+  border-radius: 12px;
+  color: #202126;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+
+  @media (max-width: 767px) {
+    display: none;
+  }
+`;
+
+const SubmitButton = styled.button`
+  width: 160px;
+  min-height: 48px;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-`;
 
-const SubmitButton = styled(ActionButton)`
+  @media (max-width: 767px) {
+    width: 100%;
+  }
+
   border: 1px solid #ed174c;
   background: #ed174c;
   color: #ffffff;

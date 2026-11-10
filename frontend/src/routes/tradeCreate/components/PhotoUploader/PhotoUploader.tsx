@@ -636,8 +636,9 @@ const PhotoList = styled.div`
 `;
 
 const DropZone = styled.div`
+  --photo-size: 88px;
   position: relative;
-  min-height: 144px;
+  min-height: var(--photo-size);
   border-radius: 14px;
 `;
 
@@ -659,7 +660,7 @@ const DropOverlay = styled.div`
 
 const photoBoxStyle = css`
   box-sizing: border-box;
-  width: 144px;
+  width: var(--photo-size);
   aspect-ratio: 1 / 1;
   flex: 0 0 auto;
   border-radius: 14px;

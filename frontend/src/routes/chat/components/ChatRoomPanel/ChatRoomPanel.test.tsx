@@ -49,7 +49,7 @@ describe('ChatRoomPanel', () => {
     jest.useRealTimers();
   });
 
-  it('대화 상대·상태·사용자 메뉴와 상품 조작을 두 행으로 구분한다', () => {
+  it('상단 바에는 상대와 메뉴를, 글 요약에는 상품·상태·상태 변경을 표시한다', () => {
     renderPanel(
       <ChatRoomPanel
         room={SELECTED_CHAT_ROOM}
@@ -61,26 +61,61 @@ describe('ChatRoomPanel', () => {
     const partnerHeading = screen.getByRole('heading', {
       name: SELECTED_CHAT_ROOM.partnerName,
     });
-    const roomHeader = partnerHeading.closest('header');
+    const roomHeader = partnerHeading.closest('header') as HTMLElement;
     const productSummary = screen.getByRole('region', {
       name: '교환 상품 정보',
     });
 
-    expect(roomHeader).not.toBeNull();
     expect(
-      within(roomHeader as HTMLElement).getByText('교환 가능'),
+      within(roomHeader).getByRole('link', { name: '채팅 닫기' }),
     ).toBeInTheDocument();
     expect(
-      within(roomHeader as HTMLElement).getByRole('button', {
+      within(roomHeader).getByRole('button', {
         name: `${SELECTED_CHAT_ROOM.partnerName} 사용자 메뉴`,
       }),
     ).toBeInTheDocument();
+    expect(within(roomHeader).queryByText('교환 가능')).not.toBeInTheDocument();
     expect(screen.getAllByText('교환 가능')).toHaveLength(1);
     expect(
       within(productSummary).getByText(SELECTED_CHAT_ROOM.itemTitle),
     ).toBeInTheDocument();
+    expect(within(productSummary).getByText('교환 가능')).toBeInTheDocument();
     expect(
       within(productSummary).getByRole('button', { name: '예약 확정' }),
+    ).toBeInTheDocument();
+  });
+
+  it('웹 분할 화면용 뒤로 가기는 넓은 화면에서 숨길 수 있게 표시한다', () => {
+    renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        onClose={() => undefined}
+        closeVisibility="mobile"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '채팅 닫기' })).toHaveAttribute(
+      'data-visibility',
+      'mobile',
+    );
+  });
+
+  it('보낸 메시지와 받은 메시지를 발신자별 말풍선과 시간으로 표시한다', () => {
+    renderPanel(<ChatRoomPanel room={SELECTED_CHAT_ROOM} />);
+
+    const myMessage = SELECTED_CHAT_ROOM.messages.find(
+      (message) => message.sender === 'me' && message.text,
+    );
+
+    expect(myMessage).toBeDefined();
+    const bubble = screen.getByText(myMessage?.text ?? '');
+
+    expect(bubble).toHaveAttribute('data-sender', 'me');
+    const messageRow = bubble.parentElement?.parentElement as HTMLElement;
+
+    expect(messageRow).toHaveAttribute('data-sender', 'me');
+    expect(
+      within(messageRow).getByText(myMessage?.sentAt ?? ''),
     ).toBeInTheDocument();
   });
 
@@ -388,10 +423,11 @@ describe('ChatRoomPanel', () => {
 
     renderPanel(<ChatRoomPanel room={SELECTED_CHAT_ROOM} />);
 
-    expect(screen.getByRole('link', { name: '거래글로 이동' })).toHaveAttribute(
-      'href',
-      `/trade/${SELECTED_CHAT_ROOM.tradeId}`,
-    );
+    expect(
+      screen.getByRole('link', {
+        name: `${SELECTED_CHAT_ROOM.itemTitle} 교환글 보기`,
+      }),
+    ).toHaveAttribute('href', `/trade/${SELECTED_CHAT_ROOM.tradeId}`);
     await user.click(
       screen.getByRole('button', {
         name: `${SELECTED_CHAT_ROOM.partnerName} 사용자 메뉴`,

@@ -29,8 +29,14 @@ export const Popover = styled.section`
     content: '';
   }
 
+  /*
+   * 좁은 화면에서는 화면 폭에 맞춰 넓게 펼친다. 알림 버튼은 화면 오른쪽 끝에서
+   * 14~16px 안쪽에 있으므로, 오른쪽으로 4px만 넘겨 화면 밖으로 나가지 않게 한다.
+   * (화면 밖으로 나가면 모바일에서 페이지 폭이 늘어나 화면이 커져 보인다)
+   */
   @media (max-width: 520px) {
-    right: -40px;
+    right: -4px;
+    width: calc(100vw - 32px);
     border-radius: 18px;
   }
 `;

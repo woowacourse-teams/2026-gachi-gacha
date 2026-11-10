@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
 import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
+import { submitSearchForm } from '@/test/submitSearchForm';
 
 import { TradeRoute } from './route';
 
@@ -93,32 +94,6 @@ function createPaginatedTradePage(page: number) {
   };
 }
 
-function submitSearchForm(form: HTMLFormElement) {
-  const RequestFormData = globalThis.FormData;
-
-  class HtmlFormData extends RequestFormData {
-    constructor() {
-      super();
-    }
-  }
-
-  Object.defineProperty(globalThis, 'FormData', {
-    configurable: true,
-    value: HtmlFormData,
-    writable: true,
-  });
-
-  try {
-    fireEvent.submit(form);
-  } finally {
-    Object.defineProperty(globalThis, 'FormData', {
-      configurable: true,
-      value: RequestFormData,
-      writable: true,
-    });
-  }
-}
-
 describe('교환 게시글 검색', () => {
   it('로컬 차단 상태에 있는 작성자의 이미 로드된 게시글을 숨긴다', async () => {
     window.localStorage.setItem(
@@ -172,9 +147,7 @@ describe('교환 게시글 검색', () => {
       screen.getByRole('heading', { name: '‘쿠로미’ 검색결과' }),
     ).toBeInTheDocument();
 
-    expect(
-      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
-    ).toHaveValue('쿠로미');
+    expect(screen.getByRole('searchbox', { name: '검색어' })).toHaveValue('');
 
     await waitFor(() => expect(requestedUrls).toHaveLength(1));
     const searchRequest = requestedUrls[0]!;
@@ -215,9 +188,7 @@ describe('교환 게시글 검색', () => {
       'aria-pressed',
       'true',
     );
-    expect(
-      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
-    ).toHaveValue('');
+    expect(screen.getByRole('searchbox', { name: '검색어' })).toHaveValue('');
     expect(
       screen.getByRole('combobox', { name: '교환 상태' }),
     ).toHaveTextContent('교환 가능');
@@ -272,46 +243,37 @@ describe('교환 게시글 검색', () => {
       expect(requestedUrls.at(-1)?.searchParams.get('keyword')).toBe('산리오'),
     );
     expect(requestedUrls.at(-1)?.searchParams.get('categoryIds')).toBeNull();
-    expect(
-      screen.getByRole('searchbox', { name: '교환 게시글 검색어' }),
-    ).toHaveValue('');
+    expect(screen.getByRole('searchbox', { name: '검색어' })).toHaveValue('');
     expect(
       screen.getByRole('heading', { name: '산리오 교환글' }),
     ).toBeInTheDocument();
   });
 
-  it('직접 검색하면 선택한 빠른 검색어를 해제한다', async () => {
+  it('홈 헤더에서 검색하면 통합 검색 경로로 이동한다', async () => {
     server.use(
-      http.get('/api/v1/trades', ({ request }) =>
-        HttpResponse.json(
-          createTradePage(new URL(request.url).searchParams.get('keyword')),
-        ),
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json(createTradePage('치이카와')),
       ),
     );
     const user = userEvent.setup();
-
     renderWithProviders(<TradeRoute />, {
-      route: '/trade?quickKeyword=%EC%B9%98%EC%9D%B4%EC%B9%B4%EC%99%80',
+      route: '/trade?quickKeyword=치이카와',
     });
-
     await screen.findByRole('heading', { name: '치이카와 교환글' });
-    const searchbox = screen.getByRole('searchbox', {
-      name: '교환 게시글 검색어',
-    });
-
-    await user.type(searchbox, '쿠로미');
-    submitSearchForm(searchbox.closest('form')!);
-
-    await waitFor(() => {
-      const currentSearchParams = new URLSearchParams(window.location.search);
-
-      expect(currentSearchParams.get('keyword')).toBe('쿠로미');
-      expect(currentSearchParams.get('quickKeyword')).toBeNull();
-    });
-    expect(screen.getByRole('button', { name: '전체' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
+    await user.type(
+      screen.getByRole('searchbox', { name: '검색어' }),
+      '쿠로미',
     );
+    submitSearchForm(
+      screen.getByRole('search', { name: '통합 검색' }) as HTMLFormElement,
+    );
+    expect(window.location.pathname).toBe('/search');
+    expect(new URLSearchParams(window.location.search).get('keyword')).toBe(
+      '쿠로미',
+    );
+    expect(
+      new URLSearchParams(window.location.search).get('quickKeyword'),
+    ).toBeNull();
   });
 
   it('더보기를 누르면 다음 페이지 게시글을 기존 목록에 추가한다', async () => {

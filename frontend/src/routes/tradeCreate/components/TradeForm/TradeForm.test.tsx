@@ -12,6 +12,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 
 import { compressTradeImages } from '@/domains/trade/compressTradeImages';
 import { storeAuthTokens } from '@/features/auth/authTokenStorage';
+import { ToastProvider } from '@/shared/ui/toast';
 import { server } from '@/test/server';
 
 import TradeForm from './TradeForm';
@@ -87,7 +88,9 @@ jest.mock('@/features/placeSearch/KakaoPlaceSearchDialog', () => ({
 function renderTradeForm() {
   return render(
     <MemoryRouter>
-      <TradeForm />
+      <ToastProvider>
+        <TradeForm />
+      </ToastProvider>
     </MemoryRouter>,
   );
 }
@@ -96,7 +99,14 @@ function renderTradeFormWithDetailRoute() {
   return render(
     <MemoryRouter initialEntries={['/trade/new']}>
       <Routes>
-        <Route path="/trade/new" element={<TradeForm />} />
+        <Route
+          path="/trade/new"
+          element={
+            <ToastProvider>
+              <TradeForm />
+            </ToastProvider>
+          }
+        />
         <Route
           path="/trade/:tradeId"
           element={<p>등록된 거래 게시글 상세</p>}
@@ -129,6 +139,21 @@ async function completeRequiredFields(
     screen.getByRole('textbox', { name: /설명/ }),
     '개봉만 한 상품입니다.',
   );
+  await selectCategory(user);
+}
+
+async function selectCategory(user: ReturnType<typeof userEvent.setup>) {
+  server.use(
+    http.get('/api/v1/categories', () =>
+      HttpResponse.json({
+        code: 'C000',
+        message: '정상',
+        data: { items: [{ categoryId: 5, name: '산리오' }] },
+      }),
+    ),
+  );
+  await user.type(screen.getByRole('searchbox', { name: /카테고리/ }), '산리');
+  await user.click(await screen.findByRole('button', { name: '산리오' }));
 }
 
 function createTradeResponse() {
@@ -256,7 +281,7 @@ describe('TradeForm', () => {
     expect(description).toHaveValue('첫 줄\n둘째 줄');
   });
 
-  it('사진, 제목, 설명만 필수값으로 검증한다', () => {
+  it('사진, 제목, 설명, 카테고리를 필수로 검증하고 첫 누락 항목을 토스트로 알린다', () => {
     const { container } = renderTradeForm();
 
     expect(screen.getByRole('textbox', { name: /제목/ })).toBeRequired();
@@ -264,15 +289,48 @@ describe('TradeForm', () => {
     expect(
       screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
     ).not.toBeRequired();
-    expect(
-      screen.getByRole('searchbox', { name: /카테고리/ }),
-    ).not.toBeRequired();
+    expect(screen.getByRole('searchbox', { name: /카테고리/ })).toBeRequired();
 
     fireEvent.submit(container.querySelector('form') as HTMLFormElement);
 
     expect(screen.getByRole('alert')).toHaveTextContent(
       '사진을 1장 이상 등록해주세요.',
     );
+  });
+
+  it('카테고리를 고르지 않으면 등록하지 않고 토스트로 알린 뒤 카테고리 검색으로 이동한다', async () => {
+    let requestCount = 0;
+
+    server.use(
+      http.post('/api/v1/trades', () => {
+        requestCount += 1;
+        return HttpResponse.json(createTradeResponse(), { status: 201 });
+      }),
+    );
+    const user = userEvent.setup();
+    const { container } = renderTradeForm();
+    const fileInput =
+      container.querySelector<HTMLInputElement>('input[type="file"]');
+
+    await user.upload(
+      fileInput as HTMLInputElement,
+      new File(['image'], 'kuromi.png', { type: 'image/png' }),
+    );
+    await user.type(screen.getByRole('textbox', { name: /제목/ }), '쿠로미');
+    await user.type(screen.getByRole('textbox', { name: /설명/ }), '새 상품');
+    await user.click(screen.getByRole('button', { name: '등록하기' }));
+
+    const categorySearch = screen.getByRole('searchbox', { name: /카테고리/ });
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      '카테고리를 1개 이상 선택해주세요.',
+    );
+    expect(categorySearch).toHaveAttribute('aria-invalid', 'true');
+    expect(categorySearch).toHaveFocus();
+    expect(requestCount).toBe(0);
+
+    await selectCategory(user);
+    expect(categorySearch).not.toHaveAttribute('aria-invalid');
   });
 
   it('필수 항목을 먼저 보여주고 선택 항목임을 일관되게 안내한다', () => {
@@ -290,8 +348,8 @@ describe('TradeForm', () => {
       screen.getByRole('textbox', { name: /제목/ }),
       screen.getByRole('textbox', { name: /설명/ }),
       screen.getByRole('searchbox', { name: /카테고리/ }),
-      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
       screen.getByRole('button', { name: /구매 매장/ }),
+      screen.getByRole('textbox', { name: /얻고 싶은 상품/ }),
       screen.getByRole('button', { name: /거래 장소/ }),
     ];
 
@@ -301,7 +359,7 @@ describe('TradeForm', () => {
           Node.DOCUMENT_POSITION_FOLLOWING,
       ).toBeTruthy();
     });
-    expect(screen.getAllByText('(선택)')).toHaveLength(4);
+    expect(screen.getAllByText('(선택)')).toHaveLength(3);
   });
 
   it('제목과 얻고 싶은 상품을 255자로 제한하고 공백 제목을 안내한다', async () => {
@@ -321,10 +379,8 @@ describe('TradeForm', () => {
     await user.click(screen.getByRole('button', { name: '등록하기' }));
 
     expect(titleInput).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByText('제목을 입력해주세요.')).toHaveAttribute(
-      'id',
-      'trade-title-error',
-    );
+    expect(titleInput).toHaveFocus();
+    expect(screen.getByRole('alert')).toHaveTextContent('제목을 입력해주세요.');
   });
 
   it('선택한 구매 매장과 거래 장소를 다시 해제한다', async () => {
@@ -513,25 +569,38 @@ describe('TradeForm', () => {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     });
+    let requests = 0;
     server.use(
-      http.post('/api/v1/trades', () =>
-        HttpResponse.json(
-          { code: 'CE001', message: '교환 게시글을 등록할 수 없습니다.' },
-          { status: 400 },
-        ),
-      ),
+      http.post('/api/v1/trades', () => {
+        requests += 1;
+        return requests === 1
+          ? HttpResponse.json(
+              { code: 'CE001', message: '교환 게시글을 등록할 수 없습니다.' },
+              { status: 400 },
+            )
+          : HttpResponse.json(createTradeResponse(), { status: 201 });
+      }),
     );
     const user = userEvent.setup();
-    const { container } = renderTradeForm();
+    const { container } = renderTradeFormWithDetailRoute();
 
     await completeRequiredFields(user, container);
     await user.click(screen.getByRole('button', { name: '등록하기' }));
 
     const alert = await screen.findByRole('alert');
 
+    expect(alert).toHaveTextContent('등록하지 못했어요. 내용은 그대로예요.');
     expect(alert).toHaveTextContent('교환 게시글을 등록할 수 없습니다.');
+    expect(screen.getByRole('textbox', { name: /제목/ })).toHaveValue(
+      '쿠로미 피규어 교환해요',
+    );
+    expect(screen.getByRole('textbox', { name: /설명/ })).toHaveValue(
+      '개봉만 한 상품입니다.',
+    );
+    await user.click(within(alert).getByRole('button', { name: '다시 시도' }));
     expect(
-      within(container).getByRole('button', { name: '등록하기' }),
-    ).toBeEnabled();
+      await screen.findByText('등록된 거래 게시글 상세'),
+    ).toBeInTheDocument();
+    expect(requests).toBe(2);
   });
 });

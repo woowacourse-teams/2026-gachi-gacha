@@ -26,13 +26,14 @@ import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import { useOptionalChatUnread } from '@/features/chatUnread/ChatUnreadContext';
 import { useMemberBlocks } from '@/features/memberSafety/MemberBlockContext';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
+import { zIndex } from '@/shared/styles/tokens';
 import { AppHeader } from '@/shared/ui/AppHeader';
 import { PageLoadingFallback } from '@/shared/ui/PageLoadingFallback';
 
 import ChatPage from './ChatPage';
 import type { ChatConversation, ChatMessage, ChatRoom } from './model/chat';
 import { toChatDateKey } from './model/chatDate';
+import { formatConversationTime } from './model/conversationTime';
 import { useChatReadMarker } from './useChatReadMarker';
 
 interface ChatRouteProps {
@@ -568,7 +569,15 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       return <ChatModalStatus message="채팅을 불러오고 있어요." />;
     }
 
-    return <PageLoadingFallback label="채팅을 불러오고 있어요." />;
+    return roomId ? (
+      <PageLoadingFallback label="채팅을 불러오고 있어요." />
+    ) : (
+      <ChatPage
+        conversations={conversations}
+        listStatus="loading"
+        presentation="split"
+      />
+    );
   }
 
   if (state.status === 'error') {
@@ -583,6 +592,22 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
       );
     }
 
+    if (!roomId) {
+      return (
+        <ChatPage
+          conversations={conversations}
+          listStatus="error"
+          listErrorMessage={state.errorMessage}
+          presentation="split"
+          onRetryList={() => {
+            captureAnalyticsEvent('recovery_action_selected', {
+              feature: 'chat',
+            });
+            setLoadAttempt((current) => current + 1);
+          }}
+        />
+      );
+    }
     return (
       <ErrorPage>
         <AppHeader currentPath="/chat" />
@@ -608,6 +633,7 @@ export function ChatRoute({ roomId, presentation }: ChatRouteProps) {
   return (
     <ChatPage
       conversations={conversations}
+      selectedConversationId={activeRoomId}
       selectedRoom={selectedRoom}
       roomLoadError={state.roomLoadError}
       onRetryRoom={() => setLoadAttempt((current) => current + 1)}
@@ -755,9 +781,10 @@ function toConversation(room: ChatRoomSummary): ChatConversation {
     partnerName: room.otherMember.nickname,
     partnerProfileImageUrl: room.otherMember.profileImageUrl,
     itemTitle: room.trade.title,
+    itemImageUrl: room.trade.thumbnailUrl,
     lastMessage: room.lastMessage?.preview || '아직 메시지가 없어요.',
     lastMessageAt: room.lastMessage?.sentAt
-      ? formatRelativeTime(room.lastMessage.sentAt)
+      ? formatConversationTime(room.lastMessage.sentAt)
       : '',
     unreadCount: room.unreadCount,
     status: room.trade.status,
@@ -914,7 +941,7 @@ const SecondaryButton = styled.button`
 
 const ModalStatusLayer = styled.div`
   position: fixed;
-  z-index: 20;
+  z-index: ${zIndex.modal};
   inset: 0;
 `;
 
