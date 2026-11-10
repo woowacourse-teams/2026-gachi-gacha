@@ -105,6 +105,7 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     orientation: config.orientation,
     icon: config.icon,
     adaptiveForegroundImage: config.android?.adaptiveIcon?.foregroundImage,
+    adaptiveBackgroundColor: config.android?.adaptiveIcon?.backgroundColor,
     softwareKeyboardLayoutMode: config.android?.softwareKeyboardLayoutMode,
     version: config.version,
     versionCode: config.android?.versionCode,
@@ -133,8 +134,9 @@ for (const [variant, expected] of Object.entries(expectedVariants)) {
     package: expected.package,
     scheme: expected.scheme,
     orientation: 'default',
-    icon: './assets/lucha-app-icon.png',
-    adaptiveForegroundImage: './assets/lucha-app-icon.png',
+    icon: './assets/app-icon.png',
+    adaptiveForegroundImage: './assets/app-icon-adaptive.png',
+    adaptiveBackgroundColor: '#FFFFFF',
     softwareKeyboardLayoutMode: 'resize',
     version: DEFAULT_APP_VERSION,
     versionCode: DEFAULT_ANDROID_VERSION_CODE,
@@ -555,6 +557,24 @@ if (
 
 console.log('✓ Google Play release signing is injected without embedding credentials');
 
+const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+for (const [filename, colorType] of [
+  ['app-icon.png', 2],
+  ['app-icon-adaptive.png', 6],
+]) {
+  const icon = readFileSync(new URL(`../assets/${filename}`, import.meta.url));
+  if (
+    !icon.subarray(0, 8).equals(pngSignature) ||
+    icon.readUInt32BE(16) !== 1024 ||
+    icon.readUInt32BE(20) !== 1024 ||
+    icon[24] !== 8 ||
+    icon[25] !== colorType
+  ) {
+    throw new Error(`${filename} must be a 1024x1024 8-bit PNG of color type ${colorType}.`);
+  }
+}
+console.log('✓ Launcher source and padded adaptive icon are 1024x1024 PNGs');
+
 const playStoreIcon = readFileSync(
   new URL('../assets/play-store-icon.png', import.meta.url),
 );
@@ -563,6 +583,8 @@ const playStoreIconHeight = playStoreIcon.readUInt32BE(20);
 const playStoreIconColorType = playStoreIcon.readUInt8(25);
 
 if (
+  !playStoreIcon.subarray(0, 8).equals(pngSignature) ||
+  playStoreIcon.readUInt8(24) !== 8 ||
   playStoreIconWidth !== 512 ||
   playStoreIconHeight !== 512 ||
   playStoreIcon.length > PLAY_STORE_ICON_MAX_BYTES ||

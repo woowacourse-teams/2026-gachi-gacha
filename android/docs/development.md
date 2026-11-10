@@ -412,14 +412,17 @@ cd android/android
 
 ## 앱 아이콘 원칙
 
-앱 런처에는 루챠 캐릭터 자산 `assets/lucha-app-icon.png`을 사용한다. 중요한 얼굴 요소는 Android adaptive icon의 중앙 안전영역 안에 두어 원형·스쿼클·둥근 사각형 마스크에서도 잘리지 않게 한다. 이전 G 아이콘이 테마 아이콘으로 다시 보이지 않도록 별도의 구형 monochrome 자산은 연결하지 않는다.
+앱 런처에는 iOS와 동일한 빨간 G 로고 원본 `assets/app-icon.png`를 사용한다.
+Adaptive icon은 안전 여백이 있는 `assets/app-icon-adaptive.png`와 흰 배경을 사용한다.
+원본·변환 규격과 확인 방법은 [앱 아이콘 문서](app-icon.md)를 따른다.
 
 Play Console 등록정보용 아이콘은 런처 빌드 자산과 별도로 `assets/play-store-icon.png`에 보관한다. `npm run config:check`가 아래 조건을 자동 검증한다.
 
 - 512×512 PNG
 - 32-bit PNG
 - 1,024KB 이하
-- 문구, 순위·가격·할인·Play 배지처럼 오해를 유발하는 요소 없음
+
+문구, 순위·가격·할인·Play 배지처럼 오해를 유발하는 요소가 없는지는 별도로 확인한다.
 
 참고: [Google Play 그래픽 자산 요구사항](https://support.google.com/googleplay/android-developer/answer/9866151), [Android adaptive icon 디자인](https://developer.android.com/develop/ui/compose/system/icon_design_adaptive)
 
