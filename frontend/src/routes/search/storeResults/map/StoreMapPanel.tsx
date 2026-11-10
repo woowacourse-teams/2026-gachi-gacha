@@ -118,6 +118,7 @@ export function StoreMapPanel({
     <Panel>
       <KakaoMap
         center={mapCenter}
+        locationErrorAsDialog
         label={
           isGachaSelected ? '검색된 가챠 보유 매장 지도' : '홍대 가챠 매장 지도'
         }

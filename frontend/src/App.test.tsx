@@ -65,6 +65,15 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
 
+  it('비로그인 사용자가 채팅에 진입하면 로그인 후 채팅으로 복귀하도록 안내한다', async () => {
+    renderWithProviders(<App />, { initialAccessToken: null, route: '/chat' });
+    await waitFor(() => {
+      expect(mockedReplaceBrowserLocation).toHaveBeenCalledWith(
+        '/login?returnTo=%2Fchat',
+      );
+    });
+  });
+
   it('비로그인 사용자가 마이페이지에 접근하면 복귀 주소를 포함한 로그인 화면으로 이동한다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
@@ -126,7 +135,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', { name: '거래 글쓰기' }),
+      await screen.findByRole('heading', { name: '글쓰기' }),
     ).toBeInTheDocument();
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
@@ -307,8 +316,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     await user.click(await screen.findByRole('button', { name: 'SKIP' }));
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('search', {
+        name: '통합 검색',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -339,8 +348,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('search', {
+        name: '통합 검색',
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -385,8 +394,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     );
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('search', {
+        name: '통합 검색',
       }),
     ).toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
@@ -428,8 +437,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('search', {
+        name: '통합 검색',
       }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -437,23 +446,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(hasSeenCurrentLandingTour()).toBe(true);
   });
 
-  it('잘못된 URL은 쿼리와 해시를 유지한 거래/교환 화면으로 이동한다', async () => {
-    server.use(
-      http.get('/api/v1/trades', () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            number: 0,
-            size: 20,
-          },
-        }),
-      ),
-    );
-
+  it('없는 주소로 들어오면 페이지를 찾을 수 없다는 안내와 홈 이동을 보여준다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
       route: '/unknown-page?from=shared-link#results',
@@ -461,31 +454,18 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+        level: 1,
+        name: '페이지를 찾을 수 없어요',
       }),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/trade');
-    expect(window.location.search).toBe('?from=shared-link');
-    expect(window.location.hash).toBe('#results');
+    expect(screen.getByRole('link', { name: '홈으로' })).toHaveAttribute(
+      'href',
+      '/trade',
+    );
+    expect(window.location.pathname).toBe('/unknown-page');
   });
 
-  it('잘못된 URL의 인증 파라미터는 거래/교환 화면으로 전달하지 않는다', async () => {
-    server.use(
-      http.get('/api/v1/trades', () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            number: 0,
-            size: 20,
-          },
-        }),
-      ),
-    );
-
+  it('없는 주소의 인증 파라미터는 주소창에 남기지 않는다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,
       route:
@@ -494,12 +474,27 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+        level: 1,
+        name: '페이지를 찾을 수 없어요',
       }),
     ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/trade');
+    expect(window.location.pathname).toBe('/unknown-page');
     expect(window.location.search).toBe('?from=shared-link');
     expect(window.location.hash).toBe('');
+  });
+
+  it('잘못된 교환글 번호로 들어오면 페이지를 찾을 수 없다고 안내한다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/trade/not-a-number',
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '페이지를 찾을 수 없어요',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('검색 URL에서 카테고리별 가챠 탐색 화면을 보여준다', async () => {
@@ -555,8 +550,8 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     });
 
     expect(
-      await screen.findByRole('heading', {
-        name: '어떤 거래글을 찾아볼까요?',
+      await screen.findByRole('search', {
+        name: '통합 검색',
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();

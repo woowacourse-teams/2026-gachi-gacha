@@ -24,7 +24,8 @@ export type NavigationDestination =
   | 'chat'
   | 'notifications'
   | 'mypage'
-  | 'login';
+  | 'login'
+  | 'previous_page';
 
 interface StoreSearchContext {
   gacha_id: number | null;
@@ -52,7 +53,12 @@ export interface AnalyticsEventPropertiesMap {
   navigation_selected: {
     destination: NavigationDestination;
     source:
-      'header' | 'login_brand' | 'mypage' | 'privacy' | 'under_construction';
+      | 'header'
+      | 'login_brand'
+      | 'login_close'
+      | 'mypage'
+      | 'privacy'
+      | 'under_construction';
     is_authenticated: boolean | null;
   };
   oauth_login_started: {
@@ -167,7 +173,7 @@ export interface AnalyticsEventPropertiesMap {
     source: 'trade_list' | 'related_list' | 'mypage';
   };
   trade_create_started: {
-    source: 'floating_button' | 'empty_state';
+    source: 'floating_button' | 'empty_state' | 'header';
   };
   trade_edit_started: {
     trade_id: number;
@@ -386,9 +392,11 @@ export interface AnalyticsEventPropertiesMap {
   };
   account_menu_selected: {
     target:
+      | 'my_trades'
       | 'updates'
       | 'privacy'
       | 'support'
+      | 'collaboration'
       | 'blocked_members'
       | 'logout'
       | 'delete_account';

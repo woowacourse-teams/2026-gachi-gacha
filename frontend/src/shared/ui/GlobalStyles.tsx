@@ -30,6 +30,9 @@ const globalStyles = css`
 
   html {
     scrollbar-gutter: stable;
+    /* 모바일 웹뷰에서 링크·버튼을 누를 때 생기는 파란/회색 하이라이트를 없앤다.
+       키보드 포커스 표시는 각 요소의 :focus-visible 스타일로 따로 보여준다. */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {

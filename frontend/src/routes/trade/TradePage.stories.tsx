@@ -1,6 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import { MemoryRouter } from 'react-router';
 
+import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
+import {
+  AUTH_STORY_TOKEN,
+  authenticatedMemberHandler,
+} from '@/features/auth/mocks/authHandlers';
+import { MockWorkerBoundary } from '@/mocks/MockWorkerBoundary';
+import { SiteFooter } from '@/shared/ui/SiteFooter';
+
 import { TRADE_ITEMS } from './storybook/tradeMocks';
 import TradePage from './TradePage';
 
@@ -21,6 +29,7 @@ const meta: Meta<typeof TradePage> = {
     (Story) => (
       <MemoryRouter initialEntries={['/trade']}>
         <Story />
+        <SiteFooter />
       </MemoryRouter>
     ),
   ],
@@ -30,7 +39,20 @@ export default meta;
 
 type Story = StoryObj<typeof TradePage>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: { hasMore: true, onLoadMore: () => {} },
+};
+
+export const WebHomeAuthenticated: Story = {
+  ...Default,
+  render: (args) => (
+    <MockWorkerBoundary handlers={[authenticatedMemberHandler]}>
+      <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
+        <TradePage {...args} />
+      </AuthSessionProvider>
+    </MockWorkerBoundary>
+  ),
+};
 
 export const LongList: Story = {
   args: {
@@ -40,5 +62,21 @@ export const LongList: Story = {
         tradeId: item.tradeId + groupIndex * TRADE_ITEMS.length,
       })),
     ).flat(),
+  },
+};
+
+export const MobileHome: Story = {
+  parameters: {
+    viewport: {
+      options: {
+        tradeMobile: {
+          name: 'Mobile 390px',
+          styles: { width: '390px', height: '844px' },
+        },
+      },
+    },
+  },
+  globals: {
+    viewport: { value: 'tradeMobile', isRotated: false },
   },
 };

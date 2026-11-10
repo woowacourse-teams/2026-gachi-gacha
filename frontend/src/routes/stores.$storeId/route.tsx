@@ -1,8 +1,7 @@
+import { useEffect } from 'react';
+
 import gachiGachaLogo from '@/assets/gachi-gacha-logo-display.png';
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
-import { GachaSearchBar } from '@/features/gachaSearch/GachaSearchBar';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
-import { assignBrowserLocation } from '@/shared/browser/browserNavigation';
 import { AppHeader } from '@/shared/ui/AppHeader';
 
 import { StoreDetailOverview } from './components/StoreDetailOverview';
@@ -15,7 +14,9 @@ import {
   Main,
   Page,
   RetryButton,
-  VisuallyHidden,
+  DesktopHeader,
+  MobileHeader,
+  BackLink,
 } from './route.styles';
 import { useStoreDetail } from './useStoreDetail';
 
@@ -31,10 +32,6 @@ function getStoreId(pathname: string): number | null {
   return Number.isSafeInteger(storeId) ? storeId : null;
 }
 
-function openGachaSearchResults(gachaId: number) {
-  assignBrowserLocation(createGachaSearchResultsUrl(gachaId));
-}
-
 export interface StoreDetailRouteProps {
   pathname?: string;
 }
@@ -44,14 +41,30 @@ export function StoreDetailRoute({
 }: StoreDetailRouteProps = {}) {
   const storeId = getStoreId(pathname);
   const { storeDetailState, retryStoreDetail } = useStoreDetail(storeId);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [storeId]);
 
   return (
     <Page>
-      <VisuallyHidden>매장 상세</VisuallyHidden>
-      <AppHeader
-        currentPath=""
-        search={<GachaSearchBar onSelect={openGachaSearchResults} />}
-      />
+      <DesktopHeader>
+        <AppHeader currentPath="" />
+      </DesktopHeader>
+      <MobileHeader>
+        <BackLink to="/map" aria-label="지도로 돌아가기">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
+            <path d="m15 5-7 7 7 7" />
+          </svg>
+        </BackLink>
+      </MobileHeader>
 
       {storeDetailState.status === 'loading' ? (
         <LoadingArea role="status" aria-label="매장 정보를 불러오는 중">
@@ -59,7 +72,7 @@ export function StoreDetailRoute({
         </LoadingArea>
       ) : storeDetailState.status === 'success' ? (
         <Main>
-          <StoreDetailOverview store={storeDetailState.data} />
+          <StoreDetailOverview key={storeId} store={storeDetailState.data} />
         </Main>
       ) : (
         <ErrorPanel>

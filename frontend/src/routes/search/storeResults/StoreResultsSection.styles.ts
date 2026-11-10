@@ -5,7 +5,7 @@ export const Section = styled.section`
   width: 100%;
   min-height: 0;
   flex: 1 1 auto;
-  grid-template-columns: minmax(400px, 56%) minmax(360px, 44%);
+  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     'header map'
@@ -25,19 +25,19 @@ export const Section = styled.section`
 
 export const ListHeaderArea = styled.div`
   min-width: 0;
-  padding: 0 32px;
+  padding: 0 16px;
   grid-area: header;
 
   @media (max-width: 767px) {
     position: absolute;
-    top: calc(
-      var(--mobile-map-header-offset, 120px) +
-        max(12px, env(safe-area-inset-top))
-    );
-    right: 12px;
+    top: calc(64px + env(safe-area-inset-top));
+    right: auto;
     left: 12px;
     z-index: 3;
-    padding: 0;
+    padding: 0 12px;
+    border: 1px solid #e7e4e2;
+    border-radius: 999px;
+    background: #fff;
     grid-area: auto;
     transition: top 240ms ease;
   }
@@ -50,7 +50,7 @@ export const ListHeaderArea = styled.div`
 export const ListArea = styled.div`
   min-width: 0;
   min-height: 0;
-  padding: 0 32px 24px;
+  padding: 0 16px 24px;
   grid-area: list;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -59,7 +59,7 @@ export const ListArea = styled.div`
   @media (max-width: 767px) {
     position: absolute;
     right: 0;
-    bottom: max(12px, env(safe-area-inset-bottom));
+    bottom: calc(78px + env(safe-area-inset-bottom));
     left: 0;
     z-index: 2;
     padding: 0;
@@ -72,9 +72,17 @@ export const ListArea = styled.div`
 export const MapArea = styled.div`
   min-width: 0;
   min-height: 0;
-  padding: 16px;
+  padding: 0;
   grid-area: map;
   background: var(--color-surface-muted, #faf9f8);
+
+  > div > section {
+    box-sizing: border-box;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
 
   @media (max-width: 767px) {
     padding: 0;

@@ -1,5 +1,7 @@
-import { useSearchParams } from 'react-router';
+import { useLayoutEffect } from 'react';
+import { useLocation, useNavigationType, useSearchParams } from 'react-router';
 
+import type { TradeSummaryPage } from '@/domains/trade/tradeSummaryType';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 import {
@@ -10,7 +12,38 @@ import {
 import TradePage from './TradePage';
 import { useTrades } from './useTrades';
 
+let lastTradeVisit:
+  | {
+      key: string;
+      pathname: string;
+      search: string;
+      page: TradeSummaryPage;
+      scrollY: number;
+    }
+  | undefined;
+
 export function TradeRoute() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const restoredVisit =
+    navigationType === 'POP' &&
+    lastTradeVisit?.key === location.key &&
+    lastTradeVisit.pathname === location.pathname &&
+    lastTradeVisit.search === location.search
+      ? lastTradeVisit
+      : undefined;
+
+  return (
+    <TradeRouteContent key={restoredVisit?.key} restoredVisit={restoredVisit} />
+  );
+}
+
+function TradeRouteContent({
+  restoredVisit,
+}: {
+  restoredVisit: typeof lastTradeVisit;
+}) {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get('keyword')?.trim() ?? '';
   const quickKeyword = keyword
@@ -20,7 +53,19 @@ export function TradeRoute() {
   const statusFilter = parseTradeStatus(searchParams.get('status'));
   const sortOrder = parseTradeSortOrder(searchParams.get('sort'));
   const { state, retry, hasMore, isLoadingMore, loadMoreError, loadMore } =
-    useTrades({ keyword: effectiveKeyword, status: statusFilter, sortOrder });
+    useTrades(
+      { keyword: effectiveKeyword, status: statusFilter, sortOrder },
+      restoredVisit?.page,
+    );
+
+  useLayoutEffect(() => {
+    if (restoredVisit) {
+      const frame = window.requestAnimationFrame(() => {
+        window.scrollTo(0, restoredVisit.scrollY);
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+  }, [restoredVisit]);
 
   function updateSearchParams(updates: Record<string, string | null>) {
     const nextSearchParams = new URLSearchParams(searchParams);
@@ -36,18 +81,6 @@ export function TradeRoute() {
     setSearchParams(nextSearchParams);
   }
 
-  function searchTrades(query: string) {
-    captureAnalyticsEvent('trade_search_submitted', {
-      query_length: query.length,
-    });
-
-    updateSearchParams({
-      keyword: query || null,
-      quickKeyword: null,
-      categoryId: null,
-    });
-  }
-
   return (
     <TradePage
       items={state.status === 'success' ? state.data.content : []}
@@ -60,7 +93,17 @@ export function TradeRoute() {
       hasMore={hasMore}
       isLoadingMore={isLoadingMore}
       loadMoreError={loadMoreError}
-      onSearch={searchTrades}
+      onOpenTrade={() => {
+        if (state.status === 'success') {
+          lastTradeVisit = {
+            key: location.key,
+            pathname: location.pathname,
+            search: location.search,
+            page: state.data,
+            scrollY: window.scrollY,
+          };
+        }
+      }}
       onSelectQuickKeyword={(nextQuickKeyword) => {
         captureAnalyticsEvent('trade_filter_selected', {
           filter: 'category',

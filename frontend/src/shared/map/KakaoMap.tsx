@@ -1,5 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { WheelEvent } from 'react';
+
+import { ConfirmDialog } from '@/shared/ui/ConfirmDialog';
 
 import { CurrentLocationButton } from './CurrentLocationButton';
 import {
@@ -26,6 +28,7 @@ export interface KakaoMapProps {
   center: MapCoordinate;
   level?: number;
   label?: string;
+  locationErrorAsDialog?: boolean;
   onBackgroundClick?: () => void;
   onDragEnd?: () => void;
   onMapReady?: (map: kakao.maps.Map | null) => void;
@@ -56,6 +59,7 @@ export function KakaoMap({
   center,
   level = DEFAULT_MAP_LEVEL,
   label = '가챠 매장 지도',
+  locationErrorAsDialog = false,
   onBackgroundClick,
   onDragEnd,
   onMapReady,
@@ -63,6 +67,13 @@ export function KakaoMap({
 }: KakaoMapProps) {
   const { containerRef, mapState, retryMap } = useKakaoMap({ center, level });
   const { locationState, requestCurrentLocation } = useCurrentLocation();
+  const [isLocationErrorOpen, setIsLocationErrorOpen] = useState(false);
+
+  useEffect(() => {
+    if (locationErrorAsDialog && locationState.status === 'error') {
+      setIsLocationErrorOpen(true);
+    }
+  }, [locationErrorAsDialog, locationState]);
   const onMapReadyRef = useRef(onMapReady);
   const map = mapState.status === 'success' ? mapState.data : null;
   const currentLocation =
@@ -112,10 +123,26 @@ export function KakaoMap({
       onWheelCapture={keepPageScrollAvailable}
     >
       <MapCanvas ref={containerRef} />
+      {locationErrorAsDialog && (
+        <ConfirmDialog
+          open={isLocationErrorOpen}
+          title="현재 위치를 확인할 수 없어요"
+          description={
+            locationState.errorMessage ?? '위치 권한을 확인해주세요.'
+          }
+          confirmLabel="다시 시도"
+          cancelLabel="지도 계속 보기"
+          onCancel={() => setIsLocationErrorOpen(false)}
+          onConfirm={() => {
+            setIsLocationErrorOpen(false);
+            requestCurrentLocation();
+          }}
+        />
+      )}
 
       {mapState.status === 'success' && (
         <MapControls>
-          {locationState.status === 'error' && (
+          {!locationErrorAsDialog && locationState.status === 'error' && (
             <LocationErrorMessage role="alert">
               {locationState.errorMessage}
             </LocationErrorMessage>

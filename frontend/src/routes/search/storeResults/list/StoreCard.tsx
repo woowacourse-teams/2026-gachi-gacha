@@ -30,7 +30,7 @@ export function StoreCard({
 }: StoreCardProps) {
   const { storeId, name, thumbnailUrl, address, gachaCount } = store;
   const handleClick = () => {
-    if (isSelected) {
+    if (isSelected || window.matchMedia?.('(max-width: 767px)').matches) {
       onOpen(storeId);
       return;
     }

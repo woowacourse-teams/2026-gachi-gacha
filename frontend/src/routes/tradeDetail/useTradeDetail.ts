@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { getTradeDetail } from '@/domains/trade/api/getTradeDetail';
+import { updateTradeStatus } from '@/domains/trade/api/updateTradeStatus';
 import type { TradeDetail } from '@/domains/trade/tradeDetailType';
+import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 const LOADING_STATE: AsyncState<TradeDetail> = {
@@ -54,5 +56,15 @@ export function useTradeDetail(tradeId: number) {
     return () => controller.abort();
   }, [attempt, tradeId]);
 
-  return { state, retry };
+  async function changeStatus(status: TradeStatus) {
+    const data = await updateTradeStatus({ tradeId, status });
+
+    setState((current) =>
+      current.status === 'success' && current.data.tradeId === data.tradeId
+        ? { status: 'success', data, errorMessage: null }
+        : current,
+    );
+  }
+
+  return { state, retry, changeStatus };
 }

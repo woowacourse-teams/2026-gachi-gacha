@@ -14,7 +14,6 @@ import { AppHeader } from '@/shared/ui/AppHeader';
 import CreateTradeButton from './components/CreateTradeButton';
 import ProductCard from './components/ProductCard';
 import ScrollToTopButton from './components/ScrollToTopButton';
-import SearchHero from './components/SearchHero';
 import { TradeFilters } from './components/TradeFilters';
 import type { TradeItem } from './model/tradeItem';
 import type {
@@ -33,7 +32,7 @@ interface TradePageProps {
   hasMore?: boolean;
   isLoadingMore?: boolean;
   loadMoreError?: string | null;
-  onSearch?: (query: string) => void;
+  onOpenTrade?: () => void;
   onSelectQuickKeyword?: (keyword: TradeQuickKeyword | null) => void;
   onChangeStatusFilter?: (status: TradeStatus | null) => void;
   onChangeSortOrder?: (sortOrder: TradeSortOrder) => void;
@@ -52,7 +51,7 @@ export default function TradePage({
   hasMore = false,
   isLoadingMore = false,
   loadMoreError = null,
-  onSearch = () => undefined,
+  onOpenTrade,
   onSelectQuickKeyword = () => undefined,
   onChangeStatusFilter = () => undefined,
   onChangeSortOrder = () => undefined,
@@ -71,15 +70,9 @@ export default function TradePage({
 
   return (
     <Page>
-      <AppHeader currentPath="/trade" />
+      <AppHeader currentPath="/trade" showMobileTabs />
 
       <Main>
-        <SearchHero
-          title="어떤 거래글을 찾아볼까요?"
-          initialQuery={query}
-          onSearch={onSearch}
-        />
-
         <ResultsPanel aria-live="polite">
           <TradeFilters
             selectedQuickKeyword={selectedQuickKeyword}
@@ -114,7 +107,9 @@ export default function TradePage({
                   <ProductCard
                     key={item.tradeId}
                     item={item}
-                    eagerImage={index < 5}
+                    eagerImage={index < 4}
+                    homeLayout
+                    onOpen={onOpenTrade}
                   />
                 ))}
               </ProductGrid>
@@ -142,12 +137,14 @@ export default function TradePage({
       </Main>
 
       <ScrollToTopButton />
-      <CreateTradeButton />
+      <CreateTradeButton placement="mobile" />
     </Page>
   );
 }
 
 const Page = styled.div`
+  --trade-mobile-tab-height: 56px;
+
   min-height: 100dvh;
   background: ${color.surface};
 `;
@@ -158,26 +155,28 @@ const Main = styled.main`
   width: 100%;
   margin: 0 auto;
   /* 하단 여백은 우측 하단 등록 버튼이 마지막 콘텐츠를 가리지 않도록 버튼 높이만큼 더 둔다. */
-  padding: 0 0 120px;
+  padding: 0 0 64px;
   flex-direction: column;
 
   @media (max-width: ${breakpoint.mobile}) {
-    padding-bottom: 96px;
+    padding-bottom: calc(
+      96px + var(--trade-mobile-tab-height) + env(safe-area-inset-bottom)
+    );
   }
 `;
 
 const ResultsPanel = styled.section`
-  --trade-grid-max-width: 1201px;
+  --trade-grid-max-width: 1200px;
 
   box-sizing: border-box;
   width: 100%;
-  max-width: 1328px;
+  max-width: 1264px;
   margin: 0 auto;
-  padding: ${space.md} ${space.xl} 0;
+  padding: 28px 32px 0;
   background: ${color.surface};
 
   @media (max-width: 1327px) {
-    --trade-grid-max-width: 956px;
+    padding-inline: 24px;
   }
 
   @media (max-width: 1003px) {
@@ -185,7 +184,9 @@ const ResultsPanel = styled.section`
   }
 
   @media (max-width: ${breakpoint.mobile}) {
-    --trade-grid-max-width: 466px;
+    --trade-grid-max-width: none;
+    margin: 0;
+    padding: 4px 16px 0;
   }
 `;
 
@@ -196,28 +197,50 @@ const ResultsTitle = styled.h2`
   color: ${color.text};
   font-size: ${fontSize.subheading};
   font-weight: ${fontWeight.bold};
+
+  @media (max-width: ${breakpoint.mobile}) {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+
+  @media (min-width: 768px) {
+    position: absolute;
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
 `;
 
 const ProductGrid = styled.div`
   display: grid;
   width: 100%;
   max-width: var(--trade-grid-max-width);
-  margin: ${space.xl} auto 0;
-  grid-template-columns: repeat(5, minmax(0, 221px));
+  margin: 24px auto 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   justify-content: center;
-  gap: 44px ${space.xl};
-
-  @media (max-width: 1327px) {
-    grid-template-columns: repeat(4, minmax(0, 221px));
-  }
+  gap: 32px 24px;
 
   @media (max-width: 1003px) {
     grid-template-columns: repeat(3, minmax(0, 221px));
   }
 
   @media (max-width: ${breakpoint.mobile}) {
-    grid-template-columns: repeat(2, minmax(0, 221px));
-    gap: 32px 14px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-top: 0;
+
+    & > a {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border: 0;
+      border-bottom: 1px solid ${color.borderSubtle};
+      border-radius: 0;
+      box-shadow: none;
+    }
   }
 `;
 
@@ -265,9 +288,9 @@ const LoadMoreError = styled(StateMessage)`
 
 const LoadMoreButton = styled.button`
   display: block;
-  min-width: 160px;
+  width: min(240px, 100%);
   min-height: 48px;
-  margin: ${space.xxl} auto 0;
+  margin: 32px auto 0;
   padding: 0 ${space.xl};
   border: 1px solid ${color.border};
   border-radius: ${radius.control};

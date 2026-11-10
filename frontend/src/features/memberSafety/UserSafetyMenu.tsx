@@ -21,6 +21,8 @@ interface UserSafetyMenuProps {
   source: MemberSafetySource;
   referenceId?: string | null;
   onBlocked?: (() => void) | undefined;
+  /** `toolbar`: 앱 상단 바처럼 44px 영역에 선 아이콘으로 표시한다. */
+  triggerVariant?: 'compact' | 'toolbar';
 }
 
 export function UserSafetyMenu({
@@ -29,6 +31,7 @@ export function UserSafetyMenu({
   source,
   referenceId = null,
   onBlocked,
+  triggerVariant = 'compact',
 }: UserSafetyMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { blockMember, openMemberReport } = useMemberBlocks();
@@ -86,12 +89,17 @@ export function UserSafetyMenu({
           aria-label={`${targetNickname} 사용자 메뉴`}
           aria-haspopup="menu"
           aria-expanded={isMenuOpen}
+          data-variant={triggerVariant}
           onClick={() => {
             setIsMenuOpen((open) => !open);
             captureAnalyticsEvent('member_safety_menu_opened', { source });
           }}
         >
-          <span aria-hidden="true">•••</span>
+          {triggerVariant === 'toolbar' ? (
+            <EllipsisIcon />
+          ) : (
+            <span aria-hidden="true">•••</span>
+          )}
         </MenuButton>
         {isMenuOpen && (
           <Menu role="menu">
@@ -142,6 +150,22 @@ export function UserSafetyMenu({
   );
 }
 
+function EllipsisIcon() {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <circle cx="5" cy="12" r="1.6" />
+      <circle cx="12" cy="12" r="1.6" />
+      <circle cx="19" cy="12" r="1.6" />
+    </svg>
+  );
+}
+
 const MenuRoot = styled.div`
   position: relative;
   flex: 0 0 auto;
@@ -169,6 +193,12 @@ const MenuButton = styled.button`
   &:focus-visible {
     box-shadow: ${focusRing};
     outline: none;
+  }
+
+  &[data-variant='toolbar'] {
+    width: 44px;
+    height: 44px;
+    color: ${color.text};
   }
 `;
 

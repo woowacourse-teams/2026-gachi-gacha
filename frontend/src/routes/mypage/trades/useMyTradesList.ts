@@ -10,7 +10,7 @@ import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 export type MyTradeStatusFilter = 'ALL' | TradeStatus;
 
-const PAGE_SIZE = 10;
+const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_ERROR_MESSAGE = '내 교환글을 불러오지 못했습니다.';
 const LOADING_STATE: AsyncState<TradeSummaryPage> = {
   status: 'loading',
@@ -22,7 +22,10 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === 'AbortError';
 }
 
-export function useMyTradesList(statusFilter: MyTradeStatusFilter) {
+export function useMyTradesList(
+  statusFilter: MyTradeStatusFilter,
+  pageSize: number = DEFAULT_PAGE_SIZE,
+) {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] =
     useState<AsyncState<TradeSummaryPage>>(LOADING_STATE);
@@ -30,8 +33,8 @@ export function useMyTradesList(statusFilter: MyTradeStatusFilter) {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const loadMoreControllerRef = useRef<AbortController | null>(null);
   const request = useMemo(
-    () => ({ statusFilter, attempt }),
-    [attempt, statusFilter],
+    () => ({ statusFilter, attempt, pageSize }),
+    [attempt, pageSize, statusFilter],
   );
   const retry = useCallback(() => {
     setAttempt((currentAttempt) => currentAttempt + 1);
@@ -49,7 +52,7 @@ export function useMyTradesList(statusFilter: MyTradeStatusFilter) {
       try {
         const data = await getMyTrades({
           page: 0,
-          size: PAGE_SIZE,
+          size: request.pageSize,
           ...(request.statusFilter === 'ALL'
             ? {}
             : { status: request.statusFilter }),
@@ -119,7 +122,7 @@ export function useMyTradesList(statusFilter: MyTradeStatusFilter) {
     try {
       const data = await getMyTrades({
         page: nextPage,
-        size: PAGE_SIZE,
+        size: pageSize,
         ...(statusFilter === 'ALL' ? {} : { status: statusFilter }),
         signal: controller.signal,
       });
@@ -162,7 +165,7 @@ export function useMyTradesList(statusFilter: MyTradeStatusFilter) {
         setIsLoadingMore(false);
       }
     }
-  }, [hasMore, isLoadingMore, state, statusFilter]);
+  }, [hasMore, isLoadingMore, pageSize, state, statusFilter]);
 
   return {
     state,

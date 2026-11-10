@@ -28,7 +28,7 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
   const navigate = useNavigate();
   const { status: authStatus, member, memberId } = useAuthSession();
   const { isMemberBlocked } = useMemberBlocks();
-  const { state, retry } = useTradeDetail(tradeId);
+  const { state, retry, changeStatus } = useTradeDetail(tradeId);
   const {
     comments,
     state: commentsState,
@@ -113,6 +113,7 @@ export function TradeDetailRoute({ tradeId }: TradeDetailRouteProps) {
     <TradeDetailPage
       detail={state.data}
       action={action}
+      onChangeStatus={action === 'edit' ? changeStatus : undefined}
       hasSubmittedComment={hasSubmittedComment}
       relatedItems={relatedItems}
       hasMoreRelatedItems={hasMoreRelatedItems}

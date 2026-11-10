@@ -74,18 +74,77 @@ function useTradeDetailHandlers() {
 
 describe('TradeDetailRoute', () => {
   it('로그인한 회원이 작성자이면 수정하기 링크를 보여준다', async () => {
+    const user = userEvent.setup();
     useTradeDetailHandlers();
 
     renderWithProviders(<TradeDetailRoute tradeId={TRADE_DETAIL.tradeId} />, {
       initialAccessToken: createAccessToken(TRADE_DETAIL.memberId),
     });
 
-    expect(
-      await screen.findByRole('link', { name: '수정하기' }),
-    ).toHaveAttribute('href', `/trade/${TRADE_DETAIL.tradeId}/edit`);
+    await user.click(
+      await screen.findByRole('button', { name: '내 글 더보기' }),
+    );
+    expect(screen.getByRole('link', { name: '수정하기' })).toHaveAttribute(
+      'href',
+      `/trade/${TRADE_DETAIL.tradeId}/edit`,
+    );
     expect(
       screen.queryByRole('link', { name: '채팅하기' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('작성자는 상태 변경에 실패하면 다시 시도하고 성공한 상태를 확인할 수 있다', async () => {
+    const user = userEvent.setup();
+    useTradeDetailHandlers();
+    const requests: unknown[] = [];
+    server.use(
+      http.patch(
+        `/api/v1/trades/${TRADE_DETAIL.tradeId}/status`,
+        async ({ request }) => {
+          requests.push(await request.json());
+          if (requests.length === 1) {
+            return HttpResponse.json(
+              { code: 'TE001', message: '잠시 후 다시 시도해주세요.' },
+              { status: 500 },
+            );
+          }
+          return HttpResponse.json({
+            code: 'C002',
+            message: '정상 수정',
+            data: { ...TRADE_DETAIL, status: 'IN_PROGRESS' },
+          });
+        },
+      ),
+    );
+
+    storeAuthTokens({
+      accessToken: createAccessToken(TRADE_DETAIL.memberId),
+      refreshToken: 'refresh-token',
+    });
+
+    renderWithProviders(<TradeDetailRoute tradeId={TRADE_DETAIL.tradeId} />, {
+      initialAccessToken: createAccessToken(TRADE_DETAIL.memberId),
+    });
+
+    const trigger = await screen.findByRole('button', { name: '상태 변경' });
+    await user.click(trigger);
+    const choices = screen.getByRole('group', { name: '교환 상태 선택' });
+    const inProgress = within(choices).getByRole('button', {
+      name: '교환 진행 중',
+    });
+    await user.click(inProgress);
+    expect(await within(choices).findByRole('alert')).toHaveTextContent(
+      '잠시 후 다시 시도해주세요.',
+    );
+    expect(screen.getAllByText('교환 가능')).toHaveLength(2);
+
+    await user.click(inProgress);
+    await waitFor(() => expect(choices).not.toBeInTheDocument());
+    expect(screen.getByText('교환 진행 중')).toBeInTheDocument();
+    expect(requests).toEqual([
+      { status: 'IN_PROGRESS' },
+      { status: 'IN_PROGRESS' },
+    ]);
   });
 
   it('비로그인 사용자의 채팅하기는 로그인 후 상세 페이지로 돌아오는 로그인 링크다', async () => {
@@ -115,6 +174,12 @@ describe('TradeDetailRoute', () => {
     ).toHaveAttribute('href', `/chat/start/${TRADE_DETAIL.tradeId}`);
     expect(
       screen.queryByRole('link', { name: '수정하기' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '내 글 더보기' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '상태 변경' }),
     ).not.toBeInTheDocument();
   });
 
@@ -266,7 +331,10 @@ describe('TradeDetailRoute 삭제', () => {
       route: `/trade/${TRADE_DETAIL.tradeId}`,
     });
 
-    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    await user.click(
+      await screen.findByRole('button', { name: '내 글 더보기' }),
+    );
+    await user.click(screen.getByRole('button', { name: '삭제' }));
 
     const dialog = screen.getByRole('alertdialog', {
       name: '교환 글을 삭제할까요?',
@@ -298,7 +366,10 @@ describe('TradeDetailRoute 삭제', () => {
       route: `/trade/${TRADE_DETAIL.tradeId}`,
     });
 
-    await user.click(await screen.findByRole('button', { name: '삭제' }));
+    await user.click(
+      await screen.findByRole('button', { name: '내 글 더보기' }),
+    );
+    await user.click(screen.getByRole('button', { name: '삭제' }));
     await user.click(screen.getByRole('button', { name: '취소' }));
 
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();

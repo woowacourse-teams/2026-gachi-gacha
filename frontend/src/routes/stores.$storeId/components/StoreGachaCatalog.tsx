@@ -1,7 +1,8 @@
 import { useId } from 'react';
 
 import { GachaSummaryCard } from '@/domains/product/components/GachaSummaryCard';
-import { createGachaSearchResultsUrl } from '@/domains/product/gachaRoute';
+import { createGachaDetailUrl } from '@/domains/product/gachaRoute';
+import { createStoreDetailUrl } from '@/domains/store/storeRoute';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { LogoImagePlaceholder } from '@/shared/ui/LogoImagePlaceholder';
 
@@ -33,13 +34,19 @@ const LOADING_CARD_COUNT = 4;
 interface StoreGachaCardProps {
   gacha: StoreGachaSummary;
   resultPosition: number;
+  storeId: number;
 }
 
-function StoreGachaCard({ gacha, resultPosition }: StoreGachaCardProps) {
+function StoreGachaCard({
+  gacha,
+  resultPosition,
+  storeId,
+}: StoreGachaCardProps) {
   return (
     <GachaLink
-      to={createGachaSearchResultsUrl(gacha.gachaId)}
-      aria-label={`${gacha.gachaName} 보유 매장 지도에서 보기`}
+      to={createGachaDetailUrl(gacha.gachaId, gacha.gachaName)}
+      state={{ storeDetailFrom: createStoreDetailUrl(storeId) }}
+      aria-label={`${gacha.gachaName} 가챠 상세 보기`}
       onClick={() =>
         captureAnalyticsEvent('gacha_selected', {
           gacha_id: gacha.gachaId,
@@ -49,6 +56,7 @@ function StoreGachaCard({ gacha, resultPosition }: StoreGachaCardProps) {
       }
     >
       <GachaSummaryCard
+        variant="store"
         product={{
           name: gacha.gachaName,
           thumbnailUrl: gacha.thumbnailUrl,
@@ -131,7 +139,11 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
             <GachaList>
               {storeGachaState.data.gachas.map((gacha, index) => (
                 <GachaItem key={gacha.gachaId}>
-                  <StoreGachaCard gacha={gacha} resultPosition={index + 1} />
+                  <StoreGachaCard
+                    gacha={gacha}
+                    resultPosition={index + 1}
+                    storeId={storeId}
+                  />
                 </GachaItem>
               ))}
             </GachaList>
@@ -151,7 +163,7 @@ export function StoreGachaCatalog({ storeId }: StoreGachaCatalogProps) {
                   </>
                 ) : (
                   <RetryButton type="button" onClick={loadMore}>
-                    더 보기
+                    더보기
                   </RetryButton>
                 )}
               </LoadMoreArea>

@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
+import { MemoryRouter } from 'react-router';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import {
@@ -46,9 +47,11 @@ function AuthenticatedStory({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
-      {children}
-    </AuthSessionProvider>
+    <MemoryRouter initialEntries={['/mypage']}>
+      <AuthSessionProvider initialAccessToken={AUTH_STORY_TOKEN}>
+        {children}
+      </AuthSessionProvider>
+    </MemoryRouter>
   );
 }
 

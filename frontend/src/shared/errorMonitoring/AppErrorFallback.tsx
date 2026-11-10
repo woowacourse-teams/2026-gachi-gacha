@@ -1,27 +1,35 @@
-import {
-  ErrorCard,
-  ErrorDescription,
-  ErrorScreen,
-  ErrorTitle,
-  ReloadButton,
-} from './AppErrorFallback.styles';
+import styled from '@emotion/styled';
 
+import { color } from '@/shared/styles/tokens';
+import { ErrorState } from '@/shared/ui/ErrorState';
+
+/**
+ * 앱 전체가 그려지지 못했을 때의 화면 (서버 오류 시안).
+ * 라우터 밖에서도 그려질 수 있어 링크 없이 버튼만 쓴다.
+ */
 export function AppErrorFallback({
   onReload = () => window.location.reload(),
 }: {
   onReload?: () => void;
 }) {
   return (
-    <ErrorScreen>
-      <ErrorCard role="alert" aria-live="assertive">
-        <ErrorTitle>문제가 발생했어요</ErrorTitle>
-        <ErrorDescription>
-          일시적인 오류일 수 있어요. 페이지를 새로고침한 뒤 다시 시도해 주세요.
-        </ErrorDescription>
-        <ReloadButton type="button" onClick={onReload}>
-          새로고침
-        </ReloadButton>
-      </ErrorCard>
-    </ErrorScreen>
+    <Screen>
+      <ErrorState
+        announce
+        headingLevel={1}
+        title="잠시 문제가 생겼어요"
+        description="잠시 후 다시 시도해 주세요."
+        action={{ label: '다시 시도', onClick: onReload }}
+      />
+    </Screen>
   );
 }
+
+const Screen = styled.main`
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  background: ${color.surface};
+`;

@@ -8,7 +8,7 @@ import { server } from '@/test/server';
 import { StoreGachaCatalog } from './StoreGachaCatalog';
 
 describe('StoreGachaCatalog', () => {
-  it('매장 보유 가챠의 섬네일과 이름을 지도 검색 링크로 표시한다', async () => {
+  it('매장 보유 가챠의 섬네일과 이름을 가챠 상세 링크로 표시한다', async () => {
     server.use(
       http.get('/api/v1/stores/1/gachas', () =>
         HttpResponse.json({
@@ -46,9 +46,12 @@ describe('StoreGachaCatalog', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
-        name: '산리오 캐릭터즈 피규어 보유 매장 지도에서 보기',
+        name: '산리오 캐릭터즈 피규어 가챠 상세 보기',
       }),
-    ).toHaveAttribute('href', '/map?gachaId=10');
+    ).toHaveAttribute(
+      'href',
+      '/search?keyword=%EC%82%B0%EB%A6%AC%EC%98%A4+%EC%BA%90%EB%A6%AD%ED%84%B0%EC%A6%88+%ED%94%BC%EA%B7%9C%EC%96%B4&tab=gacha&product=10',
+    );
     expect(screen.queryByText('카테고리 미등록')).not.toBeInTheDocument();
   });
 

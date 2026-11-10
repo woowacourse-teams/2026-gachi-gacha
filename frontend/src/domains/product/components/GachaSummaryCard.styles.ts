@@ -27,6 +27,9 @@ export const GachaDetails = styled.div`
 `;
 
 export const GachaImageFrame = styled.div`
+  &[data-variant='store'] {
+    border-radius: 12px;
+  }
   position: relative;
   overflow: hidden;
   border: 1px solid ${color.border};
@@ -59,6 +62,17 @@ export const GachaImage = styled(ImageWithFallback)`
 `;
 
 export const GachaName = styled.strong`
+  &[data-variant='store'] {
+    font-size: 14px;
+    font-weight: 500;
+    @media (max-width: 767px) {
+      display: -webkit-box;
+      white-space: normal;
+      -webkit-line-clamp: 2;
+      font-size: 13px;
+    }
+  }
+
   display: -webkit-box;
   overflow: hidden;
   color: ${color.text};

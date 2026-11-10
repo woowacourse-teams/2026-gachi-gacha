@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -52,7 +52,23 @@ function createTradePage({
   };
 }
 
-describe('내 교환글 전체보기', () => {
+function mockMobileViewport() {
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string) => ({
+      matches: query.includes('max-width'),
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }),
+  });
+}
+
+describe('내 글', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, 'matchMedia');
+  });
+
   beforeEach(() => {
     storeAuthTokens({
       accessToken: AUTH_STORY_TOKEN,
@@ -60,7 +76,7 @@ describe('내 교환글 전체보기', () => {
     });
   });
 
-  it('본인 교환글 API의 첫 페이지를 불러와 관리 동선을 제공한다', async () => {
+  it('웹에서는 왼쪽 메뉴와 함께 본인 글 첫 6개를 카드로 보여준다', async () => {
     const requestedUrls: URL[] = [];
 
     server.use(
@@ -78,20 +94,21 @@ describe('내 교환글 전체보기', () => {
     });
 
     expect(await screen.findByText('1번 내 교환글')).toBeInTheDocument();
-    expect(screen.getByText('총 1개')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '내 글' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /1번 내 교환글/ })).toHaveAttribute(
+      'href',
+      '/trade/1',
+    );
     expect(
-      screen.getByRole('link', { name: '1번 내 교환글 거래글 보기' }),
-    ).toHaveAttribute('href', '/trade/1');
+      screen.queryByRole('link', { name: '1번 내 교환글 수정' }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: '1번 내 교환글 수정' }),
-    ).toHaveAttribute('href', '/trade/1/edit');
-    expect(
-      screen.getByRole('button', { name: '1번 내 교환글 삭제' }),
-    ).toBeInTheDocument();
+      screen.getByRole('link', { name: '내 글', current: 'page' }),
+    ).toHaveAttribute('href', '/mypage/trades');
 
     await waitFor(() => expect(requestedUrls).toHaveLength(1));
     expect(requestedUrls[0]!.searchParams.get('page')).toBe('0');
-    expect(requestedUrls[0]!.searchParams.get('size')).toBe('10');
+    expect(requestedUrls[0]!.searchParams.get('size')).toBe('6');
     expect(requestedUrls[0]!.searchParams.has('status')).toBe(false);
   });
 
@@ -149,7 +166,7 @@ describe('내 교환글 전체보기', () => {
     });
 
     await screen.findByText('1번 내 교환글');
-    await user.click(screen.getByRole('button', { name: '교환글 더보기' }));
+    await user.click(screen.getByRole('button', { name: '더보기' }));
 
     expect(await screen.findByText('2번 내 교환글')).toBeInTheDocument();
     expect(screen.getByText('1번 내 교환글')).toBeInTheDocument();
@@ -180,10 +197,38 @@ describe('내 교환글 전체보기', () => {
     });
 
     expect(
-      await screen.findByText('아직 작성한 교환글이 없어요'),
+      await screen.findByText('아직 작성한 글이 없어요'),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: '교환글 작성하기' }),
     ).toHaveAttribute('href', '/trade/new');
+  });
+
+  it('모바일에서는 뒤로 가기 상단 바와 글 행 목록만 보여준다', async () => {
+    const requestedSizes: Array<string | null> = [];
+
+    mockMobileViewport();
+    server.use(
+      authenticatedMemberHandler,
+      http.get('/api/v1/trades/me', ({ request }) => {
+        requestedSizes.push(new URL(request.url).searchParams.get('size'));
+
+        return HttpResponse.json(createTradePage({ totalPages: 2 }));
+      }),
+    );
+
+    renderWithProviders(<MyTradesRoute />, {
+      initialAccessToken: AUTH_STORY_TOKEN,
+      route: '/mypage/trades',
+    });
+
+    expect(await screen.findByText('1번 내 교환글')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '마이로 돌아가기' }),
+    ).toHaveAttribute('href', '/mypage');
+    expect(
+      screen.queryByRole('navigation', { name: '마이 메뉴' }),
+    ).not.toBeInTheDocument();
+    expect(requestedSizes).toEqual(['10']);
   });
 });
