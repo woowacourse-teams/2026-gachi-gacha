@@ -106,9 +106,9 @@ export function useToast(): ToastContextValue {
 const Region = styled.div`
   position: fixed;
   z-index: ${zIndex.overlay};
+  /* 앱(iOS WebView)에서는 입력칸 포커스 시 키보드가 하단을 덮으므로 상단 안전 영역 아래에 띄운다 */
+  top: calc(12px + env(safe-area-inset-top));
   right: 0;
-  /* 하단 탭·등록 버튼 같은 하단 고정 바(최대 약 80px) 위에 띄운다 */
-  bottom: calc(96px + env(safe-area-inset-bottom));
   left: 0;
   display: flex;
   justify-content: center;
@@ -134,7 +134,7 @@ const Toast = styled.div`
   @keyframes toast-in {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(-8px);
     }
   }
 
