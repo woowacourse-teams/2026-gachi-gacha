@@ -3,6 +3,7 @@ import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router';
 
 import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
+import { ToastProvider } from '@/shared/ui/toast';
 
 interface RenderWithProvidersOptions {
   initialAccessToken?: string | null;
@@ -19,7 +20,9 @@ export function renderWithProviders(
 
   return render(
     <BrowserRouter>
-      <AuthSessionProvider {...authSessionProps}>{ui}</AuthSessionProvider>
+      <AuthSessionProvider {...authSessionProps}>
+        <ToastProvider>{ui}</ToastProvider>
+      </AuthSessionProvider>
     </BrowserRouter>,
   );
 }

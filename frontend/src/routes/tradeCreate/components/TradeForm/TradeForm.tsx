@@ -16,6 +16,7 @@ import type {
 import { KakaoPlaceSearchDialog } from '@/features/placeSearch/KakaoPlaceSearchDialog';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
+import { useToast } from '@/shared/ui/toast';
 
 import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
@@ -45,6 +46,60 @@ type TradeFormProps =
   | { mode?: 'create'; initialValues?: TradeFormInitialValues }
   | { mode: 'edit'; tradeId: number; initialValues: TradeFormInitialValues };
 
+type RequiredField = 'photo' | 'title' | 'description' | 'category';
+
+/** 폼에 보이는 순서대로 검사해 첫 번째로 빠진 필수 항목 하나만 알린다. */
+const REQUIRED_FIELD_MESSAGES: Record<RequiredField, string> = {
+  photo: '사진을 1장 이상 등록해주세요.',
+  title: '제목을 입력해주세요.',
+  description: '설명을 입력해주세요.',
+  category: '카테고리를 1개 이상 선택해주세요.',
+};
+
+const REQUIRED_FIELD_FOCUS_TARGETS: Record<RequiredField, string> = {
+  photo: '[role="group"][aria-labelledby="trade-photo-label"] button',
+  title: '#trade-title',
+  description: '#trade-description',
+  category: '#trade-category-search',
+};
+
+function findMissingRequiredField({
+  hasPhoto,
+  title,
+  description,
+  categoryCount,
+}: {
+  hasPhoto: boolean;
+  title: string;
+  description: string;
+  categoryCount: number;
+}): RequiredField | null {
+  if (!hasPhoto) return 'photo';
+  if (!title) return 'title';
+  if (!description) return 'description';
+  if (categoryCount === 0) return 'category';
+  return null;
+}
+
+function focusRequiredField(form: HTMLFormElement, field: RequiredField) {
+  const target = form.querySelector<HTMLElement>(
+    REQUIRED_FIELD_FOCUS_TARGETS[field],
+  );
+
+  target?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  target?.focus({ preventScroll: true });
+}
+
+function createSubmissionFailureMessage(
+  isEditMode: boolean,
+  error: unknown,
+): string {
+  const summary = `${isEditMode ? '수정' : '등록'}하지 못했어요. 내용은 그대로예요.`;
+  const reason = error instanceof Error ? error.message.trim() : '';
+
+  return reason ? `${summary}\n${reason}` : summary;
+}
+
 export default function TradeForm(props: TradeFormProps) {
   const { mode = 'create', initialValues } = props;
   const navigate = useNavigate();
@@ -52,9 +107,9 @@ export default function TradeForm(props: TradeFormProps) {
   const formId = isEditMode ? 'trade-edit-form' : 'trade-create-form';
   const submittingRef = useRef(false);
   const [images, setImages] = useState<File[]>([]);
-  const [photoErrorMessage, setPhotoErrorMessage] = useState<string | null>(
-    null,
-  );
+  const { showToast, hideToast } = useToast();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [invalidField, setInvalidField] = useState<RequiredField | null>(null);
   const [purchaseStore, setPurchaseStore] = useState<TradePlaceInput | null>(
     initialValues?.purchaseStore ?? null,
   );
@@ -68,10 +123,6 @@ export default function TradeForm(props: TradeFormProps) {
     stage: 'idle',
   });
   const isSubmitting = submissionState.stage !== 'idle';
-  const [titleErrorMessage, setTitleErrorMessage] = useState<string | null>(
-    null,
-  );
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [categoryKeyword, setCategoryKeyword] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TradeCategory[]>(
     initialValues?.categories ?? [],
@@ -89,6 +140,10 @@ export default function TradeForm(props: TradeFormProps) {
       : [];
 
   function selectCategory(category: TradeCategory) {
+    if (invalidField === 'category') {
+      setInvalidField(null);
+    }
+
     captureAnalyticsEvent('trade_category_toggled', {
       mode: isEditMode ? 'edit' : 'create',
       category_id: category.categoryId,
@@ -140,8 +195,8 @@ export default function TradeForm(props: TradeFormProps) {
   function changeImages(nextImages: File[]) {
     setImages(nextImages);
 
-    if (nextImages.length > 0) {
-      setPhotoErrorMessage(null);
+    if (nextImages.length > 0 && invalidField === 'photo') {
+      setInvalidField(null);
     }
   }
 
@@ -152,39 +207,31 @@ export default function TradeForm(props: TradeFormProps) {
       return;
     }
 
-    if (images.length === 0 && !initialValues?.imageUrls.length) {
-      setPhotoErrorMessage('사진을 1장 이상 등록해주세요.');
-      return;
-    }
+    const form = event.currentTarget;
+    const title = readFormControlText(form, 'title');
+    const description = readFormControlText(form, 'description');
+    const desiredProduction = readFormControlText(form, 'desiredProduction');
+    const missingField = findMissingRequiredField({
+      hasPhoto: images.length > 0 || Boolean(initialValues?.imageUrls.length),
+      title,
+      description,
+      categoryCount: selectedCategories.length,
+    });
 
-    const title = readFormControlText(event.currentTarget, 'title');
-    const description = readFormControlText(event.currentTarget, 'description');
-    const desiredProduction = readFormControlText(
-      event.currentTarget,
-      'desiredProduction',
-    );
-
-    if (!title) {
-      setTitleErrorMessage('제목을 입력해주세요.');
-      setSubmissionError(null);
-      return;
-    }
-
-    if (!description) {
-      setSubmissionError('설명을 입력해주세요.');
+    if (missingField) {
+      setInvalidField(missingField);
+      showToast({
+        tone: 'error',
+        message: REQUIRED_FIELD_MESSAGES[missingField],
+      });
+      focusRequiredField(form, missingField);
       return;
     }
 
     const request: CreateTradeRequest = {
       title,
       description,
-      ...(selectedCategories.length > 0
-        ? {
-            categoryIds: selectedCategories.map(
-              (category) => category.categoryId,
-            ),
-          }
-        : {}),
+      categoryIds: selectedCategories.map((category) => category.categoryId),
       ...(desiredProduction ? { desiredProduction } : {}),
       ...(purchaseStore ? { purchaseStore } : {}),
       ...(tradePlace ? { tradePlace } : {}),
@@ -193,9 +240,8 @@ export default function TradeForm(props: TradeFormProps) {
         : {}),
     };
 
-    setPhotoErrorMessage(null);
-    setTitleErrorMessage(null);
-    setSubmissionError(null);
+    setInvalidField(null);
+    hideToast();
     submittingRef.current = true;
     setSubmissionState(
       images.length > 0
@@ -250,11 +296,14 @@ export default function TradeForm(props: TradeFormProps) {
         trade_id: editingTradeId,
         outcome: 'failure',
       });
-      setSubmissionError(
-        error instanceof Error
-          ? error.message
-          : `거래 게시글을 ${isEditMode ? '수정' : '등록'}하지 못했습니다.`,
-      );
+      showToast({
+        tone: 'error',
+        message: createSubmissionFailureMessage(isEditMode, error),
+        action: {
+          label: '다시 시도',
+          onClick: () => formRef.current?.requestSubmit(),
+        },
+      });
       setSubmissionState({ stage: 'idle' });
     } finally {
       submittingRef.current = false;
@@ -264,6 +313,7 @@ export default function TradeForm(props: TradeFormProps) {
   return (
     <>
       <Form
+        ref={formRef}
         id={formId}
         aria-busy={isSubmitting}
         onKeyDown={preventImplicitSubmit}
@@ -284,7 +334,6 @@ export default function TradeForm(props: TradeFormProps) {
             {...(initialValues
               ? { initialImageUrls: initialValues.imageUrls }
               : {})}
-            errorMessage={photoErrorMessage ?? undefined}
             onFilesChange={changeImages}
           />
 
@@ -298,22 +347,14 @@ export default function TradeForm(props: TradeFormProps) {
               defaultValue={initialValues?.title}
               required
               maxLength={MAX_SHORT_TEXT_LENGTH}
-              aria-invalid={Boolean(titleErrorMessage)}
-              aria-describedby={
-                titleErrorMessage ? 'trade-title-error' : undefined
-              }
+              aria-invalid={invalidField === 'title' || undefined}
               placeholder="가지고 있는 가챠를 알아보기 쉽게 적어주세요"
               onChange={() => {
-                if (titleErrorMessage) {
-                  setTitleErrorMessage(null);
+                if (invalidField === 'title') {
+                  setInvalidField(null);
                 }
               }}
             />
-            {titleErrorMessage && (
-              <FieldError id="trade-title-error" role="alert">
-                {titleErrorMessage}
-              </FieldError>
-            )}
           </Field>
 
           <Field>
@@ -325,17 +366,25 @@ export default function TradeForm(props: TradeFormProps) {
               name="description"
               defaultValue={initialValues?.description}
               required
+              aria-invalid={invalidField === 'description' || undefined}
               placeholder="상품의 상태와 거래 방법을 자세히 적어주세요"
+              onChange={() => {
+                if (invalidField === 'description') {
+                  setInvalidField(null);
+                }
+              }}
             />
           </Field>
 
           <OfferedFields>
             <Field>
               <Label htmlFor="trade-category-search">
-                카테고리 <OptionalMark>(선택)</OptionalMark>
+                카테고리 <RequiredMark aria-hidden="true">*</RequiredMark>
               </Label>
               <Input
                 id="trade-category-search"
+                aria-required="true"
+                aria-invalid={invalidField === 'category' || undefined}
                 type="search"
                 value={categoryKeyword}
                 autoComplete="off"
@@ -550,10 +599,6 @@ export default function TradeForm(props: TradeFormProps) {
             </>
           )}
         </Field>
-
-        {submissionError && (
-          <SubmissionError role="alert">{submissionError}</SubmissionError>
-        )}
       </Form>
 
       <StickyActionBar
@@ -845,19 +890,4 @@ const Textarea = styled.textarea`
   }
 
   ${preventIosInputZoom}
-`;
-
-const SubmissionError = styled.p`
-  margin: -8px 0 0;
-  color: #d80f42;
-  font-size: 14px;
-  line-height: 1.5;
-  /* 서버 검증 실패 사유를 항목별로 줄바꿈해 보여준다. */
-  white-space: pre-line;
-`;
-
-const FieldError = styled.p`
-  margin: 0;
-  color: #d80f42;
-  font-size: 13px;
 `;
