@@ -19,6 +19,14 @@ export default function App() {
     webView.current?.reload();
   };
 
+  const openExternalUrl = (url: string) => {
+    if (!/^(https?|mailto|tel|sms):/i.test(url)) return;
+
+    void Linking.openURL(url).catch(() => {
+      setError('외부 앱을 열지 못했습니다.');
+    });
+  };
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -40,13 +48,12 @@ export default function App() {
               setLoading(false);
               setError('화면을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.');
             }}
+            // onOpenWindow가 없으면 iOS WebView는 target="_blank"·window.open을
+            // 같은 WebView에서 열어, 외부 앱으로 넘어간 뒤 로딩·흰 화면이 남는다.
+            onOpenWindow={({ nativeEvent }) => openExternalUrl(nativeEvent.targetUrl)}
             onShouldStartLoadWithRequest={({ url }) => {
               if (/^https:\/\//i.test(url) || url === 'about:blank') return true;
-              if (/^(http|mailto|tel|sms):/i.test(url)) {
-                void Linking.openURL(url).catch(() => {
-                  setError('외부 앱을 열지 못했습니다.');
-                });
-              }
+              openExternalUrl(url);
               return false;
             }}
           />
