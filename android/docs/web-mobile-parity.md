@@ -8,6 +8,50 @@ Android 기능과 UI를 구현할 때의 제품 기준은 작업 브랜치 생�
 `ANDROID_WEB_SHELL_ENABLED=false` 비상 경로에서 기존 React Native 화면을 유지하거나,
 WebView 위에 네이티브 기능을 추가할 때만 적용한다.
 
+## 지도 카드와 하단 탭의 Android 보정 (#697)
+
+조사 기준은 Android `0fc65afb`와 웹 `main` `f342e479`다. 출시 versionCode 5의
+지도 보정 코드도 조사 기준 Android 코드와 같다. 원격 웹이 갱신되어도 앱에 포함된
+주입 스크립트는 자동으로 교체되지 않는다.
+
+- 확인된 원인: 이전 Android 스타일의 `bottom: 12px !important`가 웹 카드 영역의
+  `bottom: calc(78px + env(safe-area-inset-bottom))`를 덮어써 하단 탭 공간을 없앴다.
+  기존 컨트롤 위치 측정도 현재 모바일 웹에서는 숨겨진 상태 행을 기준으로 했다.
+- 하단 흰 여백: 네이티브 `SafeAreaView`가 시스템 인셋을 이미 확보하는 것은 코드로
+  확인했다. 웹 탭의 `env(safe-area-inset-bottom)`까지 적용되면 여백이 중복된다.
+  다만 제보 기기의 WebView 버전과 실제 CSS 인셋 값은 아직 측정하지 않았으므로,
+  이 기기의 공백 전체가 중복 인셋 때문이라고 단정하지 않는다.
+- 변경은 767px 이하의 Android 지도에만 적용한다. 지도 `main` 안의 하단 메뉴 패딩을
+  0으로 만들고, 실제 메뉴 상단에서 21px 위에 카드 영역의 하단을 배치한다.
+  21px은 웹 기본 카드 하단 78px에서 메뉴 높이 57px을 뺀 디자인 간격이며,
+  시스템 내비게이션 바 높이를 고정값으로 가정한 것이 아니다.
+- 지도 컨트롤은 숨겨진 제목 대신 실제 카드/로딩/빈 결과/오류 영역 상단을 기준으로
+  10px 위에 둔다. 메뉴·목록 크기 변화는 `ResizeObserver`로 다시 측정한다.
+- 지도 이탈·메뉴 제거·태블릿 폭에서는 소유한 하단 보정 마커와 측정값을 정리한다.
+  네이티브 안전영역, 키보드 처리, 웹의 카드 클릭·가로 탐색·목록 창은 유지한다.
+- `frontend/`, iOS, 인증·푸시 계약은 변경하지 않는다. 이번 작업은 PR까지만이며
+  버전 코드 변경, APK/AAB 생성, 병합과 Play 제출은 포함하지 않는다.
+
+실제 웹 스타일과 `StoreListPanel`/`StoreCard`를 읽기 전용으로 사용하는 검증:
+
+```sh
+ANDROID_TEST_CHROME=<Chromium 실행 파일> \
+ANDROID_TEST_FRONTEND_SOURCE=<최신 frontend 경로> \
+ANDROID_TEST_FRONTEND_NODE_MODULES=<설치된 frontend/node_modules> \
+npm run web-shell:map-layout-test
+```
+
+테스트는 카카오 지도 SDK와 네트워크만 대체하고, CDP의 실제 CSS safe-area override로
+0/24/48px 인셋, 여러 모바일 폭, 큰 탭 높이, 상태 전환과 SPA 왕복을 확인한다.
+이는 실제 Galaxy/Pixel WebView나 iOS 실기기 테스트를 대신하지 않는다. 승인 후 DEV
+QA에서 3버튼/제스처, 작은 화면/큰 글씨, 가로 회전/멀티윈도, 검색 키보드 열기·닫기,
+카드 스와이프·매장 상세·목록 창·지도 확대·현재 위치 권한 왕복을 확인해야 한다.
+실제 사용자 반영에는 이후 별도 승인으로 Android 번들 업데이트와 Play 검토가 필요하다.
+
+인셋 처리 기준: [Android WebView 공식 문서](https://developer.android.com/develop/ui/views/layout/webapps/understand-window-insets).
+이미 네이티브에서 확보한 시스템 인셋의 중복 적용을 피하되, IME 인셋까지 일괄 소비하거나
+기존 `SafeAreaView`를 제거하는 변경은 하지 않는다.
+
 ## 거래 작성·수정의 Android 터치 보정 (#630)
 
 2026-11-05 사용자 승인에 따라 Android WebView에서 다음 예외를 적용한다.
