@@ -86,7 +86,12 @@ const ANDROID_WEB_SHELL_STYLES = `
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-list-area] {
-      bottom: 12px !important;
+      bottom: var(--gachigacha-android-map-list-bottom, 78px) !important;
+    }
+
+    /* WebAppShellScreen already keeps this WebView above the system bars. */
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-tabs] {
+      padding-bottom: 0 !important;
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-location-error] {
@@ -602,10 +607,42 @@ function createWebShellRuntimeBody(): string {
       postChatRoomState(Boolean(chatRoom && composer));
     };
 
+    const observeMapLayout = (targets) => {
+      const previous = window.__gachigachaAndroidMapLayoutObservation;
+      if (previous && previous.targets.length === targets.length &&
+          previous.targets.every((target, index) => target === targets[index])) return;
+      previous?.observer.disconnect();
+      window.__gachigachaAndroidMapLayoutObservation = null;
+      if (!targets.length || typeof ResizeObserver !== 'function') return;
+      const observer = new ResizeObserver(scheduleAndroidPresentation);
+      targets.forEach((target) => observer.observe(target));
+      window.__gachigachaAndroidMapLayoutObservation = { observer, targets };
+    };
+
     const markMapOverlays = () => {
       const resultsSection = document.querySelector(
         'section[aria-label="홍대 가챠 매장"], section[aria-label="가챠 보유 매장 검색 결과"]',
       );
+      const mobileMap = resultsSection && window.matchMedia('(max-width: 767px)').matches;
+      const tabsCandidate = mobileMap
+        ? resultsSection.closest('main')?.querySelector('nav[aria-label="하단 메뉴"]')
+        : null;
+      const mapTabs = tabsCandidate?.getBoundingClientRect().height > 0
+        ? tabsCandidate : null;
+      const storeListTitle = resultsSection?.querySelector('#search-store-list-title');
+      const storeListArea = mapTabs ? storeListTitle?.closest('section')?.parentElement : null;
+
+      // React can reuse the same navigation element on another SPA route.
+      document.querySelectorAll('[data-gachigacha-android-map-tabs]').forEach((element) => {
+        if (element !== mapTabs) element.removeAttribute('data-gachigacha-android-map-tabs');
+      });
+      document.querySelectorAll('[data-gachigacha-android-map-list-area]').forEach((element) => {
+        if (element !== storeListArea) {
+          element.removeAttribute('data-gachigacha-android-map-list-area');
+          element.style.removeProperty('--gachigacha-android-map-list-bottom');
+        }
+      });
+      observeMapLayout([mapTabs, storeListArea].filter(Boolean));
       if (!resultsSection) return;
 
       const selectedGacha = resultsSection.querySelector(
@@ -636,23 +673,27 @@ function createWebShellRuntimeBody(): string {
         'button[aria-label^="현재 위치"]',
       );
       const mapControls = locationButton?.parentElement;
-      mapControls?.setAttribute('data-gachigacha-android-map-controls', '');
       mapControls
         ?.querySelector('p[role="alert"]')
         ?.setAttribute('data-gachigacha-android-location-error', '');
 
-      const storeListTitle = document.getElementById('search-store-list-title');
       const mapStatus = storeListTitle?.parentElement?.parentElement;
       mapStatus?.setAttribute(
         'data-gachigacha-android-map-status',
         '',
       );
-      storeListTitle
-        ?.closest('section')
-        ?.parentElement?.setAttribute(
-          'data-gachigacha-android-map-list-area',
-          '',
-        );
+      if (mapTabs && storeListArea) {
+        // Measure AFTER removing the web inset; native SafeAreaView owns it.
+        mapTabs.setAttribute('data-gachigacha-android-map-tabs', '');
+        storeListArea.setAttribute('data-gachigacha-android-map-list-area', '');
+        const containingBlock = storeListArea.offsetParent || resultsSection;
+        // Preserve the web's 21px gap (78px offset - 57px default tab bar),
+        // while allowing the actual tab height to grow with font/display size.
+        const listBottom = Math.max(12, Math.ceil(
+          containingBlock.getBoundingClientRect().bottom - mapTabs.getBoundingClientRect().top + 21,
+        ));
+        storeListArea.style.setProperty('--gachigacha-android-map-list-bottom', listBottom + 'px');
+      }
 
       const mapRect = map.getBoundingClientRect();
       const headerRect = mapHeader?.getBoundingClientRect();
@@ -685,8 +726,11 @@ function createWebShellRuntimeBody(): string {
         );
       }
 
-      const statusRect = mapStatus?.getBoundingClientRect();
+      // The current web hides MobileStatusRow. Use the visible carousel/state
+      // area instead, including loading, empty and error cards of varying height.
+      const statusRect = (storeListArea || mapStatus)?.getBoundingClientRect();
       if (mapControls && statusRect && statusRect.height > 0) {
+        mapControls.setAttribute('data-gachigacha-android-map-controls', '');
         const controlsBottom = Math.max(
           12,
           Math.round(mapRect.bottom - statusRect.top + 10),
@@ -695,6 +739,9 @@ function createWebShellRuntimeBody(): string {
           '--gachigacha-android-map-controls-bottom',
           controlsBottom + 'px',
         );
+      } else if (mapControls) {
+        mapControls.removeAttribute('data-gachigacha-android-map-controls');
+        mapControls.style.removeProperty('--gachigacha-android-map-controls-bottom');
       }
     };
 

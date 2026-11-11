@@ -50,6 +50,7 @@
     "web-shell:test": "node --no-warnings --experimental-strip-types --test scripts/web-shell.test.mjs scripts/web-shell-navigation.test.mjs scripts/web-shell-route-scroll.test.mjs scripts/web-shell-session.test.mjs scripts/web-shell-file-picker.test.mjs scripts/web-shell-trade-form.test.mjs",
     "web-shell:layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-browser.test.mjs",
     "web-shell:trade-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-trade-form-browser.test.mjs",
+    "web-shell:map-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-map-browser.test.mjs",
     "push-notification:test": "node --no-warnings --experimental-strip-types scripts/push-notification.test.mjs",
     "play-compatibility:verify": "node scripts/verify-generated-play-compatibility.mjs",
     "catalog:test": "node --test scripts/affiliate-catalog/catalog.test.mjs",

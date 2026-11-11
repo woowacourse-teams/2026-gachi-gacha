@@ -208,13 +208,23 @@ test('Android trade form uses the real web upload and action components', { time
 
     for (const route of ['/trade/new', '/trade/42/edit']) {
       for (const width of [320, 360, 393, 412, 820]) {
-        await t.test(`${route} ${width}px has equal action margins before and after viewport resizing`, async () => {
-          await navigate(route, width);
+        await t.test(`${route} ${width}px preserves responsive action layout before and after viewport resizing`, async () => {
+          await navigate(route, width, false);
+          const webGeometry = await actionGeometry();
+          await inject();
           const assertMargins = async () => {
             const geometry = await actionGeometry();
             assert.ok(geometry.marked, 'Only the matching trade submit footer is marked');
-            assert.ok(Math.abs(geometry.left-geometry.right) <= 1, JSON.stringify(geometry));
-            assert.ok(Math.abs(geometry.bottom-geometry.left) <= 1, JSON.stringify(geometry));
+            if (width <= 767) {
+              assert.ok(Math.abs(geometry.left-geometry.right) <= 1, JSON.stringify(geometry));
+              assert.ok(Math.abs(geometry.bottom-geometry.left) <= 1, JSON.stringify(geometry));
+            } else {
+              // The current web right-aligns cancel/submit actions on wide screens.
+              assert.ok(Math.abs(geometry.left-webGeometry.left) <= 1, 'Preserve web desktop horizontal alignment');
+              assert.ok(Math.abs(geometry.right-webGeometry.right) <= 1, 'Preserve web desktop horizontal alignment');
+              assert.equal(geometry.bottom, 24, 'Retain the Android action bar content gap');
+              assert.equal(geometry.paddingBottom, 24);
+            }
             assert.ok(Math.abs(geometry.barBottom-geometry.viewport) <= 1, 'Bar stays within the already-safe WebView viewport');
             assert.ok(geometry.bottom >= 16, 'Content gap is retained without adding the native inset twice');
             assert.equal(geometry.form, route.endsWith('/edit') ? 'trade-edit-form' : 'trade-create-form');

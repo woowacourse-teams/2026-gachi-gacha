@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router';
 
 import PhotoUploader from 'gachi-web-photo-uploader';
 import StickyActionBar from 'gachi-web-sticky-action-bar';
@@ -89,6 +90,7 @@ function TradeFormFixture() {
         h(StickyActionBar, {
           formId,
           isSubmitting,
+          cancelTo: isEdit ? location.pathname.replace(/\/edit$/, '') : '/trade',
           submitLabel: isEdit ? '수정하기' : '등록하기',
           submittingLabel: isEdit ? '수정 중...' : '등록 중...',
         }))),
@@ -96,4 +98,6 @@ function TradeFormFixture() {
   );
 }
 
-createRoot(document.getElementById('root')).render(h(TradeFormFixture));
+createRoot(document.getElementById('root')).render(
+  h(BrowserRouter, null, h(TradeFormFixture)),
+);

@@ -274,7 +274,10 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /gachigachaAndroidAvatarFallbackImage/);
   assert.match(runtimeScript, /data:image\/svg\+xml/);
   assert.doesNotMatch(runtimeScript, /%3Crect/);
-  assert.match(runtimeScript, /bottom: 12px/);
+  assert.match(runtimeScript, /--gachigacha-android-map-list-bottom/);
+  assert.match(runtimeScript, /data-gachigacha-android-map-tabs/);
+  assert.match(runtimeScript, /new ResizeObserver\(scheduleAndroidPresentation\)/);
+  assert.doesNotMatch(runtimeScript, /bottom: 12px !important/);
   assert.match(bootstrapScript, /gachigacha:auth-session-snapshot/);
   assert.doesNotMatch(bootstrapScript, /<\/script>/);
   assert.match(syncScript, /sessionChanged/);
