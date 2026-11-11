@@ -29,6 +29,8 @@ const AFFILIATE_CATALOG_ENABLED =
 const EVENT_APPLICATION_ENDPOINT = process.env.EVENT_APPLICATION_ENDPOINT ?? '';
 const EVENT_APPLICATION_START_AT = process.env.EVENT_APPLICATION_START_AT ?? '';
 const EVENT_APPLICATION_END_AT = process.env.EVENT_APPLICATION_END_AT ?? '';
+const EVENT_APPLICATION_CAMPAIGN_ID =
+  process.env.EVENT_APPLICATION_CAMPAIGN_ID ?? '';
 const MEMBER_REPORT_ENDPOINT = process.env.MEMBER_REPORT_ENDPOINT ?? '';
 const API_PROXY_TARGET =
   process.env.API_PROXY_TARGET ?? 'http://localhost:8080';
@@ -125,6 +127,10 @@ module.exports = (_env, argv) => {
       new CopyWebpackPlugin({
         patterns: [
           {
+            from: path.resolve(__dirname, 'public/images/events/app-launch'),
+            to: 'images/events/app-launch',
+          },
+          {
             from: path.resolve(
               __dirname,
               isSearchIndexable
@@ -177,6 +183,9 @@ module.exports = (_env, argv) => {
           EVENT_APPLICATION_START_AT,
         ),
         __EVENT_APPLICATION_END_AT__: JSON.stringify(EVENT_APPLICATION_END_AT),
+        __EVENT_APPLICATION_CAMPAIGN_ID__: JSON.stringify(
+          EVENT_APPLICATION_CAMPAIGN_ID,
+        ),
         __MEMBER_REPORT_ENDPOINT__: JSON.stringify(MEMBER_REPORT_ENDPOINT),
         __APP_ENV__: JSON.stringify(appEnvironment),
         __APP_VERSION__: JSON.stringify(APP_VERSION),

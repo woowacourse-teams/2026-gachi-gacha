@@ -50,6 +50,24 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     );
   });
 
+  it('이전 이벤트 주소는 로그인 없이 새 상세 페이지로 이동하고 과거 폼을 열지 않는다', async () => {
+    renderWithProviders(<App />, {
+      initialAccessToken: null,
+      route: '/events/popular-goods',
+    });
+    expect(
+      await screen.findByRole('heading', {
+        name: '가치가챠 앱 출시 기념 가챠 선물 이벤트',
+      }),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/events/app-launch');
+    expect(
+      screen.getByRole('button', { name: '응모를 준비하고 있어요' }),
+    ).toBeDisabled();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
+  });
+
   it('비로그인 사용자도 업데이트 소식을 확인할 수 있다', async () => {
     renderWithProviders(<App />, {
       initialAccessToken: null,

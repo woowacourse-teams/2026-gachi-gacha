@@ -33,10 +33,6 @@ import { SERVICE_VERSION } from './components/MyPageMenu';
 import { myTradesHandler } from './mocks/myPageHandlers';
 import { MyPageRoute } from './route';
 
-jest.mock('@/features/eventApplication/eventApplicationConfig', () => ({
-  isEventApplicationOpen: () => true,
-}));
-
 jest.mock('@/shared/browser/browserNavigation', () => ({
   assignBrowserLocation: jest.fn(),
   replaceBrowserLocation: jest.fn(),
@@ -210,15 +206,16 @@ describe('MyPageRoute 웹 메뉴와 내 글', () => {
     expect(SERVICE_VERSION).toMatch(/^v\d+\.\d+\.\d+$/);
   });
 
-  it('이벤트 기간에는 내 활동에 응모 링크를 보여준다', async () => {
+  it('홈으로 옮긴 이벤트의 이전 응모 링크를 마이페이지에 표시하지 않는다', async () => {
     renderWithProviders(<MyPageRoute />, {
       initialAccessToken: AUTH_STORY_TOKEN,
       route: '/mypage',
     });
 
+    await screen.findByRole('link', { name: '차단한 사용자' });
     expect(
-      await screen.findByRole('link', { name: /이벤트 응모/ }),
-    ).toHaveAttribute('href', '/events/popular-goods');
+      screen.queryByRole('link', { name: /이벤트 응모/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('로그아웃은 확인한 뒤에만 토큰을 지우고 이동한다', async () => {

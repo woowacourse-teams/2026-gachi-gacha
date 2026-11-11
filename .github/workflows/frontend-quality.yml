@@ -61,6 +61,9 @@ jobs:
       - name: Test affiliate catalog synchronization
         run: pnpm catalog:test
 
+      - name: Test launch event intake contract
+        run: node --test scripts/launch-event-apps-script/Code.test.mjs
+
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
