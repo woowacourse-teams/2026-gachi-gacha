@@ -115,6 +115,51 @@ export async function authenticatedFetch(
 }
 
 /**
+ * 웹소켓처럼 fetch를 거치지 않는 채널에서 access token이 거부됐을 때 사용합니다.
+ * 새 access token을 반환하고, 다시 로그인해야 하면 인증을 만료시킨 뒤 null을 반환합니다.
+ * 네트워크 오류 같은 일시적인 갱신 실패는 그대로 던집니다.
+ */
+export async function refreshRejectedAccessToken(
+  rejectedAccessToken: string,
+): Promise<string | null> {
+  const currentAccessToken = readAccessToken();
+
+  if (currentAccessToken && currentAccessToken !== rejectedAccessToken) {
+    return currentAccessToken;
+  }
+
+  const refreshToken = readRefreshToken();
+
+  if (!refreshToken) {
+    expireAuthentication();
+    return null;
+  }
+
+  try {
+    const refreshedTokens = await refreshAuthTokensOnce(refreshToken);
+    const currentRefreshToken = readRefreshToken();
+
+    if (
+      currentRefreshToken !== refreshToken &&
+      currentRefreshToken !== refreshedTokens.refreshToken
+    ) {
+      return readAccessToken();
+    }
+
+    storeAuthTokens(refreshedTokens);
+
+    return refreshedTokens.accessToken;
+  } catch (error) {
+    if (isUnauthorizedAuthApiError(error)) {
+      expireAuthentication();
+      return null;
+    }
+
+    throw error;
+  }
+}
+
+/**
  * 공개 API지만 로그인 사용자의 문맥이 필요할 때 사용합니다.
  * 저장된 토큰이 있으면 갱신까지 포함한 인증 요청을 보내고, 없으면 공개 요청을 보냅니다.
  */
