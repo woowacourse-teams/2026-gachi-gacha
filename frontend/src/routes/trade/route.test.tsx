@@ -333,7 +333,7 @@ describe('교환 글 등록 버튼', () => {
     renderWithProviders(<TradeRoute />, { route: '/trade' });
 
     const createLink = await screen.findByRole('link', {
-      name: '교환 글 등록',
+      name: '교환 글쓰기',
     });
 
     expect(createLink).toHaveAttribute('href', '/trade/new');

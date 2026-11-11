@@ -105,7 +105,7 @@ export default function CreateTradeButton({
     <FloatingLink
       to={CREATE_TRADE_PATH}
       data-placement={placement}
-      aria-label="교환 글 등록"
+      aria-label="교환 글쓰기"
       style={footerAwareStyle}
       onClick={() =>
         captureAnalyticsEvent('trade_create_started', {

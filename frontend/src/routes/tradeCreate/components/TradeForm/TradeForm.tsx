@@ -18,10 +18,10 @@ import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { preventIosInputZoom } from '@/shared/styles/preventIosInputZoom';
 import { useToast } from '@/shared/ui/toast';
 
-import { useTradeCategories } from '../../useTradeCategories';
 import PhotoUploader from '../PhotoUploader';
 import StickyActionBar from '../StickyActionBar';
 import TradeSubmissionOverlay from '../TradeSubmissionOverlay';
+import TradeCategoryField from './TradeCategoryField';
 
 const MAX_SHORT_TEXT_LENGTH = 255;
 
@@ -123,21 +123,9 @@ export default function TradeForm(props: TradeFormProps) {
     stage: 'idle',
   });
   const isSubmitting = submissionState.stage !== 'idle';
-  const [categoryKeyword, setCategoryKeyword] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<TradeCategory[]>(
     initialValues?.categories ?? [],
   );
-  const categoryState = useTradeCategories(categoryKeyword);
-  const availableCategories =
-    categoryState.status === 'success'
-      ? categoryState.data.filter(
-          (category) =>
-            !selectedCategories.some(
-              (selectedCategory) =>
-                selectedCategory.categoryId === category.categoryId,
-            ),
-        )
-      : [];
 
   function selectCategory(category: TradeCategory) {
     if (invalidField === 'category') {
@@ -149,10 +137,13 @@ export default function TradeForm(props: TradeFormProps) {
       category_id: category.categoryId,
       action: 'selected',
     });
-    setSelectedCategories((currentCategories) => [
-      ...currentCategories,
-      category,
-    ]);
+    setSelectedCategories((currentCategories) =>
+      currentCategories.some(
+        ({ categoryId }) => categoryId === category.categoryId,
+      )
+        ? currentCategories
+        : [...currentCategories, category],
+    );
   }
 
   function removeCategory(categoryId: number) {
@@ -173,22 +164,6 @@ export default function TradeForm(props: TradeFormProps) {
   function preventImplicitSubmit(event: KeyboardEvent<HTMLFormElement>) {
     if (event.key === 'Enter' && event.target instanceof HTMLInputElement) {
       event.preventDefault();
-    }
-  }
-
-  function handleCategoryKeywordKeyDown(
-    event: KeyboardEvent<HTMLInputElement>,
-  ) {
-    // 한글 조합을 확정하는 Enter는 선택으로 처리하지 않는다.
-    if (event.key !== 'Enter' || event.nativeEvent.isComposing) {
-      return;
-    }
-
-    const [firstCategory] = availableCategories;
-
-    if (firstCategory) {
-      selectCategory(firstCategory);
-      setCategoryKeyword('');
     }
   }
 
@@ -344,11 +319,24 @@ export default function TradeForm(props: TradeFormProps) {
             <Input
               id="trade-title"
               name="title"
+              enterKeyHint="next"
               defaultValue={initialValues?.title}
               required
               maxLength={MAX_SHORT_TEXT_LENGTH}
               aria-invalid={invalidField === 'title' || undefined}
               placeholder="가지고 있는 가챠를 알아보기 쉽게 적어주세요"
+              onKeyDown={(event) => {
+                if (
+                  event.key === 'Enter' &&
+                  !event.nativeEvent.isComposing &&
+                  event.nativeEvent.keyCode !== 229
+                ) {
+                  event.preventDefault();
+                  formRef.current
+                    ?.querySelector<HTMLTextAreaElement>('#trade-description')
+                    ?.focus();
+                }
+              }}
               onChange={() => {
                 if (invalidField === 'title') {
                   setInvalidField(null);
@@ -374,93 +362,42 @@ export default function TradeForm(props: TradeFormProps) {
                 }
               }}
             />
+            <InputContinuationButton
+              type="button"
+              onClick={() => {
+                formRef.current
+                  ?.querySelector<HTMLInputElement>('#trade-category-search')
+                  ?.focus();
+              }}
+            >
+              설명 입력을 마치고 카테고리로 이동
+            </InputContinuationButton>
           </Field>
 
           <OfferedFields>
+            <TradeCategoryField
+              selectedCategories={selectedCategories}
+              onSelect={selectCategory}
+              onRemove={removeCategory}
+              invalid={invalidField === 'category'}
+            />
             <Field>
-              <Label htmlFor="trade-category-search">
-                카테고리 <RequiredMark aria-hidden="true">*</RequiredMark>
-              </Label>
-              <Input
-                id="trade-category-search"
-                aria-required="true"
-                aria-invalid={invalidField === 'category' || undefined}
-                type="search"
-                value={categoryKeyword}
-                autoComplete="off"
-                placeholder="카테고리를 검색해주세요"
-                onChange={(event) => setCategoryKeyword(event.target.value)}
-                onKeyDown={handleCategoryKeywordKeyDown}
-              />
-
-              {selectedCategories.length > 0 && (
-                <CategoryGroup>
-                  <CategoryGroupLabel>선택한 카테고리</CategoryGroupLabel>
-                  {selectedCategories.map((category) => (
-                    <input
-                      key={category.categoryId}
-                      type="hidden"
-                      name="categoryIds"
-                      value={category.categoryId}
-                    />
-                  ))}
-                  <CategoryList aria-label="선택한 카테고리">
-                    {selectedCategories.map((category) => (
-                      <CategoryButton
-                        key={category.categoryId}
-                        type="button"
-                        data-selected="true"
-                        aria-label={`${category.name} 카테고리 선택 해제`}
-                        onClick={() => removeCategory(category.categoryId)}
-                      >
-                        #{category.name} ×
-                      </CategoryButton>
-                    ))}
-                  </CategoryList>
-                </CategoryGroup>
-              )}
-
-              <CategoryGroup>
-                <CategoryGroupLabel>검색 결과</CategoryGroupLabel>
-                {categoryState.status === 'idle' ? (
-                  <CategoryMessage>카테고리를 검색해주세요.</CategoryMessage>
-                ) : categoryState.status === 'loading' ? (
-                  <CategoryMessage role="status">
-                    카테고리를 불러오는 중...
-                  </CategoryMessage>
-                ) : categoryState.status === 'error' ? (
-                  <CategoryMessage role="alert">
-                    {categoryState.errorMessage}
-                  </CategoryMessage>
-                ) : availableCategories.length === 0 ? (
-                  <CategoryMessage>검색결과가 없어요.</CategoryMessage>
-                ) : (
-                  <CategoryList aria-label="카테고리 검색 결과">
-                    {availableCategories.map((category) => (
-                      <CategoryButton
-                        key={category.categoryId}
-                        type="button"
-                        data-selected="false"
-                        onClick={() => selectCategory(category)}
-                      >
-                        {category.name}
-                      </CategoryButton>
-                    ))}
-                  </CategoryList>
-                )}
-              </CategoryGroup>
-            </Field>
-            <Field>
-              <Label htmlFor="purchase-store">
+              <Label
+                id="purchase-store-label"
+                htmlFor="purchase-store"
+                aria-hidden="true"
+              >
                 구매 매장 <OptionalMark>(선택)</OptionalMark>
               </Label>
               <PlaceSelectButton
                 id="purchase-store"
                 type="button"
+                aria-labelledby="purchase-store-label purchase-store-value"
+                aria-haspopup="dialog"
                 onClick={() => setIsPurchaseStoreDialogOpen(true)}
               >
                 <LocationIcon aria-hidden="true" />
-                <PlaceText>
+                <PlaceText id="purchase-store-value">
                   <PlacePrimary data-placeholder={!purchaseStore}>
                     {purchaseStore?.name ||
                       purchaseStore?.address ||
@@ -539,16 +476,22 @@ export default function TradeForm(props: TradeFormProps) {
         </ItemSection>
 
         <Field>
-          <Label htmlFor="trade-place">
+          <Label
+            id="trade-place-label"
+            htmlFor="trade-place"
+            aria-hidden="true"
+          >
             거래 장소 <OptionalMark>(선택)</OptionalMark>
           </Label>
           <PlaceSelectButton
             id="trade-place"
             type="button"
+            aria-labelledby="trade-place-label trade-place-value"
+            aria-haspopup="dialog"
             onClick={() => setIsPlaceDialogOpen(true)}
           >
             <LocationIcon aria-hidden="true" />
-            <PlaceText>
+            <PlaceText id="trade-place-value">
               <PlacePrimary data-placeholder={!tradePlace}>
                 {tradePlace?.name ||
                   tradePlace?.address ||
@@ -823,45 +766,33 @@ const ClearPlaceButton = styled.button`
   cursor: pointer;
 `;
 
-const CategoryList = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-`;
-
-const CategoryGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-const CategoryGroupLabel = styled.p`
-  margin: 0;
-  color: #777981;
-  font-size: 13px;
-  font-weight: 700;
-`;
-
-const CategoryMessage = styled.p`
-  margin: 0;
-  color: #858790;
-  font-size: 14px;
-`;
-
-const CategoryButton = styled.button`
-  min-height: 40px;
-  padding: 0 18px;
+// 키보드를 닫는 OS 동작을 가로채지 않고, 사용자가 선택할 수 있는 다음 입력 경로만 제공한다.
+const InputContinuationButton = styled.button`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
   border: 0;
-  border-radius: 999px;
-  background: #f5f5f6;
-  color: #6e7078;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
 
-  &[data-selected='true'] {
-    background: #ed174c;
-    color: #ffffff;
+  &:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 12px 16px;
+    align-self: flex-start;
+    overflow: visible;
+    clip-path: none;
+    white-space: normal;
+    border-radius: 8px;
+    outline: 2px solid #ed174c;
+    outline-offset: 2px;
+    background: #ffffff;
+    color: #242429;
+    font-size: 15px;
+    cursor: pointer;
   }
 `;
 
