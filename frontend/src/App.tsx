@@ -131,10 +131,9 @@ const BlockedMembersRoute = lazy(async () => {
   return { default: routeModule.BlockedMembersRoute };
 });
 
-const EventApplicationRoute = lazy(async () => {
-  const routeModule = await import('@/routes/eventApplication/route');
-
-  return { default: routeModule.EventApplicationRoute };
+const LaunchEventRoute = lazy(async () => {
+  const routeModule = await import('@/routes/launchEvent/route');
+  return { default: routeModule.LaunchEventRoute };
 });
 
 const ROOT_PATH = '/';
@@ -209,6 +208,11 @@ function CanonicalRoutes() {
           element={<AccountDeletionRoute />}
         />
         <Route path="/updates" element={<UpdatesRoute />} />
+        <Route path="/events/app-launch" element={<LaunchEventRoute />} />
+        <Route
+          path="/events/popular-goods"
+          element={<Navigate to="/events/app-launch" replace />}
+        />
         <Route
           path={`${OAUTH_CALLBACK_PATH_PREFIX}/:provider`}
           element={<AuthCallbackRouteElement />}
@@ -235,10 +239,6 @@ function CanonicalRoutes() {
           <Route
             path="/mypage/blocked-members"
             element={<BlockedMembersRoute />}
-          />
-          <Route
-            path="/events/popular-goods"
-            element={<EventApplicationRoute />}
           />
         </Route>
         <Route path="*" element={<NotFoundRoute />} />

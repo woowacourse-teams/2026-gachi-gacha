@@ -1,6 +1,7 @@
 import styled from '@emotion/styled';
 
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
+import { LaunchEventBanner } from '@/features/launchEvent/LaunchEventBanner';
 import {
   breakpoint,
   color,
@@ -74,6 +75,7 @@ export default function TradePage({
       <CreateTradeButton placement="mobile" />
 
       <Main>
+        <LaunchEventBanner />
         <ResultsPanel aria-live="polite">
           <TradeFilters
             selectedQuickKeyword={selectedQuickKeyword}
