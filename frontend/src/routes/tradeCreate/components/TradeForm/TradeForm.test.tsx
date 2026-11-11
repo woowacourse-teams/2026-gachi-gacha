@@ -275,29 +275,105 @@ describe('TradeForm', () => {
     ).toHaveFocus();
   });
 
-  it('제목 다음 동작과 설명 뒤 보조 버튼으로 입력 흐름을 이어간다', async () => {
+  it('제목 다음에는 설명으로 이동하고 설명 Enter는 제출 없이 줄바꿈한다', async () => {
     const user = userEvent.setup();
-    renderTradeForm();
+    const { container } = renderTradeForm();
+    const onSubmit = jest.fn();
+    container.querySelector('form')?.addEventListener('submit', onSubmit);
     const title = screen.getByRole('textbox', { name: /제목/ });
     const description = screen.getByRole('textbox', { name: /설명/ });
-    const category = screen.getByRole('searchbox', { name: /카테고리/ });
 
     expect(title).toHaveAttribute('enterkeyhint', 'next');
+    expect(description).not.toHaveAttribute('enterkeyhint');
+    expect(
+      screen.queryByRole('button', {
+        name: '설명 입력을 마치고 카테고리로 이동',
+      }),
+    ).not.toBeInTheDocument();
     await user.type(title, '치이카와{Enter}');
     expect(description).toHaveFocus();
-    await user.type(description, '첫 줄{Enter}둘째 줄');
-    expect(description).toHaveValue('첫 줄\n둘째 줄');
-    await user.tab();
-    const next = screen.getByRole('button', {
-      name: '설명 입력을 마치고 카테고리로 이동',
-    });
-    expect(next).toHaveFocus();
-    await user.keyboard('{Enter}');
-    expect(category).toHaveFocus();
+    await user.type(
+      description,
+      '개봉만 한 상품입니다.{Enter}직거래를 원해요.',
+    );
+    expect(description).toHaveValue('개봉만 한 상품입니다.\n직거래를 원해요.');
+    expect(description).toHaveFocus();
+    expect(onSubmit).not.toHaveBeenCalled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('제목의 한글 조합 확정과 단순 blur에는 다음 입력 초점을 강제하지 않는다', async () => {
+  it('설명 다음 Tab은 카테고리로 바로 이동하고 역순으로 돌아올 수 있다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const description = screen.getByRole('textbox', { name: /설명/ });
+    const category = screen.getByRole('searchbox', { name: /카테고리/ });
+
+    await user.click(description);
+    await user.tab();
+    expect(category).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(description).toHaveFocus();
+  });
+
+  it('수정 모드에서도 기존 설명에 줄바꿈을 추가하고 Tab으로 카테고리로 이동한다', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <TradeForm
+            mode="edit"
+            tradeId={15}
+            initialValues={{
+              title: '치이카와',
+              description: '기존 상품 상태',
+              desiredProduction: '',
+              categories: [],
+              purchaseStore: null,
+              tradePlace: null,
+              imageUrls: [],
+            }}
+          />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    const description = screen.getByRole('textbox', { name: /설명/ });
+
+    await user.type(description, '{End}{Enter}추가 상품 상태');
+
+    expect(description).toHaveValue('기존 상품 상태\n추가 상품 상태');
+    expect(description).toHaveFocus();
+    await user.tab();
+    expect(screen.getByRole('searchbox', { name: /카테고리/ })).toHaveFocus();
+  });
+
+  it('설명에서 Shift+Enter로 줄바꿈하고 계속 입력할 수 있다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const description = screen.getByRole('textbox', { name: /설명/ });
+
+    await user.type(description, '첫 줄');
+    await user.keyboard('{Shift>}{Enter}{/Shift}둘째 줄');
+
+    expect(description).toHaveValue('첫 줄\n둘째 줄');
+    expect(description).toHaveFocus();
+  });
+
+  it('여러 줄 설명을 붙여넣은 뒤 Tab으로 이동해도 내용을 보존한다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const description = screen.getByRole('textbox', { name: /설명/ });
+
+    await user.click(description);
+    await user.paste('상품 상태\n개봉만 했어요.\n직거래를 원해요.');
+    await user.tab();
+
+    expect(description).toHaveValue(
+      '상품 상태\n개봉만 했어요.\n직거래를 원해요.',
+    );
+    expect(screen.getByRole('searchbox', { name: /카테고리/ })).toHaveFocus();
+  });
+
+  it('제목과 설명의 한글 조합 확정에는 다음 입력 초점을 강제하지 않는다', async () => {
     const user = userEvent.setup();
     renderTradeForm();
     const title = screen.getByRole('textbox', { name: /제목/ });
@@ -308,6 +384,22 @@ describe('TradeForm', () => {
     fireEvent.keyDown(title, { key: 'Enter', keyCode: 229 });
     expect(title).toHaveFocus();
     await user.click(description);
+    expect(
+      fireEvent.keyDown(description, { key: 'Enter', isComposing: true }),
+    ).toBe(true);
+    expect(description).toHaveFocus();
+    expect(fireEvent.keyDown(description, { key: 'Enter', keyCode: 229 })).toBe(
+      true,
+    );
+    expect(description).toHaveFocus();
+  });
+
+  it('설명의 단순 blur에는 카테고리 초점을 강제하지 않는다', async () => {
+    const user = userEvent.setup();
+    renderTradeForm();
+    const description = screen.getByRole('textbox', { name: /설명/ });
+
+    await user.click(description);
     (description as HTMLTextAreaElement).blur();
     expect(description).not.toHaveFocus();
     expect(
@@ -316,8 +408,7 @@ describe('TradeForm', () => {
     expect(screen.getByRole('textbox', { name: /설명/ })).toBe(description);
   });
 
-  it('단일 행 입력에서는 Enter로 폼을 제출하지 않고, 설명에서는 줄바꿈한다', async () => {
-    const user = userEvent.setup();
+  it('단일 행 입력에서는 Enter로 폼을 제출하지 않는다', () => {
     renderTradeForm();
     const singleLineInputs = [
       screen.getByRole('textbox', { name: /제목/ }),
@@ -329,12 +420,6 @@ describe('TradeForm', () => {
       // fireEvent는 기본 동작이 막히면 false를 반환한다.
       expect(fireEvent.keyDown(input, { key: 'Enter' })).toBe(false);
     });
-
-    const description = screen.getByRole('textbox', { name: /설명/ });
-
-    expect(fireEvent.keyDown(description, { key: 'Enter' })).toBe(true);
-    await user.type(description, '첫 줄{Enter}둘째 줄');
-    expect(description).toHaveValue('첫 줄\n둘째 줄');
   });
 
   it('사진, 제목, 설명, 카테고리를 필수로 검증하고 첫 누락 항목을 토스트로 알린다', () => {
