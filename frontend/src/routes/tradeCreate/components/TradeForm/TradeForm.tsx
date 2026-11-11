@@ -362,16 +362,6 @@ export default function TradeForm(props: TradeFormProps) {
                 }
               }}
             />
-            <InputContinuationButton
-              type="button"
-              onClick={() => {
-                formRef.current
-                  ?.querySelector<HTMLInputElement>('#trade-category-search')
-                  ?.focus();
-              }}
-            >
-              설명 입력을 마치고 카테고리로 이동
-            </InputContinuationButton>
           </Field>
 
           <OfferedFields>
@@ -764,36 +754,6 @@ const ClearPlaceButton = styled.button`
   font-size: 13px;
   text-decoration: underline;
   cursor: pointer;
-`;
-
-// 키보드를 닫는 OS 동작을 가로채지 않고, 사용자가 선택할 수 있는 다음 입력 경로만 제공한다.
-const InputContinuationButton = styled.button`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-
-  &:focus {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 12px 16px;
-    align-self: flex-start;
-    overflow: visible;
-    clip-path: none;
-    white-space: normal;
-    border-radius: 8px;
-    outline: 2px solid #ed174c;
-    outline-offset: 2px;
-    background: #ffffff;
-    color: #242429;
-    font-size: 15px;
-    cursor: pointer;
-  }
 `;
 
 const Textarea = styled.textarea`
