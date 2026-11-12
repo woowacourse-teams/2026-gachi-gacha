@@ -1,7 +1,9 @@
+import { memo } from 'react';
 import styled from '@emotion/styled';
 
 import type { TradeStatus } from '@/domains/trade/tradeSummaryType';
 import { LaunchEventBanner } from '@/features/launchEvent/LaunchEventBanner';
+import { formatRelativeTime } from '@/shared/date/formatRelativeTime';
 import {
   breakpoint,
   color,
@@ -21,6 +23,8 @@ import type {
   TradeQuickKeyword,
   TradeSortOrder,
 } from './model/tradeListFilter';
+
+const MemoizedProductCard = memo(ProductCard);
 
 interface TradePageProps {
   items: TradeItem[];
@@ -59,6 +63,8 @@ export default function TradePage({
   onRetry,
   onLoadMore,
 }: TradePageProps) {
+  // 상대 시간은 부모 갱신 때 다시 계산해 표시가 바뀐 카드만 갱신한다.
+  const now = Date.now();
   const hasActiveFilter =
     Boolean(query) || selectedQuickKeyword !== null || statusFilter !== null;
   const resultsTitle = query
@@ -107,9 +113,10 @@ export default function TradePage({
             <>
               <ProductGrid>
                 {items.map((item, index) => (
-                  <ProductCard
+                  <MemoizedProductCard
                     key={item.tradeId}
                     item={item}
+                    relativeTime={formatRelativeTime(item.createdAt, now)}
                     eagerImage={index < 4}
                     homeLayout
                     onOpen={onOpenTrade}
