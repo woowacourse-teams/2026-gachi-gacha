@@ -13,6 +13,7 @@ export interface ProductCardProps {
   source?: 'trade_list' | 'related_list' | 'mypage';
   eagerImage?: boolean;
   homeLayout?: boolean;
+  relativeTime?: string;
   onOpen?: (() => void) | undefined;
 }
 
@@ -21,6 +22,7 @@ export default function ProductCard({
   source = 'trade_list',
   eagerImage = false,
   homeLayout = false,
+  relativeTime,
   onOpen,
 }: ProductCardProps) {
   const place =
@@ -79,7 +81,7 @@ export default function ProductCard({
           </Meta>
           <Meta>
             <ScreenReaderText>교환글 등록 날짜: </ScreenReaderText>
-            {formatRelativeTime(item.createdAt)}
+            {relativeTime ?? formatRelativeTime(item.createdAt)}
           </Meta>
           <BadgeRow>
             <ScreenReaderText>거래 상태: </ScreenReaderText>

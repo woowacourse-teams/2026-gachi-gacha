@@ -1,18 +1,45 @@
-import { beforeEach, describe, expect, it } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
+import { Route, Routes, useNavigate } from 'react-router';
 
 import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 import { submitSearchForm } from '@/test/submitSearchForm';
 
+import ProductCard from './components/ProductCard';
 import { TradeRoute } from './route';
+
+jest.mock('./components/ProductCard', () => {
+  const actual = jest.requireActual<typeof import('./components/ProductCard')>(
+    './components/ProductCard',
+  );
+
+  return { __esModule: true, ...actual, default: jest.fn(actual.default) };
+});
 
 beforeEach(() => {
   window.localStorage.clear();
 });
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+function TradeDetailBackButton() {
+  const navigate = useNavigate();
+
+  return <button onClick={() => navigate(-1)}>목록으로 돌아가기</button>;
+}
 
 function createTradePage(keyword: string | null) {
   const content = keyword
@@ -278,6 +305,7 @@ describe('교환 게시글 검색', () => {
 
   it('더보기를 누르면 다음 페이지 게시글을 기존 목록에 추가한다', async () => {
     const requestedUrls: URL[] = [];
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-12T03:00:00Z'));
 
     server.use(
       http.get('/api/v1/trades', ({ request }) => {
@@ -299,6 +327,7 @@ describe('교환 게시글 검색', () => {
     expect(
       await screen.findByRole('heading', { name: '1페이지 교환 게시글' }),
     ).toBeInTheDocument();
+    jest.mocked(ProductCard).mockClear();
 
     await user.click(screen.getByRole('button', { name: '더보기' }));
 
@@ -317,6 +346,57 @@ describe('교환 게시글 검색', () => {
     expect(requestedUrls[1]!.searchParams.get('categoryIds')).toBeNull();
     expect(requestedUrls[1]!.searchParams.get('status')).toBe('AVAILABLE');
     expect(requestedUrls[1]!.searchParams.get('sort')).toBe('createdAt,asc');
+    expect(ProductCard).toHaveBeenCalledTimes(1);
+    expect(jest.mocked(ProductCard).mock.calls[0]![0].item.tradeId).toBe(2);
+  });
+
+  it('더보기 후 기존 카드로 이동했다 돌아오면 추가된 페이지와 클릭 시점의 스크롤을 복원한다', async () => {
+    const requestedPages: number[] = [];
+    const scrollTo = jest
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined);
+    const scrollY = jest.replaceProperty(window, 'scrollY', 0);
+    server.use(
+      http.get('/api/v1/trades', ({ request }) => {
+        const page = Number(new URL(request.url).searchParams.get('page'));
+        requestedPages.push(page);
+        return HttpResponse.json(createPaginatedTradePage(page));
+      }),
+    );
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/trade" element={<TradeRoute />} />
+        <Route path="/trade/:tradeId" element={<TradeDetailBackButton />} />
+      </Routes>,
+      { route: '/trade?status=AVAILABLE&sort=oldest' },
+    );
+
+    await screen.findByRole('heading', { name: '1페이지 교환 게시글' });
+    await user.click(screen.getByRole('button', { name: '더보기' }));
+    await screen.findByRole('heading', { name: '2페이지 교환 게시글' });
+    scrollY.replaceValue(640);
+    await user.click(
+      screen.getByRole('link', { name: /교환글 제목: 1페이지 교환 게시글/ }),
+    );
+    expect(window.location.pathname).toBe('/trade/1');
+    scrollY.replaceValue(0);
+
+    await user.click(screen.getByRole('button', { name: '목록으로 돌아가기' }));
+
+    expect(
+      await screen.findByRole('heading', { name: '2페이지 교환 게시글' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: '1페이지 교환 게시글' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '더보기' }),
+    ).not.toBeInTheDocument();
+    expect(window.location.search).toBe('?status=AVAILABLE&sort=oldest');
+    expect(requestedPages).toEqual([0, 1]);
+    await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, 640));
   });
 });
 

@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react';
+import { useCallback, useLayoutEffect, useRef } from 'react';
 import { useLocation, useNavigationType, useSearchParams } from 'react-router';
 
 import type { TradeSummaryPage } from '@/domains/trade/tradeSummaryType';
@@ -57,6 +57,27 @@ function TradeRouteContent({
       { keyword: effectiveKeyword, status: statusFilter, sortOrder },
       restoredVisit?.page,
     );
+  const currentVisitRef = useRef({ location, state });
+
+  useLayoutEffect(() => {
+    currentVisitRef.current = { location, state };
+  }, [location, state]);
+
+  // 카드 콜백은 유지하고 클릭할 때 가장 최근에 표시한 목록을 저장한다.
+  const handleOpenTrade = useCallback(() => {
+    const { location: currentLocation, state: currentState } =
+      currentVisitRef.current;
+
+    if (currentState.status === 'success') {
+      lastTradeVisit = {
+        key: currentLocation.key,
+        pathname: currentLocation.pathname,
+        search: currentLocation.search,
+        page: currentState.data,
+        scrollY: window.scrollY,
+      };
+    }
+  }, []);
 
   useLayoutEffect(() => {
     if (restoredVisit) {
@@ -93,17 +114,7 @@ function TradeRouteContent({
       hasMore={hasMore}
       isLoadingMore={isLoadingMore}
       loadMoreError={loadMoreError}
-      onOpenTrade={() => {
-        if (state.status === 'success') {
-          lastTradeVisit = {
-            key: location.key,
-            pathname: location.pathname,
-            search: location.search,
-            page: state.data,
-            scrollY: window.scrollY,
-          };
-        }
-      }}
+      onOpenTrade={handleOpenTrade}
       onSelectQuickKeyword={(nextQuickKeyword) => {
         captureAnalyticsEvent('trade_filter_selected', {
           filter: 'category',
