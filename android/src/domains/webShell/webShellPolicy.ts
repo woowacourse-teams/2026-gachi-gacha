@@ -59,6 +59,16 @@ const ANDROID_WEB_SHELL_STYLES = `
   }
 
   @media (max-width: 767px) {
+    /* Unbroken descriptions/URLs must wrap instead of widening the mobile
+       layout viewport (and consequently every position:fixed action). */
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-detail] {
+      overflow-wrap: anywhere;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-detail-action] {
+      padding-bottom: var(--gachigacha-android-detail-action-edge, 10px) !important;
+    }
+
     /* Native SafeAreaView owns system bars on EVERY tab, not just the map. */
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-tabs] {
       padding-bottom: 0 !important;
@@ -182,6 +192,12 @@ const ANDROID_WEB_SHELL_STYLES = `
       width: 100% !important;
       max-width: 100% !important;
       min-width: 0 !important;
+    }
+
+    /* Native SafeAreaView already excludes the system navigation bar. Keep
+       the web's ordinary vertical spacing, not its second bottom inset. */
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer-area] {
+      padding-bottom: var(--gachigacha-android-composer-edge, 8px) !important;
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-chat-composer] input[aria-label="메시지"] {
@@ -547,6 +563,56 @@ function createWebShellRuntimeBody(): string {
       }));
     };
 
+    const observeChatMessageViewport = (messages) => {
+      const key = '__gachigachaAndroidChatScrollObservation';
+      const previous = window[key];
+      if (previous?.messages === messages) return;
+      previous?.dispose();
+      window[key] = null;
+      if (!messages || typeof ResizeObserver !== 'function') return;
+
+      let height = messages.clientHeight;
+      let width = messages.clientWidth;
+      const atBottom = () =>
+        messages.scrollHeight - messages.scrollTop - messages.clientHeight <= 24;
+      let pinned = atBottom();
+      // A deliberate gesture during an IME animation wins over bottom pinning.
+      // Passive listeners only record intent; the browser still owns scrolling.
+      const onManualScroll = () => { pinned = false; };
+      const onScrollKey = (event) => {
+        if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) onManualScroll();
+      };
+      const onScroll = () => {
+        // A keyboard resize can clamp scrollTop before ResizeObserver fires.
+        // Remember the pre-resize intent, not the already-shrunken viewport.
+        if (height === messages.clientHeight && width === messages.clientWidth) {
+          pinned = atBottom();
+        }
+      };
+      const observer = new ResizeObserver(() => {
+        const resized = height !== messages.clientHeight || width !== messages.clientWidth;
+        if (resized && pinned) messages.scrollTop = messages.scrollHeight;
+        height = messages.clientHeight;
+        width = messages.clientWidth;
+        pinned = atBottom();
+      });
+      messages.addEventListener('scroll', onScroll, { passive: true });
+      messages.addEventListener('touchmove', onManualScroll, { passive: true });
+      messages.addEventListener('wheel', onManualScroll, { passive: true });
+      messages.addEventListener('keydown', onScrollKey);
+      observer.observe(messages);
+      window[key] = {
+        messages,
+        dispose: () => {
+          observer.disconnect();
+          messages.removeEventListener('scroll', onScroll);
+          messages.removeEventListener('touchmove', onManualScroll);
+          messages.removeEventListener('wheel', onManualScroll);
+          messages.removeEventListener('keydown', onScrollKey);
+        },
+      };
+    };
+
     const markChatPresentation = () => {
       const isChatRoute = window.location.pathname === '/chat' ||
         window.location.pathname.startsWith('/chat/');
@@ -567,13 +633,17 @@ function createWebShellRuntimeBody(): string {
         ? chatSurface
         : null;
       const composerArea = composer?.parentElement;
+      const messages = composerArea?.previousElementSibling;
+      observeChatMessageViewport(
+        window.matchMedia('(max-width: 767px)').matches ? messages : null,
+      );
       const presentationTargets = [
         ['data-gachigacha-android-chat-main', chatMain],
         ['data-gachigacha-android-chat-drawer', chatDrawer],
         ['data-gachigacha-android-chat-room', chatRoom],
         ['data-gachigacha-android-chat-composer', composer],
         ['data-gachigacha-android-chat-composer-area', composerArea],
-        ['data-gachigacha-android-chat-messages', composerArea?.previousElementSibling],
+        ['data-gachigacha-android-chat-messages', messages],
       ];
 
       // Only an open room owns a constrained viewport. The conversation list
@@ -586,8 +656,19 @@ function createWebShellRuntimeBody(): string {
           if (marker.endsWith('-main') || marker.endsWith('-drawer')) {
             element.style.removeProperty('--gachigacha-android-chat-height');
           }
+          if (marker.endsWith('-composer-area')) {
+            element.style.removeProperty('--gachigacha-android-composer-edge');
+          }
         });
         target?.setAttribute(marker, '');
+      }
+
+      if (composerArea) {
+        // In the web composer, top and bottom share the same base spacing;
+        // only bottom adds env(safe-area-inset-bottom). Read the live web
+        // value so a future spacing change does not require hardcoded pixels.
+        composerArea.style.setProperty('--gachigacha-android-composer-edge',
+          window.getComputedStyle(composerArea).paddingTop);
       }
 
       const chatViewport = chatMain || chatDrawer;
@@ -600,7 +681,7 @@ function createWebShellRuntimeBody(): string {
           0,
         );
         const availableHeight = Math.floor(viewportHeight - chatTop);
-        if (availableHeight >= 240) {
+        if (availableHeight > 0) {
           chatViewport.style.setProperty(
             '--gachigacha-android-chat-height',
             availableHeight + 'px',
@@ -652,6 +733,31 @@ function createWebShellRuntimeBody(): string {
         properties.forEach((property) => element.style.removeProperty(property));
       });
       target?.setAttribute(marker, '');
+    };
+
+    const markTradeDetailPresentation = () => {
+      // Use the existing detail landmark, including the background detail
+      // retained by React Router while its chat drawer is open.
+      const candidate = document.getElementById('trade-comments-title')?.closest('article');
+      const detail = candidate?.closest('main') && candidate.querySelector('h1')
+        ? candidate : null;
+      markLayoutTarget('data-gachigacha-android-trade-detail', detail);
+
+      const chatAction = Array.from(detail?.querySelectorAll('a[href]') || []).find((link) => {
+        const url = new URL(link.href, window.location.href);
+        if (url.origin !== window.location.origin) return false;
+        return /^\\/chat\\/start\\/\\d+\\/?$/.test(url.pathname) ||
+          (url.pathname === '/login' && /^\\/trade\\/\\d+\\/?$/.test(url.searchParams.get('returnTo') || ''));
+      });
+      const action = chatAction?.parentElement;
+      const fixedAction = action && window.getComputedStyle(action).position === 'fixed'
+        ? action : null;
+      markLayoutTarget('data-gachigacha-android-trade-detail-action', fixedAction,
+        ['--gachigacha-android-detail-action-edge']);
+      if (fixedAction) {
+        fixedAction.style.setProperty('--gachigacha-android-detail-action-edge',
+          window.getComputedStyle(fixedAction).paddingTop);
+      }
     };
 
     const observeLayout = (key, targets) => {
@@ -848,6 +954,7 @@ function createWebShellRuntimeBody(): string {
       installAndroidStyle();
       markAppleLogin();
       markProfileImages();
+      markTradeDetailPresentation();
       markChatPresentation();
       markTabPresentation();
       markMapOverlays();

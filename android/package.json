@@ -52,6 +52,8 @@
     "web-shell:trade-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-trade-form-browser.test.mjs",
     "web-shell:map-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-map-browser.test.mjs",
     "web-shell:tabs-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-tabs-browser.test.mjs",
+    "web-shell:chat-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-chat-layout-browser.test.mjs",
+    "web-shell:detail-layout-test": "node --no-warnings --experimental-strip-types --test scripts/web-shell-trade-detail-browser.test.mjs",
     "push-notification:test": "node --no-warnings --experimental-strip-types scripts/push-notification.test.mjs",
     "play-compatibility:verify": "node scripts/verify-generated-play-compatibility.mjs",
     "catalog:test": "node --test scripts/affiliate-catalog/catalog.test.mjs",

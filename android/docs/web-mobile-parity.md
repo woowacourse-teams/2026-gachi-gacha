@@ -10,6 +10,45 @@ WebView 위에 네이티브 기능을 추가할 때만 적용한다.
 
 ## 지도 카드와 하단 탭의 Android 보정 (#697)
 
+### 2026-11-13 거래 상세·채팅 DEV QA 후속
+
+웹 기준은 `origin/main` `f342e479`이며 `frontend/`와 iOS는 수정하지 않는다.
+
+- 거래 설명의 긴 무공백 문자열이 문서 가로 폭을 늘리고, 모바일 Chromium의 고정
+  하단 버튼까지 화면보다 넓히는 현상을 실제 웹 `TradeDetailPage`로 재현했다.
+  사용자 스크린샷도 페이지 전체의 가로 이동을 보여 주지만, 해당 글의 실제 설명
+  데이터는 확인하지 않았다. 댓글 제목 landmark가 있는 상세 article에만 모바일
+  `overflow-wrap: anywhere`를 적용한다. 전체 문서를 잘라 숨기거나 캐러셀을 막지 않는다.
+  채팅 drawer 뒤에 유지되는 상세에도 줄바꿈을 유지한다.
+- 상세의 채팅/로그인 진입 바와 채팅 작성창은 네이티브가 이미 확보한 하단 인셋을
+  다시 더하지 않는다. 웹의 현재 위쪽 기본 패딩을 아래에도 사용하며 좌우 값, 버튼
+  동작·색상·텍스트는 유지한다. 현재 웹은 각 영역의 기본 상하 패딩이 같은 계약이다.
+- 채팅 메시지 pane의 실제 크기 변경을 관찰한다. 기존에 최신 메시지를 보고 있었다면
+  키보드 열기·닫기와 사진 미리보기로 높이가 바뀌어도 하단을 유지한다. 과거 메시지를
+  읽고 있거나 크기 변경 중 직접 스크롤하면 강제로 하단으로 이동하지 않는다.
+  메시지 추가·이전 메시지 로딩은 기존 웹 로직이 처리하며 관찰자는 내용만 바뀔 때
+  스크롤하지 않는다. 경로 이탈·방 닫기·태블릿 전환에는 관찰자와 리스너를 해제한다.
+- `SafeAreaView`, WebView의 키보드 resize 설정, 인증·푸시·메시지 전송 계약은 바꾸지
+  않는다. 실제 WebView 버전별 IME 동작은 DEV APK로 추가 확인한다.
+
+실제 웹 컴포넌트를 읽기 전용으로 사용하는 추가 회귀 명령:
+
+```sh
+ANDROID_TEST_CHROME=<Chromium 실행 파일> \
+ANDROID_TEST_FRONTEND_SOURCE=<최신 frontend 경로> \
+ANDROID_TEST_FRONTEND_NODE_MODULES=<설치된 frontend/node_modules> \
+npm run web-shell:detail-layout-test
+
+ANDROID_TEST_CHROME=<Chromium 실행 파일> \
+ANDROID_TEST_FRONTEND_SOURCE=<최신 frontend 경로> \
+ANDROID_TEST_FRONTEND_NODE_MODULES=<설치된 frontend/node_modules> \
+npm run web-shell:chat-layout-test
+```
+
+DEV 실기기 확인: 상세의 긴 설명과 다른 교환 물품 가로 탐색, 채팅하기 좌우/하단 경계,
+키보드 열기·닫기 후 최신 메시지, 과거 대화 읽기 중 키보드와 스크롤, 사진 첨부/취소,
+채팅 닫기/시스템 뒤로가기. 3버튼·제스처 및 작은 화면·큰 글씨에서 확인한다.
+
 ### 2026-11-13 DEV QA 후속 보정
 
 웹 기준은 `origin/main` `f342e479`, 이전 Android QA 기준은 `9ab73212`다.
