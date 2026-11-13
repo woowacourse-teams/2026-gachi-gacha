@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -26,6 +27,12 @@ import { loginWithMobileOAuth } from '../domains/auth/mobileOAuthLogin';
 import { createPushNavigationQueue } from '../domains/notification/pushNavigationQueue';
 import { usePushNotifications } from '../domains/notification/usePushNotifications';
 import { createWebShellBackController } from '../domains/webShell/webShellBackController';
+import {
+  createWebShellAppContext,
+  createWebShellAppContextBridgeScript,
+  createWebShellAppContextResponseScript,
+  parseWebShellAppContextRequest,
+} from '../domains/webShell/webShellAppContext';
 import {
   createWebShellSessionSnapshotRequestScript,
   parseWebShellSessionSnapshot,
@@ -310,6 +317,19 @@ export function WebAppShellScreen() {
         return;
       }
 
+      const appContextRequest = parseWebShellAppContextRequest(data);
+      if (appContextRequest) {
+        if (!isTrustedWebShellMessageSource(appBaseUrl, topLevelUrlRef.current)) return;
+        webViewRef.current?.injectJavaScript(
+          createWebShellAppContextResponseScript(
+            appBaseUrl,
+            appContextRequest.requestId,
+            createWebShellAppContext(Constants.expoConfig),
+          ),
+        );
+        return;
+      }
+
       const snapshot = parseWebShellSessionSnapshot(data);
       if (snapshot) {
         if (oauthInFlightRef.current || webLogoutInFlightRef.current) return;
@@ -443,10 +463,14 @@ export function WebAppShellScreen() {
         cacheEnabled
         domStorageEnabled
         geolocationEnabled
-        injectedJavaScriptBeforeContentLoaded={createWebShellBootstrapScript(
-          nativeSessionTokens,
-        )}
-        injectedJavaScript={createWebShellRuntimeScript()}
+        injectedJavaScriptBeforeContentLoaded={[
+          createWebShellBootstrapScript(nativeSessionTokens),
+          createWebShellAppContextBridgeScript(appBaseUrl),
+        ].join('\n')}
+        injectedJavaScript={[
+          createWebShellRuntimeScript(),
+          createWebShellAppContextBridgeScript(appBaseUrl),
+        ].join('\n')}
         javaScriptCanOpenWindowsAutomatically={false}
         javaScriptEnabled
         mixedContentMode="never"

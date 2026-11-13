@@ -38,6 +38,11 @@ const ANDROID_WEB_SHELL_STYLES = `
     display: none !important;
   }
 
+  /* The app has its own navigation; keep the website footer on the website. */
+  html[data-gachigacha-native-platform="android"] #site-footer {
+    display: none !important;
+  }
+
   /* Only the artwork changes. The web owns avatar dimensions, flex and grid. */
   html[data-gachigacha-native-platform="android"] [data-gachigacha-android-avatar-fallback] {
     background-color: transparent !important;
@@ -54,6 +59,34 @@ const ANDROID_WEB_SHELL_STYLES = `
   }
 
   @media (max-width: 767px) {
+    /* Native SafeAreaView owns system bars on EVERY tab, not just the map. */
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-tabs] {
+      padding-bottom: 0 !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-tab-content] {
+      padding-bottom: var(--gachigacha-android-content-bottom) !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-create-trade] {
+      bottom: var(--gachigacha-android-create-bottom) !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-search-layer] {
+      padding-top: var(--gachigacha-android-map-edge) !important;
+    }
+
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-summary] {
+      box-sizing: border-box !important;
+      left: var(--gachigacha-android-map-summary-left) !important;
+      right: var(--gachigacha-android-map-summary-right) !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-header] {
       top: var(--gachigacha-android-map-header-top, 12px) !important;
     }
@@ -64,7 +97,6 @@ const ANDROID_WEB_SHELL_STYLES = `
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-controls] {
       bottom: var(--gachigacha-android-map-controls-bottom, 190px) !important;
-      gap: 10px !important;
     }
 
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-map-status] {
@@ -607,16 +639,66 @@ function createWebShellRuntimeBody(): string {
       postChatRoomState(Boolean(chatRoom && composer));
     };
 
-    const observeMapLayout = (targets) => {
-      const previous = window.__gachigachaAndroidMapLayoutObservation;
+    const isVisibleLayoutElement = (element) => Boolean(element &&
+      element.getBoundingClientRect().height > 0 &&
+      window.getComputedStyle(element).visibility !== 'hidden');
+
+    // Only own named markers and custom properties; never overwrite React's
+    // inline style, reparent its nodes, or depend on Emotion's generated classes.
+    const markLayoutTarget = (marker, target, properties = []) => {
+      document.querySelectorAll('[' + marker + ']').forEach((element) => {
+        if (element === target) return;
+        element.removeAttribute(marker);
+        properties.forEach((property) => element.style.removeProperty(property));
+      });
+      target?.setAttribute(marker, '');
+    };
+
+    const observeLayout = (key, targets) => {
+      const previous = window[key];
       if (previous && previous.targets.length === targets.length &&
           previous.targets.every((target, index) => target === targets[index])) return;
       previous?.observer.disconnect();
-      window.__gachigachaAndroidMapLayoutObservation = null;
+      window[key] = null;
       if (!targets.length || typeof ResizeObserver !== 'function') return;
       const observer = new ResizeObserver(scheduleAndroidPresentation);
       targets.forEach((target) => observer.observe(target));
-      window.__gachigachaAndroidMapLayoutObservation = { observer, targets };
+      window[key] = { observer, targets };
+    };
+
+    const markTabPresentation = () => {
+      const mobile = window.matchMedia('(max-width: 767px)').matches;
+      const tabs = mobile ? Array.from(document.querySelectorAll(
+        'nav[aria-label="하단 메뉴"]',
+      )).find(isVisibleLayoutElement) : null;
+      markLayoutTarget('data-gachigacha-android-tabs', tabs);
+
+      const path = window.location.pathname.replace(/\\/$/, '') || '/';
+      const isTrade = path === '/trade';
+      const isChatList = path === '/chat' && !window.__gachigachaAndroidChatRoomOpen;
+      const isMyPage = path === '/mypage';
+      const page = tabs?.parentElement;
+      const createButton = isTrade && page
+        ? Array.from(page.querySelectorAll('a[href="/trade/new"][data-placement="mobile"]'))
+          .find(isVisibleLayoutElement)
+        : null;
+      const content = isTrade ? page?.querySelector('main')
+        : (isChatList || isMyPage) ? page : null;
+      markLayoutTarget('data-gachigacha-android-create-trade', createButton,
+        ['--gachigacha-android-create-bottom']);
+      markLayoutTarget('data-gachigacha-android-tab-content', content,
+        ['--gachigacha-android-content-bottom']);
+      if (tabs) {
+        const tabHeight = Math.ceil(tabs.getBoundingClientRect().height);
+        // Keep the web's 16px action gap, but do not avoid a hidden web footer.
+        createButton?.style.setProperty('--gachigacha-android-create-bottom',
+          Math.ceil(window.innerHeight - tabs.getBoundingClientRect().top + 16) + 'px');
+        const actionSpace = createButton ? createButton.getBoundingClientRect().height + 32 : 0;
+        content?.style.setProperty('--gachigacha-android-content-bottom',
+          Math.ceil(tabHeight + actionSpace) + 'px');
+      }
+      observeLayout('__gachigachaAndroidTabLayoutObservation',
+        [tabs, createButton].filter(Boolean));
     };
 
     const markMapOverlays = () => {
@@ -627,65 +709,77 @@ function createWebShellRuntimeBody(): string {
       const tabsCandidate = mobileMap
         ? resultsSection.closest('main')?.querySelector('nav[aria-label="하단 메뉴"]')
         : null;
-      const mapTabs = tabsCandidate?.getBoundingClientRect().height > 0
-        ? tabsCandidate : null;
+      const mapTabs = isVisibleLayoutElement(tabsCandidate) ? tabsCandidate : null;
       const storeListTitle = resultsSection?.querySelector('#search-store-list-title');
-      const storeListArea = mapTabs ? storeListTitle?.closest('section')?.parentElement : null;
-
-      // React can reuse the same navigation element on another SPA route.
-      document.querySelectorAll('[data-gachigacha-android-map-tabs]').forEach((element) => {
-        if (element !== mapTabs) element.removeAttribute('data-gachigacha-android-map-tabs');
-      });
-      document.querySelectorAll('[data-gachigacha-android-map-list-area]').forEach((element) => {
-        if (element !== storeListArea) {
-          element.removeAttribute('data-gachigacha-android-map-list-area');
-          element.style.removeProperty('--gachigacha-android-map-list-bottom');
-        }
-      });
-      observeMapLayout([mapTabs, storeListArea].filter(Boolean));
-      if (!resultsSection) return;
-
-      const selectedGacha = resultsSection.querySelector(
+      const listPanel = storeListTitle?.closest('section');
+      const storeListArea = mapTabs ? listPanel?.parentElement : null;
+      const map = mapTabs ? resultsSection.querySelector(
+        'section[aria-label="검색된 가챠 보유 매장 지도"], section[aria-label="홍대 가챠 매장 지도"]',
+      ) : null;
+      const selectedGacha = map && resultsSection.querySelector(
         'section[aria-label^="선택한 가챠"]',
       );
-      const serviceAreaNotice = Array.from(
+      const serviceAreaNotice = map && Array.from(
         resultsSection.querySelectorAll('aside'),
       ).find((element) =>
-        element.textContent?.includes('현재 지원 지역'),
+        !listPanel?.contains(element) && !map?.contains(element),
       );
-      let mapHeader = selectedGacha || serviceAreaNotice;
+      // The selected-product error is an alert rather than the usual labelled
+      // summary. Exclude both map alerts and list errors from this fallback.
+      const errorSummary = map &&
+        resultsSection.getAttribute('aria-label') === '가챠 보유 매장 검색 결과'
+        ? Array.from(resultsSection.querySelectorAll('section[role="alert"]'))
+          .find((element) => !listPanel?.contains(element) && !map?.contains(element))
+        : null;
+      let mapHeader = selectedGacha || errorSummary || serviceAreaNotice || null;
       while (mapHeader && mapHeader.parentElement !== resultsSection) {
         mapHeader = mapHeader.parentElement;
       }
-      mapHeader?.setAttribute('data-gachigacha-android-map-header', '');
-
-      const map = resultsSection.querySelector(
-        'section[aria-label="검색된 가챠 보유 매장 지도"], section[aria-label="홍대 가챠 매장 지도"]',
-      );
-      if (!map) return;
-
       const researchButton = Array.from(
-        map.parentElement?.querySelectorAll('button') || [],
+        map?.parentElement?.querySelectorAll('button') || [],
       ).find((button) => button.textContent?.includes('이 지역에서 재검색'));
-      researchButton?.setAttribute('data-gachigacha-android-map-research', '');
-
-      const locationButton = map.querySelector(
+      const locationButton = map?.querySelector(
         'button[aria-label^="현재 위치"]',
       );
       const mapControls = locationButton?.parentElement;
-      mapControls
-        ?.querySelector('p[role="alert"]')
-        ?.setAttribute('data-gachigacha-android-location-error', '');
+      const appHeader = map ? resultsSection.closest('main')
+        ?.querySelector('header[data-mobile-variant="map"]') : null;
+      const searchEntry = appHeader?.querySelector('[data-header-search-slot] a[href="/search"]');
+      const searchLayer = isVisibleLayoutElement(searchEntry) ? appHeader.parentElement : null;
+      const mapStatus = map ? storeListTitle?.parentElement?.parentElement : null;
+      const listButton = map ? listPanel?.querySelector(':scope > button') : null;
+      // Real list, skeleton, empty or error card, not the list button above it.
+      const carousel = mapTabs ? Array.from(listPanel?.children || []).find((element) =>
+        !element.matches('button, dialog') && element !== mapStatus &&
+        isVisibleLayoutElement(element),
+      ) : null;
+      const selectedHeader = selectedGacha || errorSummary ? mapHeader : null;
 
-      const mapStatus = storeListTitle?.parentElement?.parentElement;
-      mapStatus?.setAttribute(
-        'data-gachigacha-android-map-status',
-        '',
-      );
+      const layoutTargets = [
+        ['data-gachigacha-android-map-tabs', mapTabs, []],
+        ['data-gachigacha-android-map-list-area', storeListArea, ['--gachigacha-android-map-list-bottom']],
+        ['data-gachigacha-android-map-header', mapHeader, ['--gachigacha-android-map-header-top']],
+        ['data-gachigacha-android-map-summary', selectedHeader,
+          ['--gachigacha-android-map-summary-left', '--gachigacha-android-map-summary-right']],
+        ['data-gachigacha-android-map-search-layer', searchLayer, ['--gachigacha-android-map-edge']],
+        ['data-gachigacha-android-map-research', researchButton, ['--gachigacha-android-map-research-top']],
+        ['data-gachigacha-android-map-controls', carousel ? mapControls : null,
+          ['--gachigacha-android-map-controls-bottom']],
+        ['data-gachigacha-android-map-status', mapStatus, []],
+        ['data-gachigacha-android-location-error', mapControls?.querySelector('p[role="alert"]'), []],
+      ];
+      layoutTargets.forEach(([marker, target, properties]) => markLayoutTarget(marker, target, properties));
+      observeLayout('__gachigachaAndroidMapLayoutObservation',
+        [mapTabs, storeListArea, carousel, mapHeader, searchEntry, listButton].filter(Boolean));
+      if (!map) return;
+
+      if (searchLayer) {
+        // Match the web's current horizontal inset, not a device/status-bar size.
+        const edge = parseFloat(window.getComputedStyle(searchLayer).paddingLeft) || 12;
+        searchLayer.style.setProperty('--gachigacha-android-map-edge', edge + 'px');
+      }
       if (mapTabs && storeListArea) {
         // Measure AFTER removing the web inset; native SafeAreaView owns it.
-        mapTabs.setAttribute('data-gachigacha-android-map-tabs', '');
-        storeListArea.setAttribute('data-gachigacha-android-map-list-area', '');
         const containingBlock = storeListArea.offsetParent || resultsSection;
         // Preserve the web's 21px gap (78px offset - 57px default tab bar),
         // while allowing the actual tab height to grow with font/display size.
@@ -696,44 +790,49 @@ function createWebShellRuntimeBody(): string {
       }
 
       const mapRect = map.getBoundingClientRect();
-      const headerRect = mapHeader?.getBoundingClientRect();
-      const appHeader = document
+      const searchRect = searchLayer ? searchEntry.getBoundingClientRect() : null;
+      const legacyHeader = document
         .querySelector('[data-header-search-slot]')
         ?.closest('header');
-      const appHeaderRect = appHeader?.getBoundingClientRect();
+      const appHeaderRect = (appHeader || legacyHeader)?.getBoundingClientRect();
       const visibleAppHeaderBottom = Math.max(
         mapRect.top,
-        Math.min(appHeaderRect?.bottom || mapRect.top, mapRect.bottom),
+        Math.min(searchRect?.bottom || appHeaderRect?.bottom || mapRect.top, mapRect.bottom),
       );
-      const mapHeaderTop = Math.max(
-        12,
-        Math.round(visibleAppHeaderBottom - mapRect.top + 12),
-      );
+      // Existing list-button -> carousel spacing is the shared overlay rhythm.
+      const overlayGap = parseFloat(listButton && window.getComputedStyle(listButton).marginBottom) || 10;
+      const headerBlockRect = (mapHeader?.offsetParent || resultsSection).getBoundingClientRect();
       if (mapHeader instanceof HTMLElement) {
         mapHeader.style.setProperty(
           '--gachigacha-android-map-header-top',
-          mapHeaderTop + 'px',
+          Math.max(overlayGap, visibleAppHeaderBottom - headerBlockRect.top + overlayGap) + 'px',
         );
+        if (selectedHeader && searchRect) {
+          selectedHeader.style.setProperty('--gachigacha-android-map-summary-left',
+            Math.max(0, searchRect.left - headerBlockRect.left) + 'px');
+          selectedHeader.style.setProperty('--gachigacha-android-map-summary-right',
+            Math.max(0, headerBlockRect.right - searchRect.right) + 'px');
+        }
       }
-      if (researchButton && headerRect && headerRect.height > 0) {
-        const researchTop = Math.max(
-          12,
-          Math.round(mapHeaderTop + headerRect.height + 10),
-        );
+      // Read after width/position writes: long names and accessibility text can
+      // change summary height. CSS transitions are observed again at completion.
+      const headerRect = mapHeader?.getBoundingClientRect();
+      if (researchButton) {
+        const researchBlock = researchButton.offsetParent || map;
+        const precedingBottom = headerRect?.height > 0 ? headerRect.bottom : visibleAppHeaderBottom;
         researchButton.style.setProperty(
           '--gachigacha-android-map-research-top',
-          researchTop + 'px',
+          Math.max(overlayGap, precedingBottom - researchBlock.getBoundingClientRect().top + overlayGap) + 'px',
         );
       }
 
-      // The current web hides MobileStatusRow. Use the visible carousel/state
-      // area instead, including loading, empty and error cards of varying height.
-      const statusRect = (storeListArea || mapStatus)?.getBoundingClientRect();
+      const statusRect = (carousel || mapStatus)?.getBoundingClientRect();
       if (mapControls && statusRect && statusRect.height > 0) {
         mapControls.setAttribute('data-gachigacha-android-map-controls', '');
+        const controlsBlock = mapControls.offsetParent || map;
         const controlsBottom = Math.max(
-          12,
-          Math.round(mapRect.bottom - statusRect.top + 10),
+          overlayGap,
+          Math.round(controlsBlock.getBoundingClientRect().bottom - statusRect.top + overlayGap),
         );
         mapControls.style.setProperty(
           '--gachigacha-android-map-controls-bottom',
@@ -750,6 +849,7 @@ function createWebShellRuntimeBody(): string {
       markAppleLogin();
       markProfileImages();
       markChatPresentation();
+      markTabPresentation();
       markMapOverlays();
       markTradeFormPresentation();
     };
