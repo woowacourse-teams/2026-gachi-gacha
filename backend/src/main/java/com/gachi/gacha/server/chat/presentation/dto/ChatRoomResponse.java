@@ -32,7 +32,8 @@ public record ChatRoomResponse(
             Long tradeId,
             String title,
             @Nullable String thumbnailUrl,
-            TradeStatus status
+            TradeStatus status,
+            boolean deleted
     ) {
 
         private static TradeSummaryResponse from(final ChatRoomInfo.TradeSummary info) {
@@ -41,6 +42,7 @@ public record ChatRoomResponse(
                     .title(info.title())
                     .thumbnailUrl(info.thumbnailUrl())
                     .status(info.status())
+                    .deleted(info.deleted())
                     .build();
         }
     }
