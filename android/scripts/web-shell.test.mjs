@@ -245,7 +245,11 @@ test('세션 주입 스크립트는 토큰을 저장하고 HTML 종료 문자열
   assert.match(runtimeScript, /data-gachigacha-android-map-controls/);
   assert.match(runtimeScript, /data-gachigacha-android-map-status/);
   assert.match(runtimeScript, /data-gachigacha-android-map-list-area/);
-  assert.match(runtimeScript, /현재 지원 지역/);
+  // The supported-area notice is located structurally, not by stale copy.
+  assert.match(runtimeScript, /resultsSection\.querySelectorAll\('aside'\)/);
+  assert.doesNotMatch(runtimeScript, /textContent\?\.includes\('현재 지원 지역'\)/);
+  assert.match(runtimeScript, /data-gachigacha-android-tabs/);
+  assert.match(runtimeScript, /data-gachigacha-android-create-trade/);
   assert.match(runtimeScript, /--gachigacha-android-map-research-top/);
   assert.match(runtimeScript, /--gachigacha-android-map-controls-bottom/);
   assert.match(runtimeScript, /gachigacha-android-dismiss-location-error/);
