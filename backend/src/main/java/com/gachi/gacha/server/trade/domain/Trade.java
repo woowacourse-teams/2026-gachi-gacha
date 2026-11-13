@@ -27,10 +27,14 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@SQLDelete(sql = "UPDATE trade SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
+@SQLRestriction("is_deleted = false")
 public class Trade extends BaseTimeEntity {
 
     @Id
@@ -76,6 +80,14 @@ public class Trade extends BaseTimeEntity {
 
     @OneToMany(mappedBy = "trade", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TradeCategory> tradeCategories = new ArrayList<>();
+
+    /**
+     * 채팅방이 게시글을 참조하고, 채팅 내역은 신고·분쟁 대응을 위해 남겨야 하므로 행을 지우지 않고 삭제 표시만 한다.
+     */
+    @Column(nullable = false)
+    private boolean isDeleted = false;
+
+    private LocalDateTime deletedAt;
 
     @Builder
     private Trade(
