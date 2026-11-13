@@ -11,11 +11,13 @@ import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
+import com.gachi.gacha.server.chat.domain.exception.ChatTradeDeletedException;
 import com.gachi.gacha.server.chat.domain.exception.InvalidReadSequenceException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.common.exception.InvalidPageRequestException;
 import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
+import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,7 @@ public class ChatMessageService {
     private final ChatMessageMongoRepository chatMessageMongoRepository;
     private final MemberBlockService memberBlockService;
     private final MemberJpaRepository memberJpaRepository;
+    private final TradeJpaRepository tradeJpaRepository;
     private final ApplicationEventPublisher publisher;
 
     public ChatMessagePageInfo getMessages(
@@ -116,6 +119,7 @@ public class ChatMessageService {
 
         ChatRoom chatRoom = chatRoomJpaRepository.getByIdForUpdate(roomId);
         ChatRoomMember sender = chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, senderId);
+        validateTradeNotDeleted(chatRoom);
         List<Long> receiverIds = findReceiverIds(roomId, senderId);
         validateNotBlockedWithReceivers(senderId, receiverIds);
         validateReceiversActive(receiverIds);
@@ -137,6 +141,16 @@ public class ChatMessageService {
                 .stream()
                 .filter(memberId -> !memberId.equals(senderId))
                 .toList();
+    }
+
+    /**
+     * 게시글이 삭제돼도 채팅방은 내역 확인용으로 남기지만, 새 메시지는 받지 않는다.
+     * existsById는 Trade의 SQLRestriction이 적용되므로 삭제된 게시글이면 false를 반환한다.
+     */
+    private void validateTradeNotDeleted(final ChatRoom chatRoom) {
+        if (!tradeJpaRepository.existsById(chatRoom.getTradeId())) {
+            throw new ChatTradeDeletedException(ErrorCode.CHAT_TRADE_DELETED);
+        }
     }
 
     /**
