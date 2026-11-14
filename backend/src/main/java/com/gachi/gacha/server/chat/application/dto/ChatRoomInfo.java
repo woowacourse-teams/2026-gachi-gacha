@@ -2,7 +2,7 @@ package com.gachi.gacha.server.chat.application.dto;
 
 import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatMemberSummary;
-import com.gachi.gacha.server.trade.domain.Trade;
+import com.gachi.gacha.server.chat.domain.ChatTradeSummary;
 import com.gachi.gacha.server.trade.domain.TradeStatus;
 import java.time.LocalDateTime;
 import lombok.Builder;
@@ -21,16 +21,17 @@ public record ChatRoomInfo(
 
     public static ChatRoomInfo of(
             final ChatRoom chatRoom,
-            final Trade trade,
+            final ChatTradeSummary trade,
             @Nullable final String tradeThumbnailUrl,
             final ChatMemberSummary otherMember,
             final long unreadCount
     ) {
         TradeSummary tradeSummary = TradeSummary.builder()
-                .tradeId(trade.getId())
+                .tradeId(trade.getTradeId())
                 .title(trade.getTitle())
                 .thumbnailUrl(tradeThumbnailUrl)
-                .status(trade.getStatus())
+                .status(TradeStatus.valueOf(trade.getStatus()))
+                .deleted(trade.isRemoved())
                 .build();
 
         boolean withdrawn = otherMember.isWithdrawn();
@@ -68,7 +69,8 @@ public record ChatRoomInfo(
             Long tradeId,
             String title,
             @Nullable String thumbnailUrl,
-            TradeStatus status
+            TradeStatus status,
+            boolean deleted
     ) {
 
     }

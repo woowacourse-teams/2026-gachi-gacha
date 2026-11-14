@@ -21,12 +21,14 @@ import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
 import com.gachi.gacha.server.chat.domain.MessageType;
 import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAccessDeniedException;
+import com.gachi.gacha.server.chat.domain.exception.ChatTradeDeletedException;
 import com.gachi.gacha.server.chat.domain.exception.InvalidChatMessageException;
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.exception.BlockedChatNotAllowedException;
+import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -61,6 +63,9 @@ class ChatMessageServiceTest {
     private MemberJpaRepository memberJpaRepository;
 
     @Mock
+    private TradeJpaRepository tradeJpaRepository;
+
+    @Mock
     private ApplicationEventPublisher publisher;
 
     @InjectMocks
@@ -82,6 +87,7 @@ class ChatMessageServiceTest {
     private void givenRoomAndSender() {
         given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
         given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+        given(tradeJpaRepository.existsById(chatRoom.getTradeId())).willReturn(true);
         given(chatMessageMongoRepository.save(any(ChatMessage.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
     }
@@ -155,6 +161,7 @@ class ChatMessageServiceTest {
         void sendMessage_blockedReceiver() {
             given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
             given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(tradeJpaRepository.existsById(chatRoom.getTradeId())).willReturn(true);
             given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
                     .willReturn(List.of(SENDER_ID, RECEIVER_ID));
             doThrow(new BlockedChatNotAllowedException(ErrorCode.BLOCKED_CHAT_NOT_ALLOWED))
@@ -174,12 +181,29 @@ class ChatMessageServiceTest {
         void sendMessage_withdrawnReceiver() {
             given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
             given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(tradeJpaRepository.existsById(chatRoom.getTradeId())).willReturn(true);
             given(chatRoomMemberJpaRepository.findMemberIdsByRoomId(ROOM_ID))
                     .willReturn(List.of(SENDER_ID, RECEIVER_ID));
             given(memberJpaRepository.existsById(RECEIVER_ID)).willReturn(false);
 
             assertThatThrownBy(() -> chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요")))
                     .isInstanceOf(ChatPartnerWithdrawnException.class);
+
+            verify(chatMessageMongoRepository, never()).save(any());
+            verify(publisher, never()).publishEvent(any(Object.class));
+            assertThat(chatRoom.getLastMessageSequence()).isZero();
+            assertThat(sender.getLastReadMessageSequence()).isZero();
+        }
+
+        @Test
+        @DisplayName("게시글이 삭제됐으면 메시지를 저장하지 않고 sequence도 증가하지 않는다")
+        void sendMessage_deletedTrade() {
+            given(chatRoomJpaRepository.getByIdForUpdate(ROOM_ID)).willReturn(chatRoom);
+            given(chatRoomMemberJpaRepository.getByRoomIdAndMemberId(ROOM_ID, SENDER_ID)).willReturn(sender);
+            given(tradeJpaRepository.existsById(chatRoom.getTradeId())).willReturn(false);
+
+            assertThatThrownBy(() -> chatMessageService.sendMessage(SENDER_ID, ROOM_ID, textCommand("안녕하세요")))
+                    .isInstanceOf(ChatTradeDeletedException.class);
 
             verify(chatMessageMongoRepository, never()).save(any());
             verify(publisher, never()).publishEvent(any(Object.class));

@@ -151,6 +151,46 @@ class ChatRoomServiceTest {
     }
 
     @Nested
+    @DisplayName("삭제된 게시글의 채팅방 조회")
+    class GetRoomsWithDeletedTrade {
+
+        @Test
+        @DisplayName("게시글이 삭제돼도 채팅방은 목록과 상세에 남고 삭제 여부를 표시한다")
+        void getRoomsAndRoom_includeDeletedTrade() {
+            Long deletedTradeRoomId = createRoom(requester, owner);
+            Long activeTradeRoomId = createRoom(requester, otherOwner);
+            Long requesterId = requester.getId();
+            Long deletedTradeId = chatRoomJpaRepository.getById(deletedTradeRoomId).getTradeId();
+            entityManager.flush();
+            entityManager.clear();
+            tradeJpaRepository.delete(tradeJpaRepository.getById(deletedTradeId));
+            tradeJpaRepository.flush();
+            entityManager.clear();
+
+            List<ChatRoomInfo> rooms = chatRoomService.getRooms(requesterId);
+            assertThat(rooms)
+                    .extracting(ChatRoomInfo::roomId)
+                    .containsExactlyInAnyOrder(activeTradeRoomId, deletedTradeRoomId);
+            assertThat(rooms)
+                    .filteredOn(room -> room.roomId().equals(deletedTradeRoomId))
+                    .singleElement()
+                    .satisfies(room -> {
+                        assertThat(room.trade().tradeId()).isEqualTo(deletedTradeId);
+                        assertThat(room.trade().title()).isEqualTo("교환 게시글");
+                        assertThat(room.trade().deleted()).isTrue();
+                    });
+            assertThat(rooms)
+                    .filteredOn(room -> room.roomId().equals(activeTradeRoomId))
+                    .singleElement()
+                    .satisfies(room -> assertThat(room.trade().deleted()).isFalse());
+
+            ChatRoomInfo deletedTradeRoom = chatRoomService.getRoom(requesterId, deletedTradeRoomId);
+            assertThat(deletedTradeRoom.trade().tradeId()).isEqualTo(deletedTradeId);
+            assertThat(deletedTradeRoom.trade().deleted()).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("차단 관계의 채팅방 목록 조회")
     class GetRoomsWithBlock {
 
