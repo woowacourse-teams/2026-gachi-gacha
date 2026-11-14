@@ -8,7 +8,7 @@ interface GetCategoryGachaPageParams {
   signal: AbortSignal;
 }
 
-const CATEGORY_GACHA_PAGE_SIZE = 12;
+const CATEGORY_GACHA_PAGE_SIZE = 15;
 
 export async function getCategoryGachaPage({
   categoryId,

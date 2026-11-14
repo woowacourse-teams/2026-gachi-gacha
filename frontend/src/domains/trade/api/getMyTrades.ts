@@ -6,17 +6,22 @@ import { parseTradeSummaryPageResponse } from './parseTradeSummaryPageResponse';
 const JSON_CONTENT_TYPE = 'application/json';
 
 export interface GetMyTradesOptions {
+  page?: number;
   size?: number;
   status?: TradeStatus;
   signal?: AbortSignal;
 }
 
 export async function getMyTrades({
+  page = 0,
   size = 3,
   status,
   signal,
 }: GetMyTradesOptions = {}): Promise<TradeSummaryPage> {
-  const searchParams = new URLSearchParams({ size: String(size) });
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    size: String(size),
+  });
 
   if (status) {
     searchParams.set('status', status);

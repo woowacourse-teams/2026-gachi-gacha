@@ -94,6 +94,14 @@ public class OauthService {
         }
     }
 
+    public MemberDeleteResult withdrawWithoutReauth(final Long memberId) {
+        Member member = memberJpaRepository.getMemberById(memberId);
+        if (member.getOauthId().getOauthProvider() == OauthProviderType.APPLE) {
+            throw new InvalidOauthStateException(ErrorCode.INVALID_OAUTH_STATE);
+        }
+        return memberService.removeMember(memberId);
+    }
+
     public void withdraw(final Long memberId, final String authCode, final String nonce) {
         Member member = memberJpaRepository.getMemberById(memberId);
         OauthId oauthId = member.getOauthId();

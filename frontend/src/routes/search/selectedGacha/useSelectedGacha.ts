@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
+import { isApiResponseParseError } from '@/shared/api/ApiResponseParseError';
+import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 import type { AsyncState } from '@/shared/hooks/asyncStateType';
 
 import { getGachaProductSummary } from '../api/getGachaProductSummary';
@@ -44,6 +46,10 @@ async function loadSelectedGacha(
 
     return { status: 'success', data, errorMessage: null };
   } catch (error: unknown) {
+    if (isApiResponseParseError(error)) {
+      captureCoreFeatureFailure('gacha_response_parsing');
+    }
+
     return {
       status: 'error',
       data: null,

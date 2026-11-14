@@ -389,7 +389,7 @@ export const CardTitle = styled.h2`
   line-height: ${lineHeight.heading};
 `;
 
-export const CardLink = styled.a`
+export const CardLink = styled(Link)`
   color: ${color.primary};
   font-size: ${fontSize.bodySmall};
   font-weight: ${fontWeight.bold};

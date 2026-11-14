@@ -1,12 +1,17 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it } from '@jest/globals';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
+import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
 import { TradeRoute } from './route';
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
 
 function createTradePage(keyword: string | null) {
   const content = keyword
@@ -89,6 +94,32 @@ function createPaginatedTradePage(page: number) {
 }
 
 describe('교환 게시글 검색', () => {
+  it('로컬 차단 상태에 있는 작성자의 이미 로드된 게시글을 숨긴다', async () => {
+    window.localStorage.setItem(
+      'gachi-gacha:blocked-member-ids:v1',
+      JSON.stringify([4]),
+    );
+    server.use(
+      http.get('/api/v1/trades', () =>
+        HttpResponse.json(createTradePage(null)),
+      ),
+    );
+
+    renderWithProviders(
+      <MemberBlockProvider>
+        <TradeRoute />
+      </MemberBlockProvider>,
+      { route: '/trade' },
+    );
+
+    expect(
+      await screen.findByText('아직 등록된 교환 게시글이 없어요.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: '최신 교환 게시글' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('검색 URL의 검색어를 API에 전달하고 MSW 응답 게시글을 보여준다', async () => {
     const requestedUrls: URL[] = [];
 

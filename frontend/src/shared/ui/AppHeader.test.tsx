@@ -1,12 +1,24 @@
-import { describe, expect, it } from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
 
 import { AppHeader } from './AppHeader';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
 
 describe('AppHeader', () => {
   it('비로그인 상태에서는 거래/교환, 지도, 검색, 로그인만 노출한다', () => {
@@ -24,7 +36,7 @@ describe('AppHeader', () => {
       screen.queryByRole('link', { name: '채팅' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('link', { name: '알림' }),
+      screen.queryByRole('button', { name: '알림' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: '로그인' })).toBeInTheDocument();
   });
@@ -92,12 +104,108 @@ describe('AppHeader', () => {
       'href',
       '/chat',
     );
-    expect(screen.getByRole('link', { name: '알림' })).toHaveAttribute(
-      'href',
-      '/notifications',
+    expect(screen.getByRole('button', { name: '알림' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
     expect(
       screen.queryByRole('link', { name: '로그인' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('알림 아이콘을 누르면 팝오버를 열고 다시 누르면 닫는다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(
+      <AppHeader
+        currentPath="/trade"
+        notificationState={{
+          status: 'success',
+          data: [
+            {
+              id: 'comment-1',
+              type: 'comment',
+              title: '새 댓글이 달렸어요',
+              message: '가챠친구: 교환이 가능한지 물어봤어요.',
+              createdAtLabel: '방금 전',
+              isRead: false,
+              destination: '/trade/7',
+            },
+          ],
+          errorMessage: null,
+        }}
+      />,
+      { initialAccessToken: 'access-token' },
+    );
+
+    const notificationButton = await screen.findByRole('button', {
+      name: '알림, 읽지 않은 알림 1개',
+    });
+
+    await user.click(notificationButton);
+
+    expect(screen.getByRole('dialog', { name: '알림' })).toBeInTheDocument();
+    expect(notificationButton).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(notificationButton);
+
+    expect(
+      screen.queryByRole('dialog', { name: '알림' }),
+    ).not.toBeInTheDocument();
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledTimes(1);
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'notification_popover_opened',
+      { unread_count: 1 },
+    );
+  });
+
+  it('Escape로 팝오버를 닫으면 알림 버튼으로 포커스를 돌려준다', async () => {
+    const user = userEvent.setup();
+
+    server.use(
+      http.get('/api/v1/members/me', () =>
+        HttpResponse.json({
+          code: 'C000',
+          message: '정상',
+          data: {
+            name: '김민지',
+            nickname: '가챠러 민지',
+            profileImageUrl: null,
+            desireTradeLocation: null,
+          },
+        }),
+      ),
+    );
+
+    renderWithProviders(<AppHeader currentPath="/trade" />, {
+      initialAccessToken: 'access-token',
+    });
+
+    const notificationButton = await screen.findByRole('button', {
+      name: '알림',
+    });
+    await user.click(notificationButton);
+    await user.tab();
+    await user.keyboard('{Escape}');
+
+    expect(
+      screen.queryByRole('dialog', { name: '알림' }),
+    ).not.toBeInTheDocument();
+    expect(notificationButton).toHaveFocus();
   });
 });

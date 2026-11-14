@@ -99,6 +99,19 @@ describe('analyticsClient', () => {
     expect(sanitizedCapture?.properties.$current_url).toBe(
       'https://gachigacha.kro.kr/oauth/login/kakao?campaign=launch',
     );
+
+    const sanitizedHashCapture = config?.before_send?.({
+      uuid: 'redirect-event-id',
+      event: '$pageview',
+      properties: {
+        $current_url:
+          'https://gachigacha.kro.kr/oauth/callback#accessToken=secret&refreshToken=refresh-secret',
+      },
+    });
+
+    expect(sanitizedHashCapture?.properties.$current_url).toBe(
+      'https://gachigacha.kro.kr/oauth/callback',
+    );
   });
 
   it('로그인 회원은 안정적인 회원 식별자로 연결하고 로그아웃 시 초기화한다', async () => {

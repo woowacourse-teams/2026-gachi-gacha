@@ -74,7 +74,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['webpack.config.cjs', '.storybook/main.ts'],
+    files: ['webpack.config.cjs', '.storybook/main.ts', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: globals.node,
     },

@@ -12,9 +12,12 @@ import type { ChatConversation, ChatRoom } from './model/chat';
 interface ChatPageProps {
   conversations: ChatConversation[];
   selectedRoom?: ChatRoom | undefined;
+  roomLoadError?: string;
+  onRetryRoom?: () => void;
   socketStatus?: ChatSocketStatus;
   socketErrorMessage?: string | null;
   onSendMessage?: (content: string) => Promise<void>;
+  onSendImages?: (content: string, images: File[]) => Promise<void>;
   presentation?: 'drawer' | 'modal' | 'split';
   onSelectConversation?: (conversationId: number | null) => void;
   onCloseModal?: () => void;
@@ -23,14 +26,18 @@ interface ChatPageProps {
   previousMessagesError?: string;
   onLoadPreviousMessages?: () => Promise<void>;
   onChangeTradeStatus?: (status: TradeStatus) => Promise<void>;
+  onPartnerBlocked?: () => void;
 }
 
 export default function ChatPage({
   conversations,
   selectedRoom,
+  roomLoadError = '',
+  onRetryRoom,
   socketStatus = 'disconnected',
   socketErrorMessage = null,
   onSendMessage,
+  onSendImages,
   presentation = 'drawer',
   onSelectConversation,
   onCloseModal,
@@ -39,6 +46,7 @@ export default function ChatPage({
   previousMessagesError = '',
   onLoadPreviousMessages,
   onChangeTradeStatus,
+  onPartnerBlocked,
 }: ChatPageProps) {
   if (selectedRoom && presentation === 'modal') {
     return (
@@ -59,11 +67,13 @@ export default function ChatPage({
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
             hasPreviousMessages={hasPreviousMessages}
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
             onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
           />
         </ChatDrawer>
       </ModalLayer>
@@ -101,11 +111,13 @@ export default function ChatPage({
             socketStatus={socketStatus}
             socketErrorMessage={socketErrorMessage}
             onSendMessage={onSendMessage}
+            onSendImages={onSendImages}
             hasPreviousMessages={hasPreviousMessages}
             isLoadingPreviousMessages={isLoadingPreviousMessages}
             previousMessagesError={previousMessagesError}
             onLoadPreviousMessages={onLoadPreviousMessages}
             onChangeTradeStatus={onChangeTradeStatus}
+            onPartnerBlocked={onPartnerBlocked}
           />
         </ChatDrawer>
       </RoomPage>
@@ -115,6 +127,16 @@ export default function ChatPage({
   return (
     <Page>
       <AppGachaSearchHeader currentPath="/chat" />
+      {roomLoadError && (
+        <RoomLoadError role="alert">
+          <span>{roomLoadError} 다른 채팅방은 계속 확인할 수 있어요.</span>
+          {onRetryRoom && (
+            <RetryRoomButton type="button" onClick={onRetryRoom}>
+              다시 시도
+            </RetryRoomButton>
+          )}
+        </RoomLoadError>
+      )}
       <Main $hasSelectedRoom={Boolean(selectedRoom)}>
         <ConversationList
           conversations={conversations}
@@ -131,11 +153,13 @@ export default function ChatPage({
           socketStatus={socketStatus}
           socketErrorMessage={socketErrorMessage}
           onSendMessage={onSendMessage}
+          onSendImages={onSendImages}
           hasPreviousMessages={hasPreviousMessages}
           isLoadingPreviousMessages={isLoadingPreviousMessages}
           previousMessagesError={previousMessagesError}
           onLoadPreviousMessages={onLoadPreviousMessages}
           onChangeTradeStatus={onChangeTradeStatus}
+          onPartnerBlocked={onPartnerBlocked}
         />
       </Main>
     </Page>
@@ -145,6 +169,31 @@ export default function ChatPage({
 const Page = styled.div`
   min-height: 100dvh;
   background: #f7f5f6;
+`;
+
+const RoomLoadError = styled.div`
+  display: flex;
+  width: min(100% - 32px, 1320px);
+  margin: 24px auto 0;
+  padding: 14px 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #f4b9c8;
+  border-radius: 12px;
+  background: #fff6f8;
+  color: #a41d42;
+`;
+
+const RetryRoomButton = styled.button`
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
 `;
 
 const RoomPage = styled(Page)`

@@ -1,9 +1,21 @@
-import { describe, expect, it } from '@jest/globals';
-import { screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { fireEvent, screen } from '@testing-library/react';
 
+import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { renderWithProviders } from '@/test/renderWithProviders';
 
 import { UpdatesRoute } from './route';
+
+jest.mock('@/shared/analytics/analyticsClient', () => ({
+  captureAnalyticsEvent: jest.fn(),
+  syncAnalyticsUser: jest.fn(),
+}));
+
+const mockedCaptureAnalyticsEvent = jest.mocked(captureAnalyticsEvent);
+
+beforeEach(() => {
+  mockedCaptureAnalyticsEvent.mockReset();
+});
 
 describe('UpdatesRoute', () => {
   it('운영에 공개된 서비스 버전을 최신순으로 안내한다', () => {
@@ -15,10 +27,12 @@ describe('UpdatesRoute', () => {
     expect(screen.getByText('최신 공개 버전')).toBeInTheDocument();
 
     const versionLabels = screen
-      .getAllByText(/^v1\.[0-4]\.0$/)
+      .getAllByText(/^v1\.[0-6]\.0$/)
       .map((element) => element.textContent);
 
     expect(versionLabels).toEqual([
+      'v1.6.0',
+      'v1.5.0',
       'v1.4.0',
       'v1.3.0',
       'v1.2.0',
@@ -27,6 +41,28 @@ describe('UpdatesRoute', () => {
     ]);
     expect(
       screen.getAllByRole('link', { name: '전체 변경 기록 보기' }),
-    ).toHaveLength(5);
+    ).toHaveLength(7);
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'updates_page_viewed',
+      {
+        latest_visible_version: 'v1.6.0',
+        release_count: 7,
+      },
+    );
+
+    const latestReleaseLink = screen.getAllByRole('link', {
+      name: '전체 변경 기록 보기',
+    })[0];
+
+    expect(latestReleaseLink).toBeDefined();
+    fireEvent.click(latestReleaseLink!);
+
+    expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
+      'release_notes_selected',
+      {
+        version: 'v1.6.0',
+        is_latest: true,
+      },
+    );
   });
 });

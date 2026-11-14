@@ -1,3 +1,5 @@
+import { optionallyAuthenticatedFetch } from '@/features/auth/api/authenticatedFetch';
+
 import type { TradeDetail } from '../tradeDetailType';
 import { parseTradeDetailResponse } from './parseTradeDetailResponse';
 
@@ -11,9 +13,12 @@ export async function getTradeDetail(
     throw new Error('올바른 교환 게시글 ID가 필요합니다.');
   }
 
-  const response = await fetch(`/api/v1/trades/${tradeId}`, {
-    signal: signal ?? null,
-  });
+  const response = await optionallyAuthenticatedFetch(
+    `/api/v1/trades/${tradeId}`,
+    {
+      signal: signal ?? null,
+    },
+  );
   const contentType = response.headers.get('content-type');
 
   if (!contentType?.includes(JSON_CONTENT_TYPE)) {

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gachigacha.kro.kr/sitemap.xml

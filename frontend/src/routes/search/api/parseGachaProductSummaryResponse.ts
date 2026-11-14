@@ -1,4 +1,5 @@
 import type { GachaProductSummary } from '@/domains/product/gachaProductType';
+import { ApiResponseParseError } from '@/shared/api/ApiResponseParseError';
 import { isApiResponse } from '@/shared/api/isApiResponse';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -23,7 +24,9 @@ export function parseGachaProductSummaryResponse(
   value: unknown,
 ): GachaProductSummary {
   if (!isApiResponse(value)) {
-    throw new Error('백엔드 공통 응답 형식이 올바르지 않습니다.');
+    throw new ApiResponseParseError(
+      '백엔드 공통 응답 형식이 올바르지 않습니다.',
+    );
   }
 
   if (value.code !== 'C000') {
@@ -31,7 +34,7 @@ export function parseGachaProductSummaryResponse(
   }
 
   if (!isGachaProductSummary(value.data)) {
-    throw new Error('가챠 응답 형식이 올바르지 않습니다.');
+    throw new ApiResponseParseError('가챠 응답 형식이 올바르지 않습니다.');
   }
 
   const { gachaId, name, thumbnailUrl, categories } = value.data;

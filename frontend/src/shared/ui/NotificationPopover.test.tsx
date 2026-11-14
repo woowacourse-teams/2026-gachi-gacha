@@ -1,0 +1,117 @@
+import { describe, expect, it, jest } from '@jest/globals';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router';
+
+import {
+  type HeaderNotification,
+  NotificationPopover,
+} from './NotificationPopover';
+
+const notifications: readonly HeaderNotification[] = [
+  {
+    id: 'notification-1',
+    type: 'comment',
+    title: '새 댓글이 달렸어요',
+    message: '가챠친구: 쿠로미 키링 교환이 가능한지 물어봤어요.',
+    createdAtLabel: '방금 전',
+    isRead: false,
+    destination: '/trade/7',
+  },
+  {
+    id: 'notification-comment-1',
+    type: 'comment',
+    title: '내 교환글에 새 댓글이 달렸어요',
+    message: '저도 교환 원해요.',
+    createdAtLabel: '5분 전',
+    isRead: false,
+    destination: '/trade/12',
+  },
+];
+
+function renderPopover(
+  notificationState: Parameters<
+    typeof NotificationPopover
+  >[0]['notificationState'],
+  overrides: Partial<Parameters<typeof NotificationPopover>[0]> = {},
+) {
+  return render(
+    <MemoryRouter>
+      <NotificationPopover
+        id="notification-popover"
+        titleId="notification-title"
+        notificationState={notificationState}
+        onClose={() => undefined}
+        {...overrides}
+      />
+    </MemoryRouter>,
+  );
+}
+
+describe('NotificationPopover', () => {
+  it('최근 알림의 읽음 상태와 내용을 표시한다', () => {
+    renderPopover({
+      status: 'success',
+      data: notifications,
+      errorMessage: null,
+    });
+
+    expect(screen.getByRole('dialog', { name: '알림' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: /댓글 방금 전 새 댓글이 달렸어요/,
+      }),
+    ).toHaveAttribute('href', '/trade/7');
+    expect(
+      screen.getByRole('link', {
+        name: /댓글 5분 전 내 교환글에 새 댓글이 달렸어요/,
+      }),
+    ).toHaveAttribute('href', '/trade/12');
+    expect(screen.queryByText('💬')).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '모든 알림 보기' }),
+    ).toHaveAttribute('href', '/notifications');
+  });
+
+  it('알림이 없으면 빈 상태를 표시한다', () => {
+    renderPopover({ status: 'success', data: [], errorMessage: null });
+
+    expect(screen.getByText('새로운 알림이 없어요')).toBeInTheDocument();
+  });
+
+  it('조회 실패 상태에서 다시 시도할 수 있다', async () => {
+    const user = userEvent.setup();
+    const onRetry = jest.fn();
+
+    renderPopover(
+      {
+        status: 'error',
+        data: null,
+        errorMessage: '알림을 불러오지 못했어요.',
+      },
+      { onRetry },
+    );
+
+    await user.click(screen.getByRole('button', { name: '다시 시도' }));
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
+  it('알림을 선택하면 선택 이벤트를 알리고 팝오버를 닫는다', async () => {
+    const user = userEvent.setup();
+    const onClose = jest.fn();
+    const onNotificationSelect = jest.fn();
+
+    renderPopover(
+      { status: 'success', data: notifications, errorMessage: null },
+      { onClose, onNotificationSelect },
+    );
+
+    await user.click(
+      screen.getAllByRole('link', { name: /새 댓글이 달렸어요/ })[0]!,
+    );
+
+    expect(onNotificationSelect).toHaveBeenCalledWith(notifications[0]);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

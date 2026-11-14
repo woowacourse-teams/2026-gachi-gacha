@@ -72,7 +72,7 @@ describe('TradeEditRoute', () => {
     expect(screen.getByRole('textbox', { name: /설명/ })).toHaveValue(
       TRADE_DETAIL.description,
     );
-    expect(screen.getByRole('textbox', { name: /거래 희망 상품/ })).toHaveValue(
+    expect(screen.getByRole('textbox', { name: /얻고 싶은 상품/ })).toHaveValue(
       TRADE_DETAIL.desiredProduction,
     );
     expect(

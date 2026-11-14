@@ -30,8 +30,14 @@ export interface PhotoViewerProps {
   closeLabel: string;
   onClose: () => void;
   onImageError?: (imageUrl: string) => void;
-  onActiveIndexChange?: (index: number) => void;
+  onActiveIndexChange?: (
+    index: number,
+    source: PhotoViewerNavigationSource,
+  ) => void;
 }
+
+export type PhotoViewerNavigationSource =
+  'initial' | 'previous_button' | 'next_button' | 'thumbnail' | 'scroll';
 
 export function PhotoViewer({
   imageUrls,
@@ -50,18 +56,28 @@ export function PhotoViewer({
   const railRef = useRef<HTMLDivElement>(null);
   const thumbnailListRef = useRef<HTMLDivElement>(null);
   const pendingIndexRef = useRef<number | null>(null);
+  const activeIndexRef = useRef(initialIndex);
   const [activeIndex, setActiveIndex] = useState(initialIndex);
 
   const updateIndex = useCallback(
-    (index: number) => {
+    (index: number, source: PhotoViewerNavigationSource) => {
+      if (source !== 'initial' && activeIndexRef.current === index) {
+        return;
+      }
+
+      activeIndexRef.current = index;
       setActiveIndex(index);
-      onActiveIndexChange?.(index);
+      onActiveIndexChange?.(index, source);
     },
     [onActiveIndexChange],
   );
 
   const moveTo = useCallback(
-    (index: number, behavior: ScrollBehavior = 'smooth') => {
+    (
+      index: number,
+      behavior: ScrollBehavior = 'smooth',
+      source: PhotoViewerNavigationSource = 'thumbnail',
+    ) => {
       const rail = railRef.current;
 
       if (!rail || index < 0 || index >= imageUrls.length) {
@@ -76,7 +92,7 @@ export function PhotoViewer({
         rail.scrollLeft = rail.clientWidth * index;
       }
 
-      updateIndex(index);
+      updateIndex(index, source);
     },
     [imageUrls.length, updateIndex],
   );
@@ -87,7 +103,7 @@ export function PhotoViewer({
 
     document.body.style.overflow = 'hidden';
     closeButtonRef.current?.focus();
-    window.requestAnimationFrame(() => moveTo(initialIndex, 'auto'));
+    window.requestAnimationFrame(() => moveTo(initialIndex, 'auto', 'initial'));
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -169,7 +185,7 @@ export function PhotoViewer({
     const nextIndex = Math.round(rail.scrollLeft / rail.clientWidth);
 
     if (nextIndex >= 0 && nextIndex < imageUrls.length) {
-      updateIndex(nextIndex);
+      updateIndex(nextIndex, 'scroll');
     }
   }
 
@@ -234,7 +250,7 @@ export function PhotoViewer({
             type="button"
             aria-label="이전 사진"
             disabled={activeIndex === 0}
-            onClick={() => moveTo(activeIndex - 1)}
+            onClick={() => moveTo(activeIndex - 1, 'smooth', 'previous_button')}
           >
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="m12 5-5 5 5 5" />
@@ -245,7 +261,7 @@ export function PhotoViewer({
             type="button"
             aria-label="다음 사진"
             disabled={activeIndex === imageUrls.length - 1}
-            onClick={() => moveTo(activeIndex + 1)}
+            onClick={() => moveTo(activeIndex + 1, 'smooth', 'next_button')}
           >
             <svg viewBox="0 0 20 20" aria-hidden="true">
               <path d="m8 5 5 5-5 5" />
@@ -261,7 +277,7 @@ export function PhotoViewer({
               type="button"
               aria-label={`${index + 1}번째 사진 보기`}
               aria-current={activeIndex === index ? 'true' : undefined}
-              onClick={() => moveTo(index)}
+              onClick={() => moveTo(index, 'smooth', 'thumbnail')}
             >
               <LogoImagePlaceholder />
               <ThumbnailPhoto
