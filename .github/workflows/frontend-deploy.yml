@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - frontend-dev
+    paths:
+      - "frontend/**"
+      - "!frontend/**/AGENTS.md"
 
 permissions:
   contents: read
