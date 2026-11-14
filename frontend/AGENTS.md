@@ -1,13 +1,16 @@
-# GachiGacha contribution rules
+# GachiGacha frontend contribution rules
 
-These rules apply to every agent working in this repository.
+These rules apply to frontend work in this directory, not to agents working on backend or other areas of the shared repository.
 
 ## Scope and safety
 
-- Work only in `frontend/`, `android/`, or repository-level documentation and workflow files required by an authorized frontend or Android task.
+- Work only in `frontend/` or repository-level documentation and workflow files required by an authorized frontend task.
 - Never modify `backend/`, create commits for backend code, or comment on/review backend pull requests.
+- Keep frontend-specific restrictions in `frontend/AGENTS.md`. Never place them in a repository-root `AGENTS.md` or other shared instructions that could constrain backend contributors or their agents.
+- Android tasks follow the separate `android/AGENTS.md` on the `android` branch; do not move those rules into shared repository instructions.
+- Frontend CI/CD automatic triggers must be scoped to `frontend/**` changes and exclude `frontend/**/AGENTS.md`. Backend-only, Android-only, and shared-document/workflow-only changes must not trigger frontend builds or deployments.
 - Do not discard or overwrite another contributor's uncommitted changes. Use an isolated worktree when the current workspace is dirty or on another task.
-- Do not merge into `main` unless the user explicitly requests that specific merge. Frontend feature and fix work targets `frontend-dev`; Android work targets `android`.
+- Do not merge into `main` unless the user explicitly requests that specific merge. Frontend feature and fix work targets `frontend-dev`.
 
 ## Standard workflow
 
@@ -22,6 +25,7 @@ These rules apply to every agent working in this repository.
 
 - For any Sentry setup, implementation, filtering, grouping, alerting, quota, privacy, or incident-triage work, use `$gachigacha-sentry-operations` first.
 - Follow the skill's task-based routing and read only the reference needed for the current Sentry decision. Do not load every Sentry reference by default.
+- `$korean-technical-writing` is opt-in only. Use it only when the user explicitly says `테크니컬 라이팅으로 해줘` or directly invokes the skill. Do not infer activation from ordinary documentation, report, Wiki, Notion, proofreading, or Markdown requests.
 
 ## Naming conventions
 

@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - "frontend/**"
-      - ".github/workflows/frontend-quality.yml"
+      - "!frontend/**/AGENTS.md"
   workflow_dispatch:
 
 permissions:
