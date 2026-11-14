@@ -1,10 +1,10 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.trade.infra;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import com.gachi.gacha.server.common.exception.ErrorCode;
-import com.gachi.gacha.server.trade.application.dto.TradeDocument;
+import com.gachi.gacha.server.trade.infra.dto.TradeDocument;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeImage;
 import com.gachi.gacha.server.trade.domain.TradeImageJpaRepository;
@@ -40,7 +40,7 @@ public class TradeIndexService {
     @Value("${elasticsearch.index.trade}")
     private String INDEX;
 
-    public void indexAll(List<Long> tradeIds) throws IOException {
+    public void indexAll(final List<Long> tradeIds) throws IOException {
         if (tradeIds.isEmpty()) {
             return;
         }

@@ -2,6 +2,7 @@ package com.gachi.gacha.server.notification.domain;
 
 import com.gachi.gacha.server.common.exception.ErrorCode;
 import com.gachi.gacha.server.notification.domain.exception.NotificationNotFoundException;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
@@ -25,13 +26,7 @@ public interface NotificationJpaRepository extends JpaRepository<Notification, L
 
     Optional<Notification> findByIdAndReceiverId(Long id, Long receiverId);
 
-    /**
-     * 남의 알림과 없는 알림을 구분하지 않는다. 다른 회원의 알림 ID가 존재하는지 드러내지 않기 위해서다.
-     */
-    default Notification getByIdAndReceiverId(final Long id, final Long receiverId) {
-        return findByIdAndReceiverId(id, receiverId)
-                .orElseThrow(() -> new NotificationNotFoundException(ErrorCode.NOTIFICATION_NOT_FOUND));
-    }
+    boolean existsByReceiverIdAndTradeIdAndType(Long receiverId, Long tradeId, NotificationType type);
 
     @Modifying(clearAutomatically = true)
     @Query("""
@@ -41,4 +36,14 @@ public interface NotificationJpaRepository extends JpaRepository<Notification, L
               AND notification.isRead = false
             """)
     void readAllByReceiverId(Long receiverId);
+
+    long countByReceiverIdAndTypeAndCreatedAtGreaterThanEqual(Long receiverId, NotificationType type, LocalDateTime createdAt);
+
+    /**
+     * 남의 알림과 없는 알림을 구분하지 않는다. 다른 회원의 알림 ID가 존재하는지 드러내지 않기 위해서다.
+     */
+    default Notification getByIdAndReceiverId(final Long id, final Long receiverId) {
+        return findByIdAndReceiverId(id, receiverId)
+                .orElseThrow(() -> new NotificationNotFoundException(ErrorCode.NOTIFICATION_NOT_FOUND));
+    }
 }

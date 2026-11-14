@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.trade.application.dto;
+package com.gachi.gacha.server.trade.infra.dto;
 
 import com.gachi.gacha.server.category.domain.Category;
 import com.gachi.gacha.server.trade.domain.Trade;

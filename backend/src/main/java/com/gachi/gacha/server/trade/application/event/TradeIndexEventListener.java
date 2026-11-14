@@ -1,6 +1,6 @@
 package com.gachi.gacha.server.trade.application.event;
 
-import com.gachi.gacha.server.trade.application.TradeIndexService;
+import com.gachi.gacha.server.trade.infra.TradeIndexService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
