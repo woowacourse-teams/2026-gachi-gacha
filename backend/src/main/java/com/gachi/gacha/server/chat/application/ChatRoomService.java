@@ -9,6 +9,7 @@ import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
+import com.gachi.gacha.server.chat.domain.ChatTradeSummary;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
 import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
 import com.gachi.gacha.server.chat.domain.exception.ChatRoomAlreadyExistException;
@@ -66,7 +67,7 @@ public class ChatRoomService {
                 .distinct()
                 .toList();
 
-        Map<Long, Trade> tradesById = findTradesById(tradeIds);
+        Map<Long, ChatTradeSummary> tradesById = findTradesIncludingDeleted(tradeIds);
         Map<Long, String> tradeThumbnailUrlsByTradeId =
                 findThumbnailUrlsByTradeId(tradeIds);
 
@@ -99,9 +100,10 @@ public class ChatRoomService {
         ChatMemberSummary otherMember = chatRoomMemberJpaRepository.findOtherMemberIncludingDeleted(roomId, memberId)
                 .orElseThrow(() -> new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
 
-        Trade trade = tradeJpaRepository.getById(chatRoom.getTradeId());
-        String tradeThumbnailUrl = findThumbnailUrlsByTradeId(List.of(trade.getId()))
-                .get(trade.getId());
+        ChatTradeSummary trade = chatRoomJpaRepository.findTradeIncludingDeleted(chatRoom.getTradeId())
+                .orElseThrow(() -> new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND));
+        String tradeThumbnailUrl = findThumbnailUrlsByTradeId(List.of(trade.getTradeId()))
+                .get(trade.getTradeId());
 
         long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
 
@@ -162,12 +164,15 @@ public class ChatRoomService {
         }
     }
 
-    private Map<Long, Trade> findTradesById(final List<Long> tradeIds) {
-        return tradeJpaRepository.findAllById(tradeIds)
+    /**
+     * 게시글이 삭제돼도 채팅 내역은 남기므로, 삭제된 게시글도 함께 조회해 "삭제된 게시글"로 표시할 수 있게 한다.
+     */
+    private Map<Long, ChatTradeSummary> findTradesIncludingDeleted(final List<Long> tradeIds) {
+        return chatRoomJpaRepository.findTradesIncludingDeleted(tradeIds)
                 .stream()
                 .collect(
                         Collectors.toMap(
-                                Trade::getId,
+                                ChatTradeSummary::getTradeId,
                                 Function.identity()
                         )
                 );
@@ -189,7 +194,7 @@ public class ChatRoomService {
     private ChatRoomInfo toChatRoomInfo(
             final ChatRoomMember myChatRoomMember,
             final Map<Long, ChatMemberSummary> otherMembersByRoomId,
-            final Map<Long, Trade> tradesById,
+            final Map<Long, ChatTradeSummary> tradesById,
             final Map<Long, String> tradeThumbnailUrlsByTradeId
     ) {
 
@@ -198,7 +203,7 @@ public class ChatRoomService {
         Long tradeId = chatRoom.getTradeId();
 
         ChatMemberSummary otherMember = findOtherMember(otherMembersByRoomId, chatRoomId);
-        Trade trade = findTrade(tradesById, tradeId);
+        ChatTradeSummary trade = findTrade(tradesById, tradeId);
         String tradeThumbnail = tradeThumbnailUrlsByTradeId.get(tradeId);
         long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
 
@@ -222,8 +227,8 @@ public class ChatRoomService {
         return otherMember;
     }
 
-    private Trade findTrade(final Map<Long, Trade> tradesById, final Long tradeId) {
-        Trade trade = tradesById.get(tradeId);
+    private ChatTradeSummary findTrade(final Map<Long, ChatTradeSummary> tradesById, final Long tradeId) {
+        ChatTradeSummary trade = tradesById.get(tradeId);
         if (trade == null) {
             throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
         }

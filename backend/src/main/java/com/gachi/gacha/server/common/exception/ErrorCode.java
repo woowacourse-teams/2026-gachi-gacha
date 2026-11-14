@@ -64,6 +64,7 @@ public enum ErrorCode {
     INVALID_READ_SEQUENCE(HttpStatus.BAD_REQUEST, "CHE006", "유효하지 않은 읽음 메시지 sequence 입니다"),
     INVALID_CHAT_MESSAGE(HttpStatus.BAD_REQUEST, "CHE007", "유효하지 않은 채팅 메시지입니다."),
     CHAT_PARTNER_WITHDRAWN(HttpStatus.FORBIDDEN, "CHE008", "탈퇴한 사용자와는 채팅할 수 없습니다."),
+    CHAT_TRADE_DELETED(HttpStatus.FORBIDDEN, "CHE009", "삭제된 게시글의 채팅방에는 메시지를 보낼 수 없습니다."),
 
     // Notification
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NTE001", "존재하지 않는 알림입니다."),
