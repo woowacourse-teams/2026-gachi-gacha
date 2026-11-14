@@ -22,6 +22,8 @@ These rules apply to every agent working in this repository.
 
 - For any Sentry setup, implementation, filtering, grouping, alerting, quota, privacy, or incident-triage work, use `$gachigacha-sentry-operations` first.
 - Follow the skill's task-based routing and read only the reference needed for the current Sentry decision. Do not load every Sentry reference by default.
+- For any frontend web accessibility implementation, review, audit, or accessibility test planning, use `$gachigacha-web-accessibility` first.
+- Treat automated checks and the accessibility tree as supporting evidence. Keyboard and screen-reader task completion by a person remains the final acceptance criterion.
 
 ## Naming conventions
 
