@@ -1,8 +1,8 @@
 package com.gachi.gacha.server.favorite.signal.domain;
 
-import com.gachi.gacha.server.common.domain.BaseTimeEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -12,7 +12,10 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+@EntityListeners(AuditingEntityListener.class)
 @Entity
 @Table(
         uniqueConstraints = {
@@ -32,7 +35,7 @@ import java.time.LocalDateTime;
                 )
         }
 )
-public class FavoriteSignal extends BaseTimeEntity {
+public class FavoriteSignal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,6 +60,11 @@ public class FavoriteSignal extends BaseTimeEntity {
 
     private Double weight;
 
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
     public static FavoriteSignal of(
             final Long memberId,
             final FavoriteType favoriteType,
@@ -73,7 +81,7 @@ public class FavoriteSignal extends BaseTimeEntity {
         signal.signalType = signalType;
         signal.signalValue = signalValue;
         signal.weight = weight;
-        signal.setCreatedAt(createdAt);
+        signal.createdAt = createdAt;
         return signal;
     }
 }
