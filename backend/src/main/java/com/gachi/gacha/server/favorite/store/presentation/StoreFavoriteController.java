@@ -2,6 +2,7 @@ package com.gachi.gacha.server.favorite.store.presentation;
 
 import com.gachi.gacha.server.common.auth.resolver.Auth;
 import com.gachi.gacha.server.common.domain.dto.BaseResponse;
+import com.gachi.gacha.server.favorite.store.application.StoreFavoriteFacade;
 import com.gachi.gacha.server.favorite.store.application.StoreFavoriteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class StoreFavoriteController {
 
     private final StoreFavoriteService favoriteService;
+    private final StoreFavoriteFacade favoriteFacade;
 
     @PutMapping("/stores/{storeId}/favorite")
     public ResponseEntity<Void> add(@Auth final Long memberId, @PathVariable final Long storeId) {
-        favoriteService.add(memberId, storeId);
+        favoriteFacade.add(memberId, storeId);
         return BaseResponse.noContent();
     }
 

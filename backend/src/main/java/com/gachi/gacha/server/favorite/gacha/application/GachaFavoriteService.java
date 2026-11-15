@@ -38,6 +38,11 @@ public class GachaFavoriteService {
         publisher.publishEvent(new GachaFavoriteChangedEvent(memberId, gachaId, true));
     }
 
+    @Transactional(readOnly = true)
+    public boolean isFavorite(final Long memberId, final Long gachaId) {
+        return gachaFavoriteJpaRepository.existsByMemberIdAndGachaId(memberId, gachaId);
+    }
+
     @Transactional
     public void remove(final Long memberId, final Long gachaId) {
         int deleted = gachaFavoriteJpaRepository.deleteByMemberIdAndGachaId(memberId, gachaId);

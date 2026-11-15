@@ -35,6 +35,11 @@ public class StoreFavoriteService {
         publisher.publishEvent(new StoreFavoriteChangedEvent(memberId, storeId, true));
     }
 
+    @Transactional(readOnly = true)
+    public boolean isFavorite(final Long memberId, final Long storeId) {
+        return favorites.existsByMemberIdAndStoreId(memberId, storeId);
+    }
+
     @Transactional
     public void remove(final Long memberId, final Long storeId) {
         favorites.deleteByMemberIdAndStoreId(memberId, storeId);
