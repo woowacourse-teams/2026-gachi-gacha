@@ -85,12 +85,6 @@ public class FavoriteSignalService {
         replaceTradeSignals(tradeId, List.of(memberId), favorites);
     }
 
-    /** 찜 해제 직후: 그 찜에서 나온 신호만 지운다. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void removeForTradeFavorite(final Long memberId, final Long tradeId) {
-        favoriteSignalJpaRepository.deleteByMemberAndTarget(memberId, FavoriteType.TRADE, tradeId);
-    }
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void rebuildForGachaFavorite(final Long memberId, final Long gachaId) {
         GachaFavorite favorite = gachaFavoriteJpaRepository.findByMemberIdAndGachaId(memberId, gachaId).orElse(null);
@@ -143,6 +137,9 @@ public class FavoriteSignalService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void removeSignalsForTarget(final Long memberId, final FavoriteType favoriteType, final Long targetId) {
+        if (isFavorite(memberId, favoriteType, targetId)) {
+            return;
+        }
         favoriteSignalJpaRepository.deleteByMemberAndTarget(memberId, favoriteType, targetId);
     }
 
@@ -237,5 +234,15 @@ public class FavoriteSignalService {
     private String extractArea(final String address) {
         String[] tokens = address.split("\\s+");
         return tokens.length >= 2 ? tokens[0] + " " + tokens[1] : address;
+    }
+
+    private boolean isFavorite(
+            final Long memberId, final FavoriteType favoriteType, final Long targetId
+    ) {
+        return switch (favoriteType) {
+            case TRADE -> tradeFavoriteJpaRepository.existsByMemberIdAndTradeId(memberId, targetId);
+            case GACHA -> gachaFavoriteJpaRepository.existsByMemberIdAndGachaId(memberId, targetId);
+            case STORE -> storeFavoriteJpaRepository.existsByMemberIdAndStoreId(memberId, targetId);
+        };
     }
 }

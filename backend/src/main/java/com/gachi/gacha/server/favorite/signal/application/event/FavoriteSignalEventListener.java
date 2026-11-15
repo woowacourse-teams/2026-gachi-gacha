@@ -21,11 +21,11 @@ public class FavoriteSignalEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Async
     public void handleTradeFavoriteChangedEvent(final TradeFavoriteChangedEvent event) {
-        if (event.favorite()) {
-            favoriteSignalService.rebuildForTradeFavorite(event.memberId(), event.tradeId());
+        if (!event.favorite()) {
+            favoriteSignalService.removeSignalsForTarget(event.memberId(), FavoriteType.TRADE, event.tradeId());
             return;
         }
-        favoriteSignalService.removeForTradeFavorite(event.memberId(), event.tradeId());
+        favoriteSignalService.rebuildForTradeFavorite(event.memberId(), event.tradeId());
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
