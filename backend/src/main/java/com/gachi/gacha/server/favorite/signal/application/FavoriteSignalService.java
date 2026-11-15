@@ -135,14 +135,6 @@ public class FavoriteSignalService {
         saveSignals(memberId, FavoriteType.STORE, storeId, items, favorite.getCreatedAt());
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void removeSignalsForTarget(final Long memberId, final FavoriteType favoriteType, final Long targetId) {
-        if (isFavorite(memberId, favoriteType, targetId)) {
-            return;
-        }
-        favoriteSignalJpaRepository.deleteByMemberAndTarget(memberId, favoriteType, targetId);
-    }
-
     /** 추론 완료 직후: 그 글을 찜한 모든 사용자의 신호를 다시 만든다. 처리한 사용자 수를 반환한다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void rebuildForTrade(final Long tradeId) {
@@ -234,15 +226,5 @@ public class FavoriteSignalService {
     private String extractArea(final String address) {
         String[] tokens = address.split("\\s+");
         return tokens.length >= 2 ? tokens[0] + " " + tokens[1] : address;
-    }
-
-    private boolean isFavorite(
-            final Long memberId, final FavoriteType favoriteType, final Long targetId
-    ) {
-        return switch (favoriteType) {
-            case TRADE -> tradeFavoriteJpaRepository.existsByMemberIdAndTradeId(memberId, targetId);
-            case GACHA -> gachaFavoriteJpaRepository.existsByMemberIdAndGachaId(memberId, targetId);
-            case STORE -> storeFavoriteJpaRepository.existsByMemberIdAndStoreId(memberId, targetId);
-        };
     }
 }
