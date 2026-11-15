@@ -55,7 +55,7 @@ public class TradeRecommendationNotificationService {
         alarm(tradeId, candidates, trade);
     }
 
-    private void alarm(Long tradeId, List<TradeFavoriteCandidate> candidates, Trade trade) {
+    private void alarm(final Long tradeId, final List<TradeFavoriteCandidate> candidates, final Trade trade) {
         int notified = 0;
         int skipped = 0;
         for (TradeFavoriteCandidate candidate : candidates) {

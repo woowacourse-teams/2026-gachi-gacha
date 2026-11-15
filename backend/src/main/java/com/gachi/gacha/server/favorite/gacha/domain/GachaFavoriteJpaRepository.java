@@ -25,5 +25,5 @@ public interface GachaFavoriteJpaRepository extends JpaRepository<GachaFavorite,
         where f.member.id = :memberId
         order by f.createdAt desc
         """)
-    List<GachaFavorite> findAllWithGachaByMemberId(@Param("memberId") Long memberId);
+    List<GachaFavorite> findAllWithGachaByMemberId(@Param("memberId") final Long memberId);
 }

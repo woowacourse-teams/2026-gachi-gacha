@@ -14,19 +14,19 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface NotificationJpaRepository extends JpaRepository<Notification, Long> {
 
-    List<Notification> findByReceiverIdOrderByIdDesc(Long receiverId, Pageable pageable);
+    List<Notification> findByReceiverIdOrderByIdDesc(final Long receiverId, final Pageable pageable);
 
     List<Notification> findByReceiverIdAndIdLessThanOrderByIdDesc(
-            Long receiverId,
-            Long lastNotificationId,
-            Pageable pageable
+            final Long receiverId,
+            final Long lastNotificationId,
+            final Pageable pageable
     );
 
-    long countByReceiverIdAndIsReadFalse(Long receiverId);
+    long countByReceiverIdAndIsReadFalse(final Long receiverId);
 
-    Optional<Notification> findByIdAndReceiverId(Long id, Long receiverId);
+    Optional<Notification> findByIdAndReceiverId(final Long id, final Long receiverId);
 
-    boolean existsByReceiverIdAndTradeIdAndType(Long receiverId, Long tradeId, NotificationType type);
+    boolean existsByReceiverIdAndTradeIdAndType(final Long receiverId, final Long tradeId, final NotificationType type);
 
     @Modifying(clearAutomatically = true)
     @Query("""
@@ -35,9 +35,9 @@ public interface NotificationJpaRepository extends JpaRepository<Notification, L
             WHERE notification.receiverId = :receiverId
               AND notification.isRead = false
             """)
-    void readAllByReceiverId(Long receiverId);
+    void readAllByReceiverId(final Long receiverId);
 
-    long countByReceiverIdAndTypeAndCreatedAtGreaterThanEqual(Long receiverId, NotificationType type, LocalDateTime createdAt);
+    long countByReceiverIdAndTypeAndCreatedAtGreaterThanEqual(final Long receiverId, final NotificationType type, final LocalDateTime createdAt);
 
     /**
      * 남의 알림과 없는 알림을 구분하지 않는다. 다른 회원의 알림 ID가 존재하는지 드러내지 않기 위해서다.

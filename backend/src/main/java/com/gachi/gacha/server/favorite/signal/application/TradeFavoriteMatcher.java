@@ -60,7 +60,7 @@ public class TradeFavoriteMatcher {
         return toSortedCandidates(scores);
     }
 
-    private List<SignalItem> buildFeatures(Trade trade, TradeInference inference) {
+    private List<SignalItem> buildFeatures(final Trade trade, final TradeInference inference) {
         Double inferenceScore = (inference == null) ? null : inference.getScore();
         List<SignalItem> features = new ArrayList<>(SignalExtractor.extract(
                 categoryIdsOf(trade),
@@ -86,19 +86,19 @@ public class TradeFavoriteMatcher {
         return features;
     }
 
-    private Set<Long> categoryIdsOf(Trade trade) {
+    private Set<Long> categoryIdsOf(final Trade trade) {
         return trade.getTradeCategories().stream()
                 .map(tradeCategory -> tradeCategory.getCategory().getId())
                 .collect(Collectors.toSet());
     }
 
-    private List<String> keywordsOf(Trade trade, TradeInference inference) {
+    private List<String> keywordsOf(final Trade trade, final TradeInference inference) {
         return (inference == null) || inference.getInferredKeywords().isEmpty()
                 ? TradeKeywordCleaner.extractKeywords(trade.getTitle()).stream().sorted().toList()
                 : inference.getInferredKeywords().stream().sorted().toList();
     }
 
-    private boolean isInferredGachaAccepted(TradeInference inference, Double inferenceScore) {
+    private boolean isInferredGachaAccepted(final TradeInference inference, final Double inferenceScore) {
         return inference != null
                 && inference.getInferredGacha() != null
                 && inferenceScore != null
@@ -106,7 +106,7 @@ public class TradeFavoriteMatcher {
     }
 
     /** 같은 타입·값의 feature는 가중치를 합쳐서 {타입 → {값 → 가중치}}로 묶는다. */
-    private Map<SignalType, Map<String, Double>> groupWeightsByType(List<SignalItem> features) {
+    private Map<SignalType, Map<String, Double>> groupWeightsByType(final List<SignalItem> features) {
         return features.stream()
                 .collect(Collectors.groupingBy(
                         SignalItem::type,
@@ -115,7 +115,7 @@ public class TradeFavoriteMatcher {
                                 SignalItem::weight, Double::sum)));
     }
 
-    private Map<Long, Double> scoreMembers(Map<SignalType, Map<String, Double>> featureWeights, Trade trade) {
+    private Map<Long, Double> scoreMembers(final Map<SignalType, Map<String, Double>> featureWeights, final Trade trade) {
         Map<Long, Double> scores = new LinkedHashMap<>();
         LocalDateTime now = LocalDateTime.now();
         featureWeights.forEach((type, weightsByValue) ->
@@ -132,7 +132,7 @@ public class TradeFavoriteMatcher {
         return scores;
     }
 
-    private List<TradeFavoriteCandidate> toSortedCandidates(Map<Long, Double> scores) {
+    private List<TradeFavoriteCandidate> toSortedCandidates(final Map<Long, Double> scores) {
         return scores.entrySet().stream()
                 .filter(entry -> entry.getValue() > 0)
                 .map(entry -> new TradeFavoriteCandidate(entry.getKey(), entry.getValue()))
