@@ -42,9 +42,12 @@ public interface FavoriteSignalJpaRepository extends JpaRepository<FavoriteSigna
                        extract(epoch from (cast(:now as timestamp) - s.created_at))
                        / (86400.0 * :halfLifeDays)))) as "score"
             from favorite_signal s
-            where s.signal_type = :signalType and s.signal_value in (:signalValues)
+            join member m on m.id = s.member_id
+            where s.signal_type = :signalType
+                and s.signal_value in (:signalValues)
+                and m.is_deleted = false
             group by s.member_id, s.signal_value
-            """, nativeQuery = true)
+        """, nativeQuery = true)
     List<MemberSignalScore> findMemberScores(
             @Param("signalType") final String signalType,
             @Param("signalValues") final Collection<String> signalValues,
