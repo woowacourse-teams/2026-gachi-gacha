@@ -52,7 +52,7 @@ const CONFIG: LaunchEventConfig = {
 };
 const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
-  schemaVersion: 1,
+  schemaVersion: 2,
   accepting: true,
   startAt: CONFIG.startAt,
   endAt: CONFIG.endAt,
@@ -61,7 +61,7 @@ const METADATA: LaunchEventMetadata = {
     controller: '테스트 운영팀',
     contact: 'privacy@example.test',
     purpose: '응모 접수와 당첨 안내',
-    items: ['회원 번호', '이름', '연락처', '사연', '선택 사진'],
+    items: ['회원 번호', '이름', '인스타그램 아이디', '거래글 번호'],
     retentionDays: 30,
   },
 };
@@ -170,6 +170,22 @@ async function readyButton() {
 }
 
 describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
+  it('수신부 미연결 시에도 확정 일정과 인스타그램 안내를 표시한다', () => {
+    setup({
+      ...CONFIG,
+      endpoint: '',
+      startAt: '2026-11-10T00:00:00+09:00',
+      endAt: '2026-11-28T00:00:00+09:00',
+    });
+    expect(screen.getByText(/한국 시간/)).toHaveTextContent('11. 10. 00:00');
+    expect(screen.getByText(/한국 시간/)).toHaveTextContent('11. 27. 23:59');
+    expect(
+      screen.getByText('당첨자에게 인스타그램 DM 개별 안내'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/교환 이야기를 활발하게/)).toBeInTheDocument();
+    expect(screen.getByText(/응모 버튼을 여러 번/)).toBeInTheDocument();
+    expect(metadataMock).not.toHaveBeenCalled();
+  });
   it.each([
     ['비활성', { ...CONFIG, enabled: false }, '응모를 준비하고 있어요'],
     ['수신 주소 없음', { ...CONFIG, endpoint: '' }, '응모를 준비하고 있어요'],

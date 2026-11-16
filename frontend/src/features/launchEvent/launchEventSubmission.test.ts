@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, jest } from '@jest/globals';
 
-import { LAUNCH_EVENT_ID } from './launchEventConfig';
+import {
+  LAUNCH_EVENT_ID,
+  LAUNCH_EVENT_SCHEMA_VERSION,
+} from './launchEventConfig';
 import {
   fetchLaunchEventMetadata,
+  isLaunchEventInstagramId,
   type LaunchEventInput,
+  normalizeLaunchEventInstagramId,
   submitLaunchEvent,
 } from './launchEventSubmission';
 
@@ -12,11 +17,11 @@ const input: LaunchEventInput = {
   submissionId: '019ab251-394e-4a77-9c21-1221ea123456',
   memberId: '17',
   name: '테스트',
-  phone: '010-1234-5678',
-  reason: '가치가챠 앱 출시를 축하합니다.',
+  instagramId: 'gachi.gacha_1',
+  tradeIds: [14, 27],
   privacyConsent: true,
   rulesConsent: true,
-  rulesVersion: 'test-policy-v1',
+  rulesVersion: 'test-policy-v2',
 };
 const receipt = {
   ok: true,
@@ -27,16 +32,16 @@ const receipt = {
 const metadata = {
   ok: true,
   eventId: LAUNCH_EVENT_ID,
-  schemaVersion: 1,
+  schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
   accepting: true,
   startAt: '2026-11-11T00:00:00+09:00',
   endAt: '2026-11-25T00:00:00+09:00',
-  rulesVersion: 'test-policy-v1',
+  rulesVersion: 'test-policy-v2',
   privacy: {
     controller: '테스트 운영자',
     contact: 'test@example.com',
     purpose: '테스트 접수',
-    items: ['이름', '연락처'],
+    items: ['회원 번호', '이름', '인스타그램 아이디', '작성한 게시글 번호'],
     retentionDays: 30,
   },
 };
@@ -50,7 +55,14 @@ describe('새 이벤트 전용 전송 계약', () => {
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(JSON.stringify(receipt)));
-    const withExtraSecret = { ...input, accessToken: 'must-not-send' };
+    const withExtraSecret = {
+      ...input,
+      accessToken: 'must-not-send',
+      refreshToken: 'must-not-send-either',
+      phone: 'old-phone',
+      reason: 'old-reason',
+      photos: [{ name: 'old.png', mimeType: 'image/png', data: 'old-photo' }],
+    };
 
     await expect(submitLaunchEvent(withExtraSecret, endpoint)).resolves.toEqual(
       {
@@ -71,9 +83,73 @@ describe('새 이벤트 전용 전송 계약', () => {
     expect(JSON.parse(String(options?.body))).toEqual({
       ...input,
       eventId: LAUNCH_EVENT_ID,
-      schemaVersion: 1,
-      photos: [],
+      schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
     });
+  });
+
+  it('이름 공백과 인스타그램의 선택 @·대소문자를 정규화한다', async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify(receipt)));
+    await submitLaunchEvent(
+      { ...input, name: '  테스트  ', instagramId: '  @Gachi.Gacha_1  ' },
+      endpoint,
+    );
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)),
+    ).toMatchObject({ name: '테스트', instagramId: 'gachi.gacha_1' });
+  });
+
+  it.each([
+    ['@Gachi.Gacha_1', 'gachi.gacha_1'],
+    ['  GACHI  ', 'gachi'],
+    ['a'.repeat(30), 'a'.repeat(30)],
+  ])('유효한 아이디 %s를 정규화한다', (value, expected) => {
+    expect(normalizeLaunchEventInstagramId(value)).toBe(expected);
+    expect(isLaunchEventInstagramId(value)).toBe(true);
+  });
+
+  it.each([
+    '',
+    '@',
+    '@@name',
+    '한글',
+    'two words',
+    'https://instagram.com/name',
+    'a'.repeat(31),
+  ])(
+    '잘못된 인스타그램 아이디 %s는 외부로 보내지 않는다',
+    async (instagramId) => {
+      const fetchMock = jest.spyOn(globalThis, 'fetch');
+      expect(isLaunchEventInstagramId(instagramId)).toBe(false);
+      await expect(
+        submitLaunchEvent({ ...input, instagramId }, endpoint),
+      ).rejects.toThrow('응모 정보와 참여 활동');
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each([
+    { name: '   ' },
+    { name: '가'.repeat(81) },
+    { memberId: '' },
+    { memberId: '0' },
+    { memberId: '1e2' },
+    { memberId: String(Number.MAX_SAFE_INTEGER + 1) },
+    { tradeIds: [] },
+    { tradeIds: [0] },
+    { tradeIds: [-1] },
+    { tradeIds: [1.5] },
+    { tradeIds: [Number.MAX_SAFE_INTEGER + 1] },
+    { tradeIds: [14, 14] },
+    { tradeIds: Array.from({ length: 10_001 }, (_, index) => index + 1) },
+    { rulesVersion: '' },
+  ])('불완전하거나 잘못된 참여 정보는 전송하지 않는다', async (patch) => {
+    const fetchMock = jest.spyOn(globalThis, 'fetch');
+    await expect(
+      submitLaunchEvent({ ...input, ...patch }, endpoint),
+    ).rejects.toThrow('응모 정보와 참여 활동');
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -130,6 +206,17 @@ describe('새 이벤트 전용 전송 계약', () => {
         }),
       ),
     );
+    await expect(fetchLaunchEventMetadata(endpoint)).rejects.toThrow(
+      '이벤트 접수 설정',
+    );
+  });
+
+  it('이전 schemaVersion 수신부 설정은 거부한다', async () => {
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(JSON.stringify({ ...metadata, schemaVersion: 1 })),
+      );
     await expect(fetchLaunchEventMetadata(endpoint)).rejects.toThrow(
       '이벤트 접수 설정',
     );

@@ -10,12 +10,11 @@ export interface LaunchEventInput {
   submissionId: string;
   memberId: string;
   name: string;
-  phone: string;
-  reason: string;
+  instagramId: string;
+  tradeIds: number[];
   privacyConsent: true;
   rulesConsent: true;
   rulesVersion: string;
-  photos?: { name: string; mimeType: string; data: string }[];
 }
 
 export interface LaunchEventReceipt {
@@ -28,6 +27,14 @@ const FAILURE_MESSAGE =
   '응모 접수 결과를 확인하지 못했어요. 입력 내용을 유지한 채 다시 시도해 주세요.';
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function normalizeLaunchEventInstagramId(value: string): string {
+  return value.trim().replace(/^@/, '').toLowerCase();
+}
+
+export function isLaunchEventInstagramId(value: string): boolean {
+  return /^[a-z0-9._]{1,30}$/.test(normalizeLaunchEventInstagramId(value));
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -127,6 +134,27 @@ export async function submitLaunchEvent(
     );
   }
   const submissionId = input.submissionId.toLowerCase();
+  const name = input.name.trim();
+  const instagramId = normalizeLaunchEventInstagramId(input.instagramId);
+  if (
+    !/^[1-9]\d*$/.test(input.memberId) ||
+    !Number.isSafeInteger(Number(input.memberId)) ||
+    name.length < 1 ||
+    name.length > 80 ||
+    !isLaunchEventInstagramId(input.instagramId) ||
+    !Array.isArray(input.tradeIds) ||
+    input.tradeIds.length < 1 ||
+    input.tradeIds.length > 10_000 ||
+    !input.tradeIds.every(
+      (tradeId) => Number.isSafeInteger(tradeId) && tradeId > 0,
+    ) ||
+    new Set(input.tradeIds).size !== input.tradeIds.length ||
+    input.privacyConsent !== true ||
+    input.rulesConsent !== true ||
+    !input.rulesVersion.trim()
+  ) {
+    throw new Error('응모 정보와 참여 활동을 다시 확인해 주세요.');
+  }
   // 키를 명시하여 호출자가 추가한 인증 토큰 등 임의 필드가 유출되지 않게 한다.
   const data = await requestJson(endpoint, {
     method: 'POST',
@@ -136,18 +164,12 @@ export async function submitLaunchEvent(
       schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
       submissionId,
       memberId: input.memberId,
-      name: input.name,
-      phone: input.phone,
-      reason: input.reason,
+      name,
+      instagramId,
+      tradeIds: input.tradeIds.map((tradeId) => tradeId),
       privacyConsent: input.privacyConsent,
       rulesConsent: input.rulesConsent,
       rulesVersion: input.rulesVersion,
-      photos:
-        input.photos?.map(({ name, mimeType, data }) => ({
-          name,
-          mimeType,
-          data,
-        })) ?? [],
     }),
   });
   if (

@@ -6,6 +6,7 @@ import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import {
   getLaunchEventAvailability,
   getLaunchEventReadiness,
+  isLaunchEventDate,
   LAUNCH_EVENT_CONFIG,
   type LaunchEventConfig,
   type LaunchEventMetadata,
@@ -143,9 +144,13 @@ export function LaunchEventRoute({
     }
   };
 
-  const period = ['open', 'upcoming', 'closed'].includes(availability)
+  const hasValidPeriod =
+    isLaunchEventDate(config.startAt) &&
+    isLaunchEventDate(config.endAt) &&
+    Date.parse(config.startAt) < Date.parse(config.endAt);
+  const period = hasValidPeriod
     ? `${formatLaunchEventDate(config.startAt)} ~ ${formatLaunchEventDate(new Date(Date.parse(config.endAt) - 1).toISOString())} (한국 시간)`
-    : `시작일 추후 안내 · ${content.provisionalDeadline} 마감 예정`;
+    : `11월 10일 응모 시작 · ${content.provisionalDeadline}`;
   const stateText =
     availability === 'closed'
       ? '응모가 마감되었어요'
@@ -236,7 +241,7 @@ export function LaunchEventRoute({
                   <dt>응모 기간</dt>
                   <dd>{period}</dd>
                   <dt>당첨 발표</dt>
-                  <dd>{content.announcement} · 개별 연락</dd>
+                  <dd>{content.announcement}</dd>
                   <dt>응모 자격</dt>
                   <dd>앱 설치와 게시글 1개 작성을 완료한 로그인 회원</dd>
                 </S.Info>
@@ -263,25 +268,32 @@ export function LaunchEventRoute({
                 <h3 id="launch-how">이렇게 참여해 주세요</h3>
                 <ol>
                   <li>가치가챠 앱을 설치해 주세요.</li>
-                  <li>가치가챠에 게시글을 1개 작성해 주세요.</li>
-                  <li>아래 응모 폼을 제출해 주세요.</li>
+                  <li>가치가챠에 교환글을 1개 이상 작성해 주세요.</li>
+                  <li>이름과 인스타그램 아이디를 입력하고 응모해 주세요.</li>
                 </ol>
                 <p>
                   앱 설치와 게시글 작성만으로는 응모가 완료되지 않아요. 응모
                   완료 화면까지 확인해 주세요.
                 </p>
+                <p>{content.participationMessage}</p>
                 <p>
-                  참여 조건은 운영팀에서 확인합니다. 선택 사진에는 다른 사람의
-                  개인정보가 나오지 않도록 주의해 주세요.
+                  응모할 때 현재 계정의 교환글 목록을 함께 확인합니다. 응모 후
+                  교환글을 추가했다면 마감 전에 다시 응모해 주세요. 마지막 응모
+                  시점의 정보로 갱신되며, 응모 버튼을 여러 번 누르는 것만으로
+                  당첨 기회가 늘어나지는 않아요.
                 </p>
               </S.Section>
               <S.Section aria-labelledby="launch-notes">
                 <h3 id="launch-notes">꼭 확인해 주세요</h3>
                 <ul>
-                  <li>당첨자에게 입력하신 연락처로 연락드릴 예정입니다.</li>
                   <li>
-                    중복 응모, 허위 정보 또는 참여 조건 미충족은 추첨에서 제외될
-                    수 있습니다.
+                    당첨자에게 입력하신 인스타그램 아이디로 DM을 보내드려요.
+                    아이디를 정확히 입력하고 메시지 요청함을 확인해 주세요.
+                  </li>
+                  <li>
+                    한 계정의 응모는 최신 내용 하나로 반영합니다. 참여 조건과
+                    게시글 활동은 운영팀에서 확인하며, 허위 정보·도배 또는 참여
+                    조건 미충족은 추첨에서 제외될 수 있습니다.
                   </li>
                   <li>일정이 변경되면 이벤트 페이지를 통해 안내합니다.</li>
                 </ul>
@@ -368,7 +380,7 @@ export function LaunchEventRoute({
               <S.Complete>
                 <span aria-hidden="true">🎉</span>
                 <h2>응모가 완료됐어요</h2>
-                <p>{content.announcement}에 당첨 여부를 안내드릴게요.</p>
+                <p>{content.announcement}</p>
                 <S.Info>
                   <dt>이벤트</dt>
                   <dd>{content.shortTitle}</dd>
@@ -377,7 +389,10 @@ export function LaunchEventRoute({
                   <dt>응모 번호</dt>
                   <dd>{receipt.submissionId}</dd>
                 </S.Info>
-                <p>응모 번호를 보관해 주세요.</p>
+                <p>
+                  응모 번호를 보관해 주세요. 다시 응모했다면 최신 정보로
+                  반영됩니다.
+                </p>
               </S.Complete>
               <S.Footer>
                 <S.Secondary type="button" onClick={() => setStep('detail')}>

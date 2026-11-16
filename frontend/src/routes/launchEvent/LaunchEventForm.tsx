@@ -1,19 +1,14 @@
-import {
-  type ChangeEvent,
-  type FormEvent,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from 'react';
+import { type FormEvent, useEffect, useId, useRef, useState } from 'react';
 
+import { collectLaunchEventParticipation } from '@/features/launchEvent/collectLaunchEventParticipation';
 import {
   isLaunchEventDate,
   type LaunchEventMetadata,
 } from '@/features/launchEvent/launchEventConfig';
 import {
-  type LaunchEventInput,
+  isLaunchEventInstagramId,
   type LaunchEventReceipt,
+  normalizeLaunchEventInstagramId,
   submitLaunchEvent,
 } from '@/features/launchEvent/launchEventSubmission';
 
@@ -29,36 +24,10 @@ interface LaunchEventFormProps {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
-type PhotoPreview = { file: File; url: string };
 type TermsKind = 'privacy' | 'rules';
-type TextField = 'name' | 'phone' | 'reason';
-const PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
+type TextField = 'name' | 'instagramId';
 
-function readPhoto(
-  file: File,
-): Promise<NonNullable<LaunchEventInput['photos']>[number]> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const value = reader.result;
-      if (typeof value !== 'string' || !value.includes(';base64,')) {
-        reject(new Error('사진을 읽지 못했어요. 사진을 다시 선택해 주세요.'));
-        return;
-      }
-      resolve({
-        name: file.name,
-        mimeType: file.type,
-        data: value.split(',')[1] ?? '',
-      });
-    };
-    reader.onerror = () =>
-      reject(new Error('사진을 읽지 못했어요. 사진을 다시 선택해 주세요.'));
-    reader.readAsDataURL(file);
-  });
-}
-
-/** 헤더/라우팅은 부모가 담당한다. 입력·사진은 컴포넌트 메모리에만 보관한다. */
+/** 헤더/라우팅은 부모가 담당한다. 입력은 컴포넌트 메모리에만 보관한다. */
 export function LaunchEventForm({
   memberId,
   metadata,
@@ -69,55 +38,47 @@ export function LaunchEventForm({
 }: LaunchEventFormProps) {
   const id = useId();
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [reason, setReason] = useState('');
-  const [photos, setPhotos] = useState<PhotoPreview[]>([]);
+  const [instagramId, setInstagramId] = useState('');
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [rulesConsent, setRulesConsent] = useState(false);
   const [touched, setTouched] = useState<Partial<Record<TextField, boolean>>>(
     {},
   );
-  const [photoError, setPhotoError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [terms, setTerms] = useState<TermsKind | null>(null);
   const [pending, setPending] = useState(false);
+  const pendingChangeCallback = useRef(onPendingChange);
   const mounted = useRef(true);
   const inFlight = useRef(false);
   const attempt = useRef<{ fingerprint: string; submissionId: string } | null>(
     null,
   );
-  const photoInput = useRef<HTMLInputElement>(null);
-  const addPhotoButton = useRef<HTMLButtonElement>(null);
-  const photoUrls = useRef(new Set<string>());
   const allConsent = useRef<HTMLInputElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const termsOpener = useRef<HTMLButtonElement | null>(null);
   const errorElement = useRef<HTMLParagraphElement>(null);
-  const normalizedPhone = phone.replace(/[\s-]/g, '');
+  const normalizedInstagramId = normalizeLaunchEventInstagramId(instagramId);
   const nameError =
     !name.trim() || name.trim().length > 80
       ? '이름을 1~80자로 입력해 주세요.'
       : '';
-  const phoneError = !/^01(?:0\d{8}|[16789]\d{7,8})$/.test(normalizedPhone)
-    ? '연락 가능한 휴대전화 번호를 10~11자리로 입력해 주세요.'
+  const instagramIdError = !isLaunchEventInstagramId(instagramId)
+    ? '인스타그램 아이디를 영문·숫자·밑줄·마침표로 1~30자 입력해 주세요.'
     : '';
-  const reasonError =
-    reason.trim().length < 10 || reason.trim().length > 300
-      ? '응모 사연을 앞뒤 공백을 제외하고 10~300자로 입력해 주세요.'
-      : '';
   const valid =
-    !nameError && !phoneError && !reasonError && privacyConsent && rulesConsent;
-  const dirty = Boolean(
-    name || phone || reason || photos.length || privacyConsent || rulesConsent,
-  );
+    !nameError && !instagramIdError && privacyConsent && rulesConsent;
+  const dirty = Boolean(name || instagramId || privacyConsent || rulesConsent);
+
+  useEffect(() => {
+    pendingChangeCallback.current = onPendingChange;
+  }, [onPendingChange]);
 
   useEffect(() => {
     mounted.current = true;
-    const urls = photoUrls.current;
     return () => {
       mounted.current = false;
-      urls.forEach((url) => URL.revokeObjectURL(url));
-      urls.clear();
+      // 인증 만료 등으로 폼이 제거되어도 부모 화면의 접수 잠금을 해제한다.
+      pendingChangeCallback.current?.(false);
     };
   }, []);
 
@@ -159,49 +120,10 @@ export function LaunchEventForm({
     if (submitError) errorElement.current?.focus();
   }, [submitError]);
 
-  const addPhotos = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
-    event.target.value = '';
-    if (inFlight.current || !files.length) return;
-    if (photos.length + files.length > 3) {
-      setPhotoError('사진은 최대 3장까지 선택할 수 있어요.');
-      return;
-    }
-    if (
-      files.some(
-        (file) =>
-          !PHOTO_TYPES.has(file.type) ||
-          file.size === 0 ||
-          file.size > MAX_PHOTO_SIZE,
-      )
-    ) {
-      setPhotoError(
-        '사진 한 장당 5MB 이하의 JPG, PNG, WebP 파일만 선택해 주세요.',
-      );
-      return;
-    }
-    const additions = files.map((file) => {
-      const url = URL.createObjectURL(file);
-      photoUrls.current.add(url);
-      return { file, url };
-    });
-    setPhotos((current) => [...current, ...additions]);
-    setPhotoError('');
-  };
-
-  const removePhoto = (url: string) => {
-    if (inFlight.current) return;
-    URL.revokeObjectURL(url);
-    photoUrls.current.delete(url);
-    setPhotos((current) => current.filter((photo) => photo.url !== url));
-    setPhotoError('');
-    requestAnimationFrame(() => addPhotoButton.current?.focus());
-  };
-
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (inFlight.current) return;
-    setTouched({ name: true, phone: true, reason: true });
+    setTouched({ name: true, instagramId: true });
     if (!valid) return;
     const now = Date.now();
     if (
@@ -220,23 +142,28 @@ export function LaunchEventForm({
     inFlight.current = true;
     setPending(true);
     setSubmitError('');
+    let participationConfirmed = false;
     try {
-      const fingerprint = JSON.stringify({
-        memberId,
-        endpoint,
+      const participation = await collectLaunchEventParticipation(memberId);
+      if (!mounted.current) return;
+      if (participation.tradeIds.length === 0) {
+        setSubmitError('게시글을 1개 이상 작성한 뒤 다시 응모해 주세요.');
+        return;
+      }
+      participationConfirmed = true;
+      const input = {
+        memberId: participation.memberId,
         name: name.trim(),
-        phone: normalizedPhone,
-        reason: reason.trim(),
-        photos: photos.map((photo) => photo.url),
+        instagramId: normalizedInstagramId,
+        tradeIds: participation.tradeIds,
+        privacyConsent: true as const,
+        rulesConsent: true as const,
         rulesVersion: metadata.rulesVersion,
-      });
+      };
+      const fingerprint = JSON.stringify({ endpoint, ...input });
       if (!attempt.current || attempt.current.fingerprint !== fingerprint) {
         attempt.current = { fingerprint, submissionId: crypto.randomUUID() };
       }
-      const encodedPhotos = await Promise.all(
-        photos.map(({ file }) => readPhoto(file)),
-      );
-      if (!mounted.current) return;
       if (Date.now() >= Date.parse(metadata.endAt)) {
         setSubmitError(
           '응모 기간이 종료되었어요. 입력한 정보는 전송하지 않았어요.',
@@ -246,18 +173,17 @@ export function LaunchEventForm({
       const receipt = await submitLaunchEvent(
         {
           submissionId: attempt.current.submissionId,
-          memberId,
-          name: name.trim(),
-          phone: normalizedPhone,
-          reason: reason.trim(),
-          privacyConsent: true,
-          rulesConsent: true,
-          rulesVersion: metadata.rulesVersion,
-          photos: encodedPhotos,
+          ...input,
         },
         endpoint,
       );
       if (mounted.current) {
+        setName('');
+        setInstagramId('');
+        setPrivacyConsent(false);
+        setRulesConsent(false);
+        setTouched({});
+        attempt.current = null;
         // 완료 콜백이 폼을 바로 제거해도 부모의 접수 중 잠금은 남기지 않는다.
         onPendingChange?.(false);
         onSuccess(receipt);
@@ -265,7 +191,9 @@ export function LaunchEventForm({
     } catch {
       if (mounted.current)
         setSubmitError(
-          '응모 접수 결과를 확인하지 못했어요. 입력 내용을 유지한 채 다시 시도해 주세요.',
+          participationConfirmed
+            ? '응모 접수 결과를 확인하지 못했어요. 입력 내용을 유지한 채 다시 시도해 주세요.'
+            : '로그인 상태와 게시글 참여 활동을 확인하지 못했어요. 입력 내용을 유지한 채 로그인과 게시글을 확인한 뒤 다시 시도해 주세요.',
         );
     } finally {
       inFlight.current = false;
@@ -297,6 +225,10 @@ export function LaunchEventForm({
           앱 설치와 게시글 1개 작성을 마친 회원이 응모할 수 있어요. 참여 조건은
           운영진이 확인해요.
         </p>
+        <p>
+          가치가챠에서 교환 이야기를 활발하게 나눌수록, 선물을 만날 기회도
+          커져요.
+        </p>
       </S.Summary>
 
       <S.Field>
@@ -324,112 +256,34 @@ export function LaunchEventForm({
       </S.Field>
 
       <S.Field>
-        <S.Label htmlFor={`${id}-phone`}>
-          연락처<S.Required aria-hidden="true">*</S.Required>
+        <S.Label htmlFor={`${id}-instagram-id`}>
+          인스타그램 아이디<S.Required aria-hidden="true">*</S.Required>
         </S.Label>
         <S.Input
-          id={`${id}-phone`}
-          name="tel"
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          maxLength={20}
+          id={`${id}-instagram-id`}
+          name="instagramId"
+          autoComplete="off"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          maxLength={31}
           required
           disabled={pending}
-          placeholder="010-1234-5678"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-          onBlur={() => blur('phone')}
-          aria-invalid={Boolean(touched.phone && phoneError)}
-          aria-describedby={`${id}-phone-hint${touched.phone && phoneError ? ` ${id}-phone-error` : ''}`}
+          placeholder="@gachigacha"
+          value={instagramId}
+          onChange={(event) => setInstagramId(event.target.value)}
+          onBlur={() => blur('instagramId')}
+          aria-invalid={Boolean(touched.instagramId && instagramIdError)}
+          aria-describedby={`${id}-instagram-hint${touched.instagramId && instagramIdError ? ` ${id}-instagram-error` : ''}`}
         />
-        <S.Hint id={`${id}-phone-hint`}>당첨 안내를 받을 번호예요.</S.Hint>
-        {touched.phone && phoneError && (
-          <S.ErrorText id={`${id}-phone-error`}>{phoneError}</S.ErrorText>
-        )}
-      </S.Field>
-
-      <S.Field>
-        <S.Label htmlFor={`${id}-reason`}>
-          응모 사연<S.Required aria-hidden="true">*</S.Required>
-        </S.Label>
-        <S.Textarea
-          id={`${id}-reason`}
-          name="reason"
-          maxLength={300}
-          required
-          disabled={pending}
-          value={reason}
-          onChange={(event) => setReason(event.target.value)}
-          onBlur={() => blur('reason')}
-          aria-invalid={Boolean(touched.reason && reasonError)}
-          aria-describedby={`${id}-reason-hint${touched.reason && reasonError ? ` ${id}-reason-error` : ''}`}
-        />
-        <S.Hint id={`${id}-reason-hint`}>
-          10~300자로 작성해 주세요. 주소 등 불필요한 개인정보는 적지 말아
-          주세요.
+        <S.Hint id={`${id}-instagram-hint`}>
+          당첨 안내를 받을 아이디예요. 프로필 주소 대신 아이디를 입력해 주세요.
         </S.Hint>
-        <S.Counter aria-hidden="true">{reason.length}/300</S.Counter>
-        {touched.reason && reasonError && (
-          <S.ErrorText id={`${id}-reason-error`}>{reasonError}</S.ErrorText>
+        {touched.instagramId && instagramIdError && (
+          <S.ErrorText id={`${id}-instagram-error`}>
+            {instagramIdError}
+          </S.ErrorText>
         )}
-      </S.Field>
-
-      <S.Field>
-        <S.Label as="p" id={`${id}-photos`}>
-          인증 사진<S.Optional>선택 · 최대 3장</S.Optional>
-        </S.Label>
-        <S.Hint id={`${id}-photo-hint`}>
-          한 장당 5MB 이하의 JPG, PNG, WebP. 다른 사람의 얼굴·연락처·주소는 가려
-          주세요.
-        </S.Hint>
-        <input
-          ref={photoInput}
-          type="file"
-          hidden
-          multiple
-          disabled={pending}
-          accept="image/jpeg,image/png,image/webp"
-          aria-label="인증 사진 파일 선택"
-          onChange={addPhotos}
-        />
-        <S.PhotoRow role="group" aria-labelledby={`${id}-photos`}>
-          {photos.map((photo, index) => (
-            <S.Photo key={photo.url}>
-              <img src={photo.url} alt={`선택한 인증 사진 ${index + 1}`} />
-              <S.RemovePhoto
-                type="button"
-                disabled={pending}
-                aria-label={`인증 사진 ${index + 1} 삭제`}
-                onClick={() => removePhoto(photo.url)}
-              >
-                <span aria-hidden="true">×</span>
-              </S.RemovePhoto>
-            </S.Photo>
-          ))}
-          <S.AddPhoto
-            ref={addPhotoButton}
-            type="button"
-            disabled={pending || photos.length >= 3}
-            aria-describedby={`${id}-photo-hint`}
-            onClick={() => photoInput.current?.click()}
-          >
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              aria-hidden="true"
-            >
-              <path d="M4 7h4l2-3h4l2 3h4v13H4z" />
-              <circle cx="12" cy="13" r="3" />
-            </svg>
-            사진 추가 ({photos.length}/3)
-          </S.AddPhoto>
-        </S.PhotoRow>
-        {photoError && <S.ErrorText role="alert">{photoError}</S.ErrorText>}
       </S.Field>
 
       <S.ConsentCard disabled={pending}>
@@ -523,12 +377,11 @@ export function LaunchEventForm({
               <p>이용 목적: {metadata.privacy.purpose}</p>
               <p>수집 항목: {metadata.privacy.items.join(', ')}</p>
               <p>
-                보유 기간: 응모 접수일로부터 {metadata.privacy.retentionDays}일.
-                보유 기간이 지나면 응모 정보와 첨부 사진을 파기해요.
+                보유 기간: 이벤트 종료 후 {metadata.privacy.retentionDays}일.
+                보유 기간이 지나면 응모 정보를 파기해요.
               </p>
               <p>
                 동의를 거부할 수 있지만, 거부하면 이벤트에 응모할 수 없어요.
-                사진은 선택 항목이며 첨부하지 않아도 응모할 수 있어요.
               </p>
             </>
           ) : (
@@ -539,6 +392,10 @@ export function LaunchEventForm({
                 추후 확인해요.
               </li>
               <li>
+                게시글 참여 활동을 추첨에 반영해요. 재응모는 횟수가 아니라
+                마지막 응모 시점의 활동으로 갱신돼요.
+              </li>
+              <li>
                 앱 설치와 게시글 작성만으로 응모가 완료되지 않아요. 응모 완료
                 화면까지 확인해 주세요.
               </li>
@@ -546,10 +403,7 @@ export function LaunchEventForm({
                 총 8명을 추첨해 가챠 4종 중 1개를 무작위로 지급해요. 종류는
                 선택할 수 없고 중복 당첨은 제외해요.
               </li>
-              <li>
-                선택 사진에는 본인에게 이용 권한이 있는 자료만 올려 주세요. 허위
-                정보나 타인의 정보로는 응모할 수 없어요.
-              </li>
+              <li>허위 정보나 타인의 정보로는 응모할 수 없어요.</li>
               <li>
                 가치가챠가 구매한 정품 경품을 제공하는 자체 이벤트이며, 캐릭터
                 권리자 및 제조·판매사와의 공식 협업·후원과는 무관해요.
