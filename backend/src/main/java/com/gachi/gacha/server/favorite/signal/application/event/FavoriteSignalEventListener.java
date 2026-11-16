@@ -1,0 +1,43 @@
+package com.gachi.gacha.server.favorite.signal.application.event;
+
+import com.gachi.gacha.server.favorite.signal.application.FavoriteSignalService;
+import com.gachi.gacha.server.favorite.trade.application.event.TradeFavoriteChangedEvent;
+import com.gachi.gacha.server.favorite.gacha.application.event.GachaFavoriteChangedEvent;
+import com.gachi.gacha.server.favorite.store.application.event.StoreFavoriteChangedEvent;
+import com.gachi.gacha.server.trade.application.event.TradeInferenceCompletedEvent;
+import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+@Component
+@RequiredArgsConstructor
+public class FavoriteSignalEventListener {
+
+    private final FavoriteSignalService favoriteSignalService;
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleTradeFavoriteChangedEvent(final TradeFavoriteChangedEvent event) {
+        favoriteSignalService.rebuildForTradeFavorite(event.memberId(), event.tradeId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleGachaFavoriteChangedEvent(final GachaFavoriteChangedEvent event) {
+        favoriteSignalService.rebuildForGachaFavorite(event.memberId(), event.gachaId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleStoreFavoriteChangedEvent(final StoreFavoriteChangedEvent event) {
+        favoriteSignalService.rebuildForStoreFavorite(event.memberId(), event.storeId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async
+    public void handleTradeInferenceCompletedEvent(final TradeInferenceCompletedEvent event) {
+        favoriteSignalService.rebuildForTrade(event.tradeId());
+    }
+}

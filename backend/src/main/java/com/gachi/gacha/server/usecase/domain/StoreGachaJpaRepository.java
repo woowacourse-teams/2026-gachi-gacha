@@ -5,10 +5,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.util.List;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface StoreGachaJpaRepository extends JpaRepository<StoreGacha, Long> {
+
+    @Query("""
+            select distinct g from StoreGacha sg
+            join sg.gacha g
+            left join fetch g.gachaCategories gc
+            left join fetch gc.category
+            where sg.store.id = :storeId
+            """)
+    List<Gacha> findGachasWithCategoriesByStoreId(@Param("storeId") Long storeId);
 
     @Query(
             value = "select sg.gacha from StoreGacha sg where sg.store.id = :storeId",

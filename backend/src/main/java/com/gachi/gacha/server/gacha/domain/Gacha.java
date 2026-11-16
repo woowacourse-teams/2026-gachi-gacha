@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(
@@ -56,6 +57,7 @@ public class Gacha extends BaseTimeEntity {
     @Column(name = "product_code", length = 255)
     private String productCode;
 
+    @BatchSize(size = 100)
     @Builder.Default
     @OneToMany(mappedBy = "gacha", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<GachaCategory> gachaCategories = new ArrayList<>();

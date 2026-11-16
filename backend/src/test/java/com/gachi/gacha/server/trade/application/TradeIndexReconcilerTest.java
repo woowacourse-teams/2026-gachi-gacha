@@ -26,6 +26,8 @@ import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.util.ObjectBuilder;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
+import com.gachi.gacha.server.trade.infra.TradeIndexReconciler;
+import com.gachi.gacha.server.trade.infra.TradeIndexService;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Arrays;

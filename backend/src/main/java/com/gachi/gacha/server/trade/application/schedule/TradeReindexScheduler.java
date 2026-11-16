@@ -1,5 +1,6 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.trade.application.schedule;
 
+import com.gachi.gacha.server.trade.infra.TradeIndexReconciler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

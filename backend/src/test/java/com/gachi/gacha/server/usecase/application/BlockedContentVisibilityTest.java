@@ -11,7 +11,7 @@ import com.gachi.gacha.server.member.application.MemberBlockService;
 import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.trade.application.TradeService;
-import com.gachi.gacha.server.trade.application.dto.TradeSearchCondition;
+import com.gachi.gacha.server.trade.infra.dto.TradeSearchCondition;
 import com.gachi.gacha.server.trade.application.dto.TradeSummaryInfo;
 import com.gachi.gacha.server.trade.domain.Trade;
 import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
