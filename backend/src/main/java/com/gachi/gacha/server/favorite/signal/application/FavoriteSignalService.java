@@ -57,6 +57,7 @@ public class FavoriteSignalService {
     private static final double STORE_KEYWORD_WEIGHT = 0.45;
     
     private final FavoriteSignalJpaRepository favoriteSignalJpaRepository;
+    private final FavoriteSignalAdvisoryLock favoriteSignalAdvisoryLock;
     private final TradeFavoriteJpaRepository tradeFavoriteJpaRepository;
     private final TradeJpaRepository tradeJpaRepository;
     private final TradeInferenceJpaRepository tradeInferenceJpaRepository;
@@ -79,6 +80,7 @@ public class FavoriteSignalService {
     /** 찜 등록 직후: 이 사용자의 이 글에 대한 신호를 만든다. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void rebuildForTradeFavorite(final Long memberId, final Long tradeId) {
+        favoriteSignalAdvisoryLock.acquire(memberId, FavoriteType.TRADE, tradeId);
         List<TradeFavorite> favorites = tradeFavoriteJpaRepository.findByMemberIdAndTradeId(memberId, tradeId)
                 .stream()
                 .toList();
@@ -87,6 +89,7 @@ public class FavoriteSignalService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void rebuildForGachaFavorite(final Long memberId, final Long gachaId) {
+        favoriteSignalAdvisoryLock.acquire(memberId, FavoriteType.GACHA, gachaId);
         GachaFavorite favorite = gachaFavoriteJpaRepository.findByMemberIdAndGachaId(memberId, gachaId).orElse(null);
         favoriteSignalJpaRepository.deleteByMemberAndTarget(memberId, FavoriteType.GACHA, gachaId);
         if (favorite == null) {
@@ -108,6 +111,7 @@ public class FavoriteSignalService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void rebuildForStoreFavorite(final Long memberId, final Long storeId) {
+        favoriteSignalAdvisoryLock.acquire(memberId, FavoriteType.STORE, storeId);
         StoreFavorite favorite = storeFavoriteJpaRepository.findByMemberIdAndStoreId(memberId, storeId).orElse(null);
         favoriteSignalJpaRepository.deleteByMemberAndTarget(memberId, FavoriteType.STORE, storeId);
         if (favorite == null) {
@@ -144,9 +148,19 @@ public class FavoriteSignalService {
         }
         List<Long> memberIds = favorites.stream()
                 .map(favorite -> favorite.getMember().getId())
+                .distinct()
+                .sorted()
                 .toList();
-        replaceTradeSignals(tradeId, memberIds, favorites);
-        log.info("{} favorite(s) rebuild for {}", favorites.size(), tradeId);
+        memberIds.forEach(memberId ->
+                favoriteSignalAdvisoryLock.acquire(memberId, FavoriteType.TRADE, tradeId));
+
+        // Re-read after locking so a concurrent unfavorite is reflected. New favorites that
+        // appeared after the first snapshot are handled by their own after-commit event.
+        List<TradeFavorite> currentFavorites = tradeFavoriteJpaRepository.findByTradeId(tradeId).stream()
+                .filter(favorite -> memberIds.contains(favorite.getMember().getId()))
+                .toList();
+        replaceTradeSignals(tradeId, memberIds, currentFavorites);
+        log.info("{} favorite(s) rebuild for {}", currentFavorites.size(), tradeId);
     }
 
     private void replaceTradeSignals(
