@@ -45,15 +45,15 @@ const clockMock = jest.mocked(useLaunchEventClock);
 const formMock = jest.mocked(LaunchEventForm);
 const CONFIG: LaunchEventConfig = {
   enabled: true,
-  endpoint: '/event-api/launch-event',
+  endpoint: 'https://script.google.com/macros/s/test/exec',
   campaignId: 'app-launch-2026',
   startAt: '2020-01-01T00:00:00+09:00',
   endAt: '2099-11-25T00:00:00+09:00',
 };
 const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
-  schemaVersion: 3,
-  authentication: 'server-verified',
+  schemaVersion: 4,
+  authentication: 'client-reported',
   accepting: true,
   startAt: CONFIG.startAt,
   endAt: CONFIG.endAt,
@@ -171,6 +171,40 @@ async function readyButton() {
 }
 
 describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
+  it('제목 초점과 헤더 버튼의 키보드 이동을 유지하고 아이콘 크기를 명시한다', async () => {
+    const { user } = setup({ ...CONFIG, endpoint: '' });
+    const title = screen.getByRole('heading', { name: '이벤트', level: 1 });
+    expect(title).toHaveAttribute('tabindex', '-1');
+    expect(title).toHaveFocus();
+    expect(title).toHaveStyle({ outline: 'none' });
+
+    const back = screen.getByRole('button', { name: '홈으로 돌아가기' });
+    const share = screen.getByRole('button', { name: '이벤트 공유' });
+    for (const button of [back, share]) {
+      const icon = button.querySelector('svg');
+      expect(icon).toHaveAttribute('width', '24');
+      expect(icon).toHaveAttribute('height', '24');
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+      expect(button).toHaveStyle({ flexShrink: '0' });
+      expect(icon).toHaveStyle({ flexShrink: '0' });
+    }
+
+    await user.tab({ shift: true });
+    expect(back).toHaveFocus();
+    await user.tab();
+    expect(share).toHaveFocus();
+  });
+
+  it('경품 이미지 영역에 별도 분홍색 배경을 덧씌우지 않는다', () => {
+    setup({ ...CONFIG, endpoint: '' });
+    const image = screen.getByRole('img', {
+      name: '치이카와 데스크톱 피규어 경품 4종',
+    });
+    expect(image.parentElement).toHaveStyle({
+      backgroundColor: 'rgba(0, 0, 0, 0)',
+    });
+  });
+
   it('수신부 미연결 시에도 확정 일정과 인스타그램 안내를 표시한다', () => {
     setup({
       ...CONFIG,

@@ -11,7 +11,7 @@ import { MemoryRouter } from 'react-router';
 
 import { LaunchEventBanner } from './LaunchEventBanner';
 import { LAUNCH_EVENT_CONFIG } from './launchEventConfig';
-import { LAUNCH_EVENT_PATH } from './launchEventContent';
+import { LAUNCH_EVENT_CONTENT, LAUNCH_EVENT_PATH } from './launchEventContent';
 import { useLaunchEventClock } from './useLaunchEventClock';
 
 jest.mock('./useLaunchEventClock', () => ({ useLaunchEventClock: jest.fn() }));
@@ -22,7 +22,7 @@ const ORIGINAL_CONFIG = { ...LAUNCH_EVENT_CONFIG };
 beforeEach(() => {
   Object.assign(LAUNCH_EVENT_CONFIG, {
     enabled: true,
-    endpoint: '/event-api/launch-event',
+    endpoint: 'https://script.google.com/macros/s/test/exec',
     campaignId: 'app-launch-2026',
     bannerStartAt: '',
     startAt: '2026-11-11T00:00:00+09:00',
@@ -68,6 +68,19 @@ describe('LaunchEventBanner 기간 기반 노출', () => {
     clockMock.mockReturnValue(new Date('2026-11-24T00:00:00+09:00'));
     setup();
     expect(screen.getByText('EVENT · D-DAY')).toBeInTheDocument();
+  });
+
+  it('포스터는 장식으로 유지하고 배너 전체를 이름 있는 링크 하나로 제공한다', () => {
+    setup();
+    const links = screen.getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName(
+      '가치가챠 앱 출시 기념 가챠 선물 이벤트 자세히 보기',
+    );
+    const image = screen.getByAltText('');
+    expect(image).toHaveAttribute('src', LAUNCH_EVENT_CONTENT.prizeImage);
+    expect(image.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
   it.each([

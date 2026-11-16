@@ -16,7 +16,7 @@ import { server } from '@/test/server';
 
 import { LaunchEventRoute } from './route';
 
-const ENDPOINT = '/event-api/launch-event';
+const ENDPOINT = 'https://script.google.com/macros/s/test/exec';
 const MEMBER_ID = 710;
 const ACCESS_TOKEN = `synthetic.${btoa(JSON.stringify({ memberId: MEMBER_ID }))}.not-a-real-signature`;
 const REFRESH_TOKEN = 'synthetic-refresh-not-a-real-token';
@@ -34,7 +34,7 @@ const CONFIG: LaunchEventConfig = {
 const METADATA: LaunchEventMetadata = {
   eventId: LAUNCH_EVENT_ID,
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
-  authentication: 'server-verified',
+  authentication: 'client-reported',
   accepting: true,
   startAt: CONFIG.startAt,
   endAt: CONFIG.endAt,
@@ -97,15 +97,17 @@ afterAll(() => {
   }
 });
 
-function setup(rejectSubmission = false) {
+function setup(
+  submissionResult: 'success' | 'rejected' | 'cors-error' = 'success',
+) {
   const memberRequests: Request[] = [];
   const tradeRequests: Request[] = [];
-  const relayRequests: Request[] = [];
+  const gasRequests: Request[] = [];
   const submittedBodies: unknown[] = [];
   const requestedPages: number[] = [];
 
   // 공통 setup의 onUnhandledRequest: 'error'가 아래에 없는 요청을 차단한다.
-  // 중계 서버는 MSW로 대체한다. 서버의 인증·서명 검증은 별도 Node/GAS 테스트 대상이다.
+  // Google 응답은 MSW로 대체한다. 실제 Google의 CORS 허용 여부를 입증하는 테스트는 아니다.
   server.use(
     http.get('/api/v1/members/me', ({ request }) => {
       memberRequests.push(request);
@@ -144,14 +146,15 @@ function setup(rejectSubmission = false) {
       });
     }),
     http.get(ENDPOINT, ({ request }) => {
-      relayRequests.push(request);
+      gasRequests.push(request);
       return HttpResponse.json({ ok: true, ...METADATA });
     }),
     http.post(ENDPOINT, async ({ request }) => {
-      relayRequests.push(request);
+      gasRequests.push(request);
       submittedBodies.push(await request.json());
+      if (submissionResult === 'cors-error') return HttpResponse.error();
       return HttpResponse.json(
-        rejectSubmission
+        submissionResult === 'rejected'
           ? { ok: false, code: 'POLICY_CHANGED' }
           : {
               ok: true,
@@ -176,7 +179,7 @@ function setup(rejectSubmission = false) {
     user: userEvent.setup(),
     memberRequests,
     tradeRequests,
-    relayRequests,
+    gasRequests,
     submittedBodies,
     requestedPages,
   };
@@ -197,12 +200,12 @@ async function openAndFill(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('이벤트 응모 합성 통합 흐름', () => {
-  it('인증·폼·사전 확인 후 중계 서버에 제출하고 확인된 영수증으로 완료 화면을 표시한다', async () => {
+  it('본인 API에서 모든 글을 조회한 뒤 Google에 토큰 없이 접수하고 영수증을 확인한다', async () => {
     const {
       user,
       memberRequests,
       tradeRequests,
-      relayRequests,
+      gasRequests,
       submittedBodies,
       requestedPages,
     } = setup();
@@ -282,7 +285,8 @@ describe('이벤트 응모 합성 통합 흐름', () => {
         eventId: LAUNCH_EVENT_ID,
         schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
         submissionId: SUBMISSION_ID,
-        expectedMemberId: String(MEMBER_ID),
+        memberId: String(MEMBER_ID),
+        tradeIds: TRADE_IDS,
         name: '합성 참여자',
         instagramId: 'synthetic.participant',
         privacyConsent: true,
@@ -290,51 +294,61 @@ describe('이벤트 응모 합성 통합 흐름', () => {
         rulesVersion: 'synthetic-test-only',
       },
     ]);
-    expect(relayRequests.map((request) => request.method)).toEqual([
+    expect(gasRequests.map((request) => request.method)).toEqual([
       'GET',
       'POST',
     ]);
-    for (const request of relayRequests) {
-      expect(request.headers.get('authorization')).toBe(
-        request.method === 'POST' ? `Bearer ${ACCESS_TOKEN}` : null,
-      );
+    for (const request of gasRequests) {
+      expect(request.headers.get('authorization')).toBeNull();
       expect(request.headers.get('cookie')).toBeNull();
       expect(request.credentials).toBe('omit');
+      expect(request.mode).toBe('cors');
+      expect(request.redirect).toBe('follow');
       expect(request.referrerPolicy).toBe('no-referrer');
-      expect(request.url).toBe(new URL(ENDPOINT, window.location.origin).href);
+      expect(request.url).toBe(ENDPOINT);
+      if (request.method === 'POST') {
+        expect(request.headers.get('content-type')).toBe(
+          'text/plain;charset=UTF-8',
+        );
+      }
     }
     expect(JSON.stringify(submittedBodies)).not.toContain(ACCESS_TOKEN);
     expect(JSON.stringify(submittedBodies)).not.toContain(REFRESH_TOKEN);
   });
 
-  it('접수가 거절되면 완료 화면을 열지 않고 입력과 재시도 버튼을 유지한다', async () => {
-    const { user, submittedBodies, requestedPages } = setup(true);
-    const form = await openAndFill(user);
-    await user.click(within(form).getByRole('checkbox', { name: '전체 동의' }));
-    await user.click(within(form).getByRole('button', { name: '응모하기' }));
+  it.each(['rejected', 'cors-error'] as const)(
+    '%s 응답이면 완료 화면을 열지 않고 입력과 재시도 버튼을 유지한다',
+    async (submissionResult) => {
+      const { user, submittedBodies, requestedPages } = setup(submissionResult);
+      const form = await openAndFill(user);
+      await user.click(
+        within(form).getByRole('checkbox', { name: '전체 동의' }),
+      );
+      await user.click(within(form).getByRole('button', { name: '응모하기' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      '응모 접수 결과를 확인하지 못했어요.',
-    );
-    expect(
-      screen.queryByRole('heading', { name: '응모가 완료됐어요' }),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByText(SUBMISSION_ID)).not.toBeInTheDocument();
-    expect(within(form).getByRole('textbox', { name: '이름' })).toHaveValue(
-      '  합성 참여자  ',
-    );
-    expect(
-      within(form).getByRole('textbox', { name: '인스타그램 아이디' }),
-    ).toHaveValue('@Synthetic.Participant');
-    expect(
-      within(form).getByRole('button', { name: '응모하기' }),
-    ).toBeEnabled();
-    await waitFor(() =>
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '응모 접수 결과를 확인하지 못했어요.',
+      );
       expect(
-        screen.getByRole('button', { name: '이벤트 상세로 돌아가기' }),
-      ).toBeEnabled(),
-    );
-    expect(requestedPages).toEqual([0, 1]);
-    expect(submittedBodies).toHaveLength(1);
-  });
+        screen.queryByRole('heading', { name: '응모가 완료됐어요' }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText(SUBMISSION_ID)).not.toBeInTheDocument();
+      expect(within(form).getByRole('textbox', { name: '이름' })).toHaveValue(
+        '  합성 참여자  ',
+      );
+      expect(
+        within(form).getByRole('textbox', { name: '인스타그램 아이디' }),
+      ).toHaveValue('@Synthetic.Participant');
+      expect(
+        within(form).getByRole('button', { name: '응모하기' }),
+      ).toBeEnabled();
+      await waitFor(() =>
+        expect(
+          screen.getByRole('button', { name: '이벤트 상세로 돌아가기' }),
+        ).toBeEnabled(),
+      );
+      expect(requestedPages).toEqual([0, 1]);
+      expect(submittedBodies).toHaveLength(1);
+    },
+  );
 });

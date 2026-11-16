@@ -34,6 +34,10 @@ export const Header = styled.header`
     font-size: 16px;
     margin: 0;
     flex: 1;
+    /* 화면 전환을 알리는 비대화형 제목 초점은 유지하되 기본 테두리만 숨긴다. */
+    &:focus {
+      outline: none;
+    }
   }
 `;
 export const IconButton = styled.button`
@@ -42,11 +46,18 @@ export const IconButton = styled.button`
   align-items: center;
   width: 44px;
   height: 44px;
+  flex-shrink: 0;
   padding: 10px;
   border: 0;
   background: transparent;
   color: inherit;
   cursor: pointer;
+  svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
   &:disabled {
     opacity: 0.5;
     cursor: default;
@@ -56,7 +67,6 @@ export const Hero = styled.div`
   aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
-  background: #fff0f4;
   img {
     display: block;
     width: 100%;

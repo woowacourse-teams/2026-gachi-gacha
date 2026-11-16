@@ -29,11 +29,13 @@ export function LaunchEventBanner() {
           <strong>{LAUNCH_EVENT_CONTENT.shortTitle}</strong>
           <span>앱 출시 기념 · 총 8명에게 랜덤 선물</span>
         </Copy>
-        {LAUNCH_EVENT_CONTENT.prizeImage ? (
-          <img src={LAUNCH_EVENT_CONTENT.prizeImage} alt="" />
-        ) : (
-          <Gift aria-hidden="true">🎁</Gift>
-        )}
+        <Artwork aria-hidden="true">
+          {LAUNCH_EVENT_CONTENT.prizeImage ? (
+            <img src={LAUNCH_EVENT_CONTENT.prizeImage} alt="" />
+          ) : (
+            <Gift>🎁</Gift>
+          )}
+        </Artwork>
       </Banner>
     </Wrapper>
   );
@@ -50,9 +52,9 @@ const Wrapper = styled.div`
   }
 `;
 const Banner = styled(Link)`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(160px, 30%, 240px);
+  align-items: stretch;
   min-height: 156px;
   overflow: hidden;
   background: #b8324b;
@@ -63,33 +65,31 @@ const Banner = styled(Link)`
     outline: 3px solid #242122;
     outline-offset: 4px;
   }
-  img {
-    width: 200px;
-    height: 156px;
-    object-fit: contain;
-    background: #fff5ee;
-  }
   @media (max-width: 768px) {
+    grid-template-columns: minmax(0, 1fr) 34%;
     min-height: 112px;
-    img {
-      width: 112px;
-      height: 112px;
-    }
   }
 `;
 const Copy = styled.div`
+  min-width: 0;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 8px;
   padding: 20px 24px;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   small {
     font-size: 12px;
+    line-height: 1.4;
   }
   strong {
     font-size: 24px;
+    line-height: 1.4;
   }
   span {
     font-size: 14px;
+    line-height: 1.5;
   }
   @media (max-width: 768px) {
     padding: 16px;
@@ -100,6 +100,35 @@ const Copy = styled.div`
     span {
       font-size: 11px;
     }
+  }
+`;
+const Artwork = styled.div`
+  position: relative;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  /* 원본 사진은 보존하고 접점만 배너 색으로 부드럽게 연결한다. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      #b8324b 0%,
+      rgb(184 50 75 / 72%) 10%,
+      rgb(184 50 75 / 28%) 24%,
+      rgb(184 50 75 / 0%) 45%
+    );
   }
 `;
 const Gift = styled.span`
