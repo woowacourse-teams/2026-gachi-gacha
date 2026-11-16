@@ -65,8 +65,20 @@ const ANDROID_WEB_SHELL_STYLES = `
       overflow-wrap: anywhere;
     }
 
+    /* Keep the related cards' absolutely positioned screen-reader labels inside
+       their horizontal scroller. Without a positioned ancestor those labels can
+       enlarge the mobile layout viewport, stretching the unrelated fixed CTA.
+       Preserve accessible text and scrolling; do not mask root overflow or pin
+       the button to a device-specific width. Desktop/web/iOS remain untouched. */
+    html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-detail] ~ section [data-home-card] {
+      position: relative;
+    }
+
     html[data-gachigacha-native-platform="android"] [data-gachigacha-android-trade-detail-action] {
-      padding-bottom: var(--gachigacha-android-detail-action-edge, 10px) !important;
+      /* Keep the web's fixed positioning. Native SafeAreaView already reserves
+         system navigation; match vertical breathing room to the web side inset. */
+      padding-top: var(--gachigacha-android-detail-action-edge, 16px) !important;
+      padding-bottom: var(--gachigacha-android-detail-action-edge, 16px) !important;
     }
 
     /* Native SafeAreaView owns system bars on EVERY tab, not just the map. */
@@ -756,7 +768,7 @@ function createWebShellRuntimeBody(): string {
         ['--gachigacha-android-detail-action-edge']);
       if (fixedAction) {
         fixedAction.style.setProperty('--gachigacha-android-detail-action-edge',
-          window.getComputedStyle(fixedAction).paddingTop);
+          window.getComputedStyle(fixedAction).paddingLeft);
       }
     };
 
