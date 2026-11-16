@@ -62,7 +62,7 @@ jobs:
         run: pnpm catalog:test
 
       - name: Test launch event intake contract
-        run: node --test scripts/launch-event-apps-script/Code.test.mjs
+        run: node --test scripts/launch-event-apps-script/Code.test.mjs scripts/launch-event-relay/server.test.mjs
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7

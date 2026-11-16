@@ -1,22 +1,23 @@
-/* 가치가챠 앱 출시 이벤트 v2. 새 프로젝트·새 스프레드시트에서만 설정한다. */
+/* 가치가챠 앱 출시 이벤트 v3. 회원 검증 중계 서버가 서명한 요청만 접수한다. */
 const EVENT_ID = 'app-launch-2026';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const MAX_TRADE_IDS = 10000;
 const MAX_BODY_BYTES = 256 * 1024;
+const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 const HEADERS = [
   '최초접수일시',
   '최종접수일시',
   '이벤트ID',
   '접수ID',
-  '자가신고회원ID',
+  '회원ID',
   '이름',
   '인스타그램ID',
-  '자가신고교환글수',
-  '자가신고교환글ID목록1',
-  '자가신고교환글ID목록2',
-  '자가신고교환글ID목록3',
-  '자가신고교환글ID목록4',
-  '자가신고교환글ID목록5',
+  '교환글수',
+  '교환글ID목록1',
+  '교환글ID목록2',
+  '교환글ID목록3',
+  '교환글ID목록4',
+  '교환글ID목록5',
   '개인정보동의',
   '유의사항동의',
   '약관버전',
@@ -28,13 +29,21 @@ const HEADERS = [
 const RECEIPT_HEADERS = [
   '이벤트ID',
   '접수ID',
-  '자가신고회원ID',
+  '회원ID',
   '요청해시',
   '접수일시',
   '최초접수일시',
   '접수횟수',
   '삭제예정일',
 ];
+const LEGACY_HEADERS = HEADERS.map(function (header) {
+  return /^(회원ID|교환글수|교환글ID목록[1-5])$/.test(header)
+    ? '자가신고' + header
+    : header;
+});
+const LEGACY_RECEIPT_HEADERS = RECEIPT_HEADERS.map(function (header) {
+  return header === '회원ID' ? '자가신고회원ID' : header;
+});
 
 /** 새 저장소만 만든다. 기존 시트·기존 이벤트 사진 폴더는 수정하지 않는다. */
 function setupLaunchEventStorage() {
@@ -69,6 +78,7 @@ function setupLaunchEventStorage() {
     properties.setProperties({
       SPREADSHEET_ID: spreadsheet.getId(),
       ACCEPTING: 'false',
+      EVENT_RELAY_SECRET: '',
       START_AT: '',
       END_AT: '',
       PRIVACY_CONTROLLER: '',
@@ -85,11 +95,72 @@ function setupLaunchEventStorage() {
   }
 }
 
+/**
+ * 직접 만든 기존 v2 시트에는 setup을 다시 실행하지 않는다.
+ * 접수를 닫고 두 탭에 헤더만 남아 있을 때만 명시적으로 실행한다.
+ * 기존 응모가 한 행이라도 있으면 미검증 데이터를 검증 완료로 바꾸지 않고 중단한다.
+ */
+function migrateEmptyLaunchEventStorageToVerified() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) throw new Error('설정 작업 중입니다.');
+  try {
+    const c = readConfig_();
+    if (c.enabled || !c.spreadsheetId)
+      throw new Error('접수를 중단하고 기존 스프레드시트 ID를 확인하세요.');
+    if (
+      DriveApp.getFileById(c.spreadsheetId).getSharingAccess() !==
+      DriveApp.Access.PRIVATE
+    )
+      throw new Error('비공개 스프레드시트만 전환할 수 있습니다.');
+    const spreadsheet = SpreadsheetApp.openById(c.spreadsheetId);
+    const targets = [
+      { name: '응모', headers: HEADERS, legacy: LEGACY_HEADERS },
+      {
+        name: '접수이력',
+        headers: RECEIPT_HEADERS,
+        legacy: LEGACY_RECEIPT_HEADERS,
+      },
+    ].map(function (target) {
+      const sheet = spreadsheet.getSheetByName(target.name);
+      if (
+        !sheet ||
+        sheet.getLastRow() !== 1 ||
+        sheet.getLastColumn() !== target.headers.length
+      )
+        throw new Error(
+          '두 탭 모두 기존 헤더만 있어야 합니다. 데이터는 변경하지 않았습니다.',
+        );
+      const current = JSON.stringify(
+        sheet.getRange(1, 1, 1, target.headers.length).getValues()[0],
+      );
+      if (
+        current !== JSON.stringify(target.headers) &&
+        current !== JSON.stringify(target.legacy)
+      )
+        throw new Error(
+          '예상한 헤더가 아닙니다. 데이터는 변경하지 않았습니다.',
+        );
+      return { sheet: sheet, headers: target.headers };
+    });
+    // 양쪽 탭을 모두 검사한 뒤에만 쓴다. 부분 오류 후 재실행도 헤더만 있는 경우에 한한다.
+    targets.forEach(function (target) {
+      target.sheet
+        .getRange(1, 1, 1, target.headers.length)
+        .setValues([target.headers]);
+    });
+    SpreadsheetApp.flush();
+    return { schemaVersion: SCHEMA_VERSION, accepting: false };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function readConfig_() {
   const p = PropertiesService.getScriptProperties().getProperties();
   return {
     spreadsheetId: p.SPREADSHEET_ID || '',
     enabled: p.ACCEPTING === 'true',
+    relaySecret: p.EVENT_RELAY_SECRET || '',
     startAt: p.START_AT || '',
     endAt: p.END_AT || '',
     rulesVersion: p.RULES_VERSION || '',
@@ -100,10 +171,10 @@ function readConfig_() {
       contact: p.PRIVACY_CONTACT || '',
       purpose: p.PRIVACY_PURPOSE || '',
       items: [
-        '자가신고 회원번호',
+        '로그인 회원번호',
         '이름',
         '인스타그램 ID',
-        '자가신고 교환글 수 및 ID 목록',
+        '서버에서 조회한 본인 교환글 수 및 ID 목록',
         '동의 및 접수 기록',
       ],
       retentionDays: Number(p.PRIVACY_RETENTION_DAYS),
@@ -139,6 +210,7 @@ function validDate_(value) {
 function configReady_(c) {
   return Boolean(
     c.spreadsheetId &&
+    /^[0-9a-fA-F]{64}$/.test(c.relaySecret) &&
     validDate_(c.startAt) &&
     validDate_(c.endAt) &&
     Date.parse(c.startAt) < Date.parse(c.endAt) &&
@@ -188,6 +260,7 @@ function doGet() {
     ok: true,
     eventId: EVENT_ID,
     schemaVersion: SCHEMA_VERSION,
+    authentication: 'server-verified',
     accepting: accepting,
     startAt: c.startAt,
     endAt: c.endAt,
@@ -211,18 +284,54 @@ function string_(value, min, max) {
   return value.trim();
 }
 
-function parseInput_(event) {
+function parseInput_(event, config) {
   if (
     !event ||
     !event.postData ||
     typeof event.postData.contents !== 'string' ||
     event.postData.contents.length > MAX_BODY_BYTES ||
-    Number(event.contentLength || 0) > MAX_BODY_BYTES
+    Number(event.contentLength || 0) > MAX_BODY_BYTES ||
+    Utilities.newBlob(event.postData.contents).getBytes().length >
+      MAX_BODY_BYTES
   )
     reject_('INVALID_INPUT');
+  let envelope;
+  try {
+    envelope = JSON.parse(event.postData.contents);
+  } catch (_) {
+    reject_('INVALID_INPUT');
+  }
+  if (
+    !envelope ||
+    typeof envelope !== 'object' ||
+    Array.isArray(envelope) ||
+    Object.keys(envelope).length !== 3 ||
+    typeof envelope.payload !== 'string' ||
+    envelope.payload.length > MAX_BODY_BYTES ||
+    !Number.isSafeInteger(envelope.timestamp) ||
+    Math.abs(Date.now() - envelope.timestamp) > SIGNATURE_MAX_AGE_MS ||
+    typeof envelope.signature !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(envelope.signature) ||
+    !/^[0-9a-fA-F]{64}$/.test(config.relaySecret)
+  )
+    reject_('AUTH_REQUIRED');
+  // 키는 64자리 hex 문자열 자체를 UTF-8로 사용한다. hex를 바이트로 디코딩하지 않는다.
+  const signature = Utilities.computeHmacSha256Signature(
+    String(envelope.timestamp) + '\n' + envelope.payload,
+    config.relaySecret,
+    Utilities.Charset.UTF_8,
+  )
+    .map(function (byte) {
+      return ('0' + (byte & 255).toString(16)).slice(-2);
+    })
+    .join('');
+  let difference = 0;
+  for (let i = 0; i < 64; i += 1)
+    difference |= signature.charCodeAt(i) ^ envelope.signature.charCodeAt(i);
+  if (difference !== 0) reject_('AUTH_REQUIRED');
   let raw;
   try {
-    raw = JSON.parse(event.postData.contents);
+    raw = JSON.parse(envelope.payload);
   } catch (_) {
     reject_('INVALID_INPUT');
   }
@@ -387,7 +496,7 @@ function applyEntry_(sheet, rowNumber, input, record) {
       input.rulesVersion,
       record[3],
       record[7],
-      '미검증',
+      '로그인·게시글 확인 / 앱 설치 확인 필요',
       record[6],
     ]),
   );
@@ -397,12 +506,15 @@ function doPost(event) {
   let lock;
   let locked = false;
   try {
-    const input = parseInput_(event);
+    const signedConfig = readConfig_();
+    const input = parseInput_(event, signedConfig);
     const digest = fingerprint_(input);
     lock = LockService.getScriptLock();
     if (!lock.tryLock(10000)) reject_('BUSY');
     locked = true;
     const c = readConfig_();
+    // 잠금 대기 사이 비밀키가 교체되면 이전 키로 검증한 요청은 접수하지 않는다.
+    if (c.relaySecret !== signedConfig.relaySecret) reject_('AUTH_REQUIRED');
     if (!configReady_(c)) reject_('NOT_ACCEPTING');
     const storage = storage_(c);
     const entries = rows_(storage.sheet, HEADERS.length);
@@ -495,6 +607,7 @@ function doPost(event) {
   } catch (error) {
     const allowed = [
       'NOT_ACCEPTING',
+      'AUTH_REQUIRED',
       'INVALID_INPUT',
       'WRONG_EVENT',
       'CONSENT_REQUIRED',

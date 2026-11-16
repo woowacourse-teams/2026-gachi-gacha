@@ -242,6 +242,11 @@ module.exports = (_env, argv) => {
       historyApiFallback: true,
       proxy: [
         {
+          context: ['/event-api/launch-event'],
+          target: 'http://127.0.0.1:3101',
+          changeOrigin: false,
+        },
+        {
           context: ['/api'],
           target: API_PROXY_TARGET,
           changeOrigin: true,

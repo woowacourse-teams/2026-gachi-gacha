@@ -1,0 +1,26 @@
+# Add inside the intended DEV HTTPS server block only, then nginx -t.
+# Do not replace the existing server block, /api proxy or certificates.
+# The exact location prevents accidental interception of other application APIs.
+location = /event-api/launch-event {
+    client_max_body_size 16k;
+    client_body_timeout 10s;
+    proxy_pass http://127.0.0.1:3101;
+    proxy_http_version 1.1;
+    proxy_pass_request_headers off;
+    proxy_set_header Host $host;
+    proxy_set_header Connection "";
+    proxy_set_header Content-Type $http_content_type;
+    proxy_set_header Content-Encoding $http_content_encoding;
+    proxy_set_header Origin $http_origin;
+    proxy_set_header Sec-Fetch-Site $http_sec_fetch_site;
+    proxy_set_header Authorization $http_authorization;
+    proxy_request_buffering on;
+    proxy_buffering off;
+    proxy_connect_timeout 3s;
+    proxy_send_timeout 50s;
+    proxy_read_timeout 50s;
+    # An ambiguous submission must never be replayed by Nginx automatically.
+    proxy_next_upstream off;
+    # Do not log request URLs or identity-adjacent metadata for this endpoint.
+    access_log off;
+}

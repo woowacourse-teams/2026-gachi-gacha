@@ -1,5 +1,7 @@
 # 이벤트 응모 운영 가이드
 
+> 과거 `popular-goods-giveaway-2026` 이벤트 기록입니다. 현재 앱 출시 이벤트에는 이 직접 제출 설정을 적용하지 않습니다. [앱 출시 이벤트 접수 운영](./launch-event-operations.md)의 로그인 검증 중계와 서명된 접수 계약을 사용하세요.
+
 ## 현재 프론트 계약
 
 응모 페이지는 다음 JSON을 `EVENT_APPLICATION_ENDPOINT`에 `POST`합니다.

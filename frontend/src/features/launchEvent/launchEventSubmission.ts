@@ -1,3 +1,7 @@
+import { authenticatedFetch } from '@/features/auth/api/authenticatedFetch';
+import { readAccessToken } from '@/features/auth/authTokenStorage';
+import { readMemberIdFromAccessToken } from '@/features/auth/readMemberIdFromAccessToken';
+
 import {
   isLaunchEventDate,
   isLaunchEventEndpoint,
@@ -49,23 +53,38 @@ async function requestJson(
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error(FAILURE_MESSAGE));
+    }, 60_000);
+  });
   try {
-    const response = await fetch(endpoint, {
-      ...init,
-      credentials: 'omit',
-      referrerPolicy: 'no-referrer',
-      cache: 'no-store',
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(FAILURE_MESSAGE);
-    const text = await response.text();
-    if (!text.trim() || text.length > 65_536) throw new Error(FAILURE_MESSAGE);
-    const data: unknown = JSON.parse(text);
-    if (!isRecord(data) || data.ok !== true) {
-      throw new Error(FAILURE_MESSAGE);
-    }
-    return data;
+    // 인증 갱신 또는 응답 본문 읽기가 지연돼도 폼이 무한 대기하지 않는다.
+    return await Promise.race([
+      (async () => {
+        const request = init.method === 'POST' ? authenticatedFetch : fetch;
+        const response = await request(endpoint, {
+          ...init,
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer',
+          cache: 'no-store',
+          redirect: 'error',
+          signal: controller.signal,
+        });
+        if (!response.ok) throw new Error(FAILURE_MESSAGE);
+        const text = await response.text();
+        if (!text.trim() || text.length > 65_536)
+          throw new Error(FAILURE_MESSAGE);
+        const data: unknown = JSON.parse(text);
+        if (!isRecord(data) || data.ok !== true) {
+          throw new Error(FAILURE_MESSAGE);
+        }
+        return data;
+      })(),
+      timeout,
+    ]);
   } catch {
     // 외부 응답 메시지나 개인정보를 화면/로그에 그대로 노출하지 않는다.
     throw new Error(FAILURE_MESSAGE);
@@ -82,6 +101,7 @@ export async function fetchLaunchEventMetadata(
   if (
     data.eventId !== LAUNCH_EVENT_ID ||
     data.schemaVersion !== LAUNCH_EVENT_SCHEMA_VERSION ||
+    data.authentication !== 'server-verified' ||
     typeof data.accepting !== 'boolean' ||
     typeof data.startAt !== 'string' ||
     typeof data.endAt !== 'string' ||
@@ -110,6 +130,7 @@ export async function fetchLaunchEventMetadata(
   return {
     eventId: LAUNCH_EVENT_ID,
     schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
+    authentication: 'server-verified',
     accepting: data.accepting,
     startAt: data.startAt,
     endAt: data.endAt,
@@ -155,18 +176,25 @@ export async function submitLaunchEvent(
   ) {
     throw new Error('응모 정보와 참여 활동을 다시 확인해 주세요.');
   }
-  // 키를 명시하여 호출자가 추가한 인증 토큰 등 임의 필드가 유출되지 않게 한다.
+  const accessToken = readAccessToken();
+  if (
+    !accessToken ||
+    readMemberIdFromAccessToken(accessToken) !== input.memberId
+  ) {
+    throw new Error('로그인 계정이 변경되었어요. 로그인 상태를 확인해 주세요.');
+  }
+  // 회원번호는 계정 전환 감지용 예상값뿐이다. 확정 회원번호와 글 목록은
+  // 중계 서버가 로그인 API로 다시 조회하며, 브라우저의 목록은 전송하지 않는다.
   const data = await requestJson(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       eventId: LAUNCH_EVENT_ID,
       schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
       submissionId,
-      memberId: input.memberId,
+      expectedMemberId: input.memberId,
       name,
       instagramId,
-      tradeIds: input.tradeIds.map((tradeId) => tradeId),
       privacyConsent: input.privacyConsent,
       rulesConsent: input.rulesConsent,
       rulesVersion: input.rulesVersion,
