@@ -104,6 +104,7 @@ function readConfig_() {
         '이름',
         '인스타그램 ID',
         '브라우저에서 조회·전달한 본인 교환글 수 및 ID 목록',
+        '응모 환경(웹·Android 앱·iOS 앱·기기 미확인 앱)',
         '동의 및 접수 기록',
       ],
       retentionDays: Number(p.PRIVACY_RETENTION_DAYS),
@@ -189,6 +190,7 @@ function doGet() {
     eventId: EVENT_ID,
     schemaVersion: SCHEMA_VERSION,
     authentication: 'client-reported',
+    capabilities: { participationPlatform: true },
     accepting: accepting,
     startAt: c.startAt,
     endAt: c.endAt,
@@ -248,6 +250,7 @@ function parseInput_(event) {
     'privacyConsent',
     'rulesConsent',
     'rulesVersion',
+    'participationPlatform',
   ];
   if (
     Object.keys(raw).some(function (key) {
@@ -276,6 +279,13 @@ function parseInput_(event) {
     reject_('INVALID_INPUT');
   if (raw.privacyConsent !== true || raw.rulesConsent !== true)
     reject_('CONSENT_REQUIRED');
+  if (
+    raw.participationPlatform !== undefined &&
+    ['web', 'android', 'ios', 'app-unknown'].indexOf(
+      raw.participationPlatform,
+    ) === -1
+  )
+    reject_('INVALID_INPUT');
   return {
     submissionId: raw.submissionId.toLowerCase(),
     memberId: raw.memberId,
@@ -285,6 +295,7 @@ function parseInput_(event) {
       return a - b;
     }),
     rulesVersion: string_(raw.rulesVersion, 1, 100),
+    participationPlatform: raw.participationPlatform,
   };
 }
 
@@ -304,6 +315,8 @@ function fingerprint_(input) {
     privacyConsent: true,
     rulesConsent: true,
     rulesVersion: input.rulesVersion,
+    // undefined는 JSON 직렬화에서 제외되어 기존 v4 요청의 해시를 보존한다.
+    participationPlatform: input.participationPlatform,
   });
   return Utilities.computeDigest(
     Utilities.DigestAlgorithm.SHA_256,
@@ -368,6 +381,20 @@ function receipt_(record) {
   });
 }
 
+function participationStatus_(platform) {
+  // 접수 환경은 클라이언트가 알려 준 값이며 앱 설치나 참여 자격의 검증 결과가 아니다.
+  const labels = {
+    web: '웹',
+    android: 'Android 앱',
+    ios: 'iOS 앱',
+    'app-unknown': '앱(기기 미확인)',
+  };
+  return (
+    (platform === undefined ? '브라우저' : labels[platform]) +
+    ' 전달 / 참여 조건 확인 필요'
+  );
+}
+
 function applyEntry_(sheet, rowNumber, input, record) {
   // 2,000개씩 나눠 안전정수 10,000개도 셀당 50,000자 제한 안에 보관한다.
   const chunks = [];
@@ -391,7 +418,7 @@ function applyEntry_(sheet, rowNumber, input, record) {
       input.rulesVersion,
       record[3],
       record[7],
-      '브라우저 전달 / 참여 조건 확인 필요',
+      participationStatus_(input.participationPlatform),
       record[6],
     ]),
   );

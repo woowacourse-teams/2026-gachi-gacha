@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
-import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
 import {
   getLaunchEventAvailability,
@@ -26,39 +25,6 @@ import { useLaunchEventClock } from '@/features/launchEvent/useLaunchEventClock'
 import { LaunchEventForm } from './LaunchEventForm';
 import * as S from './route.styles';
 
-function LoginDialog({ onClose }: { onClose: () => void }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const navigate = useNavigate();
-  useEffect(() => {
-    const opener = document.activeElement;
-    const dialog = ref.current;
-    dialog?.showModal();
-    return () => {
-      dialog?.close();
-      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
-    };
-  }, []);
-  return (
-    <S.Dialog ref={ref} aria-labelledby="launch-login-title" onCancel={onClose}>
-      <h2 id="launch-login-title">로그인이 필요해요</h2>
-      <p>로그인한 뒤 이벤트 페이지에서 응모를 이어갈 수 있어요.</p>
-      <div>
-        <S.Secondary type="button" onClick={onClose}>
-          닫기
-        </S.Secondary>
-        <S.Primary
-          type="button"
-          onClick={() =>
-            navigate(createLoginUrl(`${LAUNCH_EVENT_PATH}?apply=1`))
-          }
-        >
-          로그인
-        </S.Primary>
-      </div>
-    </S.Dialog>
-  );
-}
-
 export function LaunchEventRoute({
   config = LAUNCH_EVENT_CONFIG,
 }: {
@@ -74,12 +40,13 @@ export function LaunchEventRoute({
   const [attempt, setAttempt] = useState(0);
   const [step, setStep] = useState<'detail' | 'apply' | 'complete'>('detail');
   const [receipt, setReceipt] = useState<LaunchEventReceipt | null>(null);
-  const [loginOpen, setLoginOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
   const titleRef = useRef<HTMLHeadingElement>(null);
   const ready = getLaunchEventReadiness(config, metadata, now);
+  const hasAuthenticatedMember =
+    auth.status === 'authenticated' && Boolean(auth.memberId);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -97,7 +64,6 @@ export function LaunchEventRoute({
     navigate(`${LAUNCH_EVENT_PATH}${search ? `?${search}` : ''}`, {
       replace: true,
     });
-    setLoginOpen(false);
     setStep('apply');
   }, [
     auth.status,
@@ -155,9 +121,9 @@ export function LaunchEventRoute({
   };
 
   const apply = () => {
+    if (!hasAuthenticatedMember) return;
     if (!getLaunchEventReadiness(config, metadata, new Date())) return;
-    if (auth.status === 'authenticated' && auth.memberId) setStep('apply');
-    else setLoginOpen(true);
+    setStep('apply');
   };
 
   const share = async () => {
@@ -186,9 +152,21 @@ export function LaunchEventRoute({
       ? '응모가 마감되었어요'
       : availability === 'upcoming'
         ? '응모 시작 전이에요'
-        : ready
-          ? '응모하기'
-          : '응모를 준비하고 있어요';
+        : availability !== 'open'
+          ? '응모를 준비하고 있어요'
+          : auth.status === 'loading'
+            ? '로그인 확인 중…'
+            : auth.status === 'guest'
+              ? '로그인하고 응모해주세요!'
+              : !hasAuthenticatedMember
+                ? '로그인 상태를 확인해 주세요'
+                : metadataError
+                  ? '접수 정보를 다시 확인해 주세요'
+                  : !metadata
+                    ? '접수 정보를 확인하고 있어요…'
+                    : ready
+                      ? '응모하기'
+                      : '지금은 응모할 수 없어요';
 
   return (
     <S.Page>
@@ -346,28 +324,62 @@ export function LaunchEventRoute({
                   접수 정보를 불러오지 못했어요.{' '}
                   <button
                     type="button"
-                    onClick={() => setAttempt((value) => value + 1)}
+                    onClick={() => {
+                      setMetadataError(false);
+                      setAttempt((value) => value + 1);
+                    }}
                   >
                     다시 확인
                   </button>
                 </S.Notice>
               )}
-              {!ready && (
-                <S.Notice>
-                  접수 기간·개인정보 안내·응모 시스템 설정을 완료한 뒤 응모할 수
-                  있습니다.
+              {availability === 'open' && auth.status === 'guest' && (
+                <S.Notice id="launch-login-notice">
+                  앱이나 사이트의 로그인 메뉴에서 로그인한 뒤, 이 이벤트로
+                  돌아와 응모해 주세요.
                 </S.Notice>
               )}
+              {availability === 'open' &&
+                auth.status !== 'loading' &&
+                auth.status !== 'guest' &&
+                !hasAuthenticatedMember && (
+                  <S.Notice role="alert">
+                    로그인 상태를 확인하지 못했어요.{' '}
+                    <button type="button" onClick={auth.retry}>
+                      로그인 상태 다시 확인
+                    </button>
+                  </S.Notice>
+                )}
+              {hasAuthenticatedMember &&
+                availability === 'open' &&
+                !metadata &&
+                !metadataError && (
+                  <S.Notice role="status">
+                    로그인은 확인됐어요. 응모 기간과 접수 가능 여부를 확인하고
+                    있어요.
+                  </S.Notice>
+                )}
+              {!ready &&
+                (availability !== 'open' ||
+                  (hasAuthenticatedMember && metadata !== null)) && (
+                  <S.Notice>
+                    접수 기간·개인정보 안내·응모 시스템 설정을 완료한 뒤 응모할
+                    수 있습니다.
+                  </S.Notice>
+                )}
               <S.Notice role="status">{shareMessage}</S.Notice>
               <S.Footer>
                 <S.Primary
                   type="button"
-                  disabled={!ready || auth.status === 'loading'}
+                  disabled={!ready || !hasAuthenticatedMember}
+                  aria-describedby={
+                    availability === 'open' && auth.status === 'guest'
+                      ? 'launch-login-notice'
+                      : undefined
+                  }
                   onClick={apply}
                 >
-                  {auth.status === 'loading' && ready
-                    ? '로그인 확인 중…'
-                    : stateText}
+                  {stateText}
                 </S.Primary>
               </S.Footer>
             </>
@@ -437,7 +449,6 @@ export function LaunchEventRoute({
             </>
           )}
         </main>
-        {loginOpen && <LoginDialog onClose={() => setLoginOpen(false)} />}
       </S.Shell>
     </S.Page>
   );

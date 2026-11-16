@@ -147,6 +147,30 @@ function fill() {
 }
 
 describe('LaunchEventForm', () => {
+  it.each([false, true])(
+    '수신부 기기 기록 지원=%s에 맞춰 참여 환경을 전송한다',
+    async (supported) => {
+      document.documentElement.dataset.gachigachaNativePlatform = 'android';
+      try {
+        setup({
+          ...METADATA,
+          ...(supported
+            ? { capabilities: { participationPlatform: true as const } }
+            : {}),
+        });
+        fill();
+        fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+        await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
+        const payload = submitMock.mock.calls[0]?.[0];
+        if (supported)
+          expect(payload).toHaveProperty('participationPlatform', 'android');
+        else expect(payload).not.toHaveProperty('participationPlatform');
+      } finally {
+        delete document.documentElement.dataset.gachigachaNativePlatform;
+      }
+    },
+  );
+
   it('이름·인스타그램만 입력받고 조회된 활동과 정규화한 입력을 한 번 전송한다', async () => {
     let complete!: (value: LaunchEventReceipt) => void;
     submitMock.mockReturnValue(

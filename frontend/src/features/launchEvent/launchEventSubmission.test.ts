@@ -71,6 +71,54 @@ afterEach(() => {
 });
 
 describe('새 이벤트 전용 전송 계약', () => {
+  it.each(['web', 'android', 'ios', 'app-unknown'] as const)(
+    '지원된 접수 환경 %s만 추가 전송한다',
+    async (participationPlatform) => {
+      const fetchMock = jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(new Response(JSON.stringify(receipt)));
+      await submitLaunchEvent({ ...input, participationPlatform }, endpoint);
+      expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+        ...input,
+        eventId: LAUNCH_EVENT_ID,
+        schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
+        participationPlatform,
+      });
+    },
+  );
+
+  it.each([
+    undefined,
+    {},
+    { participationPlatform: false },
+    { participationPlatform: 'true' },
+  ])(
+    '기기 기록 capability가 없는 구버전과 호환한다: %j',
+    async (capabilities) => {
+      jest
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValue(
+          new Response(JSON.stringify({ ...metadata, capabilities })),
+        );
+      const result = await fetchLaunchEventMetadata(endpoint);
+      expect(result.capabilities).toBeUndefined();
+    },
+  );
+
+  it('수신부가 기기 기록 지원을 명시했을 때만 capability를 활성화한다', async () => {
+    jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          ...metadata,
+          capabilities: { participationPlatform: true },
+        }),
+      ),
+    );
+    expect((await fetchLaunchEventMetadata(endpoint)).capabilities).toEqual({
+      participationPlatform: true,
+    });
+  });
+
   it('요청이 중단 신호에 반응하지 않아도 60초 뒤 폼 대기를 종료한다', async () => {
     jest.useFakeTimers();
     const fetchMock = jest

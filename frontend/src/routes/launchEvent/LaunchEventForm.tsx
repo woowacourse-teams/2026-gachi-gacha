@@ -5,6 +5,7 @@ import {
   isLaunchEventDate,
   type LaunchEventMetadata,
 } from '@/features/launchEvent/launchEventConfig';
+import { getLaunchEventPlatform } from '@/features/launchEvent/launchEventPlatform';
 import {
   isLaunchEventInstagramId,
   type LaunchEventReceipt,
@@ -159,6 +160,10 @@ export function LaunchEventForm({
         privacyConsent: true as const,
         rulesConsent: true as const,
         rulesVersion: metadata.rulesVersion,
+        // 구버전 GAS는 추가 필드를 거절한다. 지원 응답이 있을 때만 전송한다.
+        ...(metadata.capabilities?.participationPlatform
+          ? { participationPlatform: getLaunchEventPlatform() }
+          : {}),
       };
       const fingerprint = JSON.stringify({ endpoint, ...input });
       if (!attempt.current || attempt.current.fingerprint !== fingerprint) {

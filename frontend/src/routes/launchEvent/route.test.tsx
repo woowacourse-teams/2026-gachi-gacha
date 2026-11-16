@@ -1,12 +1,4 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from '@jest/globals';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
@@ -71,42 +63,6 @@ const RECEIPT: LaunchEventReceipt = {
   submissionId: '12345678-1234-4234-9234-123456789012',
   receivedAt: '2026-11-11T12:00:00+09:00',
 };
-const originalShowModal = Object.getOwnPropertyDescriptor(
-  HTMLDialogElement.prototype,
-  'showModal',
-);
-const originalClose = Object.getOwnPropertyDescriptor(
-  HTMLDialogElement.prototype,
-  'close',
-);
-
-beforeAll(() => {
-  Object.defineProperties(HTMLDialogElement.prototype, {
-    showModal: {
-      configurable: true,
-      value: function (this: HTMLDialogElement) {
-        this.open = true;
-      },
-    },
-    close: {
-      configurable: true,
-      value: function (this: HTMLDialogElement) {
-        this.open = false;
-      },
-    },
-  });
-});
-
-afterAll(() => {
-  for (const [property, descriptor] of [
-    ['showModal', originalShowModal],
-    ['close', originalClose],
-  ] as const) {
-    if (descriptor)
-      Object.defineProperty(HTMLDialogElement.prototype, property, descriptor);
-    else Reflect.deleteProperty(HTMLDialogElement.prototype, property);
-  }
-});
 
 function setAuth(
   status: ReturnType<typeof useAuthSession>['status'],
@@ -248,16 +204,22 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
   );
 
   it('클라이언트 기간이 열려 있어도 수신부 확인 전에는 응모할 수 없다', () => {
+    setAuth('authenticated', '37');
     metadataMock.mockImplementation(() => new Promise(() => undefined));
     setup();
     expect(
-      screen.getByRole('button', { name: '응모를 준비하고 있어요' }),
+      screen.getByRole('button', { name: '접수 정보를 확인하고 있어요…' }),
     ).toBeDisabled();
+    expect(screen.getByText(/로그인은 확인됐어요/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '로그인하고 응모해주세요!' }),
+    ).not.toBeInTheDocument();
     expect(metadataMock).toHaveBeenCalledWith(CONFIG.endpoint);
     expect(submitMock).not.toHaveBeenCalled();
   });
 
   it('수신부의 기간이 다르면 응모 버튼을 열지 않는다', async () => {
+    setAuth('authenticated', '37');
     metadataMock.mockResolvedValue({
       ...METADATA,
       endAt: '2099-11-24T00:00:00+09:00',
@@ -265,44 +227,60 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
     setup();
     await act(async () => undefined);
     expect(
-      screen.getByRole('button', { name: '응모를 준비하고 있어요' }),
+      screen.getByRole('button', { name: '지금은 응모할 수 없어요' }),
     ).toBeDisabled();
     expect(submitMock).not.toHaveBeenCalled();
   });
 
   it('수신부 확인 실패를 안내하고 재확인 성공 시에만 응모를 연다', async () => {
+    setAuth('authenticated', '37');
     metadataMock.mockRejectedValueOnce(new Error('unavailable'));
     const { user } = setup();
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '접수 정보를 불러오지 못했어요',
     );
+    expect(
+      screen.getByRole('button', {
+        name: '접수 정보를 다시 확인해 주세요',
+      }),
+    ).toBeDisabled();
     await user.click(screen.getByRole('button', { name: '다시 확인' }));
     expect(await readyButton()).toBeEnabled();
     expect(metadataMock).toHaveBeenCalledTimes(2);
     expect(submitMock).not.toHaveBeenCalled();
   });
 
-  it('비로그인 사용자는 로그인 안내를 받고 닫으면 응모 버튼으로 초점이 돌아온다', async () => {
-    const { user } = setup();
-    const button = await readyButton();
-    await user.click(button);
-    expect(
-      screen.getByRole('dialog', { name: '로그인이 필요해요' }),
-    ).toBeVisible();
-    expect(formMock).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: '닫기' }));
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(button).toHaveFocus();
-    expect(submitMock).not.toHaveBeenCalled();
-  });
+  it.each(['/events/app-launch', '/events/app-launch?apply=1'])(
+    '비로그인은 %s에서 응모 버튼을 비활성화하고 웹 로그인으로 이동하지 않는다',
+    async (initialEntry) => {
+      const { user } = setup(CONFIG, initialEntry);
+      const button = screen.getByRole('button', {
+        name: '로그인하고 응모해주세요!',
+      });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAccessibleDescription(
+        '앱이나 사이트의 로그인 메뉴에서 로그인한 뒤, 이 이벤트로 돌아와 응모해 주세요.',
+      );
+      await act(async () => undefined);
+      expect(button).toBeDisabled();
+      await user.click(button);
+      expect(screen.getByTestId('location').textContent).toBe(initialEntry);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /^로그인$/ }),
+      ).not.toBeInTheDocument();
+      expect(formMock).not.toHaveBeenCalled();
+      expect(submitMock).not.toHaveBeenCalled();
+    },
+  );
 
-  it('로그인 이동에 이벤트 복귀 경로를 포함한다', async () => {
-    const { user } = setup();
-    await user.click(await readyButton());
-    await user.click(screen.getByRole('button', { name: /^로그인$/ }));
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      '/login?returnTo=%2Fevents%2Fapp-launch%3Fapply%3D1',
-    );
+  it('비로그인은 접수 정보가 늦어도 즉시 로그인 안내를 확인할 수 있다', () => {
+    metadataMock.mockImplementation(() => new Promise(() => undefined));
+    setup();
+    expect(
+      screen.getByRole('button', { name: '로그인하고 응모해주세요!' }),
+    ).toBeDisabled();
+    expect(screen.queryByText(/로그인은 확인됐어요/)).not.toBeInTheDocument();
   });
 
   it('로그인 복귀 뒤 인증과 접수 정책이 확인되면 입력 폼만 열고 복귀 의도를 제거한다', async () => {
@@ -344,11 +322,51 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
 
   it('로그인 상태를 확인 중일 때는 응모를 시작하지 않는다', async () => {
     setAuth('loading');
+    metadataMock.mockImplementation(() => new Promise(() => undefined));
     setup();
     expect(
       await screen.findByRole('button', { name: '로그인 확인 중…' }),
     ).toBeDisabled();
     expect(formMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['error', 'authenticated'] as const)(
+    '%s 상태에서 회원 번호가 없으면 웹 로그인 이동 없이 다시 확인하도록 안내한다',
+    async (status) => {
+      setAuth(status);
+      const retry = jest.fn();
+      authMock.mockReturnValue({ ...authMock(), retry });
+      const { user } = setup();
+      await act(async () => undefined);
+      expect(
+        screen.getByRole('button', { name: '로그인 상태를 확인해 주세요' }),
+      ).toBeDisabled();
+      await user.click(
+        screen.getByRole('button', { name: '로그인 상태 다시 확인' }),
+      );
+      expect(retry).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/events\/app-launch$/,
+      );
+      expect(formMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('기존 앱 로그인으로 인증 상태가 갱신되면 응모 버튼을 활성화한다', async () => {
+    const { user, rerender } = setup();
+    await act(async () => undefined);
+    expect(
+      screen.getByRole('button', { name: '로그인하고 응모해주세요!' }),
+    ).toBeDisabled();
+    setAuth('authenticated', '37');
+    rerender(page(CONFIG));
+    const button = await readyButton();
+    expect(button).toBeEnabled();
+    expect(
+      screen.queryByText(/앱이나 사이트의 로그인 메뉴/),
+    ).not.toBeInTheDocument();
+    await user.click(button);
+    expect(screen.getByTestId('event-form')).toHaveTextContent('회원 번호: 37');
   });
 
   it('인증된 회원과 검증된 메타데이터로 폼을 열고 접수 중 뒤로가기를 막는다', async () => {
@@ -405,6 +423,11 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
         name: '응모 가능 상태를 다시 확인해 주세요',
       }),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '이벤트 보기' }));
+    expect(
+      screen.getByRole('button', { name: '로그인하고 응모해주세요!' }),
+    ).toBeDisabled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('배타적 마감 직전 분을 표시한다', async () => {
