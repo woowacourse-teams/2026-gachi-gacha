@@ -24,7 +24,7 @@ import {
   submitLaunchEvent,
 } from './launchEventSubmission';
 
-const endpoint = '/event-api/launch-event';
+const endpoint = 'https://script.google.com/macros/s/test/exec';
 const accessToken = `test.${btoa(JSON.stringify({ memberId: 17 }))}.test-signature`;
 const input: LaunchEventInput = {
   submissionId: '019ab251-394e-4a77-9c21-1221ea123456',
@@ -46,7 +46,7 @@ const metadata = {
   ok: true,
   eventId: LAUNCH_EVENT_ID,
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
-  authentication: 'server-verified',
+  authentication: 'client-reported',
   accepting: true,
   startAt: '2026-11-11T00:00:00+09:00',
   endAt: '2026-11-25T00:00:00+09:00',
@@ -84,7 +84,7 @@ describe('새 이벤트 전용 전송 계약', () => {
     expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   });
 
-  it('우리 중계 경로에만 인증하고 클라이언트 회원·게시글 목록과 임의 필드를 전송하지 않는다', async () => {
+  it('Google에는 회원·게시글 목록만 직접 전달하고 토큰·쿠키·임의 필드는 보내지 않는다', async () => {
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(JSON.stringify(receipt)));
@@ -109,15 +109,17 @@ describe('새 이벤트 전용 전송 계약', () => {
       expect.objectContaining({
         method: 'POST',
         credentials: 'omit',
+        mode: 'cors',
         referrerPolicy: 'no-referrer',
-        redirect: 'error',
+        cache: 'no-store',
+        redirect: 'follow',
       }),
     );
-    expect(new Headers(options?.headers).get('Authorization')).toBe(
-      `Bearer ${accessToken}`,
-    );
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(endpoint);
+    expect(new Headers(options?.headers).get('Authorization')).toBeNull();
+    expect(new Headers(options?.headers).get('Cookie')).toBeNull();
     expect(new Headers(options?.headers).get('Content-Type')).toBe(
-      'application/json',
+      'text/plain;charset=UTF-8',
     );
     expect(JSON.parse(String(options?.body))).toEqual({
       submissionId: input.submissionId,
@@ -126,19 +128,32 @@ describe('새 이벤트 전용 전송 계약', () => {
       privacyConsent: true,
       rulesConsent: true,
       rulesVersion: input.rulesVersion,
-      expectedMemberId: input.memberId,
+      memberId: input.memberId,
+      tradeIds: input.tradeIds,
       eventId: LAUNCH_EVENT_ID,
       schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
     });
+    expect(String(options?.body)).not.toContain(accessToken);
+    expect(String(options?.body)).not.toContain('must-not-send');
+    expect(String(options?.body)).not.toContain('expectedMemberId');
   });
 
-  it('기존 Google 주소에는 인증 토큰이나 응모 정보를 보내지 않는다', async () => {
-    const fetchMock = jest.spyOn(globalThis, 'fetch');
-    await expect(
-      submitLaunchEvent(input, 'https://script.google.com/macros/s/test/exec'),
-    ).rejects.toThrow();
-    expect(fetchMock).not.toHaveBeenCalled();
-  });
+  it.each([
+    '/event-api/launch-event',
+    'https://script.google.com.evil.example/macros/s/test/exec',
+    'https://user:secret@script.google.com/macros/s/test/exec',
+    'https://script.google.com/macros/s/test/exec?redirect=evil',
+    'http://script.google.com/macros/s/test/exec',
+    'https://script.google.com/macros/s/test/exec\n',
+  ])(
+    '예상하지 않은 주소 %s에는 조회·응모 정보를 보내지 않는다',
+    async (invalidEndpoint) => {
+      const fetchMock = jest.spyOn(globalThis, 'fetch');
+      await expect(submitLaunchEvent(input, invalidEndpoint)).rejects.toThrow();
+      await expect(fetchLaunchEventMetadata(invalidEndpoint)).rejects.toThrow();
+      expect(fetchMock).not.toHaveBeenCalled();
+    },
+  );
 
   it('로그인 정보가 없거나 폼의 회원과 다른 계정이면 제출하지 않는다', async () => {
     const fetchMock = jest.spyOn(globalThis, 'fetch');
@@ -151,17 +166,33 @@ describe('새 이벤트 전용 전송 계약', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('서버 인증 계약이 없는 메타데이터는 거절한다', async () => {
+  it.each([
+    { schemaVersion: 3, authentication: 'server-verified' },
+    { schemaVersion: 4, authentication: 'server-verified' },
+    { schemaVersion: 4, authentication: 'client-claimed' },
+  ])('직접 접수 계약과 다른 메타데이터는 거절한다: %j', async (patch) => {
     jest
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(
-        new Response(
-          JSON.stringify({ ...metadata, authentication: 'client-claimed' }),
-        ),
+        new Response(JSON.stringify({ ...metadata, ...patch })),
       );
     await expect(fetchLaunchEventMetadata(endpoint)).rejects.toThrow(
       '이벤트 접수 설정',
     );
+  });
+
+  it('CORS·네트워크 오류를 접수 성공으로 바꾸거나 인증 헤더로 재시도하지 않는다', async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new TypeError('Failed to fetch'));
+    await expect(submitLaunchEvent(input, endpoint)).rejects.toThrow(
+      '응모 접수 결과를 확인하지 못했어요.',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[1]?.mode).toBe('cors');
+    expect(
+      new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get('Authorization'),
+    ).toBeNull();
   });
 
   it('이름 공백과 인스타그램의 선택 @·대소문자를 정규화한다', async () => {
@@ -273,8 +304,25 @@ describe('새 이벤트 전용 전송 계약', () => {
       .mockResolvedValue(new Response(JSON.stringify(metadata)));
     await expect(fetchLaunchEventMetadata(endpoint)).resolves.toMatchObject({
       eventId: LAUNCH_EVENT_ID,
+      schemaVersion: 4,
+      authentication: 'client-reported',
       privacy: metadata.privacy,
     });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(endpoint);
+    const options = fetchMock.mock.calls[0]?.[1];
+    expect(options).toEqual(
+      expect.objectContaining({
+        method: 'GET',
+        credentials: 'omit',
+        mode: 'cors',
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        cache: 'no-store',
+      }),
+    );
+    expect(new Headers(options?.headers).get('Authorization')).toBeNull();
+    expect(new Headers(options?.headers).get('Cookie')).toBeNull();
+    expect(options?.body).toBeUndefined();
     fetchMock.mockResolvedValue(
       new Response(
         JSON.stringify({

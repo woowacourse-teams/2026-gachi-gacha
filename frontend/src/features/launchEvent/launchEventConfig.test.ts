@@ -12,7 +12,7 @@ import {
 
 const config: LaunchEventConfig = {
   enabled: true,
-  endpoint: '/event-api/launch-event',
+  endpoint: 'https://script.google.com/macros/s/test/exec',
   startAt: '2026-11-11T00:00:00+09:00',
   endAt: '2026-11-25T00:00:00+09:00',
   campaignId: LAUNCH_EVENT_ID,
@@ -20,8 +20,8 @@ const config: LaunchEventConfig = {
 const now = new Date('2026-11-12T00:00:00+09:00');
 const metadata: LaunchEventMetadata = {
   eventId: LAUNCH_EVENT_ID,
-  schemaVersion: 3,
-  authentication: 'server-verified',
+  schemaVersion: 4,
+  authentication: 'client-reported',
   accepting: true,
   startAt: config.startAt,
   endAt: config.endAt,
@@ -84,8 +84,12 @@ describe('앱 출시 이벤트 활성화', () => {
     ).toBe('upcoming');
   });
 
+  it('공개 Apps Script 실행 주소만 허용한다', () => {
+    expect(isLaunchEventEndpoint(config.endpoint)).toBe(true);
+  });
+
   it.each([
-    'https://script.google.com/macros/s/test/exec',
+    '/event-api/launch-event',
     '//example.com/event-api/launch-event',
     '/event-api/launch-event?redirect=other',
     '/event-api/launch-event/',
@@ -94,6 +98,13 @@ describe('앱 출시 이벤트 활성화', () => {
     'https://script.google.com/macros/s/test/dev',
     'https://script.google.com/macros/s/test/exec?token=example',
     'https://user:secret@script.google.com/macros/s/test/exec',
+    'https://script.google.com.evil.example/macros/s/test/exec',
+    'https://script.google.com/macros/s/test/exec#token',
+    'https://script.google.com:443/macros/s/test/exec',
+    'https://script.google.com/macros/s/test/../other/exec',
+    'https://script.google.com/macros/s/test/exec\n',
+    'https://script.google.com/macros/s/test/exec\r\n',
+    ' https://script.google.com/macros/s/test/exec',
   ])('예상하지 않은 수신 주소를 거절한다: %s', (endpoint) => {
     expect(isLaunchEventEndpoint(endpoint)).toBe(false);
   });

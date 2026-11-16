@@ -4,16 +4,10 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 
-import {
-  createRelayServer,
-  EVENT_PATH,
-  loadConfig,
-} from '../launch-event-relay/server.mjs';
-
 const source = readFileSync(new URL('./Code.gs', import.meta.url), 'utf8');
 const baseInput = {
   eventId: 'app-launch-2026',
-  schemaVersion: 3,
+  schemaVersion: 4,
   submissionId: '019ab251-394e-4a77-9c21-1221ea123456',
   memberId: '17',
   name: '테스트',
@@ -25,24 +19,10 @@ const baseInput = {
 };
 const nextId = '119ab251-394e-4a77-9c21-1221ea123456';
 const thirdId = '219ab251-394e-4a77-9c21-1221ea123456';
-const relaySecret = 'a1'.repeat(32);
-
-function signedEnvelope(input, timestamp, secret = relaySecret) {
-  const payload = typeof input === 'string' ? input : JSON.stringify(input);
-  return {
-    payload,
-    timestamp,
-    signature: createHmac('sha256', secret)
-      .update(`${timestamp}\n${payload}`, 'utf8')
-      .digest('hex'),
-  };
-}
-
 function harness() {
   const properties = {
     SPREADSHEET_ID: 'private-sheet',
     ACCEPTING: 'true',
-    EVENT_RELAY_SECRET: relaySecret,
     START_AT: '2026-11-01T00:00:00Z',
     END_AT: '2026-12-01T00:00:00Z',
     RULES_VERSION: 'test-policy-v2',
@@ -206,8 +186,6 @@ function harness() {
       Charset: { UTF_8: 'utf8' },
       computeDigest: (_, data) =>
         Array.from(createHash('sha256').update(data).digest()),
-      computeHmacSha256Signature: (data, secret) =>
-        Array.from(createHmac('sha256', secret).update(data, 'utf8').digest()),
       newBlob: (data) => ({
         getBytes: () => Array.from(Buffer.from(data, 'utf8')),
       }),
@@ -247,165 +225,44 @@ function harness() {
     },
     lockReleases: () => lockReleases,
     created: () => created,
-    envelope: (input = baseInput, timestamp = now, secret = relaySecret) =>
-      signedEnvelope(input, timestamp, secret),
-    rawPost: (envelope) =>
-      context.doPost({ postData: { contents: JSON.stringify(envelope) } }),
     post: (input = baseInput) =>
       context.doPost({
-        postData: { contents: JSON.stringify(signedEnvelope(input, now)) },
-      }),
-  };
-}
-
-/** Run the actual relay against actual Code.gs handlers, replacing only I/O. */
-async function relayThroughGas(t, h, secret = relaySecret) {
-  const frontendOrigin = 'https://frontend.example.test';
-  const apiOrigin = 'https://api.example.test';
-  const gasUrl = 'https://script.google.com/macros/s/test-deployment/exec';
-  const token = `header.${Buffer.from(JSON.stringify({ memberId: 17 })).toString('base64url')}.testsignature`;
-  const calls = [];
-  const tradeIds = Array.from({ length: 103 }, (_, index) => index + 1);
-  const json = (value) =>
-    new Response(JSON.stringify(value), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  const api = (data) => json({ code: 'C000', message: '성공', data });
-  const server = createRelayServer(
-    loadConfig({
-      FRONTEND_ORIGIN: frontendOrigin,
-      API_ORIGIN: apiOrigin,
-      GAS_URL: gasUrl,
-      EVENT_RELAY_SECRET: secret,
-    }),
-    {
-      now: () => Date.parse('2026-11-16T12:00:00Z'),
-      fetchImpl: async (url, init) => {
-        calls.push({ url: String(url), init });
-        if (String(url) === gasUrl) {
-          return json(
-            init.method === 'POST'
-              ? h.context.doPost({ postData: { contents: init.body } })
-              : h.context.doGet(),
-          );
-        }
-        assert.equal(init.headers.Authorization, `Bearer ${token}`);
-        if (String(url) === `${apiOrigin}/api/v1/members/me`) {
-          return api({
-            nickname: null,
-            profileImageUrl: null,
-            desireTradeLocation: null,
-          });
-        }
-        const request = new URL(url);
-        assert.equal(request.origin, apiOrigin);
-        assert.equal(request.pathname, '/api/v1/trades/me');
-        assert.equal(request.searchParams.get('size'), '100');
-        const page = Number(request.searchParams.get('page'));
-        assert.ok(page === 0 || page === 1);
-        return api({
-          content: tradeIds
-            .slice(page * 100, (page + 1) * 100)
-            .map((tradeId) => ({
-              tradeId,
-              memberId: 17,
-            })),
-          number: page,
-          size: 100,
-          totalElements: tradeIds.length,
-          totalPages: 2,
-          last: page === 1,
-        });
-      },
-    },
-  );
-  await new Promise((resolve, reject) => {
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', resolve);
-  });
-  t.after(async () => {
-    server.closeAllConnections();
-    await new Promise((resolve) => server.close(resolve));
-  });
-  const browserInput = {
-    schemaVersion: 3,
-    eventId: baseInput.eventId,
-    submissionId: baseInput.submissionId,
-    expectedMemberId: '17',
-    name: '테스트',
-    instagramId: '@Gachi.test_17',
-    privacyConsent: true,
-    rulesConsent: true,
-    rulesVersion: baseInput.rulesVersion,
-  };
-  return {
-    calls,
-    gasUrl,
-    token,
-    tradeIds,
-    post: () =>
-      fetch(`http://127.0.0.1:${server.address().port}${EVENT_PATH}`, {
-        method: 'POST',
-        headers: {
-          Origin: frontendOrigin,
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+        postData: {
+          type: 'text/plain;charset=UTF-8',
+          contents: JSON.stringify(input),
         },
-        body: JSON.stringify(browserInput),
       }),
   };
 }
 
-test('실제 중계의 인증·전체 페이지 조회·서명이 실제 GAS 저장과 멱등 영수증으로 이어진다', async (t) => {
+test('브라우저 직접 전달 v4 본문은 비밀키 없이 실제 GAS에 저장되고 정상 영수증을 반환한다', () => {
   const h = harness();
-  const relay = await relayThroughGas(t, h);
-  const response = await relay.post();
-  assert.equal(response.status, 200);
-  const receipt = await response.json();
-  assert.deepEqual(receipt, {
+  const metadata = h.context.doGet();
+  assert.equal(metadata.schemaVersion, 4);
+  assert.equal(metadata.authentication, 'client-reported');
+  assert.equal(metadata.accepting, true);
+  assert.equal('EVENT_RELAY_SECRET' in h.properties, false);
+  const tradeIds = Array.from({ length: 103 }, (_, index) => index + 1);
+  const input = { ...baseInput, tradeIds };
+  const first = h.post(input);
+  assert.deepEqual(first, {
     ok: true,
     eventId: baseInput.eventId,
     submissionId: baseInput.submissionId,
     receivedAt: '2026-11-16T12:00:00.000Z',
   });
+  assert.deepEqual(h.post(input), first);
   assert.equal(h.rows.length, 2);
+  assert.equal(h.receipts.length, 2);
   assert.equal(h.rows[1][4], '17');
   assert.equal(h.rows[1][6], 'gachi.test_17');
   assert.equal(h.rows[1][7], '103');
-  assert.deepEqual(JSON.parse(h.rows[1][8]), relay.tradeIds);
-  assert.equal(h.rows[1][18], '로그인·게시글 확인 / 앱 설치 확인 필요');
-  const googleCalls = relay.calls.filter(({ url }) => url === relay.gasUrl);
-  assert.equal(googleCalls.length, 2);
-  assert.equal(JSON.stringify(googleCalls).includes(relay.token), false);
-  const signedRequest = JSON.parse(googleCalls[1].init.body);
-  const payload = JSON.parse(signedRequest.payload);
-  assert.equal(payload.schemaVersion, 3);
-  assert.equal(payload.memberId, '17');
-  assert.equal('expectedMemberId' in payload, false);
-  assert.deepEqual(payload.tradeIds, relay.tradeIds);
-  const retry = await relay.post();
-  assert.equal(retry.status, 200);
-  assert.deepEqual(await retry.json(), receipt);
-  assert.equal(h.rows.length, 2);
-  assert.equal(h.receipts.length, 2);
+  assert.deepEqual(JSON.parse(h.rows[1][8]), tradeIds);
+  assert.equal(h.rows[1][18], '브라우저 전달 / 참여 조건 확인 필요');
   assert.equal(h.rows[1][19], '1');
 });
 
-test('실제 중계와 GAS 비밀키가 다르면 실제 서명 검증이 실패하고 완료 응답·저장을 만들지 않는다', async (t) => {
-  const h = harness();
-  const relay = await relayThroughGas(t, h, 'b2'.repeat(32));
-  const response = await relay.post();
-  assert.equal(response.status, 409);
-  assert.deepEqual(await response.json(), {
-    ok: false,
-    code: 'RECEIPT_UNCONFIRMED',
-  });
-  assert.equal(h.rows.length, 1);
-  assert.equal(h.receipts.length, 1);
-  assert.equal(h.lockReleases(), 0);
-});
-
-test('최초 접수는 서버 검증 값·동의·이벤트 종료 후 삭제일을 저장하고 같은 UUID는 같은 영수증을 반환한다', () => {
+test('최초 접수는 전달값·동의·이벤트 종료 후 삭제일을 저장하고 같은 UUID는 같은 영수증을 반환한다', () => {
   const h = harness();
   const first = h.post();
   assert.deepEqual(first, {
@@ -425,144 +282,56 @@ test('최초 접수는 서버 검증 값·동의·이벤트 종료 후 삭제일
   assert.deepEqual(h.rows[1].slice(13, 16), ['true', 'true', 'test-policy-v2']);
   assert.match(h.rows[1][16], /^[a-f0-9]{64}$/);
   assert.equal(h.rows[1][17], '2026-12-31T00:00:00.000Z');
-  assert.equal(h.rows[1][18], '로그인·게시글 확인 / 앱 설치 확인 필요');
+  assert.equal(h.rows[1][18], '브라우저 전달 / 참여 조건 확인 필요');
   assert.equal(h.rows[1][19], '1');
 });
 
-test('서명 없는 브라우저 직접 요청·기존 v2 요청은 저장소에 접근하기 전에 거절한다', () => {
+test('기존 v1·v2·v3 본문과 v3 서명 요청은 저장소 접근 전에 거절한다', () => {
   const h = harness();
   h.properties.SPREADSHEET_ID = 'unreachable-storage';
+  const payload = JSON.stringify({ ...baseInput, schemaVersion: 3 });
+  const timestamp = Date.parse('2026-11-16T12:00:00Z');
+  const signature = createHmac('sha256', 'a1'.repeat(32))
+    .update(timestamp + '\n' + payload, 'utf8')
+    .digest('hex');
   for (const input of [
-    baseInput,
+    { ...baseInput, schemaVersion: 1 },
     { ...baseInput, schemaVersion: 2 },
+    { ...baseInput, schemaVersion: 3 },
+    { payload, timestamp, signature },
     {},
     null,
     [],
   ]) {
-    assert.deepEqual(h.rawPost(input), { ok: false, code: 'AUTH_REQUIRED' });
+    assert.deepEqual(h.post(input), { ok: false, code: 'WRONG_EVENT' });
   }
   assert.equal(h.lockReleases(), 0);
   assert.equal(h.rows.length, 1);
   assert.equal(h.receipts.length, 1);
 });
 
-test('서명 본문의 회원·게시글·개인정보나 타임스탬프를 변조하면 거절한다', () => {
+test('회원·게시글 소유권은 검증하지 않으며 전달한 ID를 검증 완료로 표시하지 않는다', () => {
   const h = harness();
-  const envelope = h.envelope();
-  for (const change of [
-    { memberId: '18' },
-    { tradeIds: [99] },
-    { name: '다른 사람' },
-    { instagramId: 'other.user' },
-  ]) {
-    assert.equal(
-      h.rawPost({
-        ...envelope,
-        payload: JSON.stringify({ ...baseInput, ...change }),
-      }).code,
-      'AUTH_REQUIRED',
-    );
-  }
-  for (const change of [
-    { timestamp: envelope.timestamp + 1 },
-    {
-      signature:
-        envelope.signature.slice(0, -1) +
-        (envelope.signature.endsWith('0') ? '1' : '0'),
-    },
-    { signature: envelope.signature.toUpperCase() },
-    { signature: '0'.repeat(63) },
-    { extra: 'unexpected' },
-  ]) {
-    assert.equal(h.rawPost({ ...envelope, ...change }).code, 'AUTH_REQUIRED');
-  }
-  assert.equal(
-    h.rawPost(h.envelope(baseInput, envelope.timestamp, 'b2'.repeat(32))).code,
-    'AUTH_REQUIRED',
-  );
-  assert.equal(h.rows.length, 1);
-  assert.equal(h.receipts.length, 1);
+  const input = { ...baseInput, memberId: '999', tradeIds: [987654] };
+  assert.equal(h.post(input).ok, true);
+  assert.equal(h.rows[1][4], '999');
+  assert.equal(h.rows[1][8], '[987654]');
+  assert.equal(h.rows[1][18], '브라우저 전달 / 참여 조건 확인 필요');
+  assert.equal(h.context.doGet().authentication, 'client-reported');
 });
 
-test('서명 타임스탬프는 밀리초 정수이며 5분 유효 범위를 벗어나면 거절한다', () => {
+test('남아 있는 중계 비밀키는 사용·공개하지 않고 속성 변경은 다음 GET에 반영한다', () => {
   const h = harness();
-  const now = h.envelope().timestamp;
-  for (const timestamp of [
-    now - 300001,
-    now + 300001,
-    now / 1000,
-    now + 0.5,
-    String(now),
-    null,
-  ]) {
-    assert.equal(
-      h.rawPost(h.envelope(baseInput, timestamp)).code,
-      'AUTH_REQUIRED',
-    );
-  }
-  assert.equal(h.rawPost(h.envelope(baseInput, now - 300000)).ok, true);
-  assert.equal(h.rawPost(h.envelope(baseInput, now + 300000)).ok, true);
-  assert.equal(h.rows.length, 2);
-  assert.equal(h.receipts.length, 2);
-});
-
-test('동일 서명 요청 재전송은 영수증만 재사용하고 만료 후에는 새 서명이 필요하다', () => {
-  const h = harness();
-  const envelope = h.envelope();
-  const receipt = h.rawPost(envelope);
-  assert.equal(receipt.ok, true);
-  assert.deepEqual(h.rawPost(envelope), receipt);
-  h.setNow('2026-11-16T12:05:01Z');
-  assert.equal(h.rawPost(envelope).code, 'AUTH_REQUIRED');
-  assert.deepEqual(h.post(), receipt);
-  assert.equal(h.rows.length, 2);
-  assert.equal(h.receipts.length, 2);
-});
-
-test('서명이 있어도 잘못된 JSON·v2 본문·토큰 포함 본문은 저장하지 않는다', () => {
-  const h = harness();
-  assert.equal(h.rawPost(h.envelope('{"secret":')).code, 'INVALID_INPUT');
-  assert.equal(h.post({ ...baseInput, schemaVersion: 2 }).code, 'WRONG_EVENT');
-  assert.equal(
-    h.post({ ...baseInput, accessToken: 'must-not-leave-relay' }).code,
-    'INVALID_INPUT',
-  );
-  assert.equal(h.rawPost(h.envelope('가'.repeat(90000))).code, 'INVALID_INPUT');
-  assert.equal(h.rows.length, 1);
-});
-
-test('비밀키 누락·잘못된 형식은 접수를 닫고 메타데이터나 오류에 키를 노출하지 않는다', () => {
-  for (const secret of [
-    '',
-    'short',
-    'z'.repeat(64),
-    'a'.repeat(63),
-    ` ${relaySecret}`,
-  ]) {
-    const h = harness();
-    h.properties.EVENT_RELAY_SECRET = secret;
-    const metadata = h.context.doGet();
-    assert.equal(metadata.accepting, false);
-    assert.equal(h.post().code, 'AUTH_REQUIRED');
-    assert.ok(!Object.hasOwn(metadata, 'relaySecret'));
-    assert.ok(!JSON.stringify(metadata).includes(relaySecret));
-    assert.equal(h.rows.length, 1);
-  }
-  const h = harness();
-  const metadata = h.context.doGet();
-  assert.equal(metadata.accepting, true);
-  assert.ok(!JSON.stringify(metadata).includes(relaySecret));
-});
-
-test('잠금 대기 중 비밀키가 교체되면 기존 키로 서명된 요청을 접수하지 않는다', () => {
-  const h = harness();
-  h.setOnLock(() => {
-    h.properties.EVENT_RELAY_SECRET = 'b2'.repeat(32);
-  });
-  assert.equal(h.post().code, 'AUTH_REQUIRED');
-  assert.equal(h.lockReleases(), 1);
-  assert.equal(h.rows.length, 1);
-  assert.equal(h.receipts.length, 1);
+  const leftoverSecret = 'unused-secret-must-not-be-exposed';
+  h.properties.EVENT_RELAY_SECRET = leftoverSecret;
+  assert.equal(h.context.doGet().accepting, true);
+  assert.equal(h.post().ok, true);
+  assert.ok(!JSON.stringify(h.context.doGet()).includes(leftoverSecret));
+  assert.ok(!Object.hasOwn(h.context.doGet(), 'relaySecret'));
+  h.properties.PRIVACY_CONTACT = 'new-contact@example.com';
+  assert.equal(h.context.doGet().privacy.contact, 'new-contact@example.com');
+  h.properties.ACCEPTING = 'false';
+  assert.equal(h.context.doGet().accepting, false);
 });
 
 test('같은 회원의 새 UUID는 최신 1행을 갱신하고 검증 상태를 초기화하며 과거 재시도는 덮어쓰지 않는다', () => {
@@ -586,7 +355,7 @@ test('같은 회원의 새 UUID는 최신 1행을 갱신하고 검증 상태를 
   assert.equal(h.rows[1][5], '새 이름');
   assert.equal(h.rows[1][7], '1');
   assert.equal(h.rows[1][8], '[43]');
-  assert.equal(h.rows[1][18], '로그인·게시글 확인 / 앱 설치 확인 필요');
+  assert.equal(h.rows[1][18], '브라우저 전달 / 참여 조건 확인 필요');
   assert.equal(h.rows[1][19], '2');
   h.rows[1][18] = '다시 확인 완료';
   const snapshot = JSON.stringify(h.rows);
@@ -816,15 +585,22 @@ test('이력·응모 응답 유실 또는 flush 실패 후 UUID 재시도는 중
   }
 });
 
-test('v3 서명 본문의 허용 필드만 받고 사진·연락처·사연·토큰·잘못된 계약을 거절한다', () => {
+test('v4 직접 전달 본문의 허용 필드만 받고 사진·연락처·사연·토큰·잘못된 계약을 거절한다', () => {
   const h = harness();
   for (const field of [
     'phone',
     'reason',
     'photos',
     'accessToken',
+    'authToken',
+    'refreshToken',
     'idToken',
+    'authorization',
     'tradeCount',
+    'expectedMemberId',
+    'payload',
+    'timestamp',
+    'signature',
   ]) {
     assert.equal(
       h.post({ ...baseInput, [field]: 'secret-input' }).code,
@@ -901,6 +677,22 @@ test('회원·UUID·이름·정규화 인스타 ID·게시글 ID의 범위와 �
   assert.equal(h.rows[1][7], '1');
 });
 
+test('회원번호는 프론트엔드와 같은 안전 정수 범위만 받고 초과값은 저장하지 않는다', () => {
+  const h = harness();
+  for (const memberId of [
+    '9007199254740992',
+    '9007199254740993',
+    '9999999999999999999',
+  ]) {
+    assert.equal(h.post({ ...baseInput, memberId }).code, 'INVALID_INPUT');
+  }
+  assert.equal(h.rows.length, 1);
+  assert.equal(h.receipts.length, 1);
+  const memberId = String(Number.MAX_SAFE_INTEGER);
+  assert.equal(h.post({ ...baseInput, memberId }).ok, true);
+  assert.equal(h.rows[1][4], memberId);
+});
+
 test('게시글 ID 10000개를 누락 없이 5개 셀로 나눠 저장한다', () => {
   const h = harness();
   const tradeIds = Array.from(
@@ -927,6 +719,14 @@ test('잘못된 JSON·과도한 요청·내부 오류는 입력 내용이나 비
     h.context.doPost({ postData: { contents: 'x'.repeat(262145) } }).code,
     'INVALID_INPUT',
   );
+  assert.equal(
+    h.context.doPost({
+      postData: { contents: JSON.stringify({ name: '가'.repeat(90000) }) },
+    }).code,
+    'INVALID_INPUT',
+  );
+  for (const event of [undefined, {}, { postData: {} }])
+    assert.equal(h.context.doPost(event).code, 'INVALID_INPUT');
   assert.equal(
     h.context.doPost({
       contentLength: 262145,
@@ -977,6 +777,13 @@ test('운영 설정·날짜·기간·접수 중지가 잘못되면 GET와 POST �
     assert.equal(h.post().code, 'NOT_ACCEPTING');
     assert.equal(h.rows.length, 1);
   }
+  for (const key of ['MAX_SUBMISSIONS', 'MAX_RECEIPTS']) {
+    const h = harness();
+    delete h.properties[key];
+    assert.equal(h.context.doGet().accepting, false);
+    assert.equal(h.post().code, 'NOT_ACCEPTING');
+    assert.equal(h.rows.length, 1);
+  }
   const h = harness();
   h.setNow(h.properties.START_AT);
   assert.equal(h.context.doGet().accepting, true);
@@ -994,13 +801,13 @@ test('운영 설정·날짜·기간·접수 중지가 잘못되면 GET와 POST �
     'rulesVersion',
     'privacy',
   ]);
-  assert.equal(metadata.schemaVersion, 3);
-  assert.equal(metadata.authentication, 'server-verified');
+  assert.equal(metadata.schemaVersion, 4);
+  assert.equal(metadata.authentication, 'client-reported');
   assert.deepEqual(metadata.privacy.items, [
-    '로그인 회원번호',
+    '브라우저에서 전달한 로그인 회원번호',
     '이름',
     '인스타그램 ID',
-    '서버에서 조회한 본인 교환글 수 및 ID 목록',
+    '브라우저에서 조회·전달한 본인 교환글 수 및 ID 목록',
     '동의 및 접수 기록',
   ]);
 });
@@ -1064,7 +871,7 @@ test('설정은 새 비공개 스프레드시트에 두 시트만 만들며 기�
   assert.equal(result.accepting, false);
   assert.equal(h.created(), 1);
   assert.equal(h.properties.ACCEPTING, 'false');
-  assert.equal(h.properties.EVENT_RELAY_SECRET, '');
+  assert.equal('EVENT_RELAY_SECRET' in h.properties, false);
   assert.equal(h.properties.MAX_RECEIPTS, '100000');
   const book = h.books.get(result.spreadsheetId);
   assert.equal(book.timezone, 'Asia/Seoul');
@@ -1077,82 +884,41 @@ test('설정은 새 비공개 스프레드시트에 두 시트만 만들며 기�
   assert.equal(h.context.doGet().accepting, false);
 });
 
-function installLegacyHeaders(h) {
-  h.rows[0] = Array.from(vm.runInContext('LEGACY_HEADERS', h.context));
-  h.receipts[0] = Array.from(
-    vm.runInContext('LEGACY_RECEIPT_HEADERS', h.context),
-  );
-}
-
-test('기존 v2 헤더는 자동 전환하지 않고 접수 중단 상태의 빈 두 탭만 명시적으로 전환한다', () => {
+test('기존 v3 열과 데이터는 조회·새 회원 접수 때 보존하고 이전 전환 함수는 제공하지 않는다', () => {
   const h = harness();
-  installLegacyHeaders(h);
+  const first = h.post();
+  assert.equal(first.ok, true);
+  h.rows[1][18] = '로그인·게시글 확인 / 앱 설치 확인 필요';
+  h.rows[1][16] = 'legacy-v3-fingerprint';
+  h.receipts[1][3] = 'legacy-v3-fingerprint';
+  const originalEntry = [...h.rows[1]];
+  const originalReceipt = [...h.receipts[1]];
+  const headers = JSON.stringify([h.rows[0], h.receipts[0]]);
+  assert.equal(h.context.migrateEmptyLaunchEventStorageToVerified, undefined);
+  assert.equal(h.context.doGet().accepting, true);
+  assert.equal(
+    h.post({ ...baseInput, memberId: '18', submissionId: nextId }).ok,
+    true,
+  );
+  assert.equal(JSON.stringify([h.rows[0], h.receipts[0]]), headers);
+  assert.deepEqual(h.rows[1], originalEntry);
+  assert.deepEqual(h.receipts[1], originalReceipt);
+  assert.equal(h.rows[2][18], '브라우저 전달 / 참여 조건 확인 필요');
+  assert.equal(h.post().code, 'SUBMISSION_CONFLICT');
+  assert.deepEqual(h.rows[1], originalEntry);
+  assert.equal(h.created(), 0);
+});
+
+test('자가신고 구형 헤더를 자동 변환하거나 기존 데이터를 덮어쓰지 않는다', () => {
+  const h = harness();
+  h.rows[0][4] = '자가신고회원ID';
+  h.rows[0][7] = '자가신고교환글수';
+  h.receipts[0][2] = '자가신고회원ID';
+  h.rows.push(['기존 데이터 보존']);
   const snapshot = JSON.stringify([h.rows, h.receipts]);
   assert.equal(h.context.doGet().accepting, false);
   assert.equal(h.post().code, 'STORAGE_NOT_READY');
   assert.equal(JSON.stringify([h.rows, h.receipts]), snapshot);
-  assert.throws(
-    () => h.context.migrateEmptyLaunchEventStorageToVerified(),
-    /접수를 중단/,
-  );
-  assert.equal(JSON.stringify([h.rows, h.receipts]), snapshot);
-  h.properties.ACCEPTING = 'false';
-  const result = h.context.migrateEmptyLaunchEventStorageToVerified();
-  assert.equal(result.schemaVersion, 3);
-  assert.equal(result.accepting, false);
-  assert.equal(h.rows[0][4], '회원ID');
-  assert.equal(h.rows[0][7], '교환글수');
-  assert.equal(h.rows[0][8], '교환글ID목록1');
-  assert.equal(h.receipts[0][2], '회원ID');
-  assert.equal(h.properties.ACCEPTING, 'false');
-  assert.equal(h.created(), 0);
-  assert.equal(
-    h.context.migrateEmptyLaunchEventStorageToVerified().schemaVersion,
-    3,
-  );
-  h.properties.ACCEPTING = 'true';
-  assert.equal(h.post().ok, true);
-});
-
-test('전환 시 어느 한 탭이라도 기존 데이터·오염된 헤더·공개 권한이 있으면 양쪽 모두 보존한다', () => {
-  for (const mutate of [
-    (h) => h.rows.push(['기존 미검증 응모']),
-    (h) => h.receipts.push(['기존 미검증 접수이력']),
-    (h) => {
-      h.receipts[0][0] = '다른 헤더';
-    },
-    (h) => {
-      h.rows[0].push('추가 열');
-    },
-    (h) => h.setSheetPrivate(false),
-  ]) {
-    const h = harness();
-    installLegacyHeaders(h);
-    h.properties.ACCEPTING = 'false';
-    mutate(h);
-    const snapshot = JSON.stringify([h.rows, h.receipts]);
-    assert.throws(() => h.context.migrateEmptyLaunchEventStorageToVerified());
-    assert.equal(JSON.stringify([h.rows, h.receipts]), snapshot);
-    assert.equal(h.created(), 0);
-    assert.equal(h.properties.ACCEPTING, 'false');
-  }
-});
-
-test('빈 시트 전환 중 부분 쓰기 오류가 나도 기존 응모는 만들지 않으며 재실행으로 헤더만 복구한다', () => {
-  const h = harness();
-  installLegacyHeaders(h);
-  h.properties.ACCEPTING = 'false';
-  h.failWrite('접수이력');
-  assert.throws(() => h.context.migrateEmptyLaunchEventStorageToVerified());
-  assert.equal(h.rows.length, 1);
-  assert.equal(h.receipts.length, 1);
-  assert.equal(h.context.doGet().accepting, false);
-  assert.equal(
-    h.context.migrateEmptyLaunchEventStorageToVerified().schemaVersion,
-    3,
-  );
-  assert.equal(h.rows[0][4], '회원ID');
-  assert.equal(h.receipts[0][2], '회원ID');
   assert.equal(h.created(), 0);
 });
 

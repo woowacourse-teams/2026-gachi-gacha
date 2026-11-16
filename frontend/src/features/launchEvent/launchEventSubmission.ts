@@ -1,4 +1,3 @@
-import { authenticatedFetch } from '@/features/auth/api/authenticatedFetch';
 import { readAccessToken } from '@/features/auth/authTokenStorage';
 import { readMemberIdFromAccessToken } from '@/features/auth/readMemberIdFromAccessToken';
 
@@ -61,16 +60,17 @@ async function requestJson(
     }, 60_000);
   });
   try {
-    // 인증 갱신 또는 응답 본문 읽기가 지연돼도 폼이 무한 대기하지 않는다.
+    // 외부 요청 또는 응답 본문 읽기가 지연돼도 폼이 무한 대기하지 않는다.
     return await Promise.race([
       (async () => {
-        const request = init.method === 'POST' ? authenticatedFetch : fetch;
-        const response = await request(endpoint, {
+        const response = await fetch(endpoint, {
           ...init,
           credentials: 'omit',
+          mode: 'cors',
           referrerPolicy: 'no-referrer',
           cache: 'no-store',
-          redirect: 'error',
+          // Apps Script ContentService의 googleusercontent 응답 이동을 허용한다.
+          redirect: 'follow',
           signal: controller.signal,
         });
         if (!response.ok) throw new Error(FAILURE_MESSAGE);
@@ -101,7 +101,7 @@ export async function fetchLaunchEventMetadata(
   if (
     data.eventId !== LAUNCH_EVENT_ID ||
     data.schemaVersion !== LAUNCH_EVENT_SCHEMA_VERSION ||
-    data.authentication !== 'server-verified' ||
+    data.authentication !== 'client-reported' ||
     typeof data.accepting !== 'boolean' ||
     typeof data.startAt !== 'string' ||
     typeof data.endAt !== 'string' ||
@@ -130,7 +130,7 @@ export async function fetchLaunchEventMetadata(
   return {
     eventId: LAUNCH_EVENT_ID,
     schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
-    authentication: 'server-verified',
+    authentication: 'client-reported',
     accepting: data.accepting,
     startAt: data.startAt,
     endAt: data.endAt,
@@ -183,16 +183,17 @@ export async function submitLaunchEvent(
   ) {
     throw new Error('로그인 계정이 변경되었어요. 로그인 상태를 확인해 주세요.');
   }
-  // 회원번호는 계정 전환 감지용 예상값뿐이다. 확정 회원번호와 글 목록은
-  // 중계 서버가 로그인 API로 다시 조회하며, 브라우저의 목록은 전송하지 않는다.
+  // 사이트에서 조회한 회원번호와 글 목록을 직접 전달한다.
+  // 접수 서버는 이 값의 진위를 검증하지 않는다. 로그인 토큰은 보내지 않는다.
   const data = await requestJson(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
     body: JSON.stringify({
       eventId: LAUNCH_EVENT_ID,
       schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
       submissionId,
-      expectedMemberId: input.memberId,
+      memberId: input.memberId,
+      tradeIds: input.tradeIds,
       name,
       instagramId,
       privacyConsent: input.privacyConsent,

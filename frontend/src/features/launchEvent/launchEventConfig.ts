@@ -1,6 +1,5 @@
 export const LAUNCH_EVENT_ID = 'app-launch-2026';
-export const LAUNCH_EVENT_SCHEMA_VERSION = 3;
-export const LAUNCH_EVENT_RELAY_PATH = '/event-api/launch-event';
+export const LAUNCH_EVENT_SCHEMA_VERSION = 4;
 
 export interface LaunchEventConfig {
   enabled: boolean;
@@ -14,7 +13,7 @@ export interface LaunchEventConfig {
 export interface LaunchEventMetadata {
   eventId: typeof LAUNCH_EVENT_ID;
   schemaVersion: typeof LAUNCH_EVENT_SCHEMA_VERSION;
-  authentication: 'server-verified';
+  authentication: 'client-reported';
   accepting: boolean;
   startAt: string;
   endAt: string;
@@ -44,9 +43,13 @@ export const LAUNCH_EVENT_CONFIG: LaunchEventConfig = {
 };
 
 export function isLaunchEventEndpoint(endpoint: string): boolean {
-  // 인증 토큰은 우리 사이트의 고정 중계 경로에만 전송한다.
-  // Google 주소·다른 origin·쿼리·리다이렉트 경로는 허용하지 않는다.
-  return endpoint === LAUNCH_EVENT_RELAY_PATH;
+  // 공개된 Apps Script 배포 주소만 사용한다. 토큰·쿠키는 전송하지 않는다.
+  return (
+    !/\s/.test(endpoint) &&
+    /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(
+      endpoint,
+    )
+  );
 }
 
 export function isLaunchEventDate(value: string): boolean {
@@ -105,7 +108,7 @@ export function getLaunchEventReadiness(
     metadata !== null &&
     metadata.eventId === LAUNCH_EVENT_ID &&
     metadata.schemaVersion === LAUNCH_EVENT_SCHEMA_VERSION &&
-    metadata.authentication === 'server-verified' &&
+    metadata.authentication === 'client-reported' &&
     metadata.accepting &&
     Date.parse(metadata.startAt) === Date.parse(config.startAt) &&
     Date.parse(metadata.endAt) === Date.parse(config.endAt) &&

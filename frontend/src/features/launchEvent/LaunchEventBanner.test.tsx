@@ -22,7 +22,7 @@ const ORIGINAL_CONFIG = { ...LAUNCH_EVENT_CONFIG };
 beforeEach(() => {
   Object.assign(LAUNCH_EVENT_CONFIG, {
     enabled: true,
-    endpoint: '/event-api/launch-event',
+    endpoint: 'https://script.google.com/macros/s/test/exec',
     campaignId: 'app-launch-2026',
     bannerStartAt: '',
     startAt: '2026-11-11T00:00:00+09:00',

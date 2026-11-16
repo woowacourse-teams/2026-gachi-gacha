@@ -40,13 +40,13 @@ jest.mock('@/features/launchEvent/launchEventSubmission', () => ({
 
 const collectMock = jest.mocked(collectLaunchEventParticipation);
 const submitMock = jest.mocked(submitLaunchEvent);
-const ENDPOINT = '/event-api/launch-event';
+const ENDPOINT = 'https://script.google.com/macros/s/test/exec';
 const UUID = '12345678-1234-4234-9234-123456789012';
 const NEXT_UUID = '12345678-1234-4234-9234-123456789013';
 const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
-  authentication: 'server-verified',
+  authentication: 'client-reported',
   accepting: true,
   startAt: '2020-01-01T00:00:00+09:00',
   endAt: '2099-11-24T23:59:59+09:00',
