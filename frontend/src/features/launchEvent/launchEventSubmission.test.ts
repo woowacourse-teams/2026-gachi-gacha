@@ -1,4 +1,16 @@
-import { afterEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
+
+import {
+  clearAuthTokens,
+  storeAuthTokens,
+} from '@/features/auth/authTokenStorage';
 
 import {
   LAUNCH_EVENT_ID,
@@ -12,7 +24,8 @@ import {
   submitLaunchEvent,
 } from './launchEventSubmission';
 
-const endpoint = 'https://script.google.com/macros/s/test/exec';
+const endpoint = '/event-api/launch-event';
+const accessToken = `test.${btoa(JSON.stringify({ memberId: 17 }))}.test-signature`;
 const input: LaunchEventInput = {
   submissionId: '019ab251-394e-4a77-9c21-1221ea123456',
   memberId: '17',
@@ -33,6 +46,7 @@ const metadata = {
   ok: true,
   eventId: LAUNCH_EVENT_ID,
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
+  authentication: 'server-verified',
   accepting: true,
   startAt: '2026-11-11T00:00:00+09:00',
   endAt: '2026-11-25T00:00:00+09:00',
@@ -46,12 +60,31 @@ const metadata = {
   },
 };
 
+beforeEach(() =>
+  storeAuthTokens({ accessToken, refreshToken: 'test-refresh' }),
+);
+
 afterEach(() => {
+  clearAuthTokens();
   jest.restoreAllMocks();
+  jest.useRealTimers();
 });
 
 describe('새 이벤트 전용 전송 계약', () => {
-  it('명시된 항목만 인증 쿠키·토큰 없이 보내고 확인된 영수증만 반환한다', async () => {
+  it('요청이 중단 신호에 반응하지 않아도 60초 뒤 폼 대기를 종료한다', async () => {
+    jest.useFakeTimers();
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => new Promise<Response>(() => {}));
+    const result = expect(submitLaunchEvent(input, endpoint)).rejects.toThrow(
+      '응모 접수 결과를 확인하지 못했어요.',
+    );
+    await jest.advanceTimersByTimeAsync(60_000);
+    await result;
+    expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+  });
+
+  it('우리 중계 경로에만 인증하고 클라이언트 회원·게시글 목록과 임의 필드를 전송하지 않는다', async () => {
     const fetchMock = jest
       .spyOn(globalThis, 'fetch')
       .mockResolvedValue(new Response(JSON.stringify(receipt)));
@@ -77,14 +110,58 @@ describe('새 이벤트 전용 전송 계약', () => {
         method: 'POST',
         credentials: 'omit',
         referrerPolicy: 'no-referrer',
-        headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+        redirect: 'error',
       }),
     );
+    expect(new Headers(options?.headers).get('Authorization')).toBe(
+      `Bearer ${accessToken}`,
+    );
+    expect(new Headers(options?.headers).get('Content-Type')).toBe(
+      'application/json',
+    );
     expect(JSON.parse(String(options?.body))).toEqual({
-      ...input,
+      submissionId: input.submissionId,
+      name: input.name,
+      instagramId: input.instagramId,
+      privacyConsent: true,
+      rulesConsent: true,
+      rulesVersion: input.rulesVersion,
+      expectedMemberId: input.memberId,
       eventId: LAUNCH_EVENT_ID,
       schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
     });
+  });
+
+  it('기존 Google 주소에는 인증 토큰이나 응모 정보를 보내지 않는다', async () => {
+    const fetchMock = jest.spyOn(globalThis, 'fetch');
+    await expect(
+      submitLaunchEvent(input, 'https://script.google.com/macros/s/test/exec'),
+    ).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('로그인 정보가 없거나 폼의 회원과 다른 계정이면 제출하지 않는다', async () => {
+    const fetchMock = jest.spyOn(globalThis, 'fetch');
+    clearAuthTokens();
+    await expect(submitLaunchEvent(input, endpoint)).rejects.toThrow('로그인');
+    storeAuthTokens({ accessToken, refreshToken: 'test-refresh' });
+    await expect(
+      submitLaunchEvent({ ...input, memberId: '18' }, endpoint),
+    ).rejects.toThrow('로그인');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('서버 인증 계약이 없는 메타데이터는 거절한다', async () => {
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ ...metadata, authentication: 'client-claimed' }),
+        ),
+      );
+    await expect(fetchLaunchEventMetadata(endpoint)).rejects.toThrow(
+      '이벤트 접수 설정',
+    );
   });
 
   it('이름 공백과 인스타그램의 선택 @·대소문자를 정규화한다', async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import { createLoginUrl } from '@/features/auth/authReturnPath';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
@@ -48,7 +48,9 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
         </S.Secondary>
         <S.Primary
           type="button"
-          onClick={() => navigate(createLoginUrl(LAUNCH_EVENT_PATH))}
+          onClick={() =>
+            navigate(createLoginUrl(`${LAUNCH_EVENT_PATH}?apply=1`))
+          }
         >
           로그인
         </S.Primary>
@@ -63,6 +65,7 @@ export function LaunchEventRoute({
   config?: LaunchEventConfig;
 }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuthSession();
   const now = useLaunchEventClock();
   const availability = getLaunchEventAvailability(config, now);
@@ -77,6 +80,33 @@ export function LaunchEventRoute({
   const [shareMessage, setShareMessage] = useState('');
   const titleRef = useRef<HTMLHeadingElement>(null);
   const ready = getLaunchEventReadiness(config, metadata, now);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (
+      location.pathname !== LAUNCH_EVENT_PATH ||
+      params.get('apply') !== '1' ||
+      auth.status !== 'authenticated' ||
+      !auth.memberId ||
+      !ready
+    )
+      return;
+    // 로그인 복귀 의도는 한 번만 소비한다. 동의·제출은 자동 실행하지 않는다.
+    params.delete('apply');
+    const search = params.toString();
+    navigate(`${LAUNCH_EVENT_PATH}${search ? `?${search}` : ''}`, {
+      replace: true,
+    });
+    setLoginOpen(false);
+    setStep('apply');
+  }, [
+    auth.status,
+    auth.memberId,
+    ready,
+    location.pathname,
+    location.search,
+    navigate,
+  ]);
 
   useEffect(() => {
     let active = true;

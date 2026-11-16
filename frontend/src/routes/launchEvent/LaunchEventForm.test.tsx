@@ -40,12 +40,13 @@ jest.mock('@/features/launchEvent/launchEventSubmission', () => ({
 
 const collectMock = jest.mocked(collectLaunchEventParticipation);
 const submitMock = jest.mocked(submitLaunchEvent);
-const ENDPOINT = 'https://script.google.com/macros/s/event-test/exec';
+const ENDPOINT = '/event-api/launch-event';
 const UUID = '12345678-1234-4234-9234-123456789012';
 const NEXT_UUID = '12345678-1234-4234-9234-123456789013';
 const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
+  authentication: 'server-verified',
   accepting: true,
   startAt: '2020-01-01T00:00:00+09:00',
   endAt: '2099-11-24T23:59:59+09:00',
@@ -418,6 +419,31 @@ describe('LaunchEventForm', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText(/이벤트 종료 후 17일/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/경품 전달 완료 후 지체 없이 삭제하며/),
+    ).toHaveTextContent('최대 이벤트 종료 후 17일까지 보관해요.');
+    expect(screen.getByText(/동의를 거부할 수 있지만/)).toHaveTextContent(
+      '다른 서비스 기능 이용에는 영향을 주지 않아요.',
+    );
+    expect(
+      screen.getByText(/응모 정보는 Google 스프레드시트에 저장해요/),
+    ).toHaveTextContent('처리위탁·국외 이전');
+    const policyLink = screen.getByRole('link', {
+      name: '개인정보처리방침(새 창)',
+    });
+    expect(policyLink).toHaveAttribute('href', '/privacy');
+    expect(policyLink).toHaveAttribute('target', '_blank');
+    expect(policyLink).toHaveAttribute('rel', 'noreferrer');
+    expect(screen.getByText(/개인정보 처리자:/)).toHaveTextContent(
+      METADATA.privacy.controller,
+    );
+    expect(screen.getByText(/문의:/)).toHaveTextContent(
+      METADATA.privacy.contact,
+    );
+    expect(screen.getByText(/이용 목적:/)).toHaveTextContent(
+      METADATA.privacy.purpose,
+    );
+    expect(screen.queryByText(METADATA.rulesVersion)).not.toBeInTheDocument();
     expect(screen.queryByText(/첨부 사진/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '확인' }));
     expect(opener).toHaveFocus();

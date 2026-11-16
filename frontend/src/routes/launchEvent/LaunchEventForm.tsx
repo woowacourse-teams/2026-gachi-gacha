@@ -377,11 +377,20 @@ export function LaunchEventForm({
               <p>이용 목적: {metadata.privacy.purpose}</p>
               <p>수집 항목: {metadata.privacy.items.join(', ')}</p>
               <p>
-                보유 기간: 이벤트 종료 후 {metadata.privacy.retentionDays}일.
-                보유 기간이 지나면 응모 정보를 파기해요.
+                보유 기간: 경품 전달 완료 후 지체 없이 삭제하며, 최대 이벤트
+                종료 후 {metadata.privacy.retentionDays}일까지 보관해요.
               </p>
               <p>
                 동의를 거부할 수 있지만, 거부하면 이벤트에 응모할 수 없어요.
+                다른 서비스 기능 이용에는 영향을 주지 않아요.
+              </p>
+              <p>
+                응모 정보는 Google 스프레드시트에 저장해요. 관련 처리위탁·국외
+                이전 사항은{' '}
+                <a href="/privacy" target="_blank" rel="noreferrer">
+                  개인정보처리방침(새 창)
+                </a>
+                에서 확인할 수 있어요.
               </p>
             </>
           ) : (

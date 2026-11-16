@@ -1,0 +1,13 @@
+# Root-owned /etc/gachi-launch-event-relay.env, mode 0600. Never commit the real file.
+# Use separate secrets, GAS deployments and frontend origins for DEV and PROD.
+FRONTEND_ORIGIN=https://dev.gachigacha.kro.kr
+# Existing Nginx /api routing delegates verification to the current backend.
+# Only a fixed trusted HTTPS API origin or loopback HTTP origin is supported.
+API_ORIGIN=https://dev.gachigacha.kro.kr
+GAS_URL=https://script.google.com/macros/s/REPLACE_WITH_DEPLOYMENT_ID/exec
+# Generate 32 random bytes as 64 hexadecimal characters outside browser builds.
+# GAS EVENT_RELAY_SECRET must contain exactly the same text (case included).
+EVENT_RELAY_SECRET=REPLACE_WITH_64_HEXADECIMAL_CHARACTERS
+PORT=3101
+MAX_CONCURRENT=4
+REQUEST_TIMEOUT_MS=45000

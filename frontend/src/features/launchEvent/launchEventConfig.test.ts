@@ -12,7 +12,7 @@ import {
 
 const config: LaunchEventConfig = {
   enabled: true,
-  endpoint: 'https://script.google.com/macros/s/test/exec',
+  endpoint: '/event-api/launch-event',
   startAt: '2026-11-11T00:00:00+09:00',
   endAt: '2026-11-25T00:00:00+09:00',
   campaignId: LAUNCH_EVENT_ID,
@@ -20,7 +20,8 @@ const config: LaunchEventConfig = {
 const now = new Date('2026-11-12T00:00:00+09:00');
 const metadata: LaunchEventMetadata = {
   eventId: LAUNCH_EVENT_ID,
-  schemaVersion: 2,
+  schemaVersion: 3,
+  authentication: 'server-verified',
   accepting: true,
   startAt: config.startAt,
   endAt: config.endAt,
@@ -84,6 +85,10 @@ describe('앱 출시 이벤트 활성화', () => {
   });
 
   it.each([
+    'https://script.google.com/macros/s/test/exec',
+    '//example.com/event-api/launch-event',
+    '/event-api/launch-event?redirect=other',
+    '/event-api/launch-event/',
     'https://example.com/macros/s/test/exec',
     'http://script.google.com/macros/s/test/exec',
     'https://script.google.com/macros/s/test/dev',

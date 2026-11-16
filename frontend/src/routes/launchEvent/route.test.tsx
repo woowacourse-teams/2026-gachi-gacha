@@ -45,14 +45,15 @@ const clockMock = jest.mocked(useLaunchEventClock);
 const formMock = jest.mocked(LaunchEventForm);
 const CONFIG: LaunchEventConfig = {
   enabled: true,
-  endpoint: 'https://script.google.com/macros/s/test-event/exec',
+  endpoint: '/event-api/launch-event',
   campaignId: 'app-launch-2026',
   startAt: '2020-01-01T00:00:00+09:00',
   endAt: '2099-11-25T00:00:00+09:00',
 };
 const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
-  schemaVersion: 2,
+  schemaVersion: 3,
+  authentication: 'server-verified',
   accepting: true,
   startAt: CONFIG.startAt,
   endAt: CONFIG.endAt,
@@ -152,17 +153,17 @@ function Location() {
   );
 }
 
-function page(config: LaunchEventConfig) {
+function page(config: LaunchEventConfig, initialEntry = '/events/app-launch') {
   return (
-    <MemoryRouter initialEntries={['/events/app-launch']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <LaunchEventRoute config={config} />
       <Location />
     </MemoryRouter>
   );
 }
 
-function setup(config = CONFIG) {
-  return { user: userEvent.setup(), ...render(page(config)) };
+function setup(config = CONFIG, initialEntry = '/events/app-launch') {
+  return { user: userEvent.setup(), ...render(page(config, initialEntry)) };
 }
 
 async function readyButton() {
@@ -266,8 +267,45 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
     await user.click(await readyButton());
     await user.click(screen.getByRole('button', { name: /^로그인$/ }));
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/login?returnTo=%2Fevents%2Fapp-launch',
+      '/login?returnTo=%2Fevents%2Fapp-launch%3Fapply%3D1',
     );
+  });
+
+  it('로그인 복귀 뒤 인증과 접수 정책이 확인되면 입력 폼만 열고 복귀 의도를 제거한다', async () => {
+    setAuth('authenticated', '37');
+    const { user } = setup(CONFIG, '/events/app-launch?apply=1');
+    expect(await screen.findByTestId('event-form')).toHaveTextContent(
+      '회원 번호: 37',
+    );
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/events\/app-launch$/,
+    );
+    expect(submitMock).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole('button', { name: '이벤트 상세로 돌아가기' }),
+    );
+    expect(screen.queryByTestId('event-form')).not.toBeInTheDocument();
+    expect(await readyButton()).toBeEnabled();
+  });
+
+  it.each(['guest', 'loading', 'error'] as const)(
+    '복귀 의도가 있어도 %s 상태에서는 폼을 열지 않는다',
+    async (status) => {
+      setAuth(status);
+      setup(CONFIG, '/events/app-launch?apply=1');
+      await act(async () => undefined);
+      expect(formMock).not.toHaveBeenCalled();
+      expect(submitMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it('로그인 복귀 뒤에도 접수 서버가 닫혀 있으면 폼을 열지 않는다', async () => {
+    setAuth('authenticated', '37');
+    metadataMock.mockResolvedValue({ ...METADATA, accepting: false });
+    setup(CONFIG, '/events/app-launch?apply=1');
+    await act(async () => undefined);
+    expect(formMock).not.toHaveBeenCalled();
+    expect(submitMock).not.toHaveBeenCalled();
   });
 
   it('로그인 상태를 확인 중일 때는 응모를 시작하지 않는다', async () => {
