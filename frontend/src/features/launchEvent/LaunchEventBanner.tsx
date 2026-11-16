@@ -2,7 +2,7 @@ import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
 import {
-  getLaunchEventAvailability,
+  isLaunchEventBannerVisible,
   LAUNCH_EVENT_CONFIG,
 } from './launchEventConfig';
 import {
@@ -14,8 +14,7 @@ import { useLaunchEventClock } from './useLaunchEventClock';
 
 export function LaunchEventBanner() {
   const now = useLaunchEventClock();
-  if (getLaunchEventAvailability(LAUNCH_EVENT_CONFIG, now) !== 'open')
-    return null;
+  if (!isLaunchEventBannerVisible(LAUNCH_EVENT_CONFIG, now)) return null;
 
   return (
     <Wrapper>

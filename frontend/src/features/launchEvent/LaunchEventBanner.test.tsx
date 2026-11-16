@@ -24,6 +24,7 @@ beforeEach(() => {
     enabled: true,
     endpoint: 'https://script.google.com/macros/s/test-event/exec',
     campaignId: 'app-launch-2026',
+    bannerStartAt: '',
     startAt: '2026-11-11T00:00:00+09:00',
     endAt: '2026-11-25T00:00:00+09:00',
   });
@@ -43,6 +44,13 @@ function setup() {
 }
 
 describe('LaunchEventBanner 기간 기반 노출', () => {
+  it('응모 시작 전에도 별도 안내 기간에는 수신부 없이 배너를 표시한다', () => {
+    LAUNCH_EVENT_CONFIG.endpoint = '';
+    LAUNCH_EVENT_CONFIG.bannerStartAt = '2026-11-10T00:00:00+09:00';
+    LAUNCH_EVENT_CONFIG.startAt = '2026-11-20T00:00:00+09:00';
+    setup();
+    expect(screen.getByRole('link')).toHaveAttribute('href', LAUNCH_EVENT_PATH);
+  });
   it('응모 기간에 이벤트 링크와 실제 경품 수, 남은 날짜를 표시한다', () => {
     setup();
     expect(

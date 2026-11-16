@@ -1,9 +1,10 @@
 export const LAUNCH_EVENT_ID = 'app-launch-2026';
-export const LAUNCH_EVENT_SCHEMA_VERSION = 1;
+export const LAUNCH_EVENT_SCHEMA_VERSION = 2;
 
 export interface LaunchEventConfig {
   enabled: boolean;
   endpoint: string;
+  bannerStartAt?: string;
   startAt: string;
   endAt: string;
   campaignId: string;
@@ -31,6 +32,7 @@ export type LaunchEventAvailability =
 export const LAUNCH_EVENT_CONFIG: LaunchEventConfig = {
   enabled: __EVENT_APPLICATION_ENABLED__,
   endpoint: __EVENT_APPLICATION_ENDPOINT__,
+  bannerStartAt: __EVENT_APPLICATION_BANNER_START_AT__,
   startAt: __EVENT_APPLICATION_START_AT__,
   endAt: __EVENT_APPLICATION_END_AT__,
   campaignId:
@@ -83,6 +85,23 @@ export function getLaunchEventAvailability(
   if (now.getTime() < Date.parse(config.startAt)) return 'upcoming';
   if (now.getTime() >= Date.parse(config.endAt)) return 'closed';
   return 'open';
+}
+
+/** 안내 배너는 접수 시작/수신부 준비와 독립적으로 먼저 공개할 수 있다. */
+export function isLaunchEventBannerVisible(
+  config: LaunchEventConfig = LAUNCH_EVENT_CONFIG,
+  now: Date = new Date(),
+): boolean {
+  const startAt = config.bannerStartAt || config.startAt;
+  return (
+    config.enabled &&
+    config.campaignId === LAUNCH_EVENT_ID &&
+    isLaunchEventDate(startAt) &&
+    isLaunchEventDate(config.endAt) &&
+    Date.parse(startAt) < Date.parse(config.endAt) &&
+    now.getTime() >= Date.parse(startAt) &&
+    now.getTime() < Date.parse(config.endAt)
+  );
 }
 
 /** 클라이언트 설정만으로 접수를 열지 않고 새 수신부의 운영 설정까지 대조한다. */

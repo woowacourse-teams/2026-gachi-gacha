@@ -4,8 +4,10 @@ export const LAUNCH_EVENT_PATH = '/events/app-launch';
 export const LAUNCH_EVENT_CONTENT = {
   title: '가치가챠 앱 출시 기념 가챠 선물 이벤트',
   shortTitle: '가챠 선물 이벤트',
-  provisionalDeadline: '2026년 11월 24일',
-  announcement: '2026년 11월 27일 예정',
+  provisionalDeadline: '2026년 11월 27일 23:59까지',
+  announcement: '당첨자에게 인스타그램 DM 개별 안내',
+  participationMessage:
+    '가치가챠에서 교환 이야기를 활발하게 나눌수록, 선물을 만날 기회도 커져요.',
   prizeImage: '/images/events/app-launch/chiikawa-desktop-figure-prizes.png',
   prizeImageAlt: '치이카와 데스크톱 피규어 경품 4종',
   prizeGuideImage: '/images/events/app-launch/giveaway-eight-winners.png',

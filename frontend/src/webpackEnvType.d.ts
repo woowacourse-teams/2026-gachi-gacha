@@ -10,6 +10,7 @@ declare const __EVENT_APPLICATION_ENABLED__: boolean;
 declare const __AFFILIATE_CATALOG_ENABLED__: boolean;
 declare const __EVENT_APPLICATION_ENDPOINT__: string;
 declare const __EVENT_APPLICATION_START_AT__: string;
+declare const __EVENT_APPLICATION_BANNER_START_AT__: string;
 declare const __EVENT_APPLICATION_END_AT__: string;
 declare const __EVENT_APPLICATION_CAMPAIGN_ID__: string;
 declare const __MEMBER_REPORT_ENDPOINT__: string;

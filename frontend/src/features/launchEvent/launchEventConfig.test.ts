@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   getLaunchEventAvailability,
   getLaunchEventReadiness,
+  isLaunchEventBannerVisible,
   isLaunchEventEndpoint,
   LAUNCH_EVENT_ID,
   type LaunchEventConfig,
@@ -19,7 +20,7 @@ const config: LaunchEventConfig = {
 const now = new Date('2026-11-12T00:00:00+09:00');
 const metadata: LaunchEventMetadata = {
   eventId: LAUNCH_EVENT_ID,
-  schemaVersion: 1,
+  schemaVersion: 2,
   accepting: true,
   startAt: config.startAt,
   endAt: config.endAt,
@@ -28,12 +29,39 @@ const metadata: LaunchEventMetadata = {
     controller: '테스트 운영자',
     contact: 'test@example.com',
     purpose: '테스트 응모 접수 및 당첨 연락',
-    items: ['이름', '연락처'],
+    items: ['이름', '인스타그램 아이디', '회원 번호', '거래글 번호'],
     retentionDays: 30,
   },
 };
 
 describe('앱 출시 이벤트 활성화', () => {
+  it('수신부 연결 전에도 안내 기간에는 배너만 표시할 수 있다', () => {
+    const noticeConfig = {
+      ...config,
+      endpoint: '',
+      bannerStartAt: '2026-11-10T00:00:00+09:00',
+      startAt: '2026-11-20T00:00:00+09:00',
+      endAt: '2026-11-28T00:00:00+09:00',
+    };
+    expect(isLaunchEventBannerVisible(noticeConfig, now)).toBe(true);
+    expect(getLaunchEventReadiness(noticeConfig, null, now)).toBe(false);
+    expect(
+      isLaunchEventBannerVisible(noticeConfig, new Date(noticeConfig.endAt)),
+    ).toBe(false);
+  });
+
+  it('배너 공개 시각이 잘못되었거나 종료 이후라면 배너를 숨긴다', () => {
+    expect(
+      isLaunchEventBannerVisible({ ...config, bannerStartAt: 'bad' }, now),
+    ).toBe(false);
+    expect(
+      isLaunchEventBannerVisible(
+        { ...config, bannerStartAt: config.endAt },
+        now,
+      ),
+    ).toBe(false);
+    expect(isLaunchEventBannerVisible(config, new Date('bad'))).toBe(false);
+  });
   it('기존 이벤트 설정과 수신 주소만으로 새 이벤트를 열지 않는다', () => {
     expect(getLaunchEventAvailability({ ...config, campaignId: '' }, now)).toBe(
       'misconfigured',

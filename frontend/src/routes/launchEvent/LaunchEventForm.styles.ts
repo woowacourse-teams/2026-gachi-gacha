@@ -53,13 +53,6 @@ export const Required = styled.span`
   color: ${color.primary};
 `;
 
-export const Optional = styled.span`
-  margin-left: 5px;
-  color: ${color.textMuted};
-  font-size: 12px;
-  font-weight: ${fontWeight.regular};
-`;
-
 const input = css`
   display: block;
   width: 100%;
@@ -95,14 +88,6 @@ export const Input = styled.input`
   outline: none;
 `;
 
-export const Textarea = styled.textarea`
-  ${input}
-  ${preventIosInputZoom}
-  min-height: 144px;
-  outline: none;
-  resize: vertical;
-`;
-
 export const Hint = styled.p`
   margin: 8px 0 0;
   color: ${color.textMuted};
@@ -110,93 +95,11 @@ export const Hint = styled.p`
   line-height: 1.6;
 `;
 
-export const Counter = styled.p`
-  margin: 7px 0 0;
-  color: ${color.textMuted};
-  text-align: right;
-  font-size: 12px;
-`;
-
 export const ErrorText = styled.p`
   margin: 8px 0 0;
   color: ${color.primary};
   font-size: 12px;
   line-height: 1.5;
-  ${focus}
-`;
-
-export const PhotoRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
-`;
-
-export const Photo = styled.div`
-  position: relative;
-  width: 72px;
-  height: 72px;
-
-  img {
-    width: 100%;
-    height: 100%;
-    border: 1px solid ${color.borderSubtle};
-    border-radius: 10px;
-    object-fit: cover;
-    box-sizing: border-box;
-  }
-`;
-
-export const RemovePhoto = styled.button`
-  position: absolute;
-  top: -12px;
-  right: -12px;
-  display: grid;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  place-items: center;
-  border: 0;
-  border-radius: ${radius.circle};
-  background: transparent;
-  cursor: pointer;
-
-  span {
-    display: grid;
-    width: 20px;
-    height: 20px;
-    place-items: center;
-    border: 2px solid ${color.surface};
-    border-radius: ${radius.circle};
-    color: ${color.surface};
-    background: ${color.text};
-    font-size: 17px;
-    line-height: 1;
-  }
-
-  ${focus}
-`;
-
-export const AddPhoto = styled.button`
-  display: flex;
-  width: 72px;
-  min-height: 72px;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 5px;
-  border: 1px dashed #d7d1d3;
-  border-radius: 10px;
-  color: ${color.textMuted};
-  background: ${color.surfaceMuted};
-  font-size: 11px;
-  cursor: pointer;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-
   ${focus}
 `;
 

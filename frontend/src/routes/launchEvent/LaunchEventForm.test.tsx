@@ -16,7 +16,11 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { LaunchEventMetadata } from '@/features/launchEvent/launchEventConfig';
+import { collectLaunchEventParticipation } from '@/features/launchEvent/collectLaunchEventParticipation';
+import {
+  LAUNCH_EVENT_SCHEMA_VERSION,
+  type LaunchEventMetadata,
+} from '@/features/launchEvent/launchEventConfig';
 import {
   type LaunchEventReceipt,
   submitLaunchEvent,
@@ -24,26 +28,33 @@ import {
 
 import { LaunchEventForm } from './LaunchEventForm';
 
+jest.mock('@/features/launchEvent/collectLaunchEventParticipation', () => ({
+  collectLaunchEventParticipation: jest.fn(),
+}));
 jest.mock('@/features/launchEvent/launchEventSubmission', () => ({
+  ...jest.requireActual<
+    typeof import('@/features/launchEvent/launchEventSubmission')
+  >('@/features/launchEvent/launchEventSubmission'),
   submitLaunchEvent: jest.fn(),
 }));
 
+const collectMock = jest.mocked(collectLaunchEventParticipation);
 const submitMock = jest.mocked(submitLaunchEvent);
 const ENDPOINT = 'https://script.google.com/macros/s/event-test/exec';
 const UUID = '12345678-1234-4234-9234-123456789012';
 const NEXT_UUID = '12345678-1234-4234-9234-123456789013';
 const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
-  schemaVersion: 1,
+  schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
   accepting: true,
   startAt: '2020-01-01T00:00:00+09:00',
   endAt: '2099-11-24T23:59:59+09:00',
-  rulesVersion: 'event-rules-v1',
+  rulesVersion: 'event-rules-v2',
   privacy: {
     controller: '테스트 운영팀',
     contact: 'privacy@example.test',
     purpose: '응모 접수 및 당첨 안내',
-    items: ['회원 번호', '이름', '연락처', '응모 사연', '선택한 사진'],
+    items: ['회원 번호', '이름', '인스타그램 아이디', '작성한 게시글 번호'],
     retentionDays: 17,
   },
 };
@@ -52,10 +63,9 @@ const RECEIPT: LaunchEventReceipt = {
   submissionId: UUID,
   receivedAt: '2026-11-11T12:00:00+09:00',
 };
+const PARTICIPATION = { memberId: '37', tradeIds: [10, 19] };
 const uuidMock = jest.fn<typeof crypto.randomUUID>();
 const originalUuid = Object.getOwnPropertyDescriptor(crypto, 'randomUUID');
-const originalCreate = Object.getOwnPropertyDescriptor(URL, 'createObjectURL');
-const originalRevoke = Object.getOwnPropertyDescriptor(URL, 'revokeObjectURL');
 const originalShowModal = Object.getOwnPropertyDescriptor(
   HTMLDialogElement.prototype,
   'showModal',
@@ -64,17 +74,11 @@ const originalClose = Object.getOwnPropertyDescriptor(
   HTMLDialogElement.prototype,
   'close',
 );
-const createUrl = jest.fn<(file: Blob) => string>();
-const revokeUrl = jest.fn<(url: string) => void>();
 
 beforeAll(() => {
   Object.defineProperty(crypto, 'randomUUID', {
     configurable: true,
     value: uuidMock,
-  });
-  Object.defineProperties(URL, {
-    createObjectURL: { configurable: true, value: createUrl },
-    revokeObjectURL: { configurable: true, value: revokeUrl },
   });
   Object.defineProperties(HTMLDialogElement.prototype, {
     showModal: {
@@ -95,8 +99,6 @@ beforeAll(() => {
 afterAll(() => {
   for (const [target, property, descriptor] of [
     [crypto, 'randomUUID', originalUuid],
-    [URL, 'createObjectURL', originalCreate],
-    [URL, 'revokeObjectURL', originalRevoke],
     [HTMLDialogElement.prototype, 'showModal', originalShowModal],
     [HTMLDialogElement.prototype, 'close', originalClose],
   ] as const) {
@@ -106,12 +108,9 @@ afterAll(() => {
 });
 
 beforeEach(() => {
-  submitMock.mockReset();
-  submitMock.mockResolvedValue(RECEIPT);
+  collectMock.mockReset().mockResolvedValue(PARTICIPATION);
+  submitMock.mockReset().mockResolvedValue(RECEIPT);
   uuidMock.mockReset().mockReturnValue(UUID);
-  let count = 0;
-  createUrl.mockReset().mockImplementation(() => `blob:event-photo-${++count}`);
-  revokeUrl.mockReset();
 });
 
 function setup(metadata = METADATA) {
@@ -138,19 +137,16 @@ function setup(metadata = METADATA) {
 
 function fill() {
   fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
-    target: { value: '가치' },
+    target: { value: '  가치  ' },
   });
-  fireEvent.change(screen.getByRole('textbox', { name: '연락처' }), {
-    target: { value: '010-1234-5678' },
-  });
-  fireEvent.change(screen.getByRole('textbox', { name: '응모 사연' }), {
-    target: { value: '가챠를 좋아해서 응모합니다.' },
+  fireEvent.change(screen.getByRole('textbox', { name: '인스타그램 아이디' }), {
+    target: { value: ' @Gachi.Gacha_1 ' },
   });
   fireEvent.click(screen.getByRole('checkbox', { name: '전체 동의' }));
 }
 
 describe('LaunchEventForm', () => {
-  it('실제 접수 응답 이후에만 완료를 알리고 회원·정책·정규화한 입력을 전송한다', async () => {
+  it('이름·인스타그램만 입력받고 조회된 활동과 정규화한 입력을 한 번 전송한다', async () => {
     let complete!: (value: LaunchEventReceipt) => void;
     submitMock.mockReturnValue(
       new Promise((resolve) => {
@@ -161,22 +157,27 @@ describe('LaunchEventForm', () => {
     const form = screen.getByRole('form', { name: '가치가챠 이벤트 응모' });
     expect(form).toHaveClass('ph-no-capture', 'ph-mask');
     expect(form).toHaveAttribute('data-sentry-mask');
+    expect(screen.getAllByRole('textbox')).toHaveLength(2);
+    expect(
+      screen.queryByLabelText('인증 사진 파일 선택'),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: '응모하기' })).toBeDisabled();
     fill();
     fireEvent.submit(form);
     fireEvent.submit(form);
     await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
+    expect(collectMock).toHaveBeenCalledTimes(1);
+    expect(collectMock).toHaveBeenCalledWith('37');
     expect(submitMock).toHaveBeenCalledWith(
       {
         submissionId: UUID,
         memberId: '37',
         name: '가치',
-        phone: '01012345678',
-        reason: '가챠를 좋아해서 응모합니다.',
+        instagramId: 'gachi.gacha_1',
+        tradeIds: [10, 19],
         privacyConsent: true,
         rulesConsent: true,
-        rulesVersion: 'event-rules-v1',
-        photos: [],
+        rulesVersion: 'event-rules-v2',
       },
       ENDPOINT,
     );
@@ -190,62 +191,153 @@ describe('LaunchEventForm', () => {
     await act(async () => complete(RECEIPT));
     expect(onSuccess).toHaveBeenCalledWith(RECEIPT);
     expect(onPendingChange).toHaveBeenLastCalledWith(false);
+    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue('');
+    expect(
+      screen.getByRole('textbox', { name: '인스타그램 아이디' }),
+    ).toHaveValue('');
+    expect(
+      screen.getByRole('checkbox', { name: '전체 동의' }),
+    ).not.toBeChecked();
   });
 
-  it('응답 실패 시 입력을 유지하고 같은 내용 재시도는 같은 응모 번호를 쓴다', async () => {
+  it('응답 실패 시 입력을 유지하고 같은 활동·내용 재시도는 같은 응모 번호를 쓴다', async () => {
     submitMock.mockRejectedValueOnce(new Error('upstream failure'));
     uuidMock.mockReturnValueOnce(UUID).mockReturnValue(NEXT_UUID);
     const { onSuccess } = setup();
     fill();
     fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      '접수 결과를 확인하지 못했어요',
-    );
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('접수 결과를 확인하지 못했어요');
+    expect(alert).toHaveFocus();
     expect(onSuccess).not.toHaveBeenCalled();
-    expect(screen.getByRole('textbox', { name: '연락처' })).toHaveValue(
-      '010-1234-5678',
-    );
+    expect(
+      screen.getByRole('textbox', { name: '인스타그램 아이디' }),
+    ).toHaveValue(' @Gachi.Gacha_1 ');
     fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
     await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(2));
+    expect(collectMock).toHaveBeenCalledTimes(2);
     expect(submitMock.mock.calls[0]?.[0].submissionId).toBe(UUID);
     expect(submitMock.mock.calls[1]?.[0].submissionId).toBe(UUID);
     expect(uuidMock).toHaveBeenCalledTimes(1);
   });
 
-  it('실패한 입력 내용을 변경하면 새 응모 번호를 만든다', async () => {
-    submitMock.mockRejectedValue(new Error('failure'));
-    uuidMock.mockReturnValueOnce(UUID).mockReturnValue(NEXT_UUID);
-    setup();
-    fill();
-    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
-    await screen.findByRole('alert');
-    fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
-      target: { value: '다른 이름' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
-    await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(2));
-    expect(submitMock.mock.calls[1]?.[0].submissionId).toBe(NEXT_UUID);
-  });
+  it.each(['name', 'instagramId', 'tradeIds', 'rulesVersion'] as const)(
+    '실패 뒤 %s 값이 달라지면 새 응모 번호를 만든다',
+    async (field) => {
+      submitMock.mockRejectedValue(new Error('failure'));
+      uuidMock.mockReturnValueOnce(UUID).mockReturnValue(NEXT_UUID);
+      const { rerender, props } = setup();
+      fill();
+      fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+      await screen.findByRole('alert');
+      if (field === 'tradeIds') {
+        collectMock.mockResolvedValue({
+          memberId: '37',
+          tradeIds: [10, 19, 28],
+        });
+      } else if (field === 'rulesVersion') {
+        rerender(
+          <LaunchEventForm
+            {...props}
+            metadata={{ ...METADATA, rulesVersion: 'event-rules-v3' }}
+          />,
+        );
+      } else {
+        fireEvent.change(
+          screen.getByRole('textbox', {
+            name: field === 'name' ? '이름' : '인스타그램 아이디',
+          }),
+          {
+            target: { value: field === 'name' ? '다른 이름' : 'other_account' },
+          },
+        );
+      }
+      fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+      await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(2));
+      expect(submitMock.mock.calls[1]?.[0].submissionId).toBe(NEXT_UUID);
+    },
+  );
 
-  it('잘못된 연락처·짧은 사연·필수 동의 누락은 제출하지 않는다', () => {
+  it.each([
+    '',
+    'https://instagram.com/example',
+    'has space',
+    '@@example',
+    '한글',
+    'a'.repeat(31),
+  ])('올바르지 않은 인스타그램 아이디 %s는 조회·제출하지 않는다', (value) => {
     setup();
     fill();
-    fireEvent.change(screen.getByRole('textbox', { name: '연락처' }), {
-      target: { value: '0101234567' },
-    });
-    fireEvent.blur(screen.getByRole('textbox', { name: '연락처' }));
-    expect(screen.getByText(/휴대전화 번호를 10~11자리/)).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('textbox', { name: '응모 사연' }), {
-      target: { value: '짧음' },
-    });
-    fireEvent.blur(screen.getByRole('textbox', { name: '응모 사연' }));
-    expect(screen.getByText(/앞뒤 공백을 제외하고/)).toBeInTheDocument();
+    const input = screen.getByRole('textbox', { name: '인스타그램 아이디' });
+    fireEvent.change(input, { target: { value } });
+    fireEvent.blur(input);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/영문·숫자·밑줄·마침표로/)).toBeInTheDocument();
     fireEvent.submit(screen.getByRole('form'));
+    expect(collectMock).not.toHaveBeenCalled();
     expect(submitMock).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: '응모하기' })).toBeDisabled();
   });
 
-  it('열어 둔 폼의 기간이 끝났거나 접수가 중단되면 전송하지 않는다', async () => {
+  it('이름 길이와 필수 동의를 검증한다', () => {
+    setup();
+    fill();
+    for (const value of ['   ', '가'.repeat(81)]) {
+      fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
+        target: { value },
+      });
+      fireEvent.submit(screen.getByRole('form'));
+      expect(
+        screen.getByText('이름을 1~80자로 입력해 주세요.'),
+      ).toBeInTheDocument();
+    }
+    fireEvent.change(screen.getByRole('textbox', { name: '이름' }), {
+      target: { value: '가치' },
+    });
+    fireEvent.click(
+      screen.getByRole('checkbox', { name: /개인정보 수집·이용 동의/ }),
+    );
+    fireEvent.submit(screen.getByRole('form'));
+    expect(collectMock).not.toHaveBeenCalled();
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it('참여 조회 실패 시 입력을 유지하고 외부 수신부에 보내지 않는다', async () => {
+    collectMock.mockRejectedValue(new Error('secret upstream details'));
+    const { onSuccess, onPendingChange } = setup();
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '로그인 상태와 게시글 참여 활동을 확인하지 못했어요',
+    );
+    expect(
+      screen.queryByText('secret upstream details'),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue(
+      '  가치  ',
+    );
+    expect(
+      screen.getByRole('textbox', { name: '인스타그램 아이디' }),
+    ).toHaveValue(' @Gachi.Gacha_1 ');
+    expect(submitMock).not.toHaveBeenCalled();
+    expect(uuidMock).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('게시글이 없으면 작성 후 응모하도록 안내하고 전송하지 않는다', async () => {
+    collectMock.mockResolvedValue({ memberId: '37', tradeIds: [] });
+    setup();
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '게시글을 1개 이상 작성한 뒤',
+    );
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it('열어 둔 폼의 기간이 끝났거나 접수가 중단되면 조회·전송하지 않는다', async () => {
     const { rerender, props } = setup();
     fill();
     rerender(
@@ -258,7 +350,6 @@ describe('LaunchEventForm', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '지금은 응모할 수 없어요',
     );
-    expect(submitMock).not.toHaveBeenCalled();
     rerender(
       <LaunchEventForm
         {...props}
@@ -266,21 +357,32 @@ describe('LaunchEventForm', () => {
       />,
     );
     fireEvent.submit(screen.getByRole('form'));
+    expect(collectMock).not.toHaveBeenCalled();
     expect(submitMock).not.toHaveBeenCalled();
   });
 
-  it('사연 Enter는 줄바꿈을 유지하고 입력값을 웹 저장소에 기록하지 않는다', async () => {
-    const storage = jest.spyOn(Storage.prototype, 'setItem');
-    const user = userEvent.setup();
-    const { unmount } = setup();
-    await user.type(
-      screen.getByRole('textbox', { name: '응모 사연' }),
-      '첫 문장{Enter}둘째 문장',
-    );
-    expect(screen.getByRole('textbox', { name: '응모 사연' })).toHaveValue(
-      '첫 문장\n둘째 문장',
+  it('활동 조회 중 응모 기간이 끝나면 입력 정보를 전송하지 않는다', async () => {
+    const now = jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(Date.parse('2026-11-20T12:00:00+09:00'));
+    collectMock.mockImplementation(async () => {
+      now.mockReturnValue(Date.parse('2026-11-25T00:00:00+09:00'));
+      return PARTICIPATION;
+    });
+    setup({ ...METADATA, endAt: '2026-11-25T00:00:00+09:00' });
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '응모 기간이 종료되었어요',
     );
     expect(submitMock).not.toHaveBeenCalled();
+    now.mockRestore();
+  });
+
+  it('입력은 웹 저장소에 남기지 않고 이탈 후 다시 열면 초기화한다', () => {
+    const storage = jest.spyOn(Storage.prototype, 'setItem');
+    const { unmount } = setup();
+    fill();
     expect(storage).not.toHaveBeenCalled();
     const beforeUnload = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(beforeUnload);
@@ -289,74 +391,18 @@ describe('LaunchEventForm', () => {
     const afterUnmount = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(afterUnmount);
     expect(afterUnmount.defaultPrevented).toBe(false);
+    setup();
+    expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue('');
+    expect(
+      screen.getByRole('textbox', { name: '인스타그램 아이디' }),
+    ).toHaveValue('');
+    expect(
+      screen.getByRole('checkbox', { name: '전체 동의' }),
+    ).not.toBeChecked();
     storage.mockRestore();
   });
 
-  it('사진 형식·크기·개수를 제한하고 삭제/이탈 시 미리보기를 정리한다', async () => {
-    const { unmount } = setup();
-    const input = screen.getByLabelText('인증 사진 파일 선택');
-    fireEvent.change(input, {
-      target: {
-        files: [new File(['x'], 'bad.svg', { type: 'image/svg+xml' })],
-      },
-    });
-    expect(screen.getByRole('alert')).toHaveTextContent('JPG, PNG, WebP');
-    const tooLarge = new File(['x'], 'large.jpg', { type: 'image/jpeg' });
-    Object.defineProperty(tooLarge, 'size', { value: 5 * 1024 * 1024 + 1 });
-    fireEvent.change(input, { target: { files: [tooLarge] } });
-    expect(createUrl).not.toHaveBeenCalled();
-    const files = [1, 2, 3].map(
-      (number) => new File(['photo'], `${number}.png`, { type: 'image/png' }),
-    );
-    fireEvent.change(input, { target: { files } });
-    expect(screen.getAllByRole('img')).toHaveLength(3);
-    expect(
-      screen.getByRole('button', { name: '사진 추가 (3/3)' }),
-    ).toBeDisabled();
-    fireEvent.change(input, { target: { files: [files[0]] } });
-    expect(screen.getByRole('alert')).toHaveTextContent('최대 3장');
-    fireEvent.click(screen.getByRole('button', { name: '인증 사진 1 삭제' }));
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: '사진 추가 (2/3)' }),
-      ).toHaveFocus(),
-    );
-    expect(revokeUrl).toHaveBeenCalledWith('blob:event-photo-1');
-    unmount();
-    expect(revokeUrl).toHaveBeenCalledWith('blob:event-photo-2');
-    expect(revokeUrl).toHaveBeenCalledWith('blob:event-photo-3');
-    expect(revokeUrl).toHaveBeenCalledTimes(3);
-  });
-
-  it('선택 사진을 base64로 변환해 제출한다', async () => {
-    // 테스트 전역 File은 MSW를 위한 Node File이므로 jsdom FileReader와 호환되지 않는다.
-    const read = jest
-      .spyOn(FileReader.prototype, 'readAsDataURL')
-      .mockImplementation(function (this: FileReader, file: Blob) {
-        void file.arrayBuffer().then((buffer) => {
-          Object.defineProperty(this, 'result', {
-            configurable: true,
-            value: `data:${file.type};base64,${btoa(String.fromCharCode(...new Uint8Array(buffer)))}`,
-          });
-          this.dispatchEvent(new ProgressEvent('load'));
-        });
-      });
-    setup();
-    fill();
-    fireEvent.change(screen.getByLabelText('인증 사진 파일 선택'), {
-      target: {
-        files: [new File(['photo'], 'proof.png', { type: 'image/png' })],
-      },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
-    await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
-    expect(submitMock.mock.calls[0]?.[0].photos).toEqual([
-      { name: 'proof.png', mimeType: 'image/png', data: btoa('photo') },
-    ]);
-    read.mockRestore();
-  });
-
-  it('운영 설정의 개인정보 문구를 보여 주고 모달을 닫으면 원래 버튼으로 복귀한다', async () => {
+  it('수집·보유·활동 조건을 표시하고 모달을 닫으면 원래 버튼으로 복귀한다', async () => {
     const user = userEvent.setup();
     setup();
     const opener = screen.getByRole('button', {
@@ -367,24 +413,75 @@ describe('LaunchEventForm', () => {
       screen.getByRole('dialog', { name: '개인정보 수집·이용 동의' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('개인정보 처리자: 테스트 운영팀'),
+      screen.getByText(
+        /회원 번호, 이름, 인스타그램 아이디, 작성한 게시글 번호/,
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/접수일로부터 17일/)).toBeInTheDocument();
+    expect(screen.getByText(/이벤트 종료 후 17일/)).toBeInTheDocument();
+    expect(screen.queryByText(/첨부 사진/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '확인' }));
     expect(opener).toHaveFocus();
-    await user.click(opener);
+    await user.click(
+      screen.getByRole('button', { name: '참여 조건·유의사항 보기' }),
+    );
+    expect(
+      screen.getByText(/게시글 참여 활동을 추첨에 반영해요/),
+    ).toHaveTextContent(
+      '재응모는 횟수가 아니라 마지막 응모 시점의 활동으로 갱신돼요.',
+    );
     fireEvent(
       screen.getByRole('dialog'),
       new Event('cancel', { cancelable: true }),
     );
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(opener).toHaveFocus();
     fireEvent.click(
       screen.getByRole('checkbox', { name: /개인정보 수집·이용 동의/ }),
     );
     expect(
       screen.getByRole('checkbox', { name: '전체 동의' }),
     ).toBePartiallyChecked();
+  });
+
+  it('활동 조회 중 이탈하면 조회 완료 뒤에도 응모하지 않는다', async () => {
+    let complete!: (value: typeof PARTICIPATION) => void;
+    collectMock.mockReturnValue(
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+    );
+    const { unmount, onSuccess, onPendingChange } = setup();
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+    unmount();
+    expect(onPendingChange).toHaveBeenLastCalledWith(false);
+    await act(async () => complete(PARTICIPATION));
+    expect(submitMock).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('인증 만료로 폼이 사라질 때 최신 콜백으로 부모의 접수 잠금을 해제한다', async () => {
+    let fail!: (error: Error) => void;
+    collectMock.mockReturnValue(
+      new Promise((_, reject) => {
+        fail = reject;
+      }),
+    );
+    const { unmount, rerender, props, onPendingChange } = setup();
+    fill();
+    fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+    const nextPendingChange = jest.fn<(pending: boolean) => void>();
+    rerender(
+      <LaunchEventForm {...props} onPendingChange={nextPendingChange} />,
+    );
+    expect(onPendingChange).toHaveBeenLastCalledWith(true);
+    expect(nextPendingChange).toHaveBeenLastCalledWith(true);
+    unmount();
+    expect(nextPendingChange).toHaveBeenLastCalledWith(false);
+    await act(async () => fail(new Error('SESSION_CHANGED')));
+    expect(nextPendingChange).toHaveBeenLastCalledWith(false);
+    expect(submitMock).not.toHaveBeenCalled();
   });
 
   it('이탈 후 늦게 받은 접수 결과로 완료 화면을 열지 않는다', async () => {
