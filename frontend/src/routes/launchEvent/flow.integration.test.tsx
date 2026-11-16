@@ -200,6 +200,39 @@ async function openAndFill(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('이벤트 응모 합성 통합 흐름', () => {
+  it('로그인하지 않은 실제 인증 컨텍스트에서는 접수 정보를 받아도 로그인 안내만 표시한다', async () => {
+    let metadataRequests = 0;
+    let submissionRequests = 0;
+    server.use(
+      http.get(ENDPOINT, () => {
+        metadataRequests += 1;
+        return HttpResponse.json({ ok: true, ...METADATA });
+      }),
+      http.post(ENDPOINT, () => {
+        submissionRequests += 1;
+        return HttpResponse.json({ ok: false });
+      }),
+    );
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/events/app-launch?apply=1']}>
+        <AuthSessionProvider initialAccessToken={null}>
+          <LaunchEventRoute config={CONFIG} />
+        </AuthSessionProvider>
+      </MemoryRouter>,
+    );
+    const button = screen.getByRole('button', {
+      name: '로그인하고 응모해주세요!',
+    });
+    expect(button).toBeDisabled();
+    await waitFor(() => expect(metadataRequests).toBe(1));
+    await user.click(button);
+    expect(button).toBeDisabled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    expect(submissionRequests).toBe(0);
+  });
+
   it('본인 API에서 모든 글을 조회한 뒤 Google에 토큰 없이 접수하고 영수증을 확인한다', async () => {
     const {
       user,

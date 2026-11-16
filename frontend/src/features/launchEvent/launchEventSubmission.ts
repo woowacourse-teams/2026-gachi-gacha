@@ -8,6 +8,7 @@ import {
   LAUNCH_EVENT_SCHEMA_VERSION,
   type LaunchEventMetadata,
 } from './launchEventConfig';
+import type { LaunchEventPlatform } from './launchEventPlatform';
 
 export interface LaunchEventInput {
   submissionId: string;
@@ -18,6 +19,7 @@ export interface LaunchEventInput {
   privacyConsent: true;
   rulesConsent: true;
   rulesVersion: string;
+  participationPlatform?: LaunchEventPlatform;
 }
 
 export interface LaunchEventReceipt {
@@ -135,6 +137,10 @@ export async function fetchLaunchEventMetadata(
     startAt: data.startAt,
     endAt: data.endAt,
     rulesVersion: data.rulesVersion,
+    ...(isRecord(data.capabilities) &&
+    data.capabilities.participationPlatform === true
+      ? { capabilities: { participationPlatform: true as const } }
+      : {}),
     privacy: {
       controller: privacy.controller,
       contact: privacy.contact,
@@ -172,6 +178,10 @@ export async function submitLaunchEvent(
     new Set(input.tradeIds).size !== input.tradeIds.length ||
     input.privacyConsent !== true ||
     input.rulesConsent !== true ||
+    (input.participationPlatform !== undefined &&
+      !['web', 'android', 'ios', 'app-unknown'].includes(
+        input.participationPlatform,
+      )) ||
     !input.rulesVersion.trim()
   ) {
     throw new Error('응모 정보와 참여 활동을 다시 확인해 주세요.');
@@ -199,6 +209,9 @@ export async function submitLaunchEvent(
       privacyConsent: input.privacyConsent,
       rulesConsent: input.rulesConsent,
       rulesVersion: input.rulesVersion,
+      ...(input.participationPlatform !== undefined
+        ? { participationPlatform: input.participationPlatform }
+        : {}),
     }),
   });
   if (

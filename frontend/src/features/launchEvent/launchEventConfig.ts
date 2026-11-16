@@ -18,6 +18,7 @@ export interface LaunchEventMetadata {
   startAt: string;
   endAt: string;
   rulesVersion: string;
+  capabilities?: { participationPlatform: true };
   privacy: {
     controller: string;
     contact: string;

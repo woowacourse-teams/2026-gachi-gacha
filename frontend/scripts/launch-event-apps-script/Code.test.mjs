@@ -240,6 +240,7 @@ test('브라우저 직접 전달 v4 본문은 비밀키 없이 실제 GAS에 저
   const metadata = h.context.doGet();
   assert.equal(metadata.schemaVersion, 4);
   assert.equal(metadata.authentication, 'client-reported');
+  assert.deepEqual(metadata.capabilities, { participationPlatform: true });
   assert.equal(metadata.accepting, true);
   assert.equal('EVENT_RELAY_SECRET' in h.properties, false);
   const tradeIds = Array.from({ length: 103 }, (_, index) => index + 1);
@@ -260,6 +261,89 @@ test('브라우저 직접 전달 v4 본문은 비밀키 없이 실제 GAS에 저
   assert.deepEqual(JSON.parse(h.rows[1][8]), tradeIds);
   assert.equal(h.rows[1][18], '브라우저 전달 / 참여 조건 확인 필요');
   assert.equal(h.rows[1][19], '1');
+});
+
+test('접수 환경은 기존 운영검증상태 열에 구분하며 회원·앱 설치 검증으로 표시하지 않는다', () => {
+  for (const [participationPlatform, expectedStatus] of [
+    ['web', '웹 전달 / 참여 조건 확인 필요'],
+    ['android', 'Android 앱 전달 / 참여 조건 확인 필요'],
+    ['ios', 'iOS 앱 전달 / 참여 조건 확인 필요'],
+    ['app-unknown', '앱(기기 미확인) 전달 / 참여 조건 확인 필요'],
+  ]) {
+    const h = harness();
+    const headers = JSON.stringify([h.rows[0], h.receipts[0]]);
+    assert.equal(h.post({ ...baseInput, participationPlatform }).ok, true);
+    assert.equal(h.rows[1][18], expectedStatus);
+    assert.equal(JSON.stringify([h.rows[0], h.receipts[0]]), headers);
+    assert.equal(h.rows[1].length, 20);
+    assert.equal(h.receipts[1].length, 8);
+  }
+});
+
+test('환경 정보가 없는 기존 v4 요청의 해시와 재시도 결과를 유지한다', () => {
+  const h = harness();
+  const legacyDigest = createHash('sha256')
+    .update(
+      JSON.stringify({
+        eventId: baseInput.eventId,
+        schemaVersion: baseInput.schemaVersion,
+        memberId: baseInput.memberId,
+        name: baseInput.name,
+        instagramId: baseInput.instagramId,
+        tradeIds: [...baseInput.tradeIds].sort((a, b) => a - b),
+        privacyConsent: true,
+        rulesConsent: true,
+        rulesVersion: baseInput.rulesVersion,
+      }),
+    )
+    .digest('hex');
+  const receipt = h.post();
+  assert.equal(receipt.ok, true);
+  assert.equal(h.rows[1][16], legacyDigest);
+  assert.equal(h.receipts[1][3], legacyDigest);
+  const previousRows = JSON.stringify([h.rows, h.receipts]);
+  assert.equal(h.context.doGet().accepting, true);
+  assert.deepEqual(h.post(), receipt);
+  assert.equal(JSON.stringify([h.rows, h.receipts]), previousRows);
+  assert.equal(h.rows[1][18], '브라우저 전달 / 참여 조건 확인 필요');
+});
+
+test('환경 정보가 잘못되면 저장하지 않고 같은 UUID의 접수 환경 변경도 거절한다', () => {
+  const h = harness();
+  for (const participationPlatform of [
+    null,
+    '',
+    'mobile',
+    'Android',
+    1,
+    {},
+    [],
+  ]) {
+    assert.equal(
+      h.post({ ...baseInput, participationPlatform }).code,
+      'INVALID_INPUT',
+    );
+  }
+  assert.equal(h.rows.length, 1);
+  assert.equal(h.receipts.length, 1);
+  const input = { ...baseInput, participationPlatform: 'android' };
+  const first = h.post(input);
+  assert.equal(first.ok, true);
+  assert.deepEqual(h.post(input), first);
+  for (const participationPlatform of [
+    'web',
+    'ios',
+    'app-unknown',
+    undefined,
+  ]) {
+    assert.equal(
+      h.post({ ...baseInput, participationPlatform }).code,
+      'SUBMISSION_CONFLICT',
+    );
+  }
+  assert.equal(h.rows[1][18], 'Android 앱 전달 / 참여 조건 확인 필요');
+  assert.equal(h.rows.length, 2);
+  assert.equal(h.receipts.length, 2);
 });
 
 test('최초 접수는 전달값·동의·이벤트 종료 후 삭제일을 저장하고 같은 UUID는 같은 영수증을 반환한다', () => {
@@ -709,6 +793,21 @@ test('게시글 ID 10000개를 누락 없이 5개 셀로 나눠 저장한다', (
   );
 });
 
+test('5개 초과 ID도 허용하며 2000개 청크 경계와 빈 목록 셀은 합계에 영향을 주지 않는다', () => {
+  for (const count of [1, 5, 6, 2000, 2001]) {
+    const h = harness();
+    const tradeIds = Array.from({ length: count }, (_, index) => index + 1);
+    assert.equal(h.post({ ...baseInput, tradeIds }).ok, true);
+    assert.equal(h.rows[1][7], String(count));
+    const chunks = h.rows[1].slice(8, 13).map((cell) => JSON.parse(cell));
+    assert.equal(chunks.length, 5);
+    assert.equal(chunks[0].length, Math.min(count, 2000));
+    assert.equal(chunks[1].length, Math.max(count - 2000, 0));
+    assert.deepEqual(chunks.slice(2), [[], [], []]);
+    assert.deepEqual(chunks.flat(), tradeIds);
+  }
+});
+
 test('잘못된 JSON·과도한 요청·내부 오류는 입력 내용이나 비밀 값을 응답에 노출하지 않는다', () => {
   const h = harness();
   assert.deepEqual(
@@ -795,6 +894,7 @@ test('운영 설정·날짜·기간·접수 중지가 잘못되면 GET와 POST �
     'eventId',
     'schemaVersion',
     'authentication',
+    'capabilities',
     'accepting',
     'startAt',
     'endAt',
@@ -808,6 +908,7 @@ test('운영 설정·날짜·기간·접수 중지가 잘못되면 GET와 POST �
     '이름',
     '인스타그램 ID',
     '브라우저에서 조회·전달한 본인 교환글 수 및 ID 목록',
+    '응모 환경(웹·Android 앱·iOS 앱·기기 미확인 앱)',
     '동의 및 접수 기록',
   ]);
 });
