@@ -10,6 +10,24 @@ export interface ServiceReleaseNote {
 
 export const SERVICE_RELEASE_NOTES = [
   {
+    version: 'v1.9.0',
+    releasedAt: '2026-11-17',
+    releasedAtLabel: '2026년 11월 17일',
+    title: '앱 출시 이벤트와 더 편안한 교환 경험',
+    summary:
+      '홈에서 앱 출시 이벤트를 확인하고 앱에서 응모할 수 있어요. 교환글을 읽고 작성하는 흐름과 긴 목록·채팅의 반복 렌더링도 함께 다듬었어요.',
+    highlights: [
+      '홈 배너에서 경품과 참여 방법을 확인하고, 앱에서 로그인한 뒤 이름과 인스타그램 아이디로 응모할 수 있어요.',
+      '웹에서는 App Store와 Google Play 설치 안내를 보여주고, 앱에서는 로그인 상태에 맞춰 응모를 안내해요.',
+      '다시 응모하면 마지막 응모 시점의 정보와 교환글 목록으로 갱신돼요. 같은 버튼을 반복해서 누르는 것만으로 당첨 기회가 늘어나지는 않아요.',
+      '화면 읽기 도구로 교환글의 제목·카테고리·장소·상태를 구분하기 쉽게 하고, 글쓰기의 카테고리 검색과 선택 안내를 보완했어요.',
+      '거래 목록 더보기와 채팅 입력 때 변경되지 않은 카드·메시지 목록의 반복 렌더링을 줄였어요.',
+      '로그인이 만료되면 채팅 연결을 무한히 다시 시도하지 않도록 안정성을 보완했어요.',
+    ],
+    releaseUrl:
+      'https://github.com/woowacourse-teams/2026-gachi-gacha/releases/tag/v1.9.0',
+  },
+  {
     version: 'v1.8.0',
     releasedAt: '2026-11-10',
     releasedAtLabel: '2026년 11월 10일',
