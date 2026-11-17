@@ -117,10 +117,19 @@ const Dialog = styled.dialog`
   background: ${color.surface};
   box-shadow: ${shadow.dialog};
 
-  /* 320px에서도 공식 배지를 줄이거나 변형하지 않고 가로로 배치한다. */
-  @media (max-width: 360px) {
+  @media (max-width: 599px) {
+    width: min(440px, calc(100vw - 24px));
+    padding-inline: ${space.md};
+  }
+
+  @media (max-width: 380px) {
     width: calc(100vw - 16px);
     padding-inline: ${space.sm};
+  }
+
+  /* 320px에서도 최소 높이 40px와 넓어진 배지 간격을 함께 확보한다. */
+  @media (max-width: 340px) {
+    width: calc(100vw - 12px);
   }
 
   &::backdrop {
@@ -188,10 +197,14 @@ const Badges = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  /* 높이 40/48px의 1/4 이상: 좌우는 다이얼로그 패딩, 사이는 12px. */
-  gap: ${space.sm};
-  padding-block: ${space.sm};
+  /* 원본 비율과 높이의 1/4 이상 여백을 지키며 화면 여유만큼 키운다. */
+  gap: ${space.md};
+  padding-block: ${space.md};
   margin-top: ${space.xs};
+
+  @media (min-width: 360px) {
+    gap: ${space.lg};
+  }
 
   a {
     display: inline-flex;
@@ -206,8 +219,20 @@ const Badges = styled.div`
     width: auto;
     height: 40px;
 
-    @media (min-width: 600px) {
+    @media (min-width: 360px) {
+      height: 44px;
+    }
+
+    @media (min-width: 375px) {
+      height: 46px;
+    }
+
+    @media (min-width: 412px) {
       height: 48px;
+    }
+
+    @media (min-width: 600px) {
+      height: 56px;
     }
   }
 `;
