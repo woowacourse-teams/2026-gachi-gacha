@@ -32,10 +32,11 @@ describe('UpdatesRoute', () => {
     ).toHaveLength(1);
 
     const versionLabels = screen
-      .getAllByText(/^v1\.[0-8]\.0$/)
+      .getAllByText(/^v1\.[0-9]\.0$/)
       .map((element) => element.textContent);
 
     expect(versionLabels).toEqual([
+      'v1.9.0',
       'v1.8.0',
       'v1.7.0',
       'v1.6.0',
@@ -48,12 +49,12 @@ describe('UpdatesRoute', () => {
     ]);
     expect(
       screen.getAllByRole('link', { name: '전체 변경 기록 보기' }),
-    ).toHaveLength(9);
+    ).toHaveLength(10);
     expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
       'updates_page_viewed',
       {
-        latest_visible_version: 'v1.8.0',
-        release_count: 9,
+        latest_visible_version: 'v1.9.0',
+        release_count: 10,
       },
     );
 
@@ -67,7 +68,7 @@ describe('UpdatesRoute', () => {
     expect(mockedCaptureAnalyticsEvent).toHaveBeenCalledWith(
       'release_notes_selected',
       {
-        version: 'v1.8.0',
+        version: 'v1.9.0',
         is_latest: true,
       },
     );
