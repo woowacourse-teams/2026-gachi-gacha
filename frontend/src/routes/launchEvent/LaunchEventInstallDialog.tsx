@@ -57,8 +57,8 @@ export function LaunchEventInstallDialog({
         </h2>
         <CloseButton type="button" aria-label="닫기" onClick={onClose}>
           <svg
-            width="20"
-            height="20"
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -83,7 +83,7 @@ export function LaunchEventInstallDialog({
           rel="noopener noreferrer"
           aria-label="App Store에서 가치가챠 다운로드 (새 창)"
         >
-          <img src={appStoreBadge} alt="App Store에서 다운로드" height={56} />
+          <img src={appStoreBadge} alt="App Store에서 다운로드" height={40} />
         </a>
         <a
           href="https://play.google.com/store/apps/details?id=com.gachigacha.app&pcampaignid=web_share"
@@ -94,7 +94,7 @@ export function LaunchEventInstallDialog({
           <img
             src={googlePlayBadge}
             alt="Google Play에서 다운로드"
-            height={56}
+            height={40}
           />
         </a>
       </Badges>
@@ -103,7 +103,8 @@ export function LaunchEventInstallDialog({
 }
 
 const Dialog = styled.dialog`
-  width: min(480px, calc(100vw - 32px));
+  width: min(440px, calc(100vw - 32px));
+  max-width: none;
   max-height: calc(100dvh - 48px);
   margin: auto;
   padding: ${space.lg};
@@ -116,6 +117,21 @@ const Dialog = styled.dialog`
   background: ${color.surface};
   box-shadow: ${shadow.dialog};
 
+  @media (max-width: 599px) {
+    width: min(440px, calc(100vw - 24px));
+    padding-inline: ${space.md};
+  }
+
+  @media (max-width: 380px) {
+    width: calc(100vw - 16px);
+    padding-inline: ${space.sm};
+  }
+
+  /* 320px에서도 최소 높이 40px와 넓어진 배지 간격을 함께 확보한다. */
+  @media (max-width: 340px) {
+    width: calc(100vw - 12px);
+  }
+
   &::backdrop {
     background: rgb(24 20 22 / 45%);
   }
@@ -123,8 +139,8 @@ const Dialog = styled.dialog`
   h2 {
     min-width: 0;
     margin: 0;
-    font-size: ${fontSize.sectionTitle};
-    font-weight: ${fontWeight.extraBold};
+    font-size: ${fontSize.detailTitle};
+    font-weight: ${fontWeight.bold};
     line-height: ${lineHeight.heading};
     letter-spacing: ${letterSpacing.heading};
     word-break: keep-all;
@@ -141,7 +157,10 @@ const Dialog = styled.dialog`
 
   p {
     margin: 0;
+    color: ${color.textMuted};
+    font-family: inherit;
     font-size: ${fontSize.bodySmall};
+    font-weight: ${fontWeight.regular};
     line-height: ${lineHeight.relaxed};
     word-break: keep-all;
     overflow-wrap: anywhere;
@@ -156,22 +175,20 @@ const Dialog = styled.dialog`
 
 const Header = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: ${space.sm};
+  gap: ${space.xs};
   margin-bottom: ${space.md};
 `;
 
 const Description = styled.div`
   display: grid;
   gap: ${space.xs};
-  color: ${color.textMuted};
 `;
 
 const InstalledHint = styled.p`
   && {
-    margin-top: ${space.md};
-    font-size: ${fontSize.label};
+    margin-top: ${space.xs};
   }
 `;
 
@@ -180,20 +197,43 @@ const Badges = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  /* 공식 배지 높이의 1/4만큼 여백을 보존한다. 배지 사이 여백은 공유한다. */
-  gap: 14px;
-  padding: 14px;
-  margin-top: ${space.xxs};
+  /* 원본 비율과 높이의 1/4 이상 여백을 지키며 화면 여유만큼 키운다. */
+  gap: ${space.md};
+  padding-block: ${space.md};
+  margin-top: ${space.xs};
+
+  @media (min-width: 360px) {
+    gap: ${space.lg};
+  }
 
   a {
     display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-height: 44px;
     border-radius: ${radius.small};
   }
 
   img {
     display: block;
     width: auto;
-    height: 56px;
+    height: 40px;
+
+    @media (min-width: 360px) {
+      height: 44px;
+    }
+
+    @media (min-width: 375px) {
+      height: 46px;
+    }
+
+    @media (min-width: 412px) {
+      height: 48px;
+    }
+
+    @media (min-width: 600px) {
+      height: 56px;
+    }
   }
 `;
 
@@ -204,8 +244,8 @@ const CloseButton = styled.button`
   flex: 0 0 44px;
   padding: 0;
   border: 0;
-  border-radius: ${radius.circle};
-  background: ${color.surfaceMuted};
+  border-radius: ${radius.small};
+  background: transparent;
   color: ${color.textMuted};
   cursor: pointer;
   place-items: center;

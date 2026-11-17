@@ -96,11 +96,11 @@ describe('LaunchEventInstallDialog', () => {
     }
     expect(screen.getByAltText('App Store에서 다운로드')).toHaveAttribute(
       'height',
-      '56',
+      '40',
     );
     expect(screen.getByAltText('Google Play에서 다운로드')).toHaveAttribute(
       'height',
-      '56',
+      '40',
     );
     expect(window.location.href).toBe(currentLocation);
   });
