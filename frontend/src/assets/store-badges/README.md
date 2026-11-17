@@ -5,7 +5,7 @@
 - `app-store-ko.svg`: `Download_on_the_App_Store_Badge_KR_RGB_blk_100317.svg`
 - `google-play-ko.svg`: `GetItOnGooglePlay_Badge_Web_color_Korean.svg`
 
-이벤트 설치 안내 팝업에서 사용한다. 로고·색상·문구·비율을 변경하거나 별도 아이콘으로 재작성하지 않는다. App Store 배지를 먼저 배치하고 두 배지의 표시 높이를 48px, 주변 여백을 12px로 유지한다. 좁은 화면에서는 줄바꿈한다.
+이벤트 설치 안내 팝업에서 사용한다. 로고·색상·문구·비율을 변경하거나 별도 아이콘으로 재작성하지 않는다. App Store 배지를 먼저 배치하고 두 배지의 표시 높이를 56px, 주변 여백과 배지 사이 간격을 14px로 유지한다. 좁은 화면에서는 줄바꿈한다. 설치 안내는 배지 위에, 배지는 팝업의 마지막 영역에 배치한다.
 
 - [Apple 마케팅 지침](https://developer.apple.com/app-store/marketing/guidelines/)
 - [Google Play 브랜드 자료](https://play.google.com/intl/en_us/badges/)
