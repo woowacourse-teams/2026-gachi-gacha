@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { PropsWithChildren, ReactElement } from 'react';
 import {
   afterEach,
   beforeEach,
@@ -8,6 +8,7 @@ import {
   jest,
 } from '@jest/globals';
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -21,16 +22,19 @@ import { AuthSessionProvider } from '@/features/auth/AuthSessionContext';
 import { MemberBlockProvider } from '@/features/memberSafety/MemberBlockContext';
 
 import ChatRoomPanel from './ChatRoomPanel';
+import * as chatDate from '../../model/chatDate';
 import { SELECTED_CHAT_ROOM } from '../../storybook/chatMocks';
 
 function renderPanel(panel: ReactElement) {
-  return render(
-    <MemoryRouter>
-      <AuthSessionProvider initialAccessToken={null}>
-        <MemberBlockProvider>{panel}</MemberBlockProvider>
-      </AuthSessionProvider>
-    </MemoryRouter>,
-  );
+  return render(panel, {
+    wrapper: ({ children }: PropsWithChildren) => (
+      <MemoryRouter>
+        <AuthSessionProvider initialAccessToken={null}>
+          <MemberBlockProvider>{children}</MemberBlockProvider>
+        </AuthSessionProvider>
+      </MemoryRouter>
+    ),
+  });
 }
 
 describe('ChatRoomPanel', () => {
@@ -46,7 +50,148 @@ describe('ChatRoomPanel', () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     jest.useRealTimers();
+  });
+
+  it('입력 상태는 갱신하되 변경 없는 메시지 목록의 계산은 반복하지 않는다', () => {
+    const formatDateLabel = jest.spyOn(chatDate, 'formatChatDateLabel');
+    renderPanel(
+      <ChatRoomPanel room={SELECTED_CHAT_ROOM} socketStatus="connected" />,
+    );
+
+    expect(formatDateLabel).toHaveBeenCalled();
+    formatDateLabel.mockClear();
+    expect(screen.getByRole('button', { name: '보내기' })).toBeDisabled();
+
+    fireEvent.change(screen.getByRole('textbox', { name: '메시지' }), {
+      target: { value: 'a' },
+    });
+
+    expect(screen.getByRole('textbox', { name: '메시지' })).toHaveValue('a');
+    expect(screen.getByRole('button', { name: '보내기' })).toBeEnabled();
+    expect(formatDateLabel).not.toHaveBeenCalled();
+  });
+
+  it('날짜가 바뀐 후 입력하면 같은 메시지 목록의 오늘 표시를 어제로 갱신한다', () => {
+    jest.useFakeTimers({ now: new Date(2026, 10, 9, 23, 59) });
+    renderPanel(
+      <ChatRoomPanel
+        room={{
+          ...SELECTED_CHAT_ROOM,
+          messages: [
+            { ...SELECTED_CHAT_ROOM.messages[0]!, sentDate: '2026-11-09' },
+          ],
+        }}
+        socketStatus="connected"
+      />,
+    );
+    expect(screen.getByRole('separator')).toHaveTextContent('오늘');
+
+    jest.setSystemTime(new Date(2026, 10, 10, 0, 1));
+    fireEvent.change(screen.getByRole('textbox', { name: '메시지' }), {
+      target: { value: 'a' },
+    });
+
+    expect(screen.getByRole('separator')).toHaveTextContent('어제');
+  });
+
+  it('새 메시지가 추가되면 기존 스크롤 컨테이너를 유지하고 하단으로 이동한다', () => {
+    const { rerender } = renderPanel(
+      <ChatRoomPanel room={SELECTED_CHAT_ROOM} socketStatus="connected" />,
+    );
+    const messagesElement = screen.getAllByRole('separator')[0]!.parentElement!;
+    Object.defineProperty(messagesElement, 'scrollHeight', {
+      configurable: true,
+      value: 1200,
+    });
+    messagesElement.scrollTop = 100;
+
+    rerender(
+      <ChatRoomPanel
+        room={{
+          ...SELECTED_CHAT_ROOM,
+          messages: [
+            ...SELECTED_CHAT_ROOM.messages,
+            {
+              ...SELECTED_CHAT_ROOM.messages[0]!,
+              id: 'new',
+              text: '새로 받은 메시지',
+            },
+          ],
+        }}
+        socketStatus="connected"
+      />,
+    );
+
+    expect(screen.getByText('새로 받은 메시지')).toBeInTheDocument();
+    expect(screen.getAllByRole('separator')[0]!.parentElement).toBe(
+      messagesElement,
+    );
+    expect(messagesElement.scrollTop).toBe(1200);
+  });
+
+  it('과거 메시지를 추가하면 같은 스크롤 컨테이너에서 기존 읽던 위치를 보정한다', async () => {
+    let animationCallback: FrameRequestCallback | undefined;
+    jest
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        animationCallback = callback;
+        return 1;
+      });
+    const handleLoadPrevious = jest.fn<() => Promise<void>>();
+    const { rerender } = renderPanel(
+      <ChatRoomPanel
+        room={SELECTED_CHAT_ROOM}
+        socketStatus="connected"
+        hasPreviousMessages
+        onLoadPreviousMessages={handleLoadPrevious}
+      />,
+    );
+    const messagesElement = screen.getByRole('button', {
+      name: '이전 메시지 불러오기',
+    }).parentElement!;
+    let scrollHeight = 1000;
+    Object.defineProperty(messagesElement, 'scrollHeight', {
+      configurable: true,
+      get: () => scrollHeight,
+    });
+    messagesElement.scrollTop = 100;
+    handleLoadPrevious.mockImplementation(async () => {
+      scrollHeight = 1300;
+      rerender(
+        <ChatRoomPanel
+          room={{
+            ...SELECTED_CHAT_ROOM,
+            messages: [
+              {
+                ...SELECTED_CHAT_ROOM.messages[0]!,
+                id: 'old',
+                text: '이전 메시지',
+              },
+              ...SELECTED_CHAT_ROOM.messages,
+            ],
+          }}
+          socketStatus="connected"
+          hasPreviousMessages
+          onLoadPreviousMessages={handleLoadPrevious}
+        />,
+      );
+    });
+
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole('button', { name: '이전 메시지 불러오기' }),
+      );
+    });
+    expect(animationCallback).toBeDefined();
+    act(() => animationCallback?.(0));
+
+    expect(screen.getByText('이전 메시지')).toBeInTheDocument();
+    expect(screen.getAllByRole('separator')[0]!.parentElement).toBe(
+      messagesElement,
+    );
+    expect(messagesElement.scrollTop).toBe(400);
   });
 
   it('상단 바에는 상대와 메뉴를, 글 요약에는 상품·상태·상태 변경을 표시한다', () => {

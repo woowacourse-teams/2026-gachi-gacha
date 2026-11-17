@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Client, type IMessage } from '@stomp/stompjs';
+import type { Client, IMessage } from '@stomp/stompjs';
 
-import { readAccessToken } from '@/features/auth/authTokenStorage';
 import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
 
 import type {
@@ -10,6 +9,7 @@ import type {
   ChatMessageFile,
   ChatRoomUpdate,
 } from './chatType';
+import { createChatStompClient } from './createChatStompClient';
 
 export type ChatSocketStatus =
   'connecting' | 'connected' | 'disconnected' | 'error';
@@ -31,8 +31,6 @@ interface UseChatSocketResult {
   ) => Promise<void>;
 }
 
-const RECONNECT_DELAY = 5_000;
-const HEARTBEAT_INTERVAL = 10_000;
 const RECONNECT_FAILURE_CAPTURE_THRESHOLD = 3;
 
 export function useChatSocket({
@@ -86,22 +84,8 @@ export function useChatSocket({
       }
     }
 
-    const client = new Client({
-      brokerURL: createWebSocketUrl(),
-      reconnectDelay: RECONNECT_DELAY,
-      heartbeatIncoming: HEARTBEAT_INTERVAL,
-      heartbeatOutgoing: HEARTBEAT_INTERVAL,
-      debug: () => undefined,
-      beforeConnect: async () => {
-        const accessToken = readAccessToken();
-
-        if (!accessToken) {
-          throw new Error('로그인이 필요한 기능입니다.');
-        }
-
-        client.connectHeaders = {
-          Authorization: `Bearer ${accessToken}`,
-        };
+    const client = createChatStompClient({
+      onConnecting: () => {
         setStatus('connecting');
       },
       onConnect: () => {
@@ -233,12 +217,6 @@ export function useChatSocket({
   );
 
   return { status, errorMessage, sendTextMessage, sendImageMessage };
-}
-
-function createWebSocketUrl(): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-  return `${protocol}//${window.location.host}/api/v1/ws`;
 }
 
 function handleMessageFrame(

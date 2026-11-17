@@ -11,7 +11,12 @@ import {
 } from '@/shared/contact/supportContact';
 import { color } from '@/shared/styles/tokens';
 
-const FOOTERLESS_ROUTE_ROOTS = ['/map', '/chat', '/oauth'] as const;
+const FOOTERLESS_ROUTE_ROOTS = [
+  '/map',
+  '/chat',
+  '/oauth',
+  '/events/app-launch',
+] as const;
 
 export const SITE_FOOTER_ID = 'site-footer';
 

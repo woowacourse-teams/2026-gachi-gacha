@@ -7,6 +7,46 @@ import ProductCard from './ProductCard';
 import { TRADE_ITEMS } from '../../storybook/tradeMocks';
 
 describe('ProductCard', () => {
+  it('링크 이름에서 제목·카테고리·장소·등록 날짜·상태를 순서대로 구분한다', () => {
+    const item = {
+      ...TRADE_ITEMS[0]!,
+      createdAt: new Date().toISOString(),
+    };
+
+    renderWithProviders(<ProductCard item={item} homeLayout />);
+
+    const card = screen.getByRole('link', {
+      name: /^교환글 제목: 산리오 캐릭터즈 캡슐토이 세트 카테고리: 산리오 · 피규어 희망 교환 장소: 신당역 교환글 등록 날짜: 방금 전 거래 상태: 교환 가능 좋아요 12 개 댓글 3 개$/,
+    });
+
+    expect(card).toHaveAttribute('href', `/trade/${item.tradeId}`);
+    expect(card).not.toHaveAttribute('aria-label');
+    expect(
+      screen.getByRole('heading', { level: 3, name: item.title }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('교환글 제목:')).toHaveStyle({
+      position: 'absolute',
+      clipPath: 'inset(50%)',
+    });
+  });
+
+  it('카테고리·장소·날짜가 없어도 값의 의미와 대체 안내를 함께 제공한다', () => {
+    renderWithProviders(
+      <ProductCard
+        item={{
+          ...TRADE_ITEMS[0]!,
+          categories: [],
+          tradePlace: null,
+          createdAt: 'invalid-date',
+        }}
+      />,
+    );
+
+    expect(screen.getByRole('link')).toHaveAccessibleName(
+      /카테고리: 카테고리 미설정 희망 교환 장소: 교환 장소 협의 교환글 등록 날짜: 등록일 확인 중 거래 상태: 교환 가능$/,
+    );
+  });
+
   it('제목과 카테고리는 상단에, 거래 정보는 카드 하단에 묶어 표시한다', () => {
     const item = {
       ...TRADE_ITEMS[0]!,

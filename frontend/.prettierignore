@@ -5,3 +5,6 @@ storybook-static/
 
 pnpm-lock.yaml
 public/mockServiceWorker.js
+
+# Official store badges: preserve the supplied SVG files byte-for-byte.
+src/assets/store-badges/*.svg

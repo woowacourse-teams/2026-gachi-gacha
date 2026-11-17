@@ -6,16 +6,24 @@ import { ToastProvider } from '@/shared/ui/toast';
 
 const preview: Preview = {
   decorators: [
-    (Story) => (
-      <>
-        <GlobalStyles />
-        <AuthSessionProvider>
-          <ToastProvider>
-            <Story />
-          </ToastProvider>
-        </AuthSessionProvider>
-      </>
-    ),
+    (Story, context) => {
+      const content = (
+        <ToastProvider>
+          <Story />
+        </ToastProvider>
+      );
+
+      return (
+        <>
+          <GlobalStyles />
+          {context.parameters.authSession === 'none' ? (
+            content
+          ) : (
+            <AuthSessionProvider>{content}</AuthSessionProvider>
+          )}
+        </>
+      );
+    },
   ],
   parameters: {
     layout: 'fullscreen',

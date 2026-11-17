@@ -94,7 +94,7 @@ describe('AppHeader', () => {
       'href',
       '/search',
     );
-    expect(screen.getByRole('link', { name: '교환 글 등록' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '교환 글쓰기' })).toHaveAttribute(
       'href',
       '/trade/new',
     );

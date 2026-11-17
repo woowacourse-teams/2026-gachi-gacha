@@ -303,7 +303,7 @@ export function AppHeader({
           <Actions aria-label="사용자 메뉴">
             <WriteLink
               to="/trade/new"
-              aria-label="교환 글 등록"
+              aria-label="교환 글쓰기"
               onClick={() =>
                 captureAnalyticsEvent('trade_create_started', {
                   source: 'header',
