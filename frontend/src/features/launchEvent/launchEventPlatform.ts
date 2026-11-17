@@ -2,6 +2,12 @@ import { isInNativeApp } from '@/features/pushNotifications/nativePushBridge';
 
 export type LaunchEventPlatform = 'web' | 'android' | 'ios' | 'app-unknown';
 
+export function isLaunchEventApp(
+  platform: LaunchEventPlatform | null,
+): platform is 'android' | 'ios' {
+  return platform === 'android' || platform === 'ios';
+}
+
 /** 참여 경로만 구분한다. 앱 설치나 참여 자격을 증명하는 보안 검증이 아니다. */
 export function getLaunchEventPlatform(): LaunchEventPlatform {
   if (typeof window === 'undefined' || typeof document === 'undefined') {

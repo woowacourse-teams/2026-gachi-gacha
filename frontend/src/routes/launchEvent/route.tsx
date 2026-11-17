@@ -17,12 +17,18 @@ import {
   LAUNCH_EVENT_PATH,
 } from '@/features/launchEvent/launchEventContent';
 import {
+  getLaunchEventPlatform,
+  isLaunchEventApp,
+} from '@/features/launchEvent/launchEventPlatform';
+import {
   fetchLaunchEventMetadata,
   type LaunchEventReceipt,
 } from '@/features/launchEvent/launchEventSubmission';
 import { useLaunchEventClock } from '@/features/launchEvent/useLaunchEventClock';
+import { useLaunchEventPlatform } from '@/features/launchEvent/useLaunchEventPlatform';
 
 import { LaunchEventForm } from './LaunchEventForm';
+import { LaunchEventInstallDialog } from './LaunchEventInstallDialog';
 import * as S from './route.styles';
 
 export function LaunchEventRoute({
@@ -33,6 +39,12 @@ export function LaunchEventRoute({
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuthSession();
+  const { platform, refreshPlatform } = useLaunchEventPlatform();
+  const inApp = isLaunchEventApp(platform);
+  const [installOpen, setInstallOpen] = useState(false);
+  useEffect(() => {
+    if (platform !== 'web') setInstallOpen(false);
+  }, [platform]);
   const now = useLaunchEventClock();
   const availability = getLaunchEventAvailability(config, now);
   const [metadata, setMetadata] = useState<LaunchEventMetadata | null>(null);
@@ -55,6 +67,8 @@ export function LaunchEventRoute({
       params.get('apply') !== '1' ||
       auth.status !== 'authenticated' ||
       !auth.memberId ||
+      !inApp ||
+      !isLaunchEventApp(getLaunchEventPlatform()) ||
       !ready
     )
       return;
@@ -68,6 +82,7 @@ export function LaunchEventRoute({
   }, [
     auth.status,
     auth.memberId,
+    inApp,
     ready,
     location.pathname,
     location.search,
@@ -121,6 +136,13 @@ export function LaunchEventRoute({
   };
 
   const apply = () => {
+    if (getLaunchEventAvailability(config, new Date()) !== 'open') return;
+    const currentPlatform = refreshPlatform();
+    if (currentPlatform === 'web') {
+      setInstallOpen(true);
+      return;
+    }
+    if (!isLaunchEventApp(currentPlatform)) return;
     if (!hasAuthenticatedMember) return;
     if (!getLaunchEventReadiness(config, metadata, new Date())) return;
     setStep('apply');
@@ -154,19 +176,25 @@ export function LaunchEventRoute({
         ? '응모 시작 전이에요'
         : availability !== 'open'
           ? '응모를 준비하고 있어요'
-          : auth.status === 'loading'
-            ? '로그인 확인 중…'
-            : auth.status === 'guest'
-              ? '로그인하고 응모해주세요!'
-              : !hasAuthenticatedMember
-                ? '로그인 상태를 확인해 주세요'
-                : metadataError
-                  ? '접수 정보를 다시 확인해 주세요'
-                  : !metadata
-                    ? '접수 정보를 확인하고 있어요…'
-                    : ready
-                      ? '응모하기'
-                      : '지금은 응모할 수 없어요';
+          : platform === null
+            ? '참여 환경 확인 중…'
+            : platform === 'web'
+              ? '앱에서 응모하기'
+              : platform === 'app-unknown'
+                ? '앱 환경을 다시 확인해 주세요'
+                : auth.status === 'loading'
+                  ? '로그인 확인 중…'
+                  : auth.status === 'guest'
+                    ? '로그인하고 응모해주세요!'
+                    : !hasAuthenticatedMember
+                      ? '로그인 상태를 확인해 주세요'
+                      : metadataError
+                        ? '접수 정보를 다시 확인해 주세요'
+                        : !metadata
+                          ? '접수 정보를 확인하고 있어요…'
+                          : ready
+                            ? '응모하기'
+                            : '지금은 응모할 수 없어요';
 
   return (
     <S.Page>
@@ -255,7 +283,9 @@ export function LaunchEventRoute({
                   <dt>당첨 발표</dt>
                   <dd>{content.announcement}</dd>
                   <dt>응모 자격</dt>
-                  <dd>앱 설치와 게시글 1개 작성을 완료한 로그인 회원</dd>
+                  <dd>
+                    교환글 1개 이상을 작성하고 앱에서 응모하는 로그인 회원
+                  </dd>
                 </S.Info>
               </S.Section>
               <S.Section aria-labelledby="launch-prize">
@@ -281,7 +311,10 @@ export function LaunchEventRoute({
                 <ol>
                   <li>가치가챠 앱을 설치해 주세요.</li>
                   <li>가치가챠에 교환글을 1개 이상 작성해 주세요.</li>
-                  <li>이름과 인스타그램 아이디를 입력하고 응모해 주세요.</li>
+                  <li>
+                    앱에서 로그인한 뒤, 이름과 인스타그램 아이디를 입력하고
+                    응모해 주세요.
+                  </li>
                 </ol>
                 <p>
                   앱 설치와 게시글 작성만으로는 응모가 완료되지 않아요. 응모
@@ -318,8 +351,11 @@ export function LaunchEventRoute({
                   경품은 별도로 제작한 상품이 아닌 시판 상품이며, 관련 캐릭터와
                   상표의 권리는 각 권리자에게 있습니다.
                 </p>
+                <p>
+                  Apple과 Google은 이 이벤트의 후원사나 운영 주체가 아닙니다.
+                </p>
               </S.Section>
-              {metadataError && (
+              {inApp && metadataError && (
                 <S.Notice role="alert">
                   접수 정보를 불러오지 못했어요.{' '}
                   <button
@@ -333,13 +369,29 @@ export function LaunchEventRoute({
                   </button>
                 </S.Notice>
               )}
-              {availability === 'open' && auth.status === 'guest' && (
+              {availability === 'open' && platform === 'web' && (
+                <S.Notice id="launch-app-notice">
+                  이번 이벤트는 앱에서 응모할 수 있어요. 앱 설치 후 로그인하고
+                  홈의 이벤트 배너로 돌아와 주세요.
+                </S.Notice>
+              )}
+              {availability === 'open' && platform === 'app-unknown' && (
+                <S.Notice role="status">
+                  앱의 기기 정보를 확인하지 못했어요. 최신 가치가챠 앱에서
+                  이벤트를 다시 열어 주세요.{' '}
+                  <button type="button" onClick={refreshPlatform}>
+                    앱 환경 다시 확인
+                  </button>
+                </S.Notice>
+              )}
+              {availability === 'open' && inApp && auth.status === 'guest' && (
                 <S.Notice id="launch-login-notice">
-                  앱이나 사이트의 로그인 메뉴에서 로그인한 뒤, 이 이벤트로
-                  돌아와 응모해 주세요.
+                  앱의 로그인 메뉴에서 로그인한 뒤, 이 이벤트로 돌아와 응모해
+                  주세요.
                 </S.Notice>
               )}
               {availability === 'open' &&
+                inApp &&
                 auth.status !== 'loading' &&
                 auth.status !== 'guest' &&
                 !hasAuthenticatedMember && (
@@ -350,7 +402,8 @@ export function LaunchEventRoute({
                     </button>
                   </S.Notice>
                 )}
-              {hasAuthenticatedMember &&
+              {inApp &&
+                hasAuthenticatedMember &&
                 availability === 'open' &&
                 !metadata &&
                 !metadataError && (
@@ -359,7 +412,8 @@ export function LaunchEventRoute({
                     있어요.
                   </S.Notice>
                 )}
-              {!ready &&
+              {inApp &&
+                !ready &&
                 (availability !== 'open' ||
                   (hasAuthenticatedMember && metadata !== null)) && (
                   <S.Notice>
@@ -371,11 +425,19 @@ export function LaunchEventRoute({
               <S.Footer>
                 <S.Primary
                   type="button"
-                  disabled={!ready || !hasAuthenticatedMember}
+                  disabled={
+                    availability !== 'open' ||
+                    (platform !== 'web' &&
+                      (!inApp || !ready || !hasAuthenticatedMember))
+                  }
                   aria-describedby={
-                    availability === 'open' && auth.status === 'guest'
-                      ? 'launch-login-notice'
-                      : undefined
+                    availability === 'open' && platform === 'web'
+                      ? 'launch-app-notice'
+                      : availability === 'open' &&
+                          inApp &&
+                          auth.status === 'guest'
+                        ? 'launch-login-notice'
+                        : undefined
                   }
                   onClick={apply}
                 >
@@ -386,7 +448,8 @@ export function LaunchEventRoute({
           )}
 
           {step === 'apply' &&
-            (auth.status === 'authenticated' &&
+            (inApp &&
+            auth.status === 'authenticated' &&
             auth.memberId &&
             metadata &&
             (ready || pending) ? (
@@ -414,7 +477,7 @@ export function LaunchEventRoute({
             ) : (
               <S.Section>
                 <h2>응모 가능 상태를 다시 확인해 주세요</h2>
-                <p>로그인이 만료되었거나 응모 기간이 종료되었어요.</p>
+                <p>앱 환경, 로그인 상태와 응모 기간을 다시 확인해 주세요.</p>
                 <S.Secondary type="button" onClick={() => setStep('detail')}>
                   이벤트 보기
                 </S.Secondary>
@@ -450,6 +513,9 @@ export function LaunchEventRoute({
           )}
         </main>
       </S.Shell>
+      {installOpen && platform === 'web' && (
+        <LaunchEventInstallDialog onClose={() => setInstallOpen(false)} />
+      )}
     </S.Page>
   );
 }
