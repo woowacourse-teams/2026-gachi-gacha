@@ -96,16 +96,33 @@ describe('LaunchEventInstallDialog', () => {
     }
     expect(screen.getByAltText('App Store에서 다운로드')).toHaveAttribute(
       'height',
-      '48',
+      '56',
     );
     expect(screen.getByAltText('Google Play에서 다운로드')).toHaveAttribute(
       'height',
-      '48',
+      '56',
     );
     expect(window.location.href).toBe(currentLocation);
   });
 
-  it('닫기 버튼으로 닫으면 연 버튼에 초점을 돌려준다', async () => {
+  it('닫기는 제목 옆에, 설치 안내는 하단 스토어 배지보다 앞에 제공한다', async () => {
+    await openDialog();
+    const dialog = screen.getByRole('dialog');
+    const close = screen.getByRole('button', { name: '닫기' });
+    const title = screen.getByRole('heading');
+    const hint = screen.getByText('이미 설치했다면 가치가챠 앱을 열어 주세요.');
+    const [apple, google] = screen.getAllByRole('link');
+    expect(close.parentElement).toBe(title.parentElement);
+    expect(close.textContent).toBe('');
+    expect(close.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(hint.compareDocumentPosition(apple!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(dialog.lastElementChild).toBe(apple!.parentElement);
+    expect(dialog.lastElementChild).toContainElement(google!);
+  });
+
+  it('이름이 제공된 X 버튼으로 닫으면 연 버튼에 초점을 돌려준다', async () => {
     const { user, opener } = await openDialog();
     await user.click(screen.getByRole('button', { name: '닫기' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
