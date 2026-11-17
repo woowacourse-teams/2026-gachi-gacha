@@ -12,16 +12,12 @@ import { useLocation } from 'react-router';
 
 import { getChatUnreadCount } from '@/domains/chat/api/chatApi';
 import { useAuthSession } from '@/features/auth/AuthSessionContext';
-import { readAccessToken } from '@/features/auth/authTokenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 
 interface ChatUnreadContextValue {
   unreadCount: number;
   updateUnreadCount: (unreadCount: number) => void;
 }
-
-const RECONNECT_DELAY = 5_000;
-const HEARTBEAT_INTERVAL = 10_000;
 
 const ChatUnreadContext = createContext<ChatUnreadContextValue | null>(null);
 
@@ -113,36 +109,20 @@ export function ChatUnreadProvider({ children }: { children: ReactNode }) {
     let isActive = true;
     let client: StompClient | null = null;
 
-    void import('@stomp/stompjs')
-      .then(({ Client }) => {
+    void import('@/domains/chat/createChatStompClient')
+      .then(({ createChatStompClient }) => {
         if (!isActive) {
           return;
         }
 
-        const nextClient = new Client({
-          brokerURL: createWebSocketUrl(),
-          reconnectDelay: RECONNECT_DELAY,
-          heartbeatIncoming: HEARTBEAT_INTERVAL,
-          heartbeatOutgoing: HEARTBEAT_INTERVAL,
-          debug: () => undefined,
-          beforeConnect: async () => {
-            const accessToken = readAccessToken();
-
-            if (!accessToken) {
-              throw new Error('로그인이 필요한 기능입니다.');
-            }
-
-            nextClient.connectHeaders = {
-              Authorization: `Bearer ${accessToken}`,
-            };
-          },
-          onConnect: () => {
+        const nextClient = createChatStompClient({
+          onConnect: (connectedClient) => {
             if (!isActive) {
               return;
             }
 
             void loadUnreadCount();
-            nextClient.subscribe('/user/queue/chat/rooms', (frame) => {
+            connectedClient.subscribe('/user/queue/chat/rooms', (frame) => {
               const nextUnreadCount = readUnreadCountFrame(frame);
 
               if (nextUnreadCount !== null) {
@@ -179,12 +159,6 @@ export function ChatUnreadProvider({ children }: { children: ReactNode }) {
 
 export function useOptionalChatUnread(): ChatUnreadContextValue | null {
   return useContext(ChatUnreadContext);
-}
-
-function createWebSocketUrl(): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-
-  return `${protocol}//${window.location.host}/api/v1/ws`;
 }
 
 function readUnreadCountFrame(frame: IMessage): number | null {

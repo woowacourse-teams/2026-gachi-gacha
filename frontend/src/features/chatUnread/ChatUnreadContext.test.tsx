@@ -41,6 +41,7 @@ const mockSubscribe = jest.fn(
 );
 
 jest.mock('@stomp/stompjs', () => ({
+  ReconnectionTimeMode: { LINEAR: 0, EXPONENTIAL: 1 },
   Client: jest.fn().mockImplementation((configValue) => {
     const config = configValue as MockStompConfig;
     const client = {

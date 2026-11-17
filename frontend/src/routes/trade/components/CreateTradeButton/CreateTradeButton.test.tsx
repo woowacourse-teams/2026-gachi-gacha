@@ -52,6 +52,22 @@ afterEach(() => {
 });
 
 describe('CreateTradeButton', () => {
+  it('모바일 글쓰기의 보이는 문구를 접근 가능한 이름에도 포함한다', () => {
+    render(
+      <MemoryRouter>
+        <CreateTradeButton placement="mobile" />
+      </MemoryRouter>,
+    );
+
+    const createLink = screen.getByLabelText('교환 글쓰기');
+
+    expect(createLink).toHaveTextContent('글쓰기');
+    expect(createLink).toHaveAttribute('href', '/trade/new');
+    expect(createLink).toHaveAttribute('data-placement', 'mobile');
+    expect(createLink).not.toHaveAttribute('tabindex');
+    expect(createLink).toHaveStyle({ position: 'fixed' });
+  });
+
   it('푸터가 화면 밖에 있으면 기존 우하단 위치를 유지한다', () => {
     setViewportHeight(800);
     installSynchronousAnimationFrame();
@@ -69,7 +85,7 @@ describe('CreateTradeButton', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('link', { name: '교환 글 등록' })).toHaveStyle({
+    expect(screen.getByRole('link', { name: '교환 글쓰기' })).toHaveStyle({
       '--site-footer-overlap': '0px',
     });
   });
@@ -94,7 +110,7 @@ describe('CreateTradeButton', () => {
         <CreateTradeButton />
       </MemoryRouter>,
     );
-    const createButton = screen.getByRole('link', { name: '교환 글 등록' });
+    const createButton = screen.getByRole('link', { name: '교환 글쓰기' });
 
     footerTop = 712;
     act(() => fireEvent.scroll(window));

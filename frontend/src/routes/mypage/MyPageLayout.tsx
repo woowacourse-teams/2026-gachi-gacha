@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 import styled from '@emotion/styled';
 import { Link } from 'react-router';
 
-import { isEventApplicationOpen } from '@/features/eventApplication/eventApplicationConfig';
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery';
 import { breakpoint, color, focusRing, radius } from '@/shared/styles/tokens';
 import { AppHeader } from '@/shared/ui/AppHeader';
@@ -39,7 +38,6 @@ export function MyPageWebLayout({ activeKey, children }: MyPageWebLayoutProps) {
             variant="side"
             member={account.member}
             activeKey={activeKey}
-            showEventApplication={isEventApplicationOpen()}
             onEditProfile={account.openProfileEdit}
             onLogout={account.requestLogout}
             onDeleteAccount={account.requestAccountDeletion}
@@ -82,7 +80,6 @@ export function MyPageMobileMenu() {
         <MyPageMenu
           variant="list"
           member={account.member}
-          showEventApplication={isEventApplicationOpen()}
           onEditProfile={account.openProfileEdit}
           onLogout={account.requestLogout}
           onDeleteAccount={account.requestAccountDeletion}
