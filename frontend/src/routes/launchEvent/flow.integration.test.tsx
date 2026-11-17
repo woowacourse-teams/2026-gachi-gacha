@@ -1,4 +1,12 @@
-import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from '@jest/globals';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -39,6 +47,7 @@ const METADATA: LaunchEventMetadata = {
   startAt: CONFIG.startAt,
   endAt: CONFIG.endAt,
   rulesVersion: 'synthetic-test-only',
+  capabilities: { participationPlatform: true, appOnlyParticipation: true },
   privacy: {
     controller: '가치가챠팀',
     contact: 'Instagram @gachi__.gacha',
@@ -97,8 +106,17 @@ afterAll(() => {
   }
 });
 
+beforeEach(() => {
+  document.documentElement.dataset.gachigachaNativePlatform = 'android';
+});
+
+afterEach(() => {
+  delete document.documentElement.dataset.gachigachaNativePlatform;
+});
+
 function setup(
   submissionResult: 'success' | 'rejected' | 'cors-error' = 'success',
+  initialEntry = '/events/app-launch',
 ) {
   const memberRequests: Request[] = [];
   const tradeRequests: Request[] = [];
@@ -168,7 +186,7 @@ function setup(
 
   storeAuthTokens({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN });
   render(
-    <MemoryRouter initialEntries={['/events/app-launch']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <AuthSessionProvider>
         <LaunchEventRoute config={CONFIG} />
       </AuthSessionProvider>
@@ -233,120 +251,148 @@ describe('이벤트 응모 합성 통합 흐름', () => {
     expect(submissionRequests).toBe(0);
   });
 
-  it('본인 API에서 모든 글을 조회한 뒤 Google에 토큰 없이 접수하고 영수증을 확인한다', async () => {
-    const {
-      user,
-      memberRequests,
-      tradeRequests,
-      gasRequests,
-      submittedBodies,
-      requestedPages,
-    } = setup();
-    const form = await openAndFill(user);
-    await user.click(
-      within(form).getByRole('button', {
-        name: '개인정보 수집·이용 내용 보기',
-      }),
-    );
-    const dialog = screen.getByRole('dialog', {
-      name: '개인정보 수집·이용 동의',
-    });
-    expect(
-      within(dialog).getByText('개인정보 처리자: 가치가챠팀'),
-    ).toBeInTheDocument();
-    expect(
-      within(dialog).getByText('문의: Instagram @gachi__.gacha'),
-    ).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(`이용 목적: ${METADATA.privacy.purpose}`),
-    ).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(
-        `수집 항목: ${METADATA.privacy.items.join(', ')}`,
-      ),
-    ).toBeInTheDocument();
-    expect(within(dialog).getByText(/이벤트 종료 후 30일/)).toBeInTheDocument();
-    expect(
-      within(dialog).getByText(/동의를 거부할 수 있지만/),
-    ).toBeInTheDocument();
-    await user.click(within(dialog).getByRole('button', { name: '확인' }));
-
-    const submit = within(form).getByRole('button', { name: '응모하기' });
-    expect(submit).toBeDisabled();
-    expect(tradeRequests).toHaveLength(0);
-    expect(submittedBodies).toHaveLength(0);
-    await user.click(
-      within(form).getByRole('checkbox', {
-        name: '[필수] 개인정보 수집·이용 동의',
-      }),
-    );
-    expect(submit).toBeDisabled();
-    await user.click(
-      within(form).getByRole('checkbox', {
-        name: '[필수] 참여 조건·유의사항 확인',
-      }),
-    );
-    await user.click(submit);
-
-    expect(
-      await screen.findByRole('heading', { name: '응모가 완료됐어요' }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: '응모 완료', level: 1 }),
-    ).toHaveFocus();
-    expect(screen.getByText(SUBMISSION_ID)).toBeInTheDocument();
-    expect(screen.getByText(/11\. 16\. 21:00/)).toBeInTheDocument();
-    expect(screen.queryByRole('form')).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: '홈으로 돌아가기' }),
-    ).toBeEnabled();
-
-    expect(memberRequests).toHaveLength(1);
-    expect(requestedPages).toEqual([0, 1]);
-    for (const request of [...memberRequests, ...tradeRequests]) {
-      expect(request.headers.get('authorization')).toBe(
-        `Bearer ${ACCESS_TOKEN}`,
+  it.each(['android', 'ios'] as const)(
+    '%s 앱에서 본인 API의 모든 글을 조회한 뒤 Google에 토큰 없이 접수하고 영수증을 확인한다',
+    async (platform) => {
+      document.documentElement.dataset.gachigachaNativePlatform = platform;
+      const {
+        user,
+        memberRequests,
+        tradeRequests,
+        gasRequests,
+        submittedBodies,
+        requestedPages,
+      } = setup();
+      const form = await openAndFill(user);
+      await user.click(
+        within(form).getByRole('button', {
+          name: '개인정보 수집·이용 내용 보기',
+        }),
       );
-    }
-    for (const request of tradeRequests) {
-      const url = new URL(request.url);
-      expect(url.searchParams.get('size')).toBe('100');
-      expect(url.searchParams.has('status')).toBe(false);
-    }
-    expect(submittedBodies).toEqual([
-      {
-        eventId: LAUNCH_EVENT_ID,
-        schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
-        submissionId: SUBMISSION_ID,
-        memberId: String(MEMBER_ID),
-        tradeIds: TRADE_IDS,
-        name: '합성 참여자',
-        instagramId: 'synthetic.participant',
-        privacyConsent: true,
-        rulesConsent: true,
-        rulesVersion: 'synthetic-test-only',
-      },
-    ]);
-    expect(gasRequests.map((request) => request.method)).toEqual([
-      'GET',
-      'POST',
-    ]);
-    for (const request of gasRequests) {
-      expect(request.headers.get('authorization')).toBeNull();
-      expect(request.headers.get('cookie')).toBeNull();
-      expect(request.credentials).toBe('omit');
-      expect(request.mode).toBe('cors');
-      expect(request.redirect).toBe('follow');
-      expect(request.referrerPolicy).toBe('no-referrer');
-      expect(request.url).toBe(ENDPOINT);
-      if (request.method === 'POST') {
-        expect(request.headers.get('content-type')).toBe(
-          'text/plain;charset=UTF-8',
+      const dialog = screen.getByRole('dialog', {
+        name: '개인정보 수집·이용 동의',
+      });
+      expect(
+        within(dialog).getByText('개인정보 처리자: 가치가챠팀'),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByText('문의: Instagram @gachi__.gacha'),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(`이용 목적: ${METADATA.privacy.purpose}`),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(
+          `수집 항목: ${METADATA.privacy.items.join(', ')}`,
+        ),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(/이벤트 종료 후 30일/),
+      ).toBeInTheDocument();
+      expect(
+        within(dialog).getByText(/동의를 거부할 수 있지만/),
+      ).toBeInTheDocument();
+      await user.click(within(dialog).getByRole('button', { name: '확인' }));
+
+      const submit = within(form).getByRole('button', { name: '응모하기' });
+      expect(submit).toBeDisabled();
+      expect(tradeRequests).toHaveLength(0);
+      expect(submittedBodies).toHaveLength(0);
+      await user.click(
+        within(form).getByRole('checkbox', {
+          name: '[필수] 개인정보 수집·이용 동의',
+        }),
+      );
+      expect(submit).toBeDisabled();
+      await user.click(
+        within(form).getByRole('checkbox', {
+          name: '[필수] 참여 조건·유의사항 확인',
+        }),
+      );
+      await user.click(submit);
+
+      expect(
+        await screen.findByRole('heading', { name: '응모가 완료됐어요' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: '응모 완료', level: 1 }),
+      ).toHaveFocus();
+      expect(screen.getByText(SUBMISSION_ID)).toBeInTheDocument();
+      expect(screen.getByText(/11\. 16\. 21:00/)).toBeInTheDocument();
+      expect(screen.queryByRole('form')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: '홈으로 돌아가기' }),
+      ).toBeEnabled();
+
+      expect(memberRequests).toHaveLength(1);
+      expect(requestedPages).toEqual([0, 1]);
+      for (const request of [...memberRequests, ...tradeRequests]) {
+        expect(request.headers.get('authorization')).toBe(
+          `Bearer ${ACCESS_TOKEN}`,
         );
       }
-    }
-    expect(JSON.stringify(submittedBodies)).not.toContain(ACCESS_TOKEN);
-    expect(JSON.stringify(submittedBodies)).not.toContain(REFRESH_TOKEN);
+      for (const request of tradeRequests) {
+        const url = new URL(request.url);
+        expect(url.searchParams.get('size')).toBe('100');
+        expect(url.searchParams.has('status')).toBe(false);
+      }
+      expect(submittedBodies).toEqual([
+        {
+          eventId: LAUNCH_EVENT_ID,
+          schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
+          submissionId: SUBMISSION_ID,
+          memberId: String(MEMBER_ID),
+          tradeIds: TRADE_IDS,
+          name: '합성 참여자',
+          instagramId: 'synthetic.participant',
+          privacyConsent: true,
+          rulesConsent: true,
+          rulesVersion: 'synthetic-test-only',
+          participationPlatform: platform,
+        },
+      ]);
+      expect(gasRequests.map((request) => request.method)).toEqual([
+        'GET',
+        'POST',
+      ]);
+      for (const request of gasRequests) {
+        expect(request.headers.get('authorization')).toBeNull();
+        expect(request.headers.get('cookie')).toBeNull();
+        expect(request.credentials).toBe('omit');
+        expect(request.mode).toBe('cors');
+        expect(request.redirect).toBe('follow');
+        expect(request.referrerPolicy).toBe('no-referrer');
+        expect(request.url).toBe(ENDPOINT);
+        if (request.method === 'POST') {
+          expect(request.headers.get('content-type')).toBe(
+            'text/plain;charset=UTF-8',
+          );
+        }
+      }
+      expect(JSON.stringify(submittedBodies)).not.toContain(ACCESS_TOKEN);
+      expect(JSON.stringify(submittedBodies)).not.toContain(REFRESH_TOKEN);
+    },
+  );
+
+  it('웹 로그인 사용자는 직접 폼 주소로 들어가도 설치 안내만 보고 글 조회·접수는 하지 않는다', async () => {
+    delete document.documentElement.dataset.gachigachaNativePlatform;
+    const { user, tradeRequests, submittedBodies } = setup(
+      'success',
+      '/events/app-launch?apply=1',
+    );
+    const button = await screen.findByRole('button', {
+      name: '앱에서 응모하기',
+    });
+    expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    await user.click(button);
+    const dialog = screen.getByRole('dialog', {
+      name: '가치가챠 앱에서 참여해 주세요',
+    });
+    expect(within(dialog).getAllByRole('link')).toHaveLength(2);
+    expect(tradeRequests).toHaveLength(0);
+    expect(submittedBodies).toHaveLength(0);
+    await user.click(within(dialog).getByRole('button', { name: '닫기' }));
+    expect(button).toHaveFocus();
   });
 
   it.each(['rejected', 'cors-error'] as const)(

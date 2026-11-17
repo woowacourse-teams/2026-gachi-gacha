@@ -18,7 +18,7 @@ export interface LaunchEventMetadata {
   startAt: string;
   endAt: string;
   rulesVersion: string;
-  capabilities?: { participationPlatform: true };
+  capabilities?: { participationPlatform: true; appOnlyParticipation?: true };
   privacy: {
     controller: string;
     contact: string;
@@ -110,6 +110,8 @@ export function getLaunchEventReadiness(
     metadata.eventId === LAUNCH_EVENT_ID &&
     metadata.schemaVersion === LAUNCH_EVENT_SCHEMA_VERSION &&
     metadata.authentication === 'client-reported' &&
+    metadata.capabilities?.participationPlatform === true &&
+    metadata.capabilities.appOnlyParticipation === true &&
     metadata.accepting &&
     Date.parse(metadata.startAt) === Date.parse(config.startAt) &&
     Date.parse(metadata.endAt) === Date.parse(config.endAt) &&

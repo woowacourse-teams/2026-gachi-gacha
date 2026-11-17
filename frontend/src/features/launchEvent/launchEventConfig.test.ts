@@ -22,6 +22,7 @@ const metadata: LaunchEventMetadata = {
   eventId: LAUNCH_EVENT_ID,
   schemaVersion: 4,
   authentication: 'client-reported',
+  capabilities: { participationPlatform: true, appOnlyParticipation: true },
   accepting: true,
   startAt: config.startAt,
   endAt: config.endAt,
@@ -118,7 +119,17 @@ describe('앱 출시 이벤트 활성화', () => {
     ).toBe('misconfigured');
   });
 
-  it('서버의 일정·동의 정책·접수 상태까지 일치해야 접수한다', () => {
+  it.each([undefined, { participationPlatform: true as const }])(
+    '앱 전용 접수 capability가 없는 수신부는 준비 완료로 보지 않는다: %j',
+    (capabilities) => {
+      const legacyMetadata = { ...metadata };
+      if (capabilities) legacyMetadata.capabilities = capabilities;
+      else delete legacyMetadata.capabilities;
+      expect(getLaunchEventReadiness(config, legacyMetadata, now)).toBe(false);
+    },
+  );
+
+  it('서버의 앱 전용 계약·일정·동의 정책·접수 상태까지 일치해야 접수한다', () => {
     expect(getLaunchEventReadiness(config, metadata, now)).toBe(true);
     expect(getLaunchEventReadiness(config, null, now)).toBe(false);
     expect(

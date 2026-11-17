@@ -1,5 +1,6 @@
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -47,6 +48,7 @@ const METADATA: LaunchEventMetadata = {
   eventId: 'app-launch-2026',
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
   authentication: 'client-reported',
+  capabilities: { participationPlatform: true, appOnlyParticipation: true },
   accepting: true,
   startAt: '2020-01-01T00:00:00+09:00',
   endAt: '2099-11-24T23:59:59+09:00',
@@ -74,6 +76,12 @@ const originalShowModal = Object.getOwnPropertyDescriptor(
 const originalClose = Object.getOwnPropertyDescriptor(
   HTMLDialogElement.prototype,
   'close',
+);
+const originalNativePlatform =
+  document.documentElement.dataset.gachigachaNativePlatform;
+const originalNativeBridge = Object.getOwnPropertyDescriptor(
+  window,
+  'ReactNativeWebView',
 );
 
 beforeAll(() => {
@@ -109,10 +117,35 @@ afterAll(() => {
 });
 
 beforeEach(() => {
+  document.documentElement.dataset.gachigachaNativePlatform = 'android';
   collectMock.mockReset().mockResolvedValue(PARTICIPATION);
   submitMock.mockReset().mockResolvedValue(RECEIPT);
   uuidMock.mockReset().mockReturnValue(UUID);
 });
+
+afterEach(() => {
+  if (originalNativePlatform === undefined)
+    delete document.documentElement.dataset.gachigachaNativePlatform;
+  else
+    document.documentElement.dataset.gachigachaNativePlatform =
+      originalNativePlatform;
+  if (originalNativeBridge)
+    Object.defineProperty(window, 'ReactNativeWebView', originalNativeBridge);
+  else Reflect.deleteProperty(window, 'ReactNativeWebView');
+  jest.restoreAllMocks();
+});
+
+function changeToNonAppPlatform(platform: 'web' | 'app-unknown') {
+  delete document.documentElement.dataset.gachigachaNativePlatform;
+  Reflect.deleteProperty(window, 'ReactNativeWebView');
+  if (platform === 'app-unknown') {
+    window.ReactNativeWebView = { postMessage: jest.fn() };
+    jest
+      .spyOn(navigator, 'userAgent', 'get')
+      .mockReturnValue('Unknown WebView');
+    jest.spyOn(navigator, 'platform', 'get').mockReturnValue('Unknown');
+  }
+}
 
 function setup(metadata = METADATA) {
   const onSuccess = jest.fn<(receipt: LaunchEventReceipt) => void>();
@@ -147,27 +180,83 @@ function fill() {
 }
 
 describe('LaunchEventForm', () => {
-  it.each([false, true])(
-    '수신부 기기 기록 지원=%s에 맞춰 참여 환경을 전송한다',
-    async (supported) => {
-      document.documentElement.dataset.gachigachaNativePlatform = 'android';
-      try {
-        setup({
-          ...METADATA,
-          ...(supported
-            ? { capabilities: { participationPlatform: true as const } }
-            : {}),
-        });
-        fill();
-        fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
-        await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
-        const payload = submitMock.mock.calls[0]?.[0];
-        if (supported)
-          expect(payload).toHaveProperty('participationPlatform', 'android');
-        else expect(payload).not.toHaveProperty('participationPlatform');
-      } finally {
-        delete document.documentElement.dataset.gachigachaNativePlatform;
-      }
+  it.each(['android', 'ios'] as const)(
+    '앱 전용 접수 수신부에 %s 참여 환경을 전송한다',
+    async (platform) => {
+      document.documentElement.dataset.gachigachaNativePlatform = platform;
+      setup();
+      fill();
+      fireEvent.click(screen.getByRole('button', { name: '응모하기' }));
+      await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
+      expect(submitMock.mock.calls[0]?.[0]).toHaveProperty(
+        'participationPlatform',
+        platform,
+      );
+    },
+  );
+
+  it.each([undefined, { participationPlatform: true as const }])(
+    '앱 전용 접수를 지원하지 않는 수신부에는 제출하지 않는다: %j',
+    async (capabilities) => {
+      const metadata = { ...METADATA };
+      if (capabilities) metadata.capabilities = capabilities;
+      else delete metadata.capabilities;
+      setup(metadata);
+      fill();
+      fireEvent.submit(screen.getByRole('form'));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '지금은 응모할 수 없어요',
+      );
+      expect(collectMock).not.toHaveBeenCalled();
+      expect(submitMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['web', 'app-unknown'] as const)(
+    '폼을 직접 연 %s 환경에서도 최종 제출 시 조회·전송을 막는다',
+    async (platform) => {
+      changeToNonAppPlatform(platform);
+      const { onSuccess } = setup();
+      fill();
+      fireEvent.submit(screen.getByRole('form'));
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent('가치가챠 앱에서 이벤트를 다시 열고');
+      expect(alert).toHaveFocus();
+      expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue(
+        '  가치  ',
+      );
+      expect(collectMock).not.toHaveBeenCalled();
+      expect(submitMock).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['web', 'app-unknown'] as const)(
+    '활동 조회 중 %s 환경으로 바뀌면 최종 전송을 막고 입력을 유지한다',
+    async (platform) => {
+      let complete!: (value: typeof PARTICIPATION) => void;
+      collectMock.mockReturnValue(
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+      );
+      const { onSuccess, onPendingChange } = setup();
+      fill();
+      fireEvent.submit(screen.getByRole('form'));
+      expect(collectMock).toHaveBeenCalledTimes(1);
+      expect(onPendingChange).toHaveBeenLastCalledWith(true);
+      changeToNonAppPlatform(platform);
+      await act(async () => complete(PARTICIPATION));
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        '입력한 정보는 전송하지 않았어요',
+      );
+      expect(screen.getByRole('textbox', { name: '이름' })).toHaveValue(
+        '  가치  ',
+      );
+      expect(submitMock).not.toHaveBeenCalled();
+      expect(uuidMock).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+      expect(onPendingChange).toHaveBeenLastCalledWith(false);
     },
   );
 
@@ -203,6 +292,7 @@ describe('LaunchEventForm', () => {
         privacyConsent: true,
         rulesConsent: true,
         rulesVersion: 'event-rules-v2',
+        participationPlatform: 'android',
       },
       ENDPOINT,
     );

@@ -1,4 +1,4 @@
-/* 가치가챠 앱 출시 이벤트 v4. 브라우저 전달값을 접수하며 회원·게시글 소유권은 서버에서 검증하지 않는다. */
+/* 가치가챠 앱 출시 이벤트 v4. Android/iOS 앱이라고 전달한 요청만 접수하며 회원·게시글 소유권이나 앱 진위는 서버에서 검증하지 않는다. */
 const EVENT_ID = 'app-launch-2026';
 const SCHEMA_VERSION = 4;
 const MAX_TRADE_IDS = 10000;
@@ -190,7 +190,7 @@ function doGet() {
     eventId: EVENT_ID,
     schemaVersion: SCHEMA_VERSION,
     authentication: 'client-reported',
-    capabilities: { participationPlatform: true },
+    capabilities: { participationPlatform: true, appOnlyParticipation: true },
     accepting: accepting,
     startAt: c.startAt,
     endAt: c.endAt,
@@ -395,6 +395,15 @@ function participationStatus_(platform) {
   );
 }
 
+function requireAppParticipation_(input) {
+  // 클라이언트 전달값에 따른 접수 정책일 뿐, 앱 설치·실행 증명은 아니다.
+  if (
+    input.participationPlatform !== 'android' &&
+    input.participationPlatform !== 'ios'
+  )
+    reject_('APP_ONLY');
+}
+
 function applyEntry_(sheet, rowNumber, input, record) {
   // 2,000개씩 나눠 안전정수 10,000개도 셀당 50,000자 제한 안에 보관한다.
   const chunks = [];
@@ -484,14 +493,19 @@ function doPost(event) {
       if (Date.now() >= Date.parse(record[7])) reject_('NOT_ACCEPTING');
       // 이미 기록된 요청의 동일 재시도는 종료·접수 중단·약관 변경 뒤에도
       // 원래 보관기한 안에서만 확인/복구한다. 새 UUID에는 적용하지 않는다.
-      // 최신 UUID만 중단된 쓰기를 복구한다. 과거 재시도는 영수증만 반환한다.
+      // 완료된 구형 웹 요청은 영수증만 반환하며 데이터를 변경하지 않는다.
+      // 최신 UUID만 중단된 쓰기를 복구하되, 앱 전용 전환 후 구형 웹 요청을
+      // 응모 행에 새로 반영하지 않는다. Android/iOS 재시도는 기존대로 복구한다.
       if (
         lastRecord[1] === input.submissionId &&
         (!entry || String(entry.row[3]) !== input.submissionId)
-      )
+      ) {
+        requireAppParticipation_(input);
         applyEntry_(storage.sheet, rowNumber, input, record);
+      }
       return receipt_(record);
     }
+    requireAppParticipation_(input);
     if (!isAccepting_(c, Date.now())) reject_('NOT_ACCEPTING');
     if (input.rulesVersion !== c.rulesVersion) reject_('POLICY_CHANGED');
     const members = new Set();
@@ -536,6 +550,7 @@ function doPost(event) {
       'RECEIPT_CAPACITY_REACHED',
       'STORAGE_NOT_PRIVATE',
       'POLICY_CHANGED',
+      'APP_ONLY',
     ];
     return json_({
       ok: false,

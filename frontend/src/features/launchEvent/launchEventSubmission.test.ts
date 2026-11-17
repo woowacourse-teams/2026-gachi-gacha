@@ -47,6 +47,7 @@ const metadata = {
   eventId: LAUNCH_EVENT_ID,
   schemaVersion: LAUNCH_EVENT_SCHEMA_VERSION,
   authentication: 'client-reported',
+  capabilities: { participationPlatform: true, appOnlyParticipation: true },
   accepting: true,
   startAt: '2026-11-11T00:00:00+09:00',
   endAt: '2026-11-25T00:00:00+09:00',
@@ -93,7 +94,7 @@ describe('새 이벤트 전용 전송 계약', () => {
     { participationPlatform: false },
     { participationPlatform: 'true' },
   ])(
-    '기기 기록 capability가 없는 구버전과 호환한다: %j',
+    '기기 기록 capability가 없는 응답에 지원 여부를 임의 추가하지 않는다: %j',
     async (capabilities) => {
       jest
         .spyOn(globalThis, 'fetch')
@@ -116,6 +117,33 @@ describe('새 이벤트 전용 전송 계약', () => {
     );
     expect((await fetchLaunchEventMetadata(endpoint)).capabilities).toEqual({
       participationPlatform: true,
+    });
+  });
+
+  it.each([undefined, false, 'true', 1])(
+    '앱 전용 접수 capability는 boolean true가 아니면 활성화하지 않는다: %j',
+    async (appOnlyParticipation) => {
+      jest.spyOn(globalThis, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ...metadata,
+            capabilities: { participationPlatform: true, appOnlyParticipation },
+          }),
+        ),
+      );
+      expect((await fetchLaunchEventMetadata(endpoint)).capabilities).toEqual({
+        participationPlatform: true,
+      });
+    },
+  );
+
+  it('기기 기록과 앱 전용 접수 지원을 모두 명시한 메타데이터를 보존한다', async () => {
+    jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify(metadata)));
+    expect((await fetchLaunchEventMetadata(endpoint)).capabilities).toEqual({
+      participationPlatform: true,
+      appOnlyParticipation: true,
     });
   });
 

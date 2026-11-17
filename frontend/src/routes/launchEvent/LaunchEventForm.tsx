@@ -5,7 +5,10 @@ import {
   isLaunchEventDate,
   type LaunchEventMetadata,
 } from '@/features/launchEvent/launchEventConfig';
-import { getLaunchEventPlatform } from '@/features/launchEvent/launchEventPlatform';
+import {
+  getLaunchEventPlatform,
+  isLaunchEventApp,
+} from '@/features/launchEvent/launchEventPlatform';
 import {
   isLaunchEventInstagramId,
   type LaunchEventReceipt,
@@ -126,9 +129,17 @@ export function LaunchEventForm({
     if (inFlight.current) return;
     setTouched({ name: true, instagramId: true });
     if (!valid) return;
+    if (!isLaunchEventApp(getLaunchEventPlatform())) {
+      setSubmitError(
+        '가치가챠 앱에서 이벤트를 다시 열고 응모해 주세요. 입력한 정보는 전송하지 않았어요.',
+      );
+      return;
+    }
     const now = Date.now();
     if (
       !metadata.accepting ||
+      !metadata.capabilities?.appOnlyParticipation ||
+      !metadata.capabilities.participationPlatform ||
       !memberId.trim() ||
       !isLaunchEventDate(metadata.startAt) ||
       !isLaunchEventDate(metadata.endAt) ||
@@ -152,6 +163,13 @@ export function LaunchEventForm({
         return;
       }
       participationConfirmed = true;
+      const participationPlatform = getLaunchEventPlatform();
+      if (!isLaunchEventApp(participationPlatform)) {
+        setSubmitError(
+          '가치가챠 앱에서 이벤트를 다시 열고 응모해 주세요. 입력한 정보는 전송하지 않았어요.',
+        );
+        return;
+      }
       const input = {
         memberId: participation.memberId,
         name: name.trim(),
@@ -160,10 +178,7 @@ export function LaunchEventForm({
         privacyConsent: true as const,
         rulesConsent: true as const,
         rulesVersion: metadata.rulesVersion,
-        // 구버전 GAS는 추가 필드를 거절한다. 지원 응답이 있을 때만 전송한다.
-        ...(metadata.capabilities?.participationPlatform
-          ? { participationPlatform: getLaunchEventPlatform() }
-          : {}),
+        participationPlatform,
       };
       const fingerprint = JSON.stringify({ endpoint, ...input });
       if (!attempt.current || attempt.current.fingerprint !== fingerprint) {
@@ -227,8 +242,8 @@ export function LaunchEventForm({
         <strong>가치가챠 앱 출시 기념 가챠 선물 이벤트</strong>
         <p>총 8명 추첨 · 1인 1개 랜덤 증정</p>
         <p>
-          앱 설치와 게시글 1개 작성을 마친 회원이 응모할 수 있어요. 참여 조건은
-          운영진이 확인해요.
+          게시글 1개 이상을 작성한 로그인 회원이 앱에서 응모할 수 있어요. 참여
+          조건은 운영진이 확인해요.
         </p>
         <p>
           가치가챠에서 교환 이야기를 활발하게 나눌수록, 선물을 만날 기회도
@@ -401,9 +416,9 @@ export function LaunchEventForm({
           ) : (
             <ul>
               <li>
-                가치가챠 앱을 설치하고 게시글을 1개 이상 작성한 회원이 참여할 수
-                있어요. 동의는 참여 조건을 충족했다는 본인의 확인이며, 운영진이
-                추후 확인해요.
+                가치가챠 앱에서 로그인하고 게시글을 1개 이상 작성한 회원이
+                참여할 수 있어요. 동의는 참여 조건을 충족했다는 본인의 확인이며,
+                운영진이 추후 확인해요.
               </li>
               <li>
                 게시글 참여 활동을 추첨에 반영해요. 재응모는 횟수가 아니라
@@ -418,6 +433,10 @@ export function LaunchEventForm({
                 선택할 수 없고 중복 당첨은 제외해요.
               </li>
               <li>허위 정보나 타인의 정보로는 응모할 수 없어요.</li>
+              <li>
+                응모는 가치가챠 앱에서만 가능하며, Apple과 Google은 이 이벤트의
+                후원사나 운영 주체가 아니에요.
+              </li>
               <li>
                 가치가챠가 구매한 정품 경품을 제공하는 자체 이벤트이며, 캐릭터
                 권리자 및 제조·판매사와의 공식 협업·후원과는 무관해요.

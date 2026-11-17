@@ -139,7 +139,14 @@ export async function fetchLaunchEventMetadata(
     rulesVersion: data.rulesVersion,
     ...(isRecord(data.capabilities) &&
     data.capabilities.participationPlatform === true
-      ? { capabilities: { participationPlatform: true as const } }
+      ? {
+          capabilities: {
+            participationPlatform: true as const,
+            ...(data.capabilities.appOnlyParticipation === true
+              ? { appOnlyParticipation: true as const }
+              : {}),
+          },
+        }
       : {}),
     privacy: {
       controller: privacy.controller,

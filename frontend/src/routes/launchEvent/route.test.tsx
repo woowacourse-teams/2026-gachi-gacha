@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from '@jest/globals';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router';
@@ -29,6 +36,21 @@ jest.mock('@/features/launchEvent/useLaunchEventClock', () => ({
   useLaunchEventClock: jest.fn(),
 }));
 jest.mock('./LaunchEventForm', () => ({ LaunchEventForm: jest.fn() }));
+jest.mock('./LaunchEventInstallDialog', () => ({
+  LaunchEventInstallDialog: ({ onClose }: { onClose: () => void }) => (
+    <div role="dialog" aria-label="가치가챠 앱에서 참여해 주세요">
+      <button type="button" onClick={onClose}>
+        닫기
+      </button>
+    </div>
+  ),
+}));
+
+const originalUserAgent = Object.getOwnPropertyDescriptor(
+  navigator,
+  'userAgent',
+);
+const originalBridge = window.ReactNativeWebView;
 
 const authMock = jest.mocked(useAuthSession);
 const metadataMock = jest.mocked(fetchLaunchEventMetadata);
@@ -50,6 +72,7 @@ const METADATA: LaunchEventMetadata = {
   startAt: CONFIG.startAt,
   endAt: CONFIG.endAt,
   rulesVersion: 'v1',
+  capabilities: { participationPlatform: true, appOnlyParticipation: true },
   privacy: {
     controller: '테스트 운영팀',
     contact: 'privacy@example.test',
@@ -83,6 +106,8 @@ function setAuth(
 }
 
 beforeEach(() => {
+  document.documentElement.dataset.gachigachaNativePlatform = 'android';
+  delete window.ReactNativeWebView;
   setAuth('guest');
   metadataMock.mockReset().mockResolvedValue(METADATA);
   submitMock.mockReset();
@@ -98,6 +123,15 @@ beforeEach(() => {
       </button>
     </div>
   ));
+});
+
+afterEach(() => {
+  delete document.documentElement.dataset.gachigachaNativePlatform;
+  if (originalBridge) window.ReactNativeWebView = originalBridge;
+  else delete window.ReactNativeWebView;
+  if (originalUserAgent)
+    Object.defineProperty(navigator, 'userAgent', originalUserAgent);
+  else Reflect.deleteProperty(navigator, 'userAgent');
 });
 
 function Location() {
@@ -259,7 +293,7 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
       });
       expect(button).toBeDisabled();
       expect(button).toHaveAccessibleDescription(
-        '앱이나 사이트의 로그인 메뉴에서 로그인한 뒤, 이 이벤트로 돌아와 응모해 주세요.',
+        '앱의 로그인 메뉴에서 로그인한 뒤, 이 이벤트로 돌아와 응모해 주세요.',
       );
       await act(async () => undefined);
       expect(button).toBeDisabled();
@@ -289,8 +323,10 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
     expect(await screen.findByTestId('event-form')).toHaveTextContent(
       '회원 번호: 37',
     );
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      /^\/events\/app-launch$/,
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/events\/app-launch$/,
+      ),
     );
     expect(submitMock).not.toHaveBeenCalled();
     await user.click(
@@ -362,9 +398,7 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
     rerender(page(CONFIG));
     const button = await readyButton();
     expect(button).toBeEnabled();
-    expect(
-      screen.queryByText(/앱이나 사이트의 로그인 메뉴/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/앱의 로그인 메뉴/)).not.toBeInTheDocument();
     await user.click(button);
     expect(screen.getByTestId('event-form')).toHaveTextContent('회원 번호: 37');
   });
@@ -434,5 +468,120 @@ describe('LaunchEventRoute 접수 게이트와 화면 전환', () => {
     setup();
     await waitFor(() => expect(metadataMock).toHaveBeenCalled());
     expect(screen.getByText(/한국 시간/)).toHaveTextContent('11. 24. 23:59');
+  });
+
+  it.each(['guest', 'authenticated'] as const)(
+    '웹의 %s 사용자는 활성 설치 안내 버튼을 누를 때만 팝업을 열고 로그인·응모 폼으로 이동하지 않는다',
+    async (status) => {
+      delete document.documentElement.dataset.gachigachaNativePlatform;
+      setAuth(status, status === 'authenticated' ? '37' : null);
+      const { user } = setup();
+      expect(
+        screen.getByRole('button', { name: '참여 환경 확인 중…' }),
+      ).toBeDisabled();
+      const button = await screen.findByRole('button', {
+        name: '앱에서 응모하기',
+      });
+      expect(button).toBeEnabled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      await user.click(button);
+      expect(
+        screen.getByRole('dialog', { name: '가치가챠 앱에서 참여해 주세요' }),
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/events\/app-launch$/,
+      );
+      expect(formMock).not.toHaveBeenCalled();
+      expect(submitMock).not.toHaveBeenCalled();
+      await user.click(screen.getByRole('button', { name: '닫기' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(['guest', 'authenticated'] as const)(
+    '웹의 %s 사용자는 apply=1 직접 진입으로 앱 전용 폼을 우회할 수 없다',
+    async (status) => {
+      delete document.documentElement.dataset.gachigachaNativePlatform;
+      setAuth(status, status === 'authenticated' ? '37' : null);
+      setup(CONFIG, '/events/app-launch?apply=1');
+      expect(
+        await screen.findByRole('button', { name: '앱에서 응모하기' }),
+      ).toBeEnabled();
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/events/app-launch?apply=1',
+      );
+      expect(formMock).not.toHaveBeenCalled();
+      expect(submitMock).not.toHaveBeenCalled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    },
+  );
+
+  it('기기를 알 수 없는 앱은 웹 설치 팝업 대신 재확인 안내를 표시하고 응모를 막는다', async () => {
+    delete document.documentElement.dataset.gachigachaNativePlatform;
+    window.ReactNativeWebView = { postMessage: jest.fn() };
+    setAuth('authenticated', '37');
+    const { user } = setup(CONFIG, '/events/app-launch?apply=1');
+    expect(
+      screen.getByRole('button', { name: '앱 환경을 다시 확인해 주세요' }),
+    ).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: '앱 환경 다시 확인' }));
+    expect(screen.getByText(/최신 가치가챠 앱/)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(formMock).not.toHaveBeenCalled();
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it('첫 렌더 뒤 iOS 표식이 주입되면 재방문 없이 앱 응모 버튼으로 전환한다', async () => {
+    delete document.documentElement.dataset.gachigachaNativePlatform;
+    setAuth('authenticated', '37');
+    const { user } = setup();
+    expect(
+      screen.getByRole('button', { name: '참여 환경 확인 중…' }),
+    ).toBeDisabled();
+    await act(async () => {
+      document.documentElement.dataset.gachigachaNativePlatform = 'ios';
+    });
+    await user.click(await readyButton());
+    expect(screen.getByTestId('event-form')).toHaveTextContent('회원 번호: 37');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('웹 안내 이후 늦게 주입된 Android 브리지는 클릭 시 다시 확인해 설치 팝업 대신 폼을 연다', async () => {
+    delete document.documentElement.dataset.gachigachaNativePlatform;
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      value: 'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36',
+    });
+    setAuth('authenticated', '37');
+    const { user } = setup();
+    const button = await screen.findByRole('button', {
+      name: '앱에서 응모하기',
+    });
+    window.ReactNativeWebView = { postMessage: jest.fn() };
+    await user.click(button);
+    expect(screen.getByTestId('event-form')).toHaveTextContent('회원 번호: 37');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('구버전 수신부에 앱 전용 접수 기능이 없으면 앱도 폼을 열지 않는다', async () => {
+    setAuth('authenticated', '37');
+    metadataMock.mockResolvedValue({
+      ...METADATA,
+      capabilities: { participationPlatform: true },
+    });
+    setup(CONFIG, '/events/app-launch?apply=1');
+    expect(
+      await screen.findByRole('button', { name: '지금은 응모할 수 없어요' }),
+    ).toBeDisabled();
+    expect(formMock).not.toHaveBeenCalled();
+  });
+
+  it('웹에서도 마감 상태를 설치 유도보다 우선한다', () => {
+    delete document.documentElement.dataset.gachigachaNativePlatform;
+    setup({ ...CONFIG, endAt: '2026-11-11T12:00:00+09:00' });
+    expect(
+      screen.getByRole('button', { name: '응모가 마감되었어요' }),
+    ).toBeDisabled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
