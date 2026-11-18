@@ -28,6 +28,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, Dispos
     private final StompAuthInterceptor stompAuthInterceptor;
     private final StompDestinationInterceptor stompDestinationInterceptor;
     private final StompErrorHandler stompErrorHandler;
+    private final ChatWebSocketChannelProperties chatWebSocketChannelProperties;
 
     @Nullable
     private ThreadPoolTaskScheduler heartbeatScheduler;
@@ -52,7 +53,23 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer, Dispos
 
     @Override
     public void configureClientInboundChannel(final ChannelRegistration registration) {
+        configureExecutor(registration, chatWebSocketChannelProperties.inbound());
         registration.interceptors(stompAuthInterceptor, stompDestinationInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(final ChannelRegistration registration) {
+        configureExecutor(registration, chatWebSocketChannelProperties.outbound());
+    }
+
+    private void configureExecutor(
+            final ChannelRegistration registration,
+            final ChatWebSocketChannelProperties.ExecutorProperties properties
+    ) {
+        registration.taskExecutor()
+                .corePoolSize(properties.corePoolSize())
+                .maxPoolSize(properties.maxPoolSize())
+                .queueCapacity(properties.queueCapacity());
     }
 
     @Override
