@@ -11,36 +11,58 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: frontend-deploy-prod
+  cancel-in-progress: false
+
 jobs:
-  build-and-deploy-prod:
-    name: Build & Deploy to PROD
-    runs-on:
-      - self-hosted
-      - Linux
-      - ARM64
-      - frontend-prod
+  build:
+    name: Build PROD on GitHub
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     environment:
       name: frontend-production
-      url: ${{ vars.PROD_FRONTEND_URL }}
 
     defaults:
       run:
         working-directory: frontend
 
-    env:
-      DEPLOY_ROOT: /srv/gachi-gacha/frontend-prod
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      archive-sha256: ${{ steps.package.outputs.archive-sha256 }}
+      helper-sha256: ${{ steps.package.outputs.helper-sha256 }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # 설치와 빌드는 GitHub에서만 실행하며 EC2에는 정적 산출물만 전달한다.
+      - name: Set up Node.js before pnpm installer
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 11.9.0
+        shell: bash
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          # bootstrap/self-update 없이 고정 버전을 작업별 임시 경로에 설치한다.
+          gachi_pnpm_dir="$(mktemp -d "${RUNNER_TEMP:?}/gachi-pnpm.XXXXXX")"
+          timeout --kill-after=10s 120s npm install \
+            --prefix "$gachi_pnpm_dir" \
+            --no-save --package-lock=false --ignore-scripts --no-audit --no-fund \
+            pnpm@11.9.0
 
-      - name: Set up Node.js
+          gachi_pnpm_bin="$gachi_pnpm_dir/node_modules/.bin"
+          test "$(timeout --kill-after=5s 15s "$gachi_pnpm_bin/pnpm" --version)" = "11.9.0"
+          printf '%s\n' "$gachi_pnpm_bin" >> "$GITHUB_PATH"
+
+      # pnpm 설치 후에만 pnpm store 경로를 조회하여 캐시할 수 있다.
+      - name: Restore pnpm cache
         uses: actions/setup-node@v7
         with:
           node-version-file: frontend/.nvmrc
@@ -49,6 +71,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Test static deployment contract
+        run: python3 -B -m unittest discover -s scripts/deployment -p 'test_*.py'
 
       - name: Build production artifact
         env:
@@ -73,15 +98,66 @@ jobs:
           MEMBER_REPORT_ENDPOINT: ${{ vars.MEMBER_REPORT_ENDPOINT }}
         run: pnpm build
 
-      - name: Remove source maps from deployment artifact
-        run: find dist -type f -name '*.map' -delete
-
-      - name: Deploy to Nginx Directory
+      - name: Package static deployment artifact
+        id: package
         shell: bash
         run: |
-          release_dir="${DEPLOY_ROOT}/releases/${GITHUB_SHA}"
-          mkdir -p "${release_dir}"
-          cp -a dist/. "${release_dir}/"
+          set -euo pipefail
+          test -s dist/index.html
+          find dist -type f -name '*.map' -delete
+          gachi_package="${RUNNER_TEMP:?}/frontend-artifact"
+          mkdir "$gachi_package"
+          tar -C dist -czf "$gachi_package/site.tar.gz" .
+          cp scripts/deployment/deploy.py "$gachi_package/deploy.py"
+          printf 'archive-sha256=%s\n' "$(sha256sum "$gachi_package/site.tar.gz" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          printf 'helper-sha256=%s\n' "$(sha256sum "$gachi_package/deploy.py" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
 
-          ln -sfn "${release_dir}" "${DEPLOY_ROOT}/current.next"
-          mv -Tf "${DEPLOY_ROOT}/current.next" "${DEPLOY_ROOT}/current"
+      - name: Upload static deployment artifact
+        id: upload
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: frontend-prod-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/frontend-artifact/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  deploy:
+    name: Deploy PROD artifact on EC2
+    needs: build
+    runs-on:
+      - self-hosted
+      - Linux
+      - ARM64
+      - frontend-prod
+    timeout-minutes: 5
+
+    environment:
+      name: frontend-production
+      url: ${{ vars.PROD_FRONTEND_URL }}
+
+    steps:
+      - name: Download verified static deployment artifact
+        uses: actions/download-artifact@v8.0.2
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact-id }}
+          path: ${{ runner.temp }}/frontend-deploy-${{ github.run_id }}-${{ github.run_attempt }}
+          digest-mismatch: error
+
+      - name: Activate static release and verify local HTTPS
+        shell: bash
+        working-directory: ${{ runner.temp }}/frontend-deploy-${{ github.run_id }}-${{ github.run_attempt }}
+        env:
+          HELPER_SHA256: ${{ needs.build.outputs.helper-sha256 }}
+          ARCHIVE_SHA256: ${{ needs.build.outputs.archive-sha256 }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$HELPER_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          printf '%s  deploy.py\n' "$HELPER_SHA256" | sha256sum --check --strict -
+          python3 -B deploy.py \
+            --archive site.tar.gz --sha256 "$ARCHIVE_SHA256" \
+            --deploy-root /srv/gachi-gacha/frontend-prod \
+            --commit "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --domain gachigacha.kro.kr \
+            --repository "$GITHUB_REPOSITORY" --branch main
