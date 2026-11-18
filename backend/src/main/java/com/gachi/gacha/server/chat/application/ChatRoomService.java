@@ -9,6 +9,7 @@ import com.gachi.gacha.server.chat.domain.ChatRoom;
 import com.gachi.gacha.server.chat.domain.ChatRoomJpaRepository;
 import com.gachi.gacha.server.chat.domain.ChatRoomMember;
 import com.gachi.gacha.server.chat.domain.ChatRoomMemberJpaRepository;
+import com.gachi.gacha.server.chat.domain.ChatRoomUpdateProjection;
 import com.gachi.gacha.server.chat.domain.ChatTradeSummary;
 import com.gachi.gacha.server.chat.domain.exception.ChatMemberNotFoundException;
 import com.gachi.gacha.server.chat.domain.exception.ChatPartnerWithdrawnException;
@@ -92,18 +93,17 @@ public class ChatRoomService {
     }
 
     public ChatRoomInfo getRoom(final Long memberId, final Long roomId) {
+        return loadRoomInfo(memberId, roomId);
+    }
+
+    private ChatRoomInfo loadRoomInfo(final Long memberId, final Long roomId) {
         ChatRoom chatRoom = chatRoomJpaRepository.getById(roomId);
-
-        ChatRoomMember myChatRoomMember =
-                chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
-
+        ChatRoomMember myChatRoomMember = chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
         ChatMemberSummary otherMember = chatRoomMemberJpaRepository.findOtherMemberIncludingDeleted(roomId, memberId)
                 .orElseThrow(() -> new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
-
         ChatTradeSummary trade = chatRoomJpaRepository.findTradeIncludingDeleted(chatRoom.getTradeId())
                 .orElseThrow(() -> new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND));
-        String tradeThumbnailUrl = findThumbnailUrlsByTradeId(List.of(trade.getTradeId()))
-                .get(trade.getTradeId());
+        String tradeThumbnailUrl = findThumbnailUrlsByTradeId(List.of(trade.getTradeId())).get(trade.getTradeId());
 
         long unreadCount = calculateUnreadCount(chatRoom, myChatRoomMember);
 
@@ -118,22 +118,54 @@ public class ChatRoomService {
 
     public ChatRoomUpdateInfo getRoomWithTotalUnreadCount(final Long memberId, final Long roomId) {
         ChatRoomInfo room = getRoom(memberId, roomId);
-        long totalUnreadCount = getUnreadCount(memberId);
-
-        return new ChatRoomUpdateInfo(room, totalUnreadCount);
+        return new ChatRoomUpdateInfo(room, getUnreadCount(memberId));
     }
 
     /**
      * 차단 관계인 상대와의 방은 목록에서 숨기므로 실시간 갱신으로도 다시 노출하지 않는다.
      */
     public Optional<ChatRoomUpdateInfo> findRoomUpdate(final Long memberId, final Long roomId) {
-        ChatRoomUpdateInfo roomUpdate = getRoomWithTotalUnreadCount(memberId, roomId);
-        Long otherMemberId = roomUpdate.room().otherMember().memberId();
+        Optional<ChatRoomUpdateProjection> result = chatRoomJpaRepository.findRoomUpdate(memberId, roomId);
 
-        if (memberBlockService.isBlockedBetween(memberId, otherMemberId)) {
+        if (result.isEmpty()) {
+            chatRoomJpaRepository.getById(roomId);
+            chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
+            throw new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND);
+        }
+
+        ChatRoomUpdateProjection projection = result.get();
+        if (projection.getMyMembershipId() == null) {
+            chatRoomMemberJpaRepository.getByRoomIdAndMemberId(roomId, memberId);
+        }
+        if (projection.getOtherMemberId() == null) {
+            chatRoomMemberJpaRepository.findOtherMemberIncludingDeleted(roomId, memberId)
+                    .orElseThrow(() -> new ChatMemberNotFoundException(ErrorCode.CHAT_MEMBER_NOT_FOUND));
+        }
+        if (projection.getTradeId() == null) {
+            throw new TradeNotFoundException(ErrorCode.TRADE_NOT_FOUND);
+        }
+        if (Boolean.TRUE.equals(projection.getBlocked())) {
             return Optional.empty();
         }
-        return Optional.of(roomUpdate);
+
+        long totalUnreadCount = getUnreadCount(memberId);
+        ChatRoomInfo room = ChatRoomInfo.of(
+                projection.getRoomId(),
+                projection.getTradeId(),
+                projection.getTradeTitle(),
+                projection.getTradeStatus(),
+                Boolean.TRUE.equals(projection.getTradeDeleted()),
+                projection.getThumbnailUrl(),
+                projection.getOtherMemberId(),
+                projection.getOtherMemberNickname(),
+                projection.getOtherMemberProfileImageUrl(),
+                Boolean.TRUE.equals(projection.getOtherMemberDeleted()),
+                projection.getLastMessagePreview(),
+                projection.getLastMessageAt(),
+                projection.getUnreadCount(),
+                projection.getCreatedAt()
+        );
+        return Optional.of(new ChatRoomUpdateInfo(room, totalUnreadCount));
     }
 
     private long calculateUnreadCount(final ChatRoom chatRoom, final ChatRoomMember chatRoomMember) {
