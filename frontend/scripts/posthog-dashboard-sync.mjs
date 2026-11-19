@@ -349,27 +349,6 @@ const dashboardDefinitions = [
         }),
       },
       {
-        name: '랜딩 투어 전환 [landing_tour_step_viewed → exited]',
-        description:
-          '첫 랜딩 단계 조회부터 마지막 단계 조회와 투어 완료까지의 전환입니다. 중간 이탈 단계와 SKIP·닫기 사용은 별도 이벤트 속성으로 확인합니다.',
-        query: funnel({
-          series: [
-            event('landing_tour_step_viewed', {
-              label: '첫 단계 조회',
-              properties: [exact('step_number', 1)],
-            }),
-            event('landing_tour_step_viewed', {
-              label: '마지막 단계 조회',
-              properties: [exact('step_number', 4)],
-            }),
-            event('landing_tour_exited', {
-              label: '투어 완료',
-              properties: [exact('exit_type', 'completed')],
-            }),
-          ],
-        }),
-      },
-      {
         name: '댓글 작성→채팅 선택 [trade_comment_submission_completed → trade_chat_started]',
         description:
           '댓글 등록 성공 후 같은 거래 상세 방문에서 채팅하기를 선택했는지 확인합니다. 두 번째 단계는 comment_context=submitted_this_session으로 제한합니다.',

@@ -34,19 +34,17 @@ DOM 클릭 수만 세지 않고, 사용자의 의도와 처리 결과를 함께 
 
 ## 공통·인증 이벤트
 
-| 이벤트                                | 발생 시점                          | 주요 속성                                       |
-| ------------------------------------- | ---------------------------------- | ----------------------------------------------- |
-| `navigation_selected`                 | 헤더·독립 화면의 주요 이동 선택    | `destination`, `source`, `is_authenticated`     |
-| `auth_required_redirected`            | 보호 기능에서 로그인 화면으로 이동 | `target_pathname`                               |
-| `oauth_login_started`                 | 카카오·네이버 로그인 선택          | `provider`, `return_pathname`                   |
-| `oauth_login_completed`               | OAuth 콜백 처리 완료               | `provider`, `outcome`                           |
-| `recovery_action_selected`            | 오류 상태에서 다시 시도            | `feature`                                       |
-| `landing_tour_step_viewed`            | 랜딩 투어 단계 노출                | `tour_version`, `step_number`, `target`         |
-| `landing_tour_exited`                 | 랜딩 투어 완료·건너뛰기·닫기       | `tour_version`, `exit_type`, `last_step_number` |
-| `unread_count_initial_load_completed` | 로그인 직후 미읽음 배지 조회 완료  | `channel`, `outcome`                            |
-| `notification_popover_opened`         | 헤더 알림 팝오버 열기              | `unread_count`                                  |
-| `notification_selected`               | 알림 항목 선택                     | `source`, `notification_type`, `was_read`       |
-| `footer_contact_selected`             | 푸터 협업 문의·고객센터 선택       | `target`                                        |
+| 이벤트                                | 발생 시점                          | 주요 속성                                   |
+| ------------------------------------- | ---------------------------------- | ------------------------------------------- |
+| `navigation_selected`                 | 헤더·독립 화면의 주요 이동 선택    | `destination`, `source`, `is_authenticated` |
+| `auth_required_redirected`            | 보호 기능에서 로그인 화면으로 이동 | `target_pathname`                           |
+| `oauth_login_started`                 | 카카오·네이버 로그인 선택          | `provider`, `return_pathname`               |
+| `oauth_login_completed`               | OAuth 콜백 처리 완료               | `provider`, `outcome`                       |
+| `recovery_action_selected`            | 오류 상태에서 다시 시도            | `feature`                                   |
+| `unread_count_initial_load_completed` | 로그인 직후 미읽음 배지 조회 완료  | `channel`, `outcome`                        |
+| `notification_popover_opened`         | 헤더 알림 팝오버 열기              | `unread_count`                              |
+| `notification_selected`               | 알림 항목 선택                     | `source`, `notification_type`, `was_read`   |
+| `footer_contact_selected`             | 푸터 협업 문의·고객센터 선택       | `target`                                    |
 
 ## 가챠 검색·지도·매장 이벤트
 
