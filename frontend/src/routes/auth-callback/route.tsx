@@ -18,7 +18,6 @@ import {
   ExpectedOAuthLoginError,
   parseOAuthLoginFragment,
 } from '@/features/auth/parseOAuthLoginFragment';
-import { markCurrentLandingTourAsSeen } from '@/features/onboarding/landingTourSeenStorage';
 import { captureAnalyticsEvent } from '@/shared/analytics/analyticsClient';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { captureCoreFeatureFailure } from '@/shared/errorMonitoring/coreFeatureErrorMonitoring';
@@ -71,7 +70,6 @@ export function AuthCallbackRoute({ provider }: AuthCallbackRouteProps) {
 
         if (isCurrent) {
           clearOAuthLoginProvider();
-          markCurrentLandingTourAsSeen();
           if (completionProvider) {
             captureAnalyticsEvent('oauth_login_completed', {
               provider: completionProvider,
