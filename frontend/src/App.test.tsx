@@ -10,10 +10,6 @@ import {
   readRefreshToken,
 } from '@/features/auth/authTokenStorage';
 import { storeOAuthLoginProvider } from '@/features/auth/oauthLoginProviderStorage';
-import {
-  hasSeenCurrentLandingTour,
-  LANDING_TOUR_VERSION,
-} from '@/features/onboarding/landingTourSeenStorage';
 import { replaceBrowserLocation } from '@/shared/browser/browserNavigation';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { server } from '@/test/server';
@@ -204,7 +200,6 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(readAccessToken()).toBe(accessToken);
     expect(readRefreshToken()).toBe(refreshToken);
     expect(requestedAuthorization).toBe(`Bearer ${accessToken}`);
-    expect(hasSeenCurrentLandingTour()).toBe(true);
   });
 
   it('백엔드 OAuth 리다이렉트의 해시 토큰을 저장하고 주소에서 즉시 제거한다', async () => {
@@ -293,22 +288,7 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     expect(mockedReplaceBrowserLocation).not.toHaveBeenCalled();
   });
 
-  it('비로그인 사용자가 루트 URL로 처음 들어오면 서비스 소개를 보여준다', async () => {
-    renderWithProviders(<App />, {
-      initialAccessToken: null,
-      route: '/',
-    });
-
-    expect(
-      await screen.findByRole('dialog', {
-        name: '여기서 교환글을 작성해 봐요!',
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('가치가챠')).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/');
-  });
-
-  it('서비스 소개를 건너뛰면 거래/교환 화면으로 이동한다', async () => {
+  it('비로그인 사용자가 루트 URL로 들어오면 쿼리와 해시를 유지한 채 거래/교환 화면으로 이동한다', async () => {
     server.use(
       http.get('/api/v1/trades', () =>
         HttpResponse.json({
@@ -324,45 +304,10 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
         }),
       ),
     );
-    const user = userEvent.setup();
 
     renderWithProviders(<App />, {
       initialAccessToken: null,
-      route: '/',
-    });
-
-    await user.click(await screen.findByRole('button', { name: 'SKIP' }));
-
-    expect(
-      await screen.findByRole('search', {
-        name: '통합 검색',
-      }),
-    ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/trade');
-    expect(hasSeenCurrentLandingTour()).toBe(true);
-  });
-
-  it('현재 버전의 서비스 소개를 본 브라우저는 비로그인 상태에서도 바로 거래/교환 화면으로 이동한다', async () => {
-    server.use(
-      http.get('/api/v1/trades', () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            number: 0,
-            size: 20,
-          },
-        }),
-      ),
-    );
-    window.localStorage.setItem('landingTourSeenVersion', LANDING_TOUR_VERSION);
-
-    renderWithProviders(<App />, {
-      initialAccessToken: null,
-      route: '/',
+      route: '/?utm_source=instagram#top',
     });
 
     expect(
@@ -372,55 +317,11 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
+    expect(window.location.search).toBe('?utm_source=instagram');
+    expect(window.location.hash).toBe('#top');
   });
 
-  it('마지막 소개 단계에서 가치가챠를 시작하면 거래/교환 화면으로 이동한다', async () => {
-    server.use(
-      http.get('/api/v1/trades', () =>
-        HttpResponse.json({
-          code: 'C000',
-          message: '정상',
-          data: {
-            content: [],
-            totalElements: 0,
-            totalPages: 0,
-            number: 0,
-            size: 20,
-          },
-        }),
-      ),
-    );
-    const user = userEvent.setup();
-
-    renderWithProviders(<App />, {
-      initialAccessToken: null,
-      route: '/',
-    });
-
-    for (let step = 0; step < 4; step += 1) {
-      await user.click(
-        await screen.findByRole('button', {
-          name: /다음/,
-        }),
-      );
-    }
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /가치가챠 시작하기/,
-      }),
-    );
-
-    expect(
-      await screen.findByRole('search', {
-        name: '통합 검색',
-      }),
-    ).toBeInTheDocument();
-    expect(window.location.pathname).toBe('/trade');
-    expect(hasSeenCurrentLandingTour()).toBe(true);
-  });
-
-  it('로그인 사용자가 루트 URL로 들어오면 서비스 소개 없이 거래/교환 화면으로 이동한다', async () => {
+  it('로그인 사용자가 루트 URL로 들어오면 거래/교환 화면으로 이동한다', async () => {
     server.use(
       http.get('/api/v1/members/me', () =>
         HttpResponse.json({
@@ -461,7 +362,6 @@ describe('앱의 P0 인증과 라우팅 흐름', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(window.location.pathname).toBe('/trade');
-    expect(hasSeenCurrentLandingTour()).toBe(true);
   });
 
   it('없는 주소로 들어오면 페이지를 찾을 수 없다는 안내와 홈 이동을 보여준다', async () => {

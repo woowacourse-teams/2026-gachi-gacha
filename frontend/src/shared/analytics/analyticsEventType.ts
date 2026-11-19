@@ -11,8 +11,6 @@ export type EventApplicationTrack = 'BASIC' | 'COMPLETED' | 'BOTH';
 export type AnalyticsImageFormat = 'jpeg' | 'png' | 'webp' | 'other';
 export type AnalyticsImageSizeBucket =
   'under_1mb' | '1_to_5mb' | '5_to_10mb' | 'over_10mb';
-export type LandingTourTarget =
-  'create' | 'map' | 'search' | 'chat' | 'notification';
 export type MemberSafetySource = 'trade' | 'comment' | 'chat' | 'mypage';
 export type MemberReportReason =
   'spam' | 'fraud' | 'harassment' | 'inappropriate' | 'privacy' | 'other';
@@ -415,16 +413,6 @@ export interface AnalyticsEventPropertiesMap {
     track: EventApplicationTrack;
     outcome: AnalyticsOutcome;
     has_completed_trade_evidence: boolean;
-  };
-  landing_tour_step_viewed: {
-    tour_version: string;
-    step_number: number;
-    target: LandingTourTarget;
-  };
-  landing_tour_exited: {
-    tour_version: string;
-    exit_type: 'completed' | 'skip_button' | 'close_button';
-    last_step_number: number;
   };
   updates_page_viewed: {
     latest_visible_version: string;
