@@ -1,10 +1,7 @@
 package com.gachi.gacha.server.news.domain;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -24,27 +21,28 @@ final class NewsJsonCodec {
     private static final ObjectMapper MAPPER = JsonMapper.builder()
             .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
             .build();
-    private static final TypeReference<Map<String, PeriodJson>> PERIODS = new TypeReference<>() {
+    private static final TypeReference<List<PeriodJson>> PERIODS = new TypeReference<>() {
     };
 
     private NewsJsonCodec() {
     }
 
     /**
-     * 계정 아이디를 키로 둔다. 예: {"chiikawa_market": {"from": "2026-11-05", "to": "2026-11-12", "collected": true}}
+     * 배열로 저장한다. PostgreSQL JSONB 는 객체의 키 순서를 지키지 않지만 배열은 순서를 지켜서, 읽을 때 설정에 적은 계정 순서가 그대로다.
+     * 예: [{"handle": "chiikawa_market", "from": "2026-11-05", "to": "2026-11-12", "collected": true}]
      */
     static String writePeriods(final List<CollectPeriod> periods) {
-        Map<String, PeriodJson> json = new LinkedHashMap<>();
-        periods.forEach(period -> json.put(period.handle(),
-                new PeriodJson(period.from().toString(), period.to().toString(), period.collected())));
-        return MAPPER.writeValueAsString(json);
+        return MAPPER.writeValueAsString(periods.stream()
+                .map(period -> new PeriodJson(period.handle(), period.from().toString(), period.to().toString(),
+                        period.collected()))
+                .toList());
     }
 
     static List<CollectPeriod> readPeriods(final String json) {
-        List<CollectPeriod> periods = new ArrayList<>();
-        MAPPER.readValue(json, PERIODS).forEach((handle, period) -> periods.add(new CollectPeriod(
-                handle, LocalDate.parse(period.from()), LocalDate.parse(period.to()), period.collected())));
-        return periods;
+        return MAPPER.readValue(json, PERIODS).stream()
+                .map(period -> new CollectPeriod(period.handle(), LocalDate.parse(period.from()),
+                        LocalDate.parse(period.to()), period.collected()))
+                .toList();
     }
 
     static String writeDetail(final NewsDetail detail) {
@@ -64,6 +62,6 @@ final class NewsJsonCodec {
         return usage == null ? GrokUsage.NONE : usage;
     }
 
-    private record PeriodJson(String from, String to, boolean collected) {
+    private record PeriodJson(String handle, String from, String to, boolean collected) {
     }
 }

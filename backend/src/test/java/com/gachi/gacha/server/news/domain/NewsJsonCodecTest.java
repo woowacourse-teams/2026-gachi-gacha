@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 class NewsJsonCodecTest {
 
     @Test
-    @DisplayName("수집 기간은 계정을 키로, 날짜는 YYYY-MM-DD 문자열로 저장하고 순서대로 읽는다")
+    @DisplayName("수집 기간은 순서가 있는 배열로, 날짜는 YYYY-MM-DD 문자열로 저장하고 같은 순서로 읽는다")
     void writesAndReadsPeriods() {
         List<CollectPeriod> periods = List.of(
                 new CollectPeriod("chiikawashop_kr", LocalDate.of(2026, 11, 9), LocalDate.of(2026, 11, 12), true),
@@ -19,15 +19,15 @@ class NewsJsonCodecTest {
         String json = NewsJsonCodec.writePeriods(periods);
 
         assertThat(json).isEqualTo(
-                "{\"chiikawashop_kr\":{\"from\":\"2026-11-09\",\"to\":\"2026-11-12\",\"collected\":true},"
-                        + "\"chiikawa_market\":{\"from\":\"2026-11-05\",\"to\":\"2026-11-12\",\"collected\":false}}");
+                "[{\"handle\":\"chiikawashop_kr\",\"from\":\"2026-11-09\",\"to\":\"2026-11-12\",\"collected\":true},"
+                        + "{\"handle\":\"chiikawa_market\",\"from\":\"2026-11-05\",\"to\":\"2026-11-12\",\"collected\":false}]");
         assertThat(NewsJsonCodec.readPeriods(json)).isEqualTo(periods);
     }
 
     @Test
     @DisplayName("수집 여부가 없는 기간은 수집하지 않은 것으로 읽는다")
     void readsMissingCollectedAsFalse() {
-        assertThat(NewsJsonCodec.readPeriods("{\"chiikawa_m_kr\":{\"from\":\"2026-11-09\",\"to\":\"2026-11-12\"}}"))
+        assertThat(NewsJsonCodec.readPeriods("[{\"handle\":\"chiikawa_m_kr\",\"from\":\"2026-11-09\",\"to\":\"2026-11-12\"}]"))
                 .containsExactly(CollectPeriod.notCollected("chiikawa_m_kr", LocalDate.of(2026, 11, 9), LocalDate.of(2026, 11, 12)));
     }
 
