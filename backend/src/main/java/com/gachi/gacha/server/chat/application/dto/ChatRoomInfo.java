@@ -26,41 +26,69 @@ public record ChatRoomInfo(
             final ChatMemberSummary otherMember,
             final long unreadCount
     ) {
+        return of(
+                chatRoom.getId(),
+                trade.getTradeId(),
+                trade.getTitle(),
+                trade.getStatus(),
+                trade.isRemoved(),
+                tradeThumbnailUrl,
+                otherMember.getMemberId(),
+                otherMember.getNickname(),
+                otherMember.getProfileImageUrl(),
+                otherMember.isWithdrawn(),
+                chatRoom.getLastMessagePreview(),
+                chatRoom.getLastMessageAt(),
+                unreadCount,
+                chatRoom.getCreatedAt()
+        );
+    }
+
+    public static ChatRoomInfo of(
+            final Long roomId,
+            final Long tradeId,
+            final String tradeTitle,
+            final String tradeStatus,
+            final boolean tradeDeleted,
+            @Nullable final String tradeThumbnailUrl,
+            final Long otherMemberId,
+            final String otherMemberNickname,
+            @Nullable final String otherMemberProfileImageUrl,
+            final boolean otherMemberWithdrawn,
+            @Nullable final String lastMessagePreview,
+            @Nullable final LocalDateTime lastMessageAt,
+            final long unreadCount,
+            final LocalDateTime createdAt
+    ) {
         TradeSummary tradeSummary = TradeSummary.builder()
-                .tradeId(trade.getTradeId())
-                .title(trade.getTitle())
+                .tradeId(tradeId)
+                .title(tradeTitle)
                 .thumbnailUrl(tradeThumbnailUrl)
-                .status(TradeStatus.valueOf(trade.getStatus()))
-                .deleted(trade.isRemoved())
+                .status(TradeStatus.valueOf(tradeStatus))
+                .deleted(tradeDeleted)
                 .build();
 
-        boolean withdrawn = otherMember.isWithdrawn();
         MemberSummary otherMemberSummary = MemberSummary.builder()
-                .memberId(otherMember.getMemberId())
-                .nickname(withdrawn ? DELETED_MEMBER_NAME : otherMember.getNickname())
-                .profileImageUrl(withdrawn ? null : otherMember.getProfileImageUrl())
-                .withdrawn(withdrawn)
+                .memberId(otherMemberId)
+                .nickname(otherMemberWithdrawn ? DELETED_MEMBER_NAME : otherMemberNickname)
+                .profileImageUrl(otherMemberWithdrawn ? null : otherMemberProfileImageUrl)
+                .withdrawn(otherMemberWithdrawn)
                 .build();
 
-        LastMessageSummary lastMessageSummary = getLastMessageSummary(chatRoom);
+        LastMessageSummary lastMessageSummary = lastMessageAt == null
+                ? null
+                : LastMessageSummary.builder()
+                        .preview(lastMessagePreview)
+                        .sendAt(lastMessageAt)
+                        .build();
 
         return ChatRoomInfo.builder()
-                .roomId(chatRoom.getId())
+                .roomId(roomId)
                 .trade(tradeSummary)
                 .otherMember(otherMemberSummary)
                 .lastMessage(lastMessageSummary)
                 .unreadCount(unreadCount)
-                .createdAt(chatRoom.getCreatedAt())
-                .build();
-    }
-
-    private static @Nullable LastMessageSummary getLastMessageSummary(final ChatRoom chatRoom) {
-        if (chatRoom.getLastMessageAt() == null) {
-            return null;
-        }
-        return LastMessageSummary.builder()
-                .preview(chatRoom.getLastMessagePreview())
-                .sendAt(chatRoom.getLastMessageAt())
+                .createdAt(createdAt)
                 .build();
     }
 

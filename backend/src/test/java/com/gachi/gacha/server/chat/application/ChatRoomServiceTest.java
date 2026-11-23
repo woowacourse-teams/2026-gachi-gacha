@@ -340,6 +340,51 @@ class ChatRoomServiceTest {
             assertThat(chatRoomService.findRoomUpdate(requester.getId(), roomId))
                     .hasValueSatisfying(update -> assertThat(update.room().roomId()).isEqualTo(roomId));
         }
+
+        @Test
+        @DisplayName("상대 회원이 탈퇴해도 갱신 정보에 익명화된 상대를 포함한다")
+        void findRoomUpdate_withdrawnPartner() {
+            // given
+            Long roomId = createRoom(requester, owner);
+            Long ownerId = owner.getId();
+            entityManager.flush();
+            entityManager.clear();
+            memberJpaRepository.delete(memberJpaRepository.getMemberById(ownerId));
+            memberJpaRepository.flush();
+            entityManager.clear();
+
+            // when & then
+            assertThat(chatRoomService.findRoomUpdate(requester.getId(), roomId))
+                    .hasValueSatisfying(update -> {
+                        assertThat(update.room().roomId()).isEqualTo(roomId);
+                        assertThat(update.room().otherMember().memberId()).isEqualTo(ownerId);
+                        assertThat(update.room().otherMember().nickname()).isEqualTo("탈퇴한 사용자");
+                        assertThat(update.room().otherMember().profileImageUrl()).isNull();
+                        assertThat(update.room().otherMember().withdrawn()).isTrue();
+                    });
+        }
+
+        @Test
+        @DisplayName("게시글이 삭제돼도 갱신 정보에 삭제된 게시글을 포함한다")
+        void findRoomUpdate_deletedTrade() {
+            // given
+            Long roomId = createRoom(requester, owner);
+            Long tradeId = chatRoomJpaRepository.getById(roomId).getTradeId();
+            entityManager.flush();
+            entityManager.clear();
+            tradeJpaRepository.delete(tradeJpaRepository.getById(tradeId));
+            tradeJpaRepository.flush();
+            entityManager.clear();
+
+            // when & then
+            assertThat(chatRoomService.findRoomUpdate(requester.getId(), roomId))
+                    .hasValueSatisfying(update -> {
+                        assertThat(update.room().roomId()).isEqualTo(roomId);
+                        assertThat(update.room().trade().tradeId()).isEqualTo(tradeId);
+                        assertThat(update.room().trade().title()).isEqualTo("교환 게시글");
+                        assertThat(update.room().trade().deleted()).isTrue();
+                    });
+        }
     }
 
     private Long createRoom(final Member chatRequester, final Member tradeOwner) {
