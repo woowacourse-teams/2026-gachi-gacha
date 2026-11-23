@@ -171,3 +171,50 @@ notification:
     minimum-score: ${TRADE_RECOMMENDATION_MINIMUM_SCORE:0.02}
     max-recipients: ${TRADE_RECOMMENDATION_MAX_RECIPIENTS:100}
     dry-run: ${TRADE_RECOMMENDATION_DRY_RUN:false}
+
+news:
+  # 신상 소식. 꺼져 있으면 수집하지 않는다. dry-run 이면 수집·검증·저장까지만 하고 공개와 푸시를 하지 않는다
+  enabled: ${NEWS_ENABLED:false}
+  dry-run: ${NEWS_DRY_RUN:true}
+  environment-label: ${NEWS_ENVIRONMENT_LABEL:}   # 슬랙 메시지 맨 앞 표시. 개발 서버는 [개발], 운영은 비운다
+  zone: Asia/Seoul
+  schedule:
+    monday-cron: ${NEWS_MONDAY_CRON:0 30 18 * * MON}       # 한국 계정
+    thursday-cron: ${NEWS_THURSDAY_CRON:0 30 12 * * THU}   # 한국·일본 계정
+  collect:
+    default-period-days: 7    # 계정의 수집 기록이 없을 때 기간
+    max-period-days: 14       # 수집 기간 상한
+    max-calls-per-run: 40     # 실행 1회당 Grok 호출 상한 (재시도 포함)
+    max-cost-usd: 0.6         # 실행 1회당 비용 상한. 넘으면 남은 호출을 하지 않는다
+  xai:
+    base-url: https://api.x.ai/v1
+    api-key: ${XAI_API_KEY:}
+    model: grok-4.3
+    connect-timeout: 10s
+    read-timeout: 300s
+    max-turns: 2
+    max-turns-with-web-search: 3
+  slack:
+    bot-token: ${SLACK_BOT_TOKEN:}
+    channel-id: ${SLACK_NEWS_CHANNEL_ID:}
+  topics:
+    CHIIKAWA:
+      display-name: 치이카와
+      name-ja: ちいかわ
+      prompt-dir: news/prompts/chiikawa
+      prompt-version: chiikawa-v2
+      # 고정 매장 정보. 공식 페이지에서 확인한 값으로 관리한다
+      store-hours: "10:30 ~ 22:00"
+      store-info: |-
+        • 위치: 아이파크몰 용산점 리빙파크 3F 도파민 스테이션
+        • 운영시간: 10:30 ~ 22:00
+        • 한국 최초 정규 매장 (2026년 2월 27일 오픈)
+      # 계정마다 따로 호출한다. Grok 의 X 검색은 한 번에 최대 10건이라 게시물이 많은 계정은 분할 일수를 작게 잡는다
+      targets:
+        - { label: KR_shop,   handle: chiikawashop_kr, chunk-days: 2, web-search: true,  query: "" }
+        - { label: KR_market, handle: chiikawa_m_kr,   chunk-days: 2, web-search: true,  query: "" }
+        - { label: JP_market, handle: chiikawa_market, chunk-days: 1, web-search: false, query: "-filter:replies -filter:retweets" }
+        - { label: JP_kouhou, handle: chiikawa_kouhou, chunk-days: 7, web-search: false, query: "-filter:replies -filter:retweets" }
+      runs:
+        MONDAY: [KR_shop, KR_market]
+        THURSDAY: [KR_shop, KR_market, JP_market, JP_kouhou]

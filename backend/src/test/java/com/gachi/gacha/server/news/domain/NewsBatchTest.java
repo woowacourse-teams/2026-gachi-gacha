@@ -1,0 +1,158 @@
+package com.gachi.gacha.server.news.domain;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.gachi.gacha.server.news.domain.exception.NewsBatchStateException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+class NewsBatchTest {
+
+    private static final LocalDate FROM = LocalDate.of(2026, 11, 9);
+    private static final LocalDate TO = LocalDate.of(2026, 11, 12);
+    private static final GrokUsage USAGE = new GrokUsage(3, 1, 12, 0, 30000, 3000, 90_000_000);
+
+    @Test
+    @DisplayName("수집 중으로 시작하고, 넘겨받은 기간은 모두 수집하지 않은 것으로 저장한다")
+    void startsCollecting() {
+        NewsBatch batch = NewsBatch.start("CHIIKAWA", "THURSDAY", List.of(
+                new CollectPeriod("chiikawashop_kr", FROM, TO, true),
+                CollectPeriod.notCollected("chiikawa_kouhou", LocalDate.of(2026, 11, 5), TO)), true, "chiikawa-v2");
+
+        assertThat(batch.getStatus()).isEqualTo(NewsBatchStatus.COLLECTING);
+        assertThat(batch.isDryRun()).isTrue();
+        assertThat(batch.getPromptVersion()).isEqualTo("chiikawa-v2");
+        assertThat(batch.periods()).extracting(CollectPeriod::collected).containsExactly(false, false);
+        assertThat(batch.usage()).isEqualTo(GrokUsage.NONE);
+        assertThat(batch.warnings()).isEmpty();
+    }
+
+    @Nested
+    @DisplayName("수집 완료")
+    class Complete {
+
+        @Test
+        @DisplayName("공개할 소식이 있으면 승인 대기가 되고, 모든 구간을 수집한 계정만 수집 성공으로 남긴다")
+        void awaitsApprovalAndMarksCollectedHandles() {
+            NewsBatch batch = twoAccounts();
+
+            batch.complete(Set.of("chiikawashop_kr"), true, USAGE, List.of("[JP_kouhou_2026-11-05] HTTP 503"));
+
+            assertThat(batch.getStatus()).isEqualTo(NewsBatchStatus.AWAITING_APPROVAL);
+            assertThat(batch.periods()).containsExactly(
+                    new CollectPeriod("chiikawashop_kr", FROM, TO, true),
+                    CollectPeriod.notCollected("chiikawa_kouhou", LocalDate.of(2026, 11, 5), TO));
+            assertThat(batch.usage()).isEqualTo(USAGE);
+            assertThat(batch.warnings()).containsExactly("[JP_kouhou_2026-11-05] HTTP 503");
+        }
+
+        @Test
+        @DisplayName("공개할 소식이 없으면 새 소식 없음으로 끝난다")
+        void noNews() {
+            NewsBatch batch = twoAccounts();
+
+            batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), false, USAGE, List.of());
+
+            assertThat(batch.getStatus()).isEqualTo(NewsBatchStatus.NO_NEWS);
+            assertThat(batch.periods()).allMatch(CollectPeriod::collected);
+        }
+
+        @Test
+        @DisplayName("경고 안의 줄바꿈은 공백으로 바꿔 한 줄에 하나씩 저장한다")
+        void storesWarningsOnePerLine() {
+            NewsBatch batch = twoAccounts();
+
+            batch.complete(Set.of(), true, USAGE, List.of("첫 줄\n둘째 줄", "다음 경고"));
+
+            assertThat(batch.warnings()).containsExactly("첫 줄 둘째 줄", "다음 경고");
+        }
+    }
+
+    @Test
+    @DisplayName("실패하면 어느 계정도 수집하지 않은 것으로 남고, 다음 수집이 후보를 넘겨받는 회차가 된다")
+    void fails() {
+        NewsBatch batch = twoAccounts();
+
+        batch.fail(GrokUsage.FAILED_CALL, List.of("모든 호출 실패"));
+
+        assertThat(batch.getStatus()).isEqualTo(NewsBatchStatus.FAILED);
+        assertThat(batch.periods()).noneMatch(CollectPeriod::collected);
+        assertThat(batch.getStatus().isCarryOverSource()).isTrue();
+    }
+
+    @Test
+    @DisplayName("승인 대기 회차는 다음 수집 때 만료되어 후보를 넘겨주고, [다시 수집]으로 버리면 넘겨주지 않는다")
+    void expiresOrDiscards() {
+        NewsBatch expired = awaiting();
+        NewsBatch discarded = awaiting();
+
+        expired.expire();
+        discarded.discard();
+
+        assertThat(expired.getStatus()).isEqualTo(NewsBatchStatus.EXPIRED);
+        assertThat(expired.getStatus().isCarryOverSource()).isTrue();
+        assertThat(discarded.getStatus()).isEqualTo(NewsBatchStatus.DISCARDED);
+        assertThat(discarded.getStatus().isCarryOverSource()).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = NewsBatchStatus.class, names = {"NO_NEWS", "FAILED", "EXPIRED", "DISCARDED"})
+    @DisplayName("끝난 회차는 다시 완료·실패·만료·버림 처리할 수 없다")
+    void rejectsTransitionsFromFinishedStatus(final NewsBatchStatus finished) {
+        NewsBatch batch = inStatus(finished);
+
+        assertThatThrownBy(() -> batch.complete(Set.of(), true, USAGE, List.of()))
+                .isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(() -> batch.fail(USAGE, List.of())).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(batch::expire).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(batch::discard).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    @Test
+    @DisplayName("수집 중인 회차는 만료하거나 버릴 수 없다")
+    void collectingCannotExpireOrDiscard() {
+        NewsBatch batch = twoAccounts();
+
+        assertThatThrownBy(batch::expire)
+                .isInstanceOf(NewsBatchStateException.class)
+                .hasMessageContaining("COLLECTING");
+        assertThatThrownBy(batch::discard).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    private NewsBatch twoAccounts() {
+        return NewsBatch.start("CHIIKAWA", "THURSDAY", List.of(
+                CollectPeriod.notCollected("chiikawashop_kr", FROM, TO),
+                CollectPeriod.notCollected("chiikawa_kouhou", LocalDate.of(2026, 11, 5), TO)), false, "chiikawa-v2");
+    }
+
+    private NewsBatch awaiting() {
+        NewsBatch batch = twoAccounts();
+        batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        return batch;
+    }
+
+    private NewsBatch inStatus(final NewsBatchStatus status) {
+        NewsBatch batch = twoAccounts();
+        switch (status) {
+            case NO_NEWS -> batch.complete(Set.of(), false, USAGE, List.of());
+            case FAILED -> batch.fail(USAGE, List.of());
+            case EXPIRED -> {
+                batch.complete(Set.of(), true, USAGE, List.of());
+                batch.expire();
+            }
+            case DISCARDED -> {
+                batch.complete(Set.of(), true, USAGE, List.of());
+                batch.discard();
+            }
+            default -> throw new IllegalArgumentException(status.name());
+        }
+        return batch;
+    }
+}
