@@ -36,6 +36,7 @@ class TradeRecommendationNotificationServiceTest {
     private static final Long AUTHOR_ID = 1L;
     private static final Long RECEIVER_ID = 2L;
     private static final Long OTHER_RECEIVER_ID = 3L;
+    private static final Long THIRD_RECEIVER_ID = 4L;
     private static final NotificationType TYPE = NotificationType.TRADE_RECOMMENDATION;
 
     @Mock
@@ -65,6 +66,7 @@ class TradeRecommendationNotificationServiceTest {
                 tradeFavoriteMatcher, tradeJpaRepository, memberBlockService, notificationService, pushService, pushLimiter);
         ReflectionTestUtils.setField(service, "maxAgeDays", 7);
         ReflectionTestUtils.setField(service, "minimumScore", 0.02);
+        ReflectionTestUtils.setField(service, "maxRecipients", 100);
         ReflectionTestUtils.setField(service, "dryRun", false);
 
         trade = Trade.builder()
@@ -207,6 +209,24 @@ class TradeRecommendationNotificationServiceTest {
 
         verify(memberBlockService, never()).isBlockedBetween(any(), any());
         verify(notificationService, never()).createTradeRecommendationNotification(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("상한을 넘으면 점수 상위 후보만 처리한다")
+    void notifyInterestedMembers_limitsSelectedCandidates() {
+        ReflectionTestUtils.setField(service, "maxRecipients", 2);
+        givenCandidates(RECEIVER_ID, 0.15, OTHER_RECEIVER_ID, 0.10, THIRD_RECEIVER_ID, 0.08);
+        givenNotificationCreated(RECEIVER_ID, 300L);
+        givenNotificationCreated(OTHER_RECEIVER_ID, 301L);
+        given(pushLimiter.canPush(any(), eq(TYPE))).willReturn(true);
+
+        service.notifyInterestedMembers(TRADE_ID);
+
+        verify(notificationService).createTradeRecommendationNotification(RECEIVER_ID, TRADE_ID, trade.getTitle());
+        verify(notificationService).createTradeRecommendationNotification(OTHER_RECEIVER_ID, TRADE_ID, trade.getTitle());
+        verify(notificationService, never()).createTradeRecommendationNotification(
+                THIRD_RECEIVER_ID, TRADE_ID, trade.getTitle());
+        verify(memberBlockService, never()).isBlockedBetween(THIRD_RECEIVER_ID, AUTHOR_ID);
     }
 
     @Test
