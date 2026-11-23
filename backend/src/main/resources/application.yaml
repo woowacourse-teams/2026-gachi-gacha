@@ -115,6 +115,17 @@ jwt:
 cors:
   allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS}
 
+chat:
+  websocket:
+    inbound:
+      core-pool-size: ${CHAT_WS_INBOUND_CORE_POOL_SIZE:32}
+      max-pool-size: ${CHAT_WS_INBOUND_MAX_POOL_SIZE:64}
+      queue-capacity: ${CHAT_WS_INBOUND_QUEUE_CAPACITY:100}
+    outbound:
+      core-pool-size: ${CHAT_WS_OUTBOUND_CORE_POOL_SIZE:32}
+      max-pool-size: ${CHAT_WS_OUTBOUND_MAX_POOL_SIZE:64}
+      queue-capacity: ${CHAT_WS_OUTBOUND_QUEUE_CAPACITY:100}
+
 springdoc:
   api-docs:
     enabled: ${SWAGGER_ENABLED:false}
