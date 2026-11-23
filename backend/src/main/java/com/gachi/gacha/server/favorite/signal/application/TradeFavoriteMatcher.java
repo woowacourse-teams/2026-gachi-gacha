@@ -13,6 +13,7 @@ import com.gachi.gacha.server.trade.domain.TradeJpaRepository;
 import com.gachi.gacha.server.trade.util.TradeKeywordCleaner;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -136,7 +137,9 @@ public class TradeFavoriteMatcher {
         return scores.entrySet().stream()
                 .filter(entry -> entry.getValue() > 0)
                 .map(entry -> new TradeFavoriteCandidate(entry.getKey(), entry.getValue()))
-                .sorted((left, right) -> Double.compare(right.interestScore(), left.interestScore()))
+                .sorted(Comparator.comparingDouble(TradeFavoriteCandidate::interestScore)
+                        .reversed()
+                        .thenComparing(TradeFavoriteCandidate::memberId))
                 .toList();
     }
 

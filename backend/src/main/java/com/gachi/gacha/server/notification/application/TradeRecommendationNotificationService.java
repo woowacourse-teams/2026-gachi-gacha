@@ -40,6 +40,9 @@ public class TradeRecommendationNotificationService {
     @Value("${notification.trade-recommendation.minimum-score:0.02}")
     private double minimumScore;
 
+    @Value("${notification.trade-recommendation.max-recipients:100}")
+    private int maxRecipients;
+
     public void notifyInterestedMembers(final Long tradeId) {
         Trade trade = tradeJpaRepository.findById(tradeId).orElse(null);
         if (trade == null) {
@@ -57,12 +60,17 @@ public class TradeRecommendationNotificationService {
 
     private void alarm(final Long tradeId, final List<TradeFavoriteCandidate> candidates, final Trade trade) {
         int notified = 0;
-        int skipped = 0;
-        for (TradeFavoriteCandidate candidate : candidates) {
-            if (candidate.interestScore() < minimumScore) {
-                skipped++;
-                continue;
-            }
+        int candidateLimit = Math.max(0, maxRecipients);
+        List<TradeFavoriteCandidate> eligibleCandidates = candidates.stream()
+                .filter(candidate -> candidate.interestScore() >= minimumScore)
+                .toList();
+        List<TradeFavoriteCandidate> selectedCandidates = eligibleCandidates.stream()
+                .limit(candidateLimit)
+                .toList();
+        int capped = eligibleCandidates.size() - selectedCandidates.size();
+        int skipped = candidates.size() - selectedCandidates.size();
+
+        for (TradeFavoriteCandidate candidate : selectedCandidates) {
             Long receiverId = candidate.memberId();
             if (memberBlockService.isBlockedBetween(receiverId, trade.getMember().getId())) {
                 skipped++;
@@ -79,8 +87,9 @@ public class TradeRecommendationNotificationService {
                 skipped++;
             }
         }
-        log.info("교환글 추천 알림 처리 완료 tradeId={} candidates={} notified={} skipped={} dryRun={}",
-                tradeId, candidates.size(), notified, skipped, dryRun);
+        log.info("교환글 추천 알림 처리 완료 tradeId={} candidates={} eligible={} selected={} capped={} notified={} skipped={} maxRecipients={} dryRun={}",
+                tradeId, candidates.size(), eligibleCandidates.size(), selectedCandidates.size(), capped,
+                notified, skipped, candidateLimit, dryRun);
     }
 
     private boolean isEligible(final Trade trade) {

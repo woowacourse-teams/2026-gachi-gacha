@@ -104,4 +104,5 @@ notification:
   trade-recommendation:
     max-age-days: ${TRADE_RECOMMENDATION_MAX_AGE_DAYS:7}
     minimum-score: ${TRADE_RECOMMENDATION_MINIMUM_SCORE:0.02}
+    max-recipients: ${TRADE_RECOMMENDATION_MAX_RECIPIENTS:100}
     dry-run: ${TRADE_RECOMMENDATION_DRY_RUN:false}
