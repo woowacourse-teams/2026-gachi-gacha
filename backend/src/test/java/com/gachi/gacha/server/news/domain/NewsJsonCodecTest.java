@@ -38,7 +38,7 @@ class NewsJsonCodecTest {
                 "11/5(목) ~ 11/8(일)", "치이카와샵 용산점",
                 List.of(new NewsDetail.Product("앉은 인형", "おすわりぬいぐるみ", null)),
                 new NewsDetail.Reservation("네이버 예약", "11/5~11/8", null, "예약자 우선 입장"),
-                List.of("11/12 운영시간 단축"), "high", "https://booking.naver.com/a", "chiikawashop_kr");
+                List.of("11/12 운영시간 단축"), "https://booking.naver.com/a", "chiikawashop_kr");
 
         assertThat(NewsJsonCodec.readDetail(NewsJsonCodec.writeDetail(detail))).isEqualTo(detail);
         NewsDetail partial = NewsJsonCodec.readDetail("{\"location\": \"치이카와 마켓\"}");

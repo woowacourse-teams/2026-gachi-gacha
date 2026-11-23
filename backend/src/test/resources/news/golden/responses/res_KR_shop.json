@@ -1,0 +1,47 @@
+{
+  "id": "resp_kr_shop",
+  "output": [
+    {
+      "type": "custom_tool_call",
+      "name": "x_keyword_search",
+      "input": {
+        "query": "from:chiikawashop_kr",
+        "limit": 10,
+        "mode": "Latest"
+      }
+    },
+    {
+      "type": "message",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "```json\n{\n  \"items\": [\n    {\n      \"section\": \"korea_store\",\n      \"kind\": \"entry_reservation\",\n      \"title\": \"치이카와샵 용산점 네이버 예약 입장 안내\",\n      \"start_date\": \"2026-11-05\",\n      \"end_date\": \"2026-11-08\",\n      \"date_label\": \"11/5(목) ~ 11/8(일)\",\n      \"products\": [],\n      \"reservation\": {\n        \"method\": \"네이버 예약\",\n        \"period\": \"11/5~11/8\",\n        \"open_at\": null,\n        \"note\": \"예약자 우선 입장\"\n      },\n      \"notes\": [\n        \"운영시간: 10:30 ~ 22:00\"\n      ],\n      \"link\": \"https://x.com/chiikawashop_kr/status/2117134618503926221\",\n      \"ref_url\": null,\n      \"location\": \"치이카와샵 용산점\"\n    },\n    {\n      \"section\": \"korea_store\",\n      \"kind\": \"restock\",\n      \"title\": \"영화 치이카와 인어섬의비밀 인기 상품 재입고\",\n      \"start_date\": \"2026-11-05\",\n      \"end_date\": \"2026-11-08\",\n      \"date_label\": \"11/5(목) ~ 11/8(일)\",\n      \"products\": [\n        {\n          \"name\": \"인어 치이카와 인형\",\n          \"name_ja\": null,\n          \"price\": null\n        }\n      ],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://twitter.com/chiikawashop_kr/status/2118131184446124112?s=20\",\n      \"ref_url\": null,\n      \"location\": \"치이카와샵 용산점\"\n    },\n    {\n      \"section\": \"korea_store\",\n      \"kind\": \"release\",\n      \"title\": \"11월 12일(목) 입고 리스트\",\n      \"start_date\": \"2026-11-12\",\n      \"end_date\": null,\n      \"date_label\": \"11/12(목) 입고\",\n      \"products\": [\n        {\n          \"name\": \"앉은 인형\",\n          \"name_ja\": \"おすわりぬいぐるみ\",\n          \"price\": \"29,000원\"\n        },\n        {\n          \"name\": \"미니 타월\",\n          \"name_ja\": null,\n          \"price\": null\n        }\n      ],\n      \"reservation\": null,\n      \"notes\": [\n        \"11/12(목) 운영시간 10:30 ~ 22:00 → 10:30 ~ 20:00 단축\"\n      ],\n      \"link\": \"https://x.com/chiikawashop_kr/status/2119700000000000000\",\n      \"ref_url\": \"https://booking.naver.com/booking/6/bizes/1?utm_source=x&utm_medium=sns&area=bmp\",\n      \"location\": \"치이카와샵 용산점\"\n    },\n    {\n      \"section\": \"korea_online\",\n      \"kind\": \"preorder\",\n      \"title\": \"원화 결제 온라인 예약 판매\",\n      \"start_date\": null,\n      \"end_date\": \"2026-11-15\",\n      \"date_label\": \"~11/15(일) 23:59\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawashop_kr/status/2119711111111111111\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 마켓 한국\"\n    }\n  ],\n  \"skipped\": [\n    {\n      \"link\": \"https://x.com/chiikawashop_kr/status/2117000000000000000\",\n      \"reason\": \"굿즈와 무관한 인사 게시물\"\n    }\n  ]\n}\n```",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "url": "https://x.com/chiikawashop_kr/status/2119700000000000000"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "citations": [
+    "https://x.com/chiikawashop_kr/status/2117134618503926221",
+    {
+      "url": "https://x.com/chiikawashop_kr/status/2118131184446124112",
+      "title": "재입고"
+    }
+  ],
+  "usage": {
+    "input_tokens": 9000,
+    "output_tokens": 1200,
+    "cost_in_usd_ticks": 180000000,
+    "server_side_tool_usage_details": {
+      "x_search_calls": 1,
+      "web_search_calls": 1,
+      "x_posts_fetched": 3,
+      "x_users_fetched": 0
+    }
+  }
+}

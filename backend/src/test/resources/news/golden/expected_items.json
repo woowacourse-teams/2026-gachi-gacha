@@ -1,0 +1,176 @@
+[
+  {
+    "section": "korea_store",
+    "kind": "release",
+    "title": "11월 12일(목) 입고 리스트",
+    "start_date": "2026-11-12",
+    "end_date": null,
+    "date_label": "11/12(목) 입고",
+    "products": [
+      {
+        "name": "앉은 인형",
+        "name_ja": "おすわりぬいぐるみ",
+        "price": "29,000원"
+      },
+      {
+        "name": "미니 타월",
+        "name_ja": null,
+        "price": null
+      }
+    ],
+    "reservation": null,
+    "notes": [
+      "11/12(목) 운영시간 10:30 ~ 22:00 → 10:30 ~ 20:00 단축"
+    ],
+    "link": "https://x.com/chiikawashop_kr/status/2119700000000000000",
+    "ref_url": "https://booking.naver.com/booking/6/bizes/1?area=bmp",
+    "location": "치이카와샵 용산점",
+    "source_account": "chiikawashop_kr",
+    "link_verified": true,
+    "timing": "예정"
+  },
+  {
+    "section": "korea_online",
+    "kind": "preorder",
+    "title": "원화 결제 온라인 예약 판매",
+    "start_date": null,
+    "end_date": "2026-11-15",
+    "date_label": "~11/15(일) 23:59",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawashop_kr/status/2119711111111111111",
+    "ref_url": null,
+    "location": "치이카와 마켓 한국",
+    "source_account": "chiikawashop_kr",
+    "link_verified": false,
+    "timing": "진행 중"
+  },
+  {
+    "section": "korea_online",
+    "kind": "release",
+    "title": "치이카와 마켓 한국 신상품 발매",
+    "start_date": "2026-11-10",
+    "end_date": null,
+    "date_label": "11/10(화) 11시 발매",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawa_m_kr/status/2119000000000000001",
+    "ref_url": null,
+    "location": "치이카와 마켓 한국",
+    "source_account": "chiikawa_m_kr",
+    "link_verified": null,
+    "timing": "예정"
+  },
+  {
+    "section": "japan_official",
+    "kind": "release",
+    "title": "11월 6일(금) 11시 발매 & 재입하",
+    "start_date": "2026-11-06",
+    "end_date": null,
+    "date_label": "11/6(금) 11시 발매",
+    "products": [
+      {
+        "name": "메모폰4 (전 6종)",
+        "name_ja": "メモポン4（全6種）",
+        "price": "각 2,200엔(세금 포함)"
+      }
+    ],
+    "reservation": null,
+    "notes": [
+      "11/16(월) 출하 재개 이후 순차 출하 예정"
+    ],
+    "link": "https://x.com/chiikawa_market/status/2118523764224782564",
+    "ref_url": "https://chiikawamarket.jp/collections/20261106-newre",
+    "location": "치이카와 마켓",
+    "source_account": "chiikawa_market",
+    "link_verified": true,
+    "timing": "진행 중"
+  },
+  {
+    "section": "japan_official",
+    "kind": "preorder",
+    "title": "치이카와 연하엽서 3매 세트",
+    "start_date": "2026-11-13",
+    "end_date": null,
+    "date_label": "11/13(금) 15:00 수주 시작",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawa_market/status/2119641129515954324",
+    "ref_url": "https://chiikawamarket.jp/products/nenga",
+    "location": "치이카와 마켓",
+    "source_account": "chiikawa_market",
+    "link_verified": true,
+    "timing": "예정"
+  },
+  {
+    "section": "overseas",
+    "kind": "release",
+    "title": "하와이 한정 치이카와 마스코트 키링",
+    "start_date": "2026-11-09",
+    "end_date": null,
+    "date_label": "11월 9일 판매 시작",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawa_kouhou/status/2118508673865551977",
+    "ref_url": null,
+    "location": "ABC 스토어 (하와이)",
+    "source_account": "chiikawa_kouhou",
+    "link_verified": true,
+    "timing": "진행 중"
+  },
+  {
+    "section": "other_goods",
+    "kind": "release",
+    "title": "애니메 치이카와 코스코 한정 스웨트",
+    "start_date": null,
+    "end_date": null,
+    "date_label": "11월 상순 순차 발매",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "",
+    "ref_url": "https://www.costco.co.jp/",
+    "location": "코스코",
+    "source_account": "chiikawa_kouhou",
+    "link_verified": null,
+    "timing": null
+  },
+  {
+    "section": "other_goods",
+    "kind": "release",
+    "title": "애니메 치이카와 주머니 S 3매 세트",
+    "start_date": null,
+    "end_date": null,
+    "date_label": "11월 하순 순차 발매",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawa_kouhou/status/2119595827966759013",
+    "ref_url": null,
+    "location": "치이카와 마켓",
+    "source_account": "chiikawa_kouhou",
+    "link_verified": true,
+    "timing": null
+  },
+  {
+    "section": "other_goods",
+    "kind": "release",
+    "title": "긴팔 티셔츠 (치이카와 랜드)",
+    "start_date": "2026-11-06",
+    "end_date": null,
+    "date_label": "11월 6일(금) 순차 발매",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://chiikawa-info.jp/ck_land.html/",
+    "ref_url": null,
+    "location": "치이카와 랜드",
+    "source_account": "chiikawa_kouhou",
+    "link_verified": true,
+    "timing": "진행 중"
+  }
+]

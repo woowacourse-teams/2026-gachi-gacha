@@ -40,4 +40,11 @@ class GrokUsageTest {
         // 36*0.005 + 1*0.01 + 2*0.005 + 134975*1.25/1e6 + 13446*2.5/1e6 = 0.4023...
         assertThat(new GrokUsage(16, 2, 36, 1, 134975, 13446, 0).formattedCostUsd()).isEqualTo("0.402");
     }
+
+    @Test
+    @DisplayName("비용 상한 판단에 쓰는 달러 값도 실제 비용이 있으면 그 값, 없으면 추정값이다")
+    void costUsd() {
+        assertThat(new GrokUsage(16, 0, 36, 0, 134975, 13446, 3_126_000_000L).costUsd()).isEqualTo(0.3126);
+        assertThat(new GrokUsage(16, 2, 36, 1, 134975, 13446, 0).costUsd()).isCloseTo(0.4023, org.assertj.core.data.Offset.offset(0.0001));
+        assertThat(GrokUsage.NONE.costUsd()).isZero();    }
 }

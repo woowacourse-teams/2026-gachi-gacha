@@ -36,8 +36,12 @@ public final class NewsFixtures {
         return news(NewsSection.KOREA_STORE, NewsKind.RELEASE, title, null, null, link, true, null);
     }
 
+    public static NewsDetail detail(final List<String> notes, @Nullable final String refUrl) {
+        return detail().withNotesAndRefUrl(notes, refUrl);
+    }
+
     public static NewsDetail detail() {
         return new NewsDetail("11/12(목)", "치이카와샵 용산점", List.of(new NewsDetail.Product("앉은 인형", null, null)),
-                null, List.of(), "high", null, "chiikawashop_kr");
+                null, List.of(), null, "chiikawashop_kr");
     }
 }

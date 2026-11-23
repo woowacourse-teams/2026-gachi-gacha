@@ -8,9 +8,8 @@ import org.jspecify.annotations.Nullable;
  *
  * @param dateLabel     사람이 읽는 날짜 표기 (예: 11/5(목) 11시 발매)
  * @param location      매장·판매처·행사 장소
- * @param importance    모델이 정한 중요도 (high, medium, low). 슬랙에서 정렬과 표시에 쓴다
  * @param refUrl        게시물 안의 예약·상품 페이지 링크
- * @param sourceAccount 소식을 수집한 X 계정
+ * @param sourceAccount 소식을 수집한 X 계정. 모델이 아니라 호출한 코드가 정한다
  */
 public record NewsDetail(
         @Nullable String dateLabel,
@@ -18,7 +17,6 @@ public record NewsDetail(
         List<Product> products,
         @Nullable Reservation reservation,
         List<String> notes,
-        @Nullable String importance,
         @Nullable String refUrl,
         @Nullable String sourceAccount
 ) {
@@ -26,6 +24,10 @@ public record NewsDetail(
     public NewsDetail {
         products = products == null ? List.of() : List.copyOf(products);
         notes = notes == null ? List.of() : List.copyOf(notes);
+    }
+
+    public NewsDetail withNotesAndRefUrl(final List<String> newNotes, @Nullable final String newRefUrl) {
+        return new NewsDetail(dateLabel, location, products, reservation, newNotes, newRefUrl, sourceAccount);
     }
 
     /**

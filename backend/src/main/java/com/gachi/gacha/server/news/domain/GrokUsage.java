@@ -67,17 +67,24 @@ public record GrokUsage(
     }
 
     /**
-     * 실제 비용을 쓰고, 값이 없으면 단가로 추정한다. 표기 자릿수도 스크립트와 같다(실제 4자리, 추정 3자리).
+     * 비용 상한 판단에 쓰는 달러 값. 실제 비용을 쓰고, 값이 없으면 단가로 추정한다.
+     */
+    public double costUsd() {
+        return hasActualCost() ? costTicks / TICKS_PER_USD : estimatedCostUsd();
+    }
+
+    /**
+     * 보고에 쓰는 표기. 자릿수는 스크립트와 같다(실제 4자리, 추정 3자리).
      */
     public String formattedCostUsd() {
-        if (hasActualCost()) {
-            return String.format(Locale.ROOT, "%.4f", costTicks / TICKS_PER_USD);
-        }
-        double estimated = postsFetched * POST_USD
+        return String.format(Locale.ROOT, hasActualCost() ? "%.4f" : "%.3f", costUsd());
+    }
+
+    private double estimatedCostUsd() {
+        return postsFetched * POST_USD
                 + usersFetched * USER_USD
                 + webSearchCalls * WEB_SEARCH_USD
                 + inputTokens * INPUT_USD_PER_TOKEN
                 + outputTokens * OUTPUT_USD_PER_TOKEN;
-        return String.format(Locale.ROOT, "%.3f", estimated);
     }
 }
