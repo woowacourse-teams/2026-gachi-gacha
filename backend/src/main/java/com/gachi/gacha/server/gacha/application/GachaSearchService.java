@@ -11,8 +11,12 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.gachi.gacha.server.gacha.application.dto.GachaDocument;
 import com.gachi.gacha.server.gacha.application.dto.GachaSearchCondition;
 import com.gachi.gacha.server.common.infra.elastic.dto.SearchResult;
+import com.gachi.gacha.server.gacha.application.dto.InferenceGacha;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,8 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class GachaSearchService {
 
+    private static final String INFERENCE_MIN_SHOULD_MATCH = "60%";
+
     private final ElasticsearchClient esClient;
 
     @Value("${elasticsearch.index.gacha}")
@@ -29,15 +35,46 @@ public class GachaSearchService {
 
     public SearchResult<GachaDocument> search(final GachaSearchCondition condition) throws IOException {
         SearchResponse<GachaDocument> response = esClient.search(s -> s
-                .index(INDEX)
-                .from(condition.page() * condition.size())
-                .size(condition.size() + 1)
-                .query(buildQuery(condition))
-                .sort(so -> so.score(ss -> ss.order(SortOrder.Desc)))
-                .sort(so -> so.field(fs -> fs.field("id").order(SortOrder.Desc))), // tie-breaker
+                        .index(INDEX)
+                        .from(condition.page() * condition.size())
+                        .size(condition.size() + 1)
+                        .query(buildQuery(condition))
+                        .sort(so -> so.score(ss -> ss.order(SortOrder.Desc)))
+                        .sort(so -> so.field(fs -> fs.field("id").order(SortOrder.Desc))),
                 GachaDocument.class);
 
         return toSearchResult(condition, response);
+    }
+
+    public Optional<InferenceGacha> infer(final GachaSearchCondition condition) throws IOException {
+        if (!StringUtils.hasText(condition.keyword())) {
+            return Optional.empty();
+        }
+        SearchResponse<GachaDocument> response = esClient.search(s -> s
+                        .index(INDEX)
+                        .size(1)
+                        .query(buildInferenceQuery(condition))
+                        .sort(so -> so.score(ss -> ss.order(SortOrder.Desc)))
+                        .sort(so -> so.field(fs -> fs.field("id").order(SortOrder.Desc))),
+                GachaDocument.class);
+
+        if (response.hits().hits().isEmpty()) {
+            return Optional.empty();
+        }
+        return response.hits().hits().stream()
+                .filter(hit -> hit.source() != null)
+                .findFirst()
+                .map(this::toInferenceGacha);
+    }
+
+    private InferenceGacha toInferenceGacha(final Hit<GachaDocument> hit) {
+        GachaDocument doc = hit.source();
+        Set<Long> categoryIds = doc.categoryIds() != null ? new HashSet<>(doc.categoryIds()) : Set.of();
+        return InferenceGacha.builder()
+                .gachaId(doc.id())
+                .score(hit.score() != null ? hit.score() : 0.0)
+                .categoryIds(categoryIds)
+                .build();
     }
 
     private Query buildQuery(final GachaSearchCondition condition) {
@@ -45,6 +82,24 @@ public class GachaSearchService {
             applyKeyword(condition, b); // 1) 키워드: 점수 계산 대상
             applyCategoryFilter(condition, b); // 2) 카테고리 필터: 점수에 영향 없음 + 캐시됨
             applyGeoFilter(condition, b); // 3) 내 주변 가챠샵에 있는 가챠만
+            return b;
+        }));
+    }
+
+    private Query buildInferenceQuery(final GachaSearchCondition condition) {
+        return Query.of(q -> q.bool(b -> {
+            b.should(s -> s.multiMatch(mm -> mm
+                    .query(condition.keyword())
+                    .fields("name^3", "categoryNames")
+                    .fuzziness("AUTO")
+                    .minimumShouldMatch(INFERENCE_MIN_SHOULD_MATCH)));
+            b.should(s -> s.match(m -> m
+                    .field("name.ngram")
+                    .query(condition.keyword())
+                    .operator(Operator.And)
+                    .boost(1.0f)));
+            b.minimumShouldMatch("1");
+            applyCategoryFilter(condition, b);
             return b;
         }));
     }

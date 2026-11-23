@@ -1,4 +1,4 @@
-package com.gachi.gacha.server.trade.application;
+package com.gachi.gacha.server.trade.infra;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.SortOrder;

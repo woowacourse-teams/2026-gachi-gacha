@@ -17,6 +17,10 @@ public record NotificationMessage(
                     COMMENT_TITLE,
                     COMMENT_BODY_FORMAT.formatted(notification.getActorName(), notification.getPreview())
             );
+            case TRADE_RECOMMENDATION -> new NotificationMessage(
+                    "관심 있을 만한 새 교환글",
+                    notification.getPreview()
+            );
         };
     }
 }
