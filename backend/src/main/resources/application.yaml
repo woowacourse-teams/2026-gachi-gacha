@@ -178,6 +178,7 @@ news:
   dry-run: ${NEWS_DRY_RUN:true}
   environment-label: ${NEWS_ENVIRONMENT_LABEL:}   # 슬랙 메시지 맨 앞 표시. 개발 서버는 [개발], 운영은 비운다
   zone: Asia/Seoul
+  hide-ended-after-days: 30   # 끝난 소식을 목록에서 숨기기까지의 일수 (종료일이 없으면 시작일, 없으면 공개일 기준)
   schedule:
     monday-cron: ${NEWS_MONDAY_CRON:0 30 18 * * MON}       # 한국 계정
     thursday-cron: ${NEWS_THURSDAY_CRON:0 30 12 * * THU}   # 한국·일본 계정
@@ -204,12 +205,8 @@ news:
       name-ja: ちいかわ
       prompt-dir: news/prompts/chiikawa
       prompt-version: chiikawa-v2
-      # 고정 매장 정보. 공식 페이지에서 확인한 값으로 관리한다
+      # 매장 평소 운영시간. 같은 운영시간을 반복한 공지(notes)를 지울 때 쓴다. 공식 페이지에서 확인한 값으로 관리한다
       store-hours: "10:30 ~ 22:00"
-      store-info: |-
-        • 위치: 아이파크몰 용산점 리빙파크 3F 도파민 스테이션
-        • 운영시간: 10:30 ~ 22:00
-        • 한국 최초 정규 매장 (2026년 2월 27일 오픈)
       # 계정마다 따로 호출한다. Grok 의 X 검색은 한 번에 최대 10건이라 게시물이 많은 계정은 분할 일수를 작게 잡는다
       targets:
         - { label: KR_shop,   handle: chiikawashop_kr, chunk-days: 2, web-search: true,  query: "" }

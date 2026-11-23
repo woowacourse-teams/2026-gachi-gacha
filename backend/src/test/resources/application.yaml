@@ -109,3 +109,9 @@ notification:
 
 news:
   enabled: false
+  # 컨트롤러 테스트가 주제를 확인할 수 있게 주제만 둔다. 수집 대상 계정은 필요 없다
+  topics:
+    CHIIKAWA:
+      display-name: 치이카와
+      prompt-dir: news/prompts/chiikawa
+      prompt-version: chiikawa-v2

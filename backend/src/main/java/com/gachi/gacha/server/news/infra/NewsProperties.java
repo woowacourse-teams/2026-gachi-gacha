@@ -20,6 +20,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param dryRun           켜져 있으면 수집·검증·저장까지만 하고 공개와 푸시를 하지 않는다
  * @param environmentLabel 슬랙 메시지 맨 앞 표시 (예: [개발]). 운영은 빈 값이다
  * @param zone             진행 상태 판단에 쓰는 시간대
+ * @param hideEndedAfterDays 끝난 소식을 목록에서 숨기기까지의 일수. 종료일이 없으면 시작일(없으면 공개일) 기준이다
  * @param topics           주제(IP)별 설정. 키가 주제 값이다 (예: CHIIKAWA)
  */
 @ConfigurationProperties("news")
@@ -28,6 +29,7 @@ public record NewsProperties(
         @DefaultValue("true") boolean dryRun,
         @Nullable String environmentLabel,
         @DefaultValue("Asia/Seoul") ZoneId zone,
+        @DefaultValue("30") int hideEndedAfterDays,
         @DefaultValue Collect collect,
         @DefaultValue Xai xai,
         @DefaultValue Slack slack,
@@ -111,7 +113,6 @@ public record NewsProperties(
      * @param promptDir     클래스패스 안의 프롬프트 폴더. system.txt 와 user.txt 가 있어야 한다
      * @param promptVersion 프롬프트 버전명. 회차에 기록해 결과가 어느 프롬프트로 나왔는지 알 수 있게 한다
      * @param storeHours    매장 평소 운영시간. 같은 운영시간을 반복한 공지를 지울 때 쓴다. 없으면 지우지 않는다
-     * @param storeInfo     슬랙에 고정으로 보여줄 매장 정보
      * @param runs          수집 일정 이름(MONDAY, THURSDAY)별로 수집할 대상 라벨
      */
     public record Topic(
@@ -120,7 +121,6 @@ public record NewsProperties(
             String promptDir,
             String promptVersion,
             @Nullable String storeHours,
-            @Nullable String storeInfo,
             @DefaultValue List<CollectTarget> targets,
             @DefaultValue Map<String, List<String>> runs
     ) {
