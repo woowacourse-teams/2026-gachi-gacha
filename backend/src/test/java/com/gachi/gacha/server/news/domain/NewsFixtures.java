@@ -1,7 +1,11 @@
 package com.gachi.gacha.server.news.domain;
 
+import com.gachi.gacha.server.news.infra.NewsProperties;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -34,6 +38,26 @@ public final class NewsFixtures {
      */
     public static CollectedNews koreaStore(final String title, @Nullable final String link) {
         return news(NewsSection.KOREA_STORE, NewsKind.RELEASE, title, null, null, link, true, null);
+    }
+
+    /**
+     * 치이카와 주제 하나가 있는 설정. 목요일에 한국 매장·일본 홍보 계정을 수집한다.
+     */
+    public static NewsProperties properties(
+            final boolean dryRun,
+            final String environmentLabel,
+            final int maxCallsPerRun,
+            final double maxCostUsd
+    ) {
+        NewsProperties.Topic chiikawa = new NewsProperties.Topic("치이카와", "ちいかわ", "news/prompts/chiikawa",
+                "chiikawa-v2", "10:30 ~ 22:00", "• 위치: 아이파크몰 용산점", List.of(KR_SHOP, JP_KOUHOU),
+                Map.of("THURSDAY", List.of("KR_shop", "JP_kouhou")));
+        return new NewsProperties(false, dryRun, environmentLabel, ZoneId.of("Asia/Seoul"),
+                new NewsProperties.Collect(7, 14, maxCallsPerRun, maxCostUsd, Duration.ofHours(6)),
+                new NewsProperties.Xai("https://api.x.ai/v1", "key", "grok-4.3", Duration.ofSeconds(10),
+                        Duration.ofSeconds(300), 2, 3),
+                new NewsProperties.Slack(null, "C0NEWS"),
+                Map.of("CHIIKAWA", chiikawa));
     }
 
     public static NewsDetail detail(final List<String> notes, @Nullable final String refUrl) {

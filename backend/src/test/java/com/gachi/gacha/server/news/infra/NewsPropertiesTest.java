@@ -47,7 +47,7 @@ class NewsPropertiesTest {
         assertThat(properties.xai().apiKey()).isEmpty();
         assertThat(properties.slack().botToken()).isEmpty();
         assertThat(properties.missingRequiredSettings()).isEmpty();
-        assertThat(properties.collect()).isEqualTo(new NewsProperties.Collect(7, 14, 40, 0.6));
+        assertThat(properties.collect()).isEqualTo(new NewsProperties.Collect(7, 14, 40, 0.6, Duration.ofHours(6)));
         assertThat(properties.xai().connectTimeout()).isEqualTo(Duration.ofSeconds(10));
         assertThat(properties.xai().readTimeout()).isEqualTo(Duration.ofSeconds(300));
     }
@@ -84,10 +84,20 @@ class NewsPropertiesTest {
     @Test
     @DisplayName("기능을 켰는데 필수 값이 비어 있으면 무엇이 빠졌는지 알려준다")
     void reportsMissingRequiredSettings() {
-        assertThat(bind(Map.of("NEWS_ENABLED", "true", "SLACK_BOT_TOKEN", "xoxb-test")).missingRequiredSettings())
-                .containsExactly("XAI_API_KEY", "SLACK_NEWS_CHANNEL_ID");
+        assertThat(bind(Map.of("NEWS_ENABLED", "true", "NEWS_DRY_RUN", "false", "SLACK_BOT_TOKEN", "xoxb-test"))
+                .missingRequiredSettings()).containsExactly("XAI_API_KEY", "SLACK_NEWS_CHANNEL_ID");
+        assertThat(bind(Map.of("NEWS_ENABLED", "true", "NEWS_DRY_RUN", "false")).missingRequiredSettings())
+                .containsExactly("XAI_API_KEY", "SLACK_BOT_TOKEN", "SLACK_NEWS_CHANNEL_ID");
         assertThat(bind(Map.of("NEWS_ENABLED", "true", "XAI_API_KEY", "x", "SLACK_BOT_TOKEN", "x",
                 "SLACK_NEWS_CHANNEL_ID", "C1")).missingRequiredSettings()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("dry-run 에서는 슬랙 값을 비워 둘 수 있지만, 봇 토큰을 넣었다면 채널도 있어야 한다")
+    void slackIsOptionalInDryRun() {
+        assertThat(bind(Map.of("NEWS_ENABLED", "true", "XAI_API_KEY", "x")).missingRequiredSettings()).isEmpty();
+        assertThat(bind(Map.of("NEWS_ENABLED", "true", "XAI_API_KEY", "x", "SLACK_BOT_TOKEN", "xoxb-test"))
+                .missingRequiredSettings()).containsExactly("SLACK_NEWS_CHANNEL_ID");
     }
 
     @Test

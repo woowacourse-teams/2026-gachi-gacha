@@ -46,6 +46,7 @@ public record NewsProperties(
 
     /**
      * 기능을 켰는데 비어 있는 필수 값. 앱이 뜰 때 확인해서 빠진 값을 바로 알 수 있게 한다.
+     * 슬랙 값은 dry-run 일 때 비워 둘 수 있다(로컬에서 슬랙 없이 수집만 확인). 봇 토큰을 넣었다면 채널도 있어야 한다.
      */
     public List<String> missingRequiredSettings() {
         List<String> missing = new ArrayList<>();
@@ -53,8 +54,10 @@ public record NewsProperties(
             return missing;
         }
         addIfBlank(missing, xai.apiKey(), "XAI_API_KEY");
-        addIfBlank(missing, slack.botToken(), "SLACK_BOT_TOKEN");
-        addIfBlank(missing, slack.channelId(), "SLACK_NEWS_CHANNEL_ID");
+        if (!dryRun || (slack.botToken() != null && !slack.botToken().isBlank())) {
+            addIfBlank(missing, slack.botToken(), "SLACK_BOT_TOKEN");
+            addIfBlank(missing, slack.channelId(), "SLACK_NEWS_CHANNEL_ID");
+        }
         if (topics.isEmpty()) {
             missing.add("news.topics");
         }
@@ -72,12 +75,14 @@ public record NewsProperties(
      * @param maxPeriodDays     수집 기간 상한. 실패가 이어져 기간이 길어져도 이 일수까지만 본다
      * @param maxCallsPerRun    실행 1회당 Grok 호출 상한. 재시도도 센다
      * @param maxCostUsd        실행 1회당 비용 상한(달러). 넘으면 남은 호출을 하지 않는다
+     * @param stuckAfter        수집 중으로 이 시간 넘게 남은 회차는 서버가 멈춘 것으로 보고 실패 처리한다
      */
     public record Collect(
             @DefaultValue("7") int defaultPeriodDays,
             @DefaultValue("14") int maxPeriodDays,
             @DefaultValue("40") int maxCallsPerRun,
-            @DefaultValue("0.6") double maxCostUsd
+            @DefaultValue("0.6") double maxCostUsd,
+            @DefaultValue("6h") Duration stuckAfter
     ) {
     }
 

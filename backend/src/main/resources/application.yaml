@@ -186,6 +186,7 @@ news:
     max-period-days: 14       # 수집 기간 상한
     max-calls-per-run: 40     # 실행 1회당 Grok 호출 상한 (재시도 포함)
     max-cost-usd: 0.6         # 실행 1회당 비용 상한. 넘으면 남은 호출을 하지 않는다
+    stuck-after: 6h           # 수집 중으로 이 시간 넘게 남은 회차는 서버가 멈춘 것으로 보고 실패 처리한다
   xai:
     base-url: https://api.x.ai/v1
     api-key: ${XAI_API_KEY:}

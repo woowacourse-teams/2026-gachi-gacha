@@ -11,6 +11,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -57,6 +59,12 @@ public class NewsBatch extends BaseTimeEntity {
 
     @Column(nullable = false, length = 30)
     private String promptVersion;
+
+    @Column(length = 30)
+    private String slackChannelId;
+
+    @Column(length = 30)
+    private String slackMessageTs;
 
     @Getter(AccessLevel.NONE)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -144,6 +152,22 @@ public class NewsBatch extends BaseTimeEntity {
         requireStatus(NewsBatchStatus.COLLECTING, "수집 실패 처리");
         this.status = NewsBatchStatus.FAILED;
         recordUsage(collectedUsage, collectedWarnings);
+    }
+
+    /**
+     * 수집 중으로 남은 지 오래된 회차인지. 서버가 수집 도중 멈추면 이 상태로 남는다.
+     */
+    public boolean isStuck(final LocalDateTime now, final Duration stuckAfter) {
+        LocalDateTime lastUpdated = getUpdatedAt() != null ? getUpdatedAt() : getCreatedAt();
+        return lastUpdated != null && lastUpdated.plus(stuckAfter).isBefore(now);
+    }
+
+    /**
+     * 이 회차를 알린 슬랙 메시지. 상태가 바뀔 때 같은 메시지를 다시 그리려고 기억해 둔다.
+     */
+    public void recordSlackMessage(final String channelId, final String messageTs) {
+        this.slackChannelId = Objects.requireNonNull(channelId, "channelId");
+        this.slackMessageTs = Objects.requireNonNull(messageTs, "messageTs");
     }
 
     /**

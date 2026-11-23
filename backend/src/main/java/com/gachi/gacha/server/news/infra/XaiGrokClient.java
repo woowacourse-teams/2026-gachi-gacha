@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.news.infra;
 
 import com.gachi.gacha.server.news.domain.CollectCall;
+import java.time.Duration;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpEntity;
@@ -56,6 +57,8 @@ public class XaiGrokClient {
     }
 
     /**
+     * 한 번만 호출한다. 재시도는 호출하는 쪽이 비용·호출 수 상한을 보면서 한다.
+     *
      * @return 응답 본문 그대로. 해석은 {@link GrokResponseParser} 가 한다
      * @throws CallException 네트워크 오류, 타임아웃, 2xx 가 아닌 응답
      */
@@ -71,10 +74,12 @@ public class XaiGrokClient {
             String response = restTemplate.postForObject(url, new HttpEntity<>(body, headers), String.class);
             return response == null ? "" : response;
         } catch (HttpStatusCodeException e) {
-            throw new CallException("[" + call.label() + "] HTTP " + e.getStatusCode().value()
-                    + " " + preview(e.getResponseBodyAsString()));
+            int status = e.getStatusCode().value();
+            boolean retryable = status == 429 || status >= 500;
+            throw new CallException("[" + call.label() + "] HTTP " + status + " " + preview(e.getResponseBodyAsString()),
+                    retryable, RetryBackoff.retryAfter(e.getResponseHeaders()), false);
         } catch (ResourceAccessException e) {
-            throw new CallException("[" + call.label() + "] 호출 실패 (네트워크/타임아웃)");
+            throw new CallException("[" + call.label() + "] 호출 실패 (네트워크/타임아웃)", true, null, true);
         } catch (RestClientException e) {
             throw new CallException("[" + call.label() + "] 호출 실패: " + e.getClass().getSimpleName());
         }
@@ -111,8 +116,41 @@ public class XaiGrokClient {
      */
     public static class CallException extends RuntimeException {
 
+        private final boolean retryable;
+        private final @Nullable Duration retryAfter;
+        private final boolean timedOut;
+
         public CallException(final String message) {
+            this(message, false, null, false);
+        }
+
+        /**
+         * @param retryable 타임아웃, 429, 5xx 처럼 다시 시도해 볼 만한 실패인지
+         * @param retryAfter 서버가 알려준 대기 시간
+         * @param timedOut  응답을 받지 못해 비용이 얼마나 나갔는지 알 수 없는 실패인지
+         */
+        public CallException(
+                final String message,
+                final boolean retryable,
+                @Nullable final Duration retryAfter,
+                final boolean timedOut
+        ) {
             super(message);
+            this.retryable = retryable;
+            this.retryAfter = retryAfter;
+            this.timedOut = timedOut;
+        }
+
+        public boolean isRetryable() {
+            return retryable;
+        }
+
+        public @Nullable Duration retryAfter() {
+            return retryAfter;
+        }
+
+        public boolean isTimedOut() {
+            return timedOut;
         }
     }
 }

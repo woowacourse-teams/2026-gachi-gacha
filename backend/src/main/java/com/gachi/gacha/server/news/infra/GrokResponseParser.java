@@ -24,8 +24,8 @@ import tools.jackson.databind.ObjectMapper;
  * xAI Responses API 응답에서 소식과 사용량을 꺼낸다. 해석 규칙은 수집 스크립트의 process_res 와 같다.
  *
  * <ul>
- *   <li>응답이 JSON 이 아니거나 error 가 오면 호출 실패다. 회차 전체를 실패로 처리한다</li>
- *   <li>모델이 쓴 본문(output_text)을 해석하지 못하면 경고만 남긴다</li>
+ *   <li>응답이 JSON 이 아니거나 error 가 오거나, 모델이 쓴 본문(output_text)을 해석하지 못하면 호출 실패다.
+ *       스크립트는 본문 해석 실패를 경고로만 남기지만, 서버는 그 구간을 수집하지 못한 것으로 본다</li>
  *   <li>링크 검증: 응답에 실제로 나온 URL(citations 와 응답 어디든 있는 url 필드)을 정규화해 모으고, 소식의 link 가
  *       그 안에 있는지 본다. 모은 URL 이 없거나 link 가 비어 있으면 판단을 보류한다(null)</li>
  * </ul>
@@ -56,11 +56,11 @@ public class GrokResponseParser {
     public Result parse(final String label, final String account, final String responseBody) {
         JsonNode response = readJson(responseBody);
         if (response == null) {
-            return new Result.Failure("[" + label + "] 응답이 JSON이 아님");
+            return new Result.Failure("[" + label + "] 응답이 JSON이 아님", GrokUsage.FAILED_CALL);
         }
         JsonNode error = response.path("error");
         if (!error.isMissingNode() && !error.isNull() && !(error.isBoolean() && !error.booleanValue())) {
-            return new Result.Failure("[" + label + "] 에러: " + preview(error));
+            return new Result.Failure("[" + label + "] 에러: " + preview(error), GrokUsage.of(response));
         }
 
         GrokUsage usage = GrokUsage.of(response);
@@ -73,8 +73,7 @@ public class GrokResponseParser {
         Set<String> citedUrls = collectCitedUrls(response);
         JsonNode content = readJson(stripCodeFence(outputText(response)));
         if (content == null || !content.path("items").isArray()) {
-            warnings.add("[" + label + "] JSON 파싱 실패");
-            return new Result.Success(usage, List.of(), List.of(), 0, warnings);
+            return new Result.Failure("[" + label + "] 본문 JSON 해석 실패", usage);
         }
 
         List<CollectedNews> items = new ArrayList<>();
@@ -271,7 +270,13 @@ public class GrokResponseParser {
             }
         }
 
-        record Failure(String reason) implements Result {
+        /**
+         * 호출 한 번이 쓸 만한 결과를 주지 못했다. 응답이 JSON 이 아니거나, error 가 오거나, 모델이 쓴 본문을 해석하지 못한 경우다.
+         * 그 구간은 수집하지 못한 것이므로 호출한 쪽이 그 계정의 수집 기간을 넘기지 않는다.
+         *
+         * @param usage 실패해도 이미 나간 호출의 사용량
+         */
+        record Failure(String reason, GrokUsage usage) implements Result {
         }
     }
 

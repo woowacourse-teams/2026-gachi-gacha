@@ -13,6 +13,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.gachi.gacha.server.news.domain.CollectCall;
 import com.gachi.gacha.server.news.domain.CollectTarget;
 import java.net.SocketTimeoutException;
+import java.time.Duration;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -106,14 +107,47 @@ class XaiGrokClientTest {
     }
 
     @Test
-    @DisplayName("타임아웃·네트워크 오류는 호출 실패로 알린다")
+    @DisplayName("429 는 서버가 알려준 대기 시간과 함께 다시 시도할 수 있는 실패다")
+    void tooManyRequestsIsRetryable() {
+        server.expect(requestTo(BASE_URL + "/responses"))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After", "7").body("{}"));
+
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
+                .isInstanceOfSatisfying(XaiGrokClient.CallException.class, e -> {
+                    assertThat(e.isRetryable()).isTrue();
+                    assertThat(e.retryAfter()).isEqualTo(Duration.ofSeconds(7));
+                    assertThat(e.isTimedOut()).isFalse();
+                });
+    }
+
+    @Test
+    @DisplayName("5xx 는 다시 시도할 수 있고, 429 를 뺀 4xx 는 다시 시도하지 않는다")
+    void retryableOnlyForServerErrors() {
+        server.expect(requestTo(BASE_URL + "/responses")).andRespond(withStatus(HttpStatus.BAD_GATEWAY).body("{}"));
+        server.expect(requestTo(BASE_URL + "/responses")).andRespond(withStatus(HttpStatus.BAD_REQUEST).body("{}"));
+        server.expect(requestTo(BASE_URL + "/responses")).andRespond(withStatus(HttpStatus.UNAUTHORIZED).body("{}"));
+
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
+                .isInstanceOfSatisfying(XaiGrokClient.CallException.class, e -> assertThat(e.isRetryable()).isTrue());
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
+                .isInstanceOfSatisfying(XaiGrokClient.CallException.class, e -> assertThat(e.isRetryable()).isFalse());
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
+                .isInstanceOfSatisfying(XaiGrokClient.CallException.class, e -> assertThat(e.isRetryable()).isFalse());
+    }
+
+    @Test
+    @DisplayName("타임아웃·네트워크 오류는 호출 실패로 알리고, 다시 시도할 수 있지만 비용은 알 수 없다")
     void failsOnTimeout() {
         server.expect(requestTo(BASE_URL + "/responses"))
                 .andRespond(withException(new SocketTimeoutException("read timed out")));
 
         assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
                 .isInstanceOf(XaiGrokClient.CallException.class)
-                .hasMessage("[KR_shop_2026-11-09] 호출 실패 (네트워크/타임아웃)");
+                .hasMessage("[KR_shop_2026-11-09] 호출 실패 (네트워크/타임아웃)")
+                .isInstanceOfSatisfying(XaiGrokClient.CallException.class, e -> {
+                    assertThat(e.isRetryable()).isTrue();
+                    assertThat(e.isTimedOut()).isTrue();
+                });
     }
 
     @Test

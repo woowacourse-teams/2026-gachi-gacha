@@ -50,6 +50,7 @@ class GrokResponseParserTest {
 
             assertThat(((GrokResponseParser.Result.Failure) result).reason())
                     .isEqualTo("[" + LABEL + "] 에러: " + "x".repeat(300));
+            assertThat(((GrokResponseParser.Result.Failure) result).usage().calls()).isEqualTo(1);
             assertThat(parser.parse(LABEL, ACCOUNT, nullError.toString())).isInstanceOf(GrokResponseParser.Result.Success.class);
             assertThat(parser.parse(LABEL, ACCOUNT, falseError.toString())).isInstanceOf(GrokResponseParser.Result.Success.class);
         }
@@ -145,13 +146,21 @@ class GrokResponseParserTest {
         }
 
         @Test
-        @DisplayName("본문을 해석하지 못하면 실패가 아니라 경고만 남기고 사용량은 그대로 센다")
-        void warnsWhenContentIsNotItemsJson() {
-            GrokResponseParser.Result.Success broken = success(response("소식이 없습니다", List.of(), 2));
+        @DisplayName("모델이 쓴 본문을 해석하지 못하면 그 구간은 실패로 보되, 이미 나간 사용량은 그대로 센다")
+        void failsWhenContentIsNotItemsJson() {
+            GrokResponseParser.Result result = parser.parse(LABEL, ACCOUNT,
+                    response("소식이 없습니다", List.of(), 2).toString());
 
-            assertThat(broken.items()).isEmpty();
-            assertThat(broken.warnings()).containsExactly("[" + LABEL + "] JSON 파싱 실패");
-            assertThat(broken.usage().postsFetched()).isEqualTo(2);
+            GrokResponseParser.Result.Failure failure = (GrokResponseParser.Result.Failure) result;
+            assertThat(failure.reason()).isEqualTo("[" + LABEL + "] 본문 JSON 해석 실패");
+            assertThat(failure.usage().postsFetched()).isEqualTo(2);
+            assertThat(failure.usage().calls()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("items 가 빈 배열이면 소식이 없는 정상 결과다")
+        void emptyItemsIsSuccess() {
+            assertThat(success(response("{\"items\": []}", List.of(), 1)).items()).isEmpty();
         }
     }
 

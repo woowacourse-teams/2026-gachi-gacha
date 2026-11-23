@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.gachi.gacha.server.news.domain.exception.NewsBatchStateException;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class NewsBatchTest {
 
@@ -32,6 +35,40 @@ class NewsBatchTest {
         assertThat(batch.periods()).extracting(CollectPeriod::collected).containsExactly(false, false);
         assertThat(batch.usage()).isEqualTo(GrokUsage.NONE);
         assertThat(batch.warnings()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("보낸 슬랙 메시지를 기억해 두고 다시 그릴 때 쓴다")
+    void recordsSlackMessage() {
+        NewsBatch batch = twoAccounts();
+
+        batch.recordSlackMessage("C0NEWS", "1731382200.000100");
+
+        assertThat(batch.getSlackChannelId()).isEqualTo("C0NEWS");
+        assertThat(batch.getSlackMessageTs()).isEqualTo("1731382200.000100");
+    }
+
+    @Test
+    @DisplayName("수집 중으로 6시간 넘게 갱신되지 않은 회차만 서버가 멈춘 것으로 본다")
+    void isStuckAfterThreshold() {
+        NewsBatch batch = twoAccounts();
+        ReflectionTestUtils.setField(batch, "updatedAt", LocalDateTime.of(2026, 11, 12, 12, 30));
+        Duration stuckAfter = Duration.ofHours(6);
+
+        assertThat(batch.isStuck(LocalDateTime.of(2026, 11, 12, 18, 30), stuckAfter)).isFalse();
+        assertThat(batch.isStuck(LocalDateTime.of(2026, 11, 12, 18, 31), stuckAfter)).isTrue();
+    }
+
+    @Test
+    @DisplayName("갱신 시각이 아직 없는 새 회차는 만든 시각을 기준으로 보고, 둘 다 없으면 멈춘 것으로 보지 않는다")
+    void stuckFallsBackToCreatedAt() {
+        NewsBatch batch = twoAccounts();
+        LocalDateTime later = LocalDateTime.of(2026, 11, 20, 0, 0);
+
+        assertThat(batch.isStuck(later, Duration.ofHours(6))).isFalse();
+
+        ReflectionTestUtils.setField(batch, "createdAt", LocalDateTime.of(2026, 11, 12, 0, 0));
+        assertThat(batch.isStuck(later, Duration.ofHours(6))).isTrue();
     }
 
     @Nested
