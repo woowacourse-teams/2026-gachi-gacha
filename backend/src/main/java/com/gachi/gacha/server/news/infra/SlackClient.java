@@ -20,7 +20,8 @@ import tools.jackson.databind.node.ObjectNode;
  * 슬랙 Web API 클라이언트. 웹훅이 아니라 봇 토큰으로 보내야 같은 메시지를 다시 그리고(chat.update) 스레드에 답할 수 있다.
  *
  * <p>슬랙은 실패해도 HTTP 200 에 {"ok": false, "error": "..."} 를 돌려주므로 ok 값으로 성공을 판단한다.
- * 네트워크 오류, 429, 5xx 만 재시도하고, ok 가 false 인 응답(채널 없음, 권한 없음 등)은 다시 해도 같아서 재시도하지 않는다.
+ * 네트워크 오류, 429, 5xx 만 재시도하고(메시지 보내기와 안내만, 다시 그리기는 재시도하지 않는다),
+ * ok 가 false 인 응답(채널 없음, 권한 없음 등)은 다시 해도 같아서 재시도하지 않는다.
  * 봇 토큰이 없으면(로컬·테스트) 호출하지 않고 보낼 메시지를 로그로 남긴다. 로그와 예외 메시지에 토큰은 넣지 않는다.
  */
 @Slf4j
@@ -51,8 +52,17 @@ public class SlackClient {
      */
     public @Nullable String postMessage(final String channel, final SlackMessage message) {
         ObjectNode body = message.toBody(objectMapper).put("channel", channel);
-        JsonNode response = call("chat.postMessage", body);
+        JsonNode response = call("chat.postMessage", body, RetryBackoff.MAX_RETRIES);
         return response == null ? null : response.path("ts").asString(null);
+    }
+
+    /**
+     * 같은 메시지를 다시 그린다. 상태가 바뀔 때마다 부르는 보조 표시라서 실패해도 다시 시도하지 않는다.
+     * 실패하면 {@link SlackException} 을 던지니 호출하는 쪽이 로그만 남기고 넘어간다.
+     */
+    public void updateMessage(final String channel, final String messageTs, final SlackMessage message) {
+        ObjectNode body = message.toBody(objectMapper).put("channel", channel).put("ts", messageTs);
+        call("chat.update", body, 0);
     }
 
     /**
@@ -60,10 +70,10 @@ public class SlackClient {
      */
     public void postEphemeral(final String channel, final String userId, final String text) {
         call("chat.postEphemeral", objectMapper.createObjectNode()
-                .put("channel", channel).put("user", userId).put("text", text));
+                .put("channel", channel).put("user", userId).put("text", text), RetryBackoff.MAX_RETRIES);
     }
 
-    private @Nullable JsonNode call(final String method, final ObjectNode body) {
+    private @Nullable JsonNode call(final String method, final ObjectNode body, final int maxRetries) {
         if (botToken == null || botToken.isBlank()) {
             log.info("[슬랙 미발송] 봇 토큰 없음. method = {}, message = {}", method, body);
             return null;
@@ -73,7 +83,7 @@ public class SlackClient {
         headers.setBearerAuth(botToken);
         HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
 
-        String response = post(method, request);
+        String response = post(method, request, maxRetries);
         JsonNode json = objectMapper.readTree(response == null ? "{}" : response);
         if (!json.path("ok").asBoolean(false)) {
             throw new SlackException(method + " 실패: " + json.path("error").asString("unknown"));
@@ -81,18 +91,18 @@ public class SlackClient {
         return json;
     }
 
-    private @Nullable String post(final String method, final HttpEntity<String> request) {
+    private @Nullable String post(final String method, final HttpEntity<String> request, final int maxRetries) {
         for (int attempt = 0; ; attempt++) {
             try {
                 return restTemplate.postForObject(baseUrl + "/" + method, request, String.class);
             } catch (HttpStatusCodeException e) {
                 int status = e.getStatusCode().value();
-                if (!(status == 429 || status >= 500) || attempt >= RetryBackoff.MAX_RETRIES) {
+                if (!(status == 429 || status >= 500) || attempt >= maxRetries) {
                     throw new SlackException(method + " 호출 실패: HTTP " + status);
                 }
                 waitBeforeRetry(method, attempt + 1, RetryBackoff.retryAfter(e.getResponseHeaders()));
             } catch (ResourceAccessException e) {
-                if (attempt >= RetryBackoff.MAX_RETRIES) {
+                if (attempt >= maxRetries) {
                     throw new SlackException(method + " 호출 실패: 네트워크/타임아웃");
                 }
                 waitBeforeRetry(method, attempt + 1, null);

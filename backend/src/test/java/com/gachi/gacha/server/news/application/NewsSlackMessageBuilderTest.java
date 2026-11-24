@@ -3,6 +3,7 @@ package com.gachi.gacha.server.news.application;
 import static com.gachi.gacha.server.news.domain.NewsFixtures.news;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.gachi.gacha.server.news.application.dto.BatchView;
 import com.gachi.gacha.server.news.application.dto.NewsRunResult;
 import com.gachi.gacha.server.news.domain.CollectPeriod;
 import com.gachi.gacha.server.news.domain.CollectedNews;
@@ -15,6 +16,7 @@ import com.gachi.gacha.server.news.domain.NewsSection;
 import com.gachi.gacha.server.news.domain.NewsTiming;
 import com.gachi.gacha.server.news.infra.SlackClient.SlackMessage;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -44,7 +46,7 @@ class NewsSlackMessageBuilderTest {
                 candidate(NewsSection.KOREA_STORE, NewsKind.NOTICE, "링크 없음", null, null, null, null),
                 candidate(NewsSection.KOREA_STORE, NewsKind.NOTICE, "예약 마감 안내", null, null, "https://x.com/a/status/3", true)));
 
-        assertThat(builder.summary(result)).isEqualTo("목요일 수집 완료 · 게시물 23건 확인 · 새 푸시 대상 2건 · 탭 공개 대상 2건 · "
+        assertThat(builder.summary(view(result))).isEqualTo("목요일 수집 완료 · 게시물 23건 확인 · 새 푸시 대상 2건 · 탭 공개 대상 2건 · "
                 + "확인 필요 1건 · 비용 $0.1500 · 프롬프트 chiikawa-v2");
     }
 
@@ -140,8 +142,8 @@ class NewsSlackMessageBuilderTest {
 
         List<SlackMessage> messages = List.of(
                 builder.build(finished(true, true, List.of(pushTarget))),
-                builder.build(new NewsRunResult.Finished(noNews, List.of(), NewsRunResult.Stats.NONE)),
-                builder.build(new NewsRunResult.Finished(failed, List.of(), NewsRunResult.Stats.NONE)),
+                builder.build(new NewsRunResult.Finished(noNews, List.of(), null)),
+                builder.build(new NewsRunResult.Finished(failed, List.of(), null)),
                 builder.skipped(new NewsRunResult.Skipped("CHIIKAWA", "THURSDAY", "이미 수집 중인 회차가 있음")));
 
         messages.forEach(message -> {
@@ -189,11 +191,11 @@ class NewsSlackMessageBuilderTest {
         NewsBatch batch = batch(false);
         batch.complete(Set.of("chiikawashop_kr"), true, USAGE, List.of("[JP_kouhou_2026-11-09] HTTP 503 오류"));
         NewsRunResult.Finished result = new NewsRunResult.Finished(batch, List.of(candidate(NewsSection.KOREA_STORE,
-                NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true)), NewsRunResult.Stats.NONE);
+                NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true)), null);
 
         String text = text(builder.build(result));
 
-        assertThat(builder.summary(result)).startsWith("목요일 수집 완료 (일부 계정 실패) · ");
+        assertThat(builder.summary(view(result))).startsWith("목요일 수집 완료 (일부 계정 실패) · ");
         assertThat(text).contains("• chiikawashop_kr  11/9 ~ 11/12  ✅")
                 .contains("• chiikawa_kouhou  11/9 ~ 11/12  ❌ 수집하지 못함")
                 .contains("*확인할 내용*").contains("[JP_kouhou_2026-11-09] HTTP 503 오류");
@@ -204,9 +206,9 @@ class NewsSlackMessageBuilderTest {
     void showsFailureReason() {
         NewsBatch batch = batch(false);
         batch.fail(USAGE, List.of("[KR_shop_2026-11-09] HTTP 401", "모든 계정의 수집에 실패함"));
-        NewsRunResult.Finished result = new NewsRunResult.Finished(batch, List.of(), NewsRunResult.Stats.NONE);
+        NewsRunResult.Finished result = new NewsRunResult.Finished(batch, List.of(), null);
 
-        assertThat(builder.summary(result)).isEqualTo("목요일 수집 실패 · 원인: 모든 계정의 수집에 실패함 · 비용 $0.1500 · 프롬프트 chiikawa-v2");
+        assertThat(builder.summary(view(result))).isEqualTo("목요일 수집 실패 · 원인: 모든 계정의 수집에 실패함 · 비용 $0.1500 · 프롬프트 chiikawa-v2");
     }
 
     @Test
@@ -214,11 +216,11 @@ class NewsSlackMessageBuilderTest {
     void noNewsAndSkipped() {
         NewsBatch batch = batch(false);
         batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), false, USAGE, List.of());
-        NewsRunResult.Finished noNews = new NewsRunResult.Finished(batch, List.of(), NewsRunResult.Stats.NONE);
+        NewsRunResult.Finished noNews = new NewsRunResult.Finished(batch, List.of(), null);
 
         SlackMessage skipped = builder.skipped(new NewsRunResult.Skipped("CHIIKAWA", "THURSDAY", "이미 수집 중인 회차가 있음"));
 
-        assertThat(builder.summary(noNews)).contains("수집 완료 · 게시물 23건 확인 · 새 소식 없음 · 새 푸시 대상 0건");
+        assertThat(builder.summary(view(noNews))).contains("수집 완료 · 게시물 23건 확인 · 새 소식 없음 · 새 푸시 대상 0건");
         assertThat(skipped.text()).isEqualTo("[개발] 치이카와 신상 소식 · 목요일 수집을 건너뜀: 이미 수집 중인 회차가 있음");
         assertThat(skipped.blocks()).hasSize(1);
     }
@@ -248,7 +250,7 @@ class NewsSlackMessageBuilderTest {
         NewsBatch batch = batch(false);
         batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, warnings);
 
-        SlackMessage message = builder.build(new NewsRunResult.Finished(batch, candidates, NewsRunResult.Stats.NONE));
+        SlackMessage message = builder.build(new NewsRunResult.Finished(batch, candidates, null));
 
         assertThat(message.blocks().size()).isLessThanOrEqualTo(50);
         for (JsonNode block : message.blocks()) {
@@ -257,10 +259,136 @@ class NewsSlackMessageBuilderTest {
         assertThat(text(message)).contains("… 외 70건").contains("… 외 25건");
     }
 
+    @Test
+    @DisplayName("승인 대기 중에는 '승인 n/2' 진행과 승인한 사람을 보여주고, 첫 표 이후 변경이 있었다면 그 사람도 보여준다")
+    void showsApprovalProgress() {
+        NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
+        NewsBatch batch = batch(false);
+        batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+
+        String none = text(builder.render(new BatchView(batch, List.of(pushTarget), List.of(), Set.of())));
+        batch.markChangedAfterVote("U01CHANGER");
+        String changed = text(builder.render(new BatchView(batch, List.of(pushTarget), List.of("U01VOTER1"), Set.of())));
+
+        assertThat(none).contains("*승인 0/2*").doesNotContain("승인 후 변경");
+        assertThat(changed).contains("*승인 1/2* · <@U01VOTER1>").contains("⚠️ 승인 후 변경 · <@U01CHANGER>");
+    }
+
+    @Test
+    @DisplayName("제외한 소식은 취소선과 [되돌리기] 버튼으로 보여주고, 새 푸시 대상과 탭 공개 대상에서 빼며 제외 수를 알린다")
+    void showsExcludedWithUndoButton() {
+        NewsCandidate kept = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "남김", null, null, "https://x.com/a/status/1", true);
+        NewsCandidate excluded = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "뺌", null, null, "https://x.com/a/status/2", true);
+        NewsBatch batch = batch(false);
+        batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        BatchView view = new BatchView(batch, List.of(kept, excluded), List.of(), Set.of(excluded.linkKey()));
+
+        SlackMessage message = builder.render(view);
+
+        assertThat(builder.summary(view)).contains("새 푸시 대상 1건 · 탭 공개 대상 1건").contains("제외 1건");
+        assertThat(text(message)).contains("~• [발매 11/12(목)] 뺌 · 한국 매장 · <https://x.com/a/status/2|게시물>~ · 제외됨");
+        List<JsonNode> accessories = new ArrayList<>();
+        message.blocks().forEach(block -> {
+            if (block.has("accessory")) {
+                accessories.add(block.path("accessory"));
+            }
+        });
+        assertThat(accessories).extracting(button -> button.path("action_id").asString(), button -> button.path("value").asString())
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.api.Assertions.tuple("news_exclude", "7:" + kept.getId()),
+                        org.assertj.core.api.Assertions.tuple("news_undo_exclude", "7:" + excluded.getId()));
+    }
+
+    @Test
+    @DisplayName("제외한 소식 때문에 푸시 대상이 0건이 되면 [승인(탭만 공개)]로 바꾸고 테스트 발송 버튼을 뺀다")
+    void allPushTargetsExcluded() {
+        NewsCandidate excluded = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "뺌", null, null, "https://x.com/a/status/2", true);
+        NewsBatch batch = batch(false);
+        batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+
+        SlackMessage message = builder.render(new BatchView(batch, List.of(excluded), List.of(), Set.of(excluded.linkKey())));
+
+        JsonNode actions = message.blocks().get(message.blocks().size() - 1);
+        assertThat(actions.path("elements")).hasSize(2);
+        assertThat(actions.path("elements").get(0).path("text").path("text").asString()).isEqualTo("승인(탭만 공개)");
+        assertThat(actions.path("elements").get(1).path("action_id").asString()).isEqualTo("news_recollect");
+    }
+
+    @Test
+    @DisplayName("승인되면 버튼 없이 승인한 사람과 발송 예정 시각(또는 탭 공개)을 보여준다")
+    void showsApprovedState() {
+        NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
+        NewsBatch scheduled = batch(false);
+        scheduled.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        scheduled.approve(LocalDateTime.of(2026, 11, 12, 22, 0), LocalDateTime.of(2026, 11, 13, 8, 0));
+        NewsBatch tabOnly = batch(false);
+        tabOnly.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        tabOnly.approve(LocalDateTime.of(2026, 11, 12, 22, 0), null);
+
+        SlackMessage withPush = builder.render(new BatchView(scheduled, List.of(pushTarget), List.of("U1", "U2"), Set.of()));
+        SlackMessage withoutPush = builder.render(new BatchView(tabOnly, List.of(), List.of("U1", "U2"), Set.of()));
+
+        assertThat(text(withPush)).contains("✅ *승인됨* · <@U1>, <@U2> · 발송 예정 11/13(금) 08:00").doesNotContain("[승인]");
+        assertThat(text(withoutPush)).contains("✅ *승인됨* · <@U1>, <@U2> · 탭에 공개됨");
+        List.of(withPush, withoutPush).forEach(message -> message.blocks().forEach(block -> {
+            assertThat(block.has("accessory")).isFalse();
+            assertThat(block.path("type").asString()).isNotEqualTo("actions");
+        }));
+    }
+
+    @Test
+    @DisplayName("만료된 회차는 버튼 없이 '만료됨 · N건은 다음 묶음으로 이월'을, 버려진 회차는 다시 수집 안내를 보여준다")
+    void showsExpiredAndDiscardedState() {
+        NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
+        NewsBatch expired = batch(false);
+        expired.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        expired.expire();
+        NewsBatch discarded = batch(false);
+        discarded.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        discarded.discard();
+
+        SlackMessage expiredMessage = builder.renderExpired(new BatchView(expired, List.of(pushTarget), List.of(), Set.of()), 3);
+        SlackMessage discardedMessage = builder.render(new BatchView(discarded, List.of(pushTarget), List.of(), Set.of()));
+
+        assertThat(text(expiredMessage)).contains("⏰ *만료됨* · 3건은 다음 묶음으로 이월");
+        assertThat(text(discardedMessage)).contains("🔁 *다시 수집으로 버려짐*");
+        List.of(expiredMessage, discardedMessage).forEach(message -> message.blocks().forEach(block -> {
+            assertThat(block.has("accessory")).isFalse();
+            assertThat(block.path("type").asString()).isNotEqualTo("actions");
+        }));
+    }
+
+    @Test
+    @DisplayName("이월된 후보에는 '이월'을 표시한다")
+    void marksCarriedCandidates() {
+        NewsCandidate origin = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "지난번 소식", null, null, "https://x.com/a/status/1", true);
+        NewsCandidate carried = origin.carryTo(7L);
+
+        String text = text(builder.build(finished(false, true, List.of(carried))));
+
+        assertThat(text).contains("• [발매 11/12(목)] 지난번 소식 · 한국 매장 · <https://x.com/a/status/1|게시물> · 이월");
+    }
+
+    @Test
+    @DisplayName("승인 안내 문구는 설정한 승인 인원 수를 따른다")
+    void followsRequiredApprovalsSetting() {
+        NewsSlackMessageBuilder solo = new NewsSlackMessageBuilder(NewsFixtures.properties(false, "", 40, 0.6, 1),
+                JsonMapper.builder().build());
+        NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
+
+        String text = text(solo.build(finished(false, true, List.of(pushTarget))));
+
+        assertThat(text).contains("*승인 0/1*").contains("서로 다른 1명이 [승인]을 누르면 승인됩니다");
+    }
+
+    private BatchView view(final NewsRunResult.Finished result) {
+        return new BatchView(result.batch(), result.candidates(), List.of(), Set.of());
+    }
+
     private NewsRunResult.Finished finished(final boolean dryRun, final boolean collected, final List<NewsCandidate> candidates) {
         NewsBatch batch = batch(dryRun);
         batch.complete(collected ? Set.of("chiikawashop_kr", "chiikawa_kouhou") : Set.of(), true, USAGE, List.of());
-        return new NewsRunResult.Finished(batch, candidates, NewsRunResult.Stats.NONE);
+        return new NewsRunResult.Finished(batch, candidates, null);
     }
 
     private NewsBatch batch(final boolean dryRun) {

@@ -64,16 +64,17 @@ class SlackInteractionControllerTest {
     }
 
     @Test
-    @DisplayName("서명이 맞고 승인자가 누르면 200 으로 바로 응답하고, 그 사람에게만 보이는 안내를 보낸다")
+    @DisplayName("서명이 맞고 승인자가 누르면 200 으로 바로 응답하고, 버튼 처리 결과를 그 사람에게만 보이는 안내로 보낸다")
     void acceptsSignedRequestFromApprover() {
-        String body = body("U_APPROVER", "news_approve", "7");
+        // 없는 회차라서 처리 결과가 '찾을 수 없는 소식' 안내로 돌아온다. 요청이 서명 검증을 지나 실제 처리까지 닿았는지 본다
+        String body = body("U_APPROVER", "news_approve", "999999999");
 
         ExtractableResponse<Response> response = post(body, now(), sign(now(), body));
 
         assertThat(response.statusCode()).isEqualTo(HttpStatus.OK.value());
         then(slackClient).should(timeout(3000)).postEphemeral(
                 org.mockito.ArgumentMatchers.eq("C0NEWS"), org.mockito.ArgumentMatchers.eq("U_APPROVER"),
-                org.mockito.ArgumentMatchers.contains("news_approve"));
+                org.mockito.ArgumentMatchers.contains("찾을 수 없는 소식"));
     }
 
     @Test

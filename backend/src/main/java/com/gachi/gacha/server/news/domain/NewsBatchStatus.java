@@ -1,10 +1,11 @@
 package com.gachi.gacha.server.news.domain;
 
 /**
- * 수집 회차의 상태. 승인과 발송 상태는 그 기능을 만들 때 추가한다.
+ * 수집 회차의 상태. 발송 상태(SENDING, SENT 등)는 발송을 만들 때 추가한다.
  *
  * <pre>
- * COLLECTING ─┬─ AWAITING_APPROVAL ─┬─ EXPIRED    (다음 수집이 시작됨)
+ * COLLECTING ─┬─ AWAITING_APPROVAL ─┬─ APPROVED   (서로 다른 N명이 [승인]. 푸시 대상이 있으면 발송 예정, 없으면 공개로 끝)
+ *             │                     ├─ EXPIRED    (다음 수집이 시작됨)
  *             │                     └─ DISCARDED  ([다시 수집]으로 버림)
  *             ├─ NO_NEWS   (공개할 소식 없음)
  *             └─ FAILED    (모든 호출 실패, 또는 수집 중 서버가 멈춤)
@@ -14,6 +15,7 @@ public enum NewsBatchStatus {
 
     COLLECTING,
     AWAITING_APPROVAL,
+    APPROVED,
     NO_NEWS,
     FAILED,
     EXPIRED,

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.gachi.gacha.server.news.domain.CollectTarget;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +54,30 @@ class NewsPropertiesTest {
     }
 
     @Test
+    @DisplayName("승인은 서로 다른 2명, 푸시는 08:00~21:00 에 하루 1건·주 3건이 기본이고, 승인 인원은 환경변수로 낮출 수 있다")
+    void approvalAndSendDefaults() {
+        NewsProperties defaults = bind(Map.of());
+        NewsProperties solo = bind(Map.of("NEWS_REQUIRED_APPROVALS", "1"));
+
+        assertThat(defaults.requiredApprovals()).isEqualTo(2);
+        assertThat(defaults.send()).isEqualTo(new NewsProperties.Send(LocalTime.of(8, 0), LocalTime.of(21, 0), 1, 3));
+        assertThat(solo.requiredApprovals()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("승인 인원이 1 미만이면 앱이 뜨지 않는다")
+    void rejectsNonPositiveRequiredApprovals() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> bind(Map.of("NEWS_REQUIRED_APPROVALS", "0")))
+                .hasRootCauseMessage("news.required-approvals 는 1 이상이어야 한다: 0");
+    }
+
+    @Test
     @DisplayName("치이카와 대상은 스크립트와 같고, 월요일은 한국 계정만·목요일은 한국·일본 계정을 설정 순서대로 고른다")
     void chiikawaTargetsAndRuns() {
         NewsProperties.Topic chiikawa = bind(Map.of()).topic("CHIIKAWA").orElseThrow();
 
         assertThat(chiikawa.displayName()).isEqualTo("치이카와");
-        assertThat(chiikawa.promptVersion()).isEqualTo("chiikawa-v2");
+        assertThat(chiikawa.promptVersion()).isEqualTo("chiikawa-v2.1");
         assertThat(chiikawa.storeHours()).isEqualTo("10:30 ~ 22:00");
         assertThat(chiikawa.targets()).containsExactly(
                 new CollectTarget("KR_shop", "chiikawashop_kr", 2, true, ""),

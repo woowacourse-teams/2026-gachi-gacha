@@ -2,6 +2,7 @@ package com.gachi.gacha.server.news.domain;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -33,4 +34,10 @@ public interface NewsItemJpaRepository extends JpaRepository<NewsItem, Long> {
             @Param("hideBefore") LocalDate hideBefore,
             @Param("hideBeforeAt") LocalDateTime hideBeforeAt
     );
+
+    /**
+     * 이미 공개된 링크. 같은 링크의 소식이 다시 수집돼도 승인 요청에 올리지 않으려고 찾는다.
+     */
+    @Query("select item.linkKey from NewsItem item where item.topic = :topic and item.linkKey in :linkKeys")
+    List<String> findPublishedLinkKeys(@Param("topic") String topic, @Param("linkKeys") Collection<String> linkKeys);
 }

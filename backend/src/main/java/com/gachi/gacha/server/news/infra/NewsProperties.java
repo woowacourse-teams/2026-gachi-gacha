@@ -2,6 +2,7 @@ package com.gachi.gacha.server.news.infra;
 
 import com.gachi.gacha.server.news.domain.CollectTarget;
 import java.time.Duration;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,6 +22,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param environmentLabel 슬랙 메시지 맨 앞 표시 (예: [개발]). 운영은 빈 값이다
  * @param zone             진행 상태 판단에 쓰는 시간대
  * @param hideEndedAfterDays 끝난 소식을 목록에서 숨기기까지의 일수. 종료일이 없으면 시작일(없으면 공개일) 기준이다
+ * @param requiredApprovals  승인에 필요한 서로 다른 승인자 수
+ * @param send               푸시 발송 허용 시간과 상한
  * @param topics           주제(IP)별 설정. 키가 주제 값이다 (예: CHIIKAWA)
  */
 @ConfigurationProperties("news")
@@ -30,6 +33,8 @@ public record NewsProperties(
         @Nullable String environmentLabel,
         @DefaultValue("Asia/Seoul") ZoneId zone,
         @DefaultValue("30") int hideEndedAfterDays,
+        @DefaultValue("2") int requiredApprovals,
+        @DefaultValue Send send,
         @DefaultValue Collect collect,
         @DefaultValue Xai xai,
         @DefaultValue Slack slack,
@@ -40,6 +45,9 @@ public record NewsProperties(
         environmentLabel = environmentLabel == null ? "" : environmentLabel.strip();
         topics = topics == null ? Map.of() : Map.copyOf(topics);
         topics.forEach(Topic::validate);
+        if (requiredApprovals < 1) {
+            throw new IllegalStateException("news.required-approvals 는 1 이상이어야 한다: " + requiredApprovals);
+        }
     }
 
     public Optional<Topic> topic(final String topic) {
@@ -92,6 +100,20 @@ public record NewsProperties(
             @DefaultValue("40") int maxCallsPerRun,
             @DefaultValue("0.6") double maxCostUsd,
             @DefaultValue("6h") Duration stuckAfter
+    ) {
+    }
+
+    /**
+     * @param windowStart 푸시를 보낼 수 있는 시작 시각(시간대는 news.zone)
+     * @param windowEnd   푸시를 보낼 수 있는 끝 시각. 이 시각부터는 보내지 않는다
+     * @param dailyLimit  하루에 보낼 수 있는 푸시 수
+     * @param weeklyLimit 한 주(월~일)에 보낼 수 있는 푸시 수
+     */
+    public record Send(
+            @DefaultValue("08:00") LocalTime windowStart,
+            @DefaultValue("21:00") LocalTime windowEnd,
+            @DefaultValue("1") int dailyLimit,
+            @DefaultValue("3") int weeklyLimit
     ) {
     }
 

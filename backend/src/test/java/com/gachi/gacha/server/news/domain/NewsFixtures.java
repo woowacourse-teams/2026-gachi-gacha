@@ -3,6 +3,7 @@ package com.gachi.gacha.server.news.domain;
 import com.gachi.gacha.server.news.infra.NewsProperties;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
@@ -58,12 +59,35 @@ public final class NewsFixtures {
             final String environmentLabel,
             final int maxCallsPerRun,
             final double maxCostUsd,
+            final int requiredApprovals
+    ) {
+        return properties(dryRun, environmentLabel, maxCallsPerRun, maxCostUsd, requiredApprovals,
+                new NewsProperties.Slack(null, "C0NEWS", null, List.of("U_APPROVER:12")));
+    }
+
+    public static NewsProperties properties(
+            final boolean dryRun,
+            final String environmentLabel,
+            final int maxCallsPerRun,
+            final double maxCostUsd,
+            final NewsProperties.Slack slack
+    ) {
+        return properties(dryRun, environmentLabel, maxCallsPerRun, maxCostUsd, 2, slack);
+    }
+
+    public static NewsProperties properties(
+            final boolean dryRun,
+            final String environmentLabel,
+            final int maxCallsPerRun,
+            final double maxCostUsd,
+            final int requiredApprovals,
             final NewsProperties.Slack slack
     ) {
         NewsProperties.Topic chiikawa = new NewsProperties.Topic("치이카와", "ちいかわ", "news/prompts/chiikawa",
                 "chiikawa-v2", "10:30 ~ 22:00", List.of(KR_SHOP, JP_KOUHOU),
                 Map.of("THURSDAY", List.of("KR_shop", "JP_kouhou")));
-        return new NewsProperties(false, dryRun, environmentLabel, ZoneId.of("Asia/Seoul"), 30,
+        return new NewsProperties(false, dryRun, environmentLabel, ZoneId.of("Asia/Seoul"), 30, requiredApprovals,
+                new NewsProperties.Send(LocalTime.of(8, 0), LocalTime.of(21, 0), 1, 3),
                 new NewsProperties.Collect(7, 14, maxCallsPerRun, maxCostUsd, Duration.ofHours(6)),
                 new NewsProperties.Xai("https://api.x.ai/v1", "key", "grok-4.3", Duration.ofSeconds(10),
                         Duration.ofSeconds(300), 2, 3),

@@ -46,6 +46,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class NewsCollectService {
 
+    public static final String RECOLLECT = "RECOLLECT";
+
     private static final int MAX_ATTEMPTS = 1 + RetryBackoff.MAX_RETRIES;
 
     private final NewsBatchService batchService;
@@ -58,12 +60,36 @@ public class NewsCollectService {
     private final NewsProperties properties;
     private final Clock clock;
 
+    /**
+     * 정기 수집. 그 일정(runName)에 설정한 계정을 수집한다.
+     */
     public NewsRunResult collect(final String topic, final String runName) {
-        NewsProperties.Topic config = properties.topic(topic)
-                .orElseThrow(() -> new IllegalArgumentException("없는 신상 소식 주제: " + topic));
+        NewsProperties.Topic config = topicConfig(topic);
+        return collect(topic, runName, config.targetsOf(runName), config);
+    }
+
+    /**
+     * [다시 수집]. 버린 회차와 같은 계정을 같은 기간(버린 회차는 수집한 것으로 보지 않는다)으로 다시 수집한다.
+     */
+    public NewsRunResult recollect(final String topic, final List<String> handles) {
+        NewsProperties.Topic config = topicConfig(topic);
+        List<CollectTarget> targets = config.targets().stream().filter(target -> handles.contains(target.handle())).toList();
+        return collect(topic, RECOLLECT, targets, config);
+    }
+
+    private NewsProperties.Topic topicConfig(final String topic) {
+        return properties.topic(topic).orElseThrow(() -> new IllegalArgumentException("없는 신상 소식 주제: " + topic));
+    }
+
+    private NewsRunResult collect(
+            final String topic,
+            final String runName,
+            final List<CollectTarget> targets,
+            final NewsProperties.Topic config
+    ) {
         Optional<Started> started;
         try {
-            started = batchService.begin(topic, runName, config, todayUtc());
+            started = batchService.begin(topic, runName, targets, config, todayUtc());
         } catch (DataIntegrityViolationException e) {
             return skipped(topic, runName, "같은 주제의 다른 수집이 동시에 시작됨");
         }
@@ -90,7 +116,7 @@ public class NewsCollectService {
             }
             NewsPostProcessor.Result result = postProcessor.process(progress.merged, todayKst(), config.storeHours());
             NewsRunResult.Finished finished = batchService.complete(start.batchId(), result, collected, progress.usage,
-                    progress.warnings, progress.skippedPosts, progress.discarded);
+                    progress.warnings, progress.skippedPosts, progress.discarded).withExpired(start.expired());
             log.info("신상 소식 수집 완료. batchId = {}, 상태 = {}, 수집한 계정 = {}/{}, 비용 = ${}",
                     start.batchId(), finished.batch().getStatus(), collected.size(), start.periods().size(),
                     progress.usage.formattedCostUsd());
@@ -175,7 +201,8 @@ public class NewsCollectService {
     private NewsRunResult fail(final Started start, final Progress progress, final String reason) {
         List<String> warnings = new ArrayList<>(progress.warnings);
         warnings.add(reason);
-        NewsRunResult.Finished finished = batchService.fail(start.batchId(), progress.usage, warnings);
+        NewsRunResult.Finished finished = batchService.fail(start.batchId(), progress.usage, warnings)
+                .withExpired(start.expired());
         log.warn("신상 소식 수집 실패. batchId = {}, 원인 = {}", start.batchId(), reason);
         return finished;
     }

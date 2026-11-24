@@ -78,7 +78,7 @@ class NewsCollectServiceTest {
 
     @BeforeEach
     void setUp() {
-        given(batchService.begin(eq(TOPIC), eq(RUN), any(), eq(TODAY))).willReturn(Optional.of(started()));
+        given(batchService.begin(eq(TOPIC), eq(RUN), anyList(), any(), eq(TODAY))).willReturn(Optional.of(started()));
         given(batchService.complete(anyLong(), any(), anySet(), any(), anyList(), anyInt(), anyInt()))
                 .willAnswer(invocation -> finished());
         given(batchService.fail(anyLong(), any(), anyList())).willAnswer(invocation -> finished());
@@ -304,7 +304,7 @@ class NewsCollectServiceTest {
         @Test
         @DisplayName("이미 수집 중인 회차가 있으면 호출하지 않고 건너뜀으로 알린다")
         void skipsWhenAlreadyCollecting() {
-            given(batchService.begin(eq(TOPIC), eq(RUN), any(), any())).willReturn(Optional.empty());
+            given(batchService.begin(eq(TOPIC), eq(RUN), anyList(), any(), any())).willReturn(Optional.empty());
 
             NewsRunResult result = service().collect(TOPIC, RUN);
 
@@ -315,7 +315,7 @@ class NewsCollectServiceTest {
         @Test
         @DisplayName("다른 곳에서 동시에 회차를 시작했으면 (진행 중 회차 유니크 제약) 건너뜀으로 알린다")
         void skipsOnConcurrentStart() {
-            given(batchService.begin(eq(TOPIC), eq(RUN), any(), any()))
+            given(batchService.begin(eq(TOPIC), eq(RUN), anyList(), any(), any()))
                     .willThrow(new DataIntegrityViolationException("uk_news_batch_active"));
 
             assertThat(service().collect(TOPIC, RUN)).isInstanceOf(NewsRunResult.Skipped.class);
@@ -337,13 +337,13 @@ class NewsCollectServiceTest {
 
     private Started started() {
         return new Started(7L, TOPIC, RUN, List.of(NewsFixtures.KR_SHOP, NewsFixtures.JP_KOUHOU), List.of(
-                CollectPeriod.notCollected(SHOP, FROM, TODAY), CollectPeriod.notCollected(KOUHOU, FROM, TODAY)));
+                CollectPeriod.notCollected(SHOP, FROM, TODAY), CollectPeriod.notCollected(KOUHOU, FROM, TODAY)), null);
     }
 
     private NewsRunResult.Finished finished() {
         NewsBatch batch = NewsBatch.start(TOPIC, RUN, started().periods(), false, "chiikawa-v2");
         ReflectionTestUtils.setField(batch, "id", 7L);
-        return new NewsRunResult.Finished(batch, List.of(), NewsRunResult.Stats.NONE);
+        return new NewsRunResult.Finished(batch, List.of(), null);
     }
 
     private Set<String> capturedHandles() {

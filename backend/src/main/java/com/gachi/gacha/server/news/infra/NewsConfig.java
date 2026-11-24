@@ -2,6 +2,7 @@ package com.gachi.gacha.server.news.infra;
 
 import com.gachi.gacha.server.news.domain.CollectionPlanner;
 import com.gachi.gacha.server.news.domain.NewsPostProcessor;
+import com.gachi.gacha.server.news.domain.NewsSendPolicy;
 import java.time.Clock;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,12 @@ public class NewsConfig {
     @Bean
     public NewsPostProcessor newsPostProcessor() {
         return new NewsPostProcessor();
+    }
+
+    @Bean
+    public NewsSendPolicy newsSendPolicy(final NewsProperties properties) {
+        NewsProperties.Send send = properties.send();
+        return new NewsSendPolicy(properties.zone(), send.windowStart(), send.windowEnd(), send.dailyLimit(), send.weeklyLimit());
     }
 
     @Bean

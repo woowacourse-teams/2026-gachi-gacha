@@ -3,13 +3,18 @@ package com.gachi.gacha.server.news.infra;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.gachi.gacha.server.news.application.NewsApprovalService;
 import com.gachi.gacha.server.news.application.NewsBatchService;
 import com.gachi.gacha.server.news.application.NewsCollectService;
 import com.gachi.gacha.server.news.application.NewsInteractionService;
 import com.gachi.gacha.server.news.application.NewsScheduler;
 import com.gachi.gacha.server.news.application.NewsSlackMessageBuilder;
+import com.gachi.gacha.server.news.application.NewsSlackReporter;
 import com.gachi.gacha.server.news.domain.NewsBatchJpaRepository;
+import com.gachi.gacha.server.news.domain.NewsApprovalJpaRepository;
 import com.gachi.gacha.server.news.domain.NewsCandidateJpaRepository;
+import com.gachi.gacha.server.news.domain.NewsExclusionJpaRepository;
+import com.gachi.gacha.server.news.domain.NewsItemJpaRepository;
 import com.gachi.gacha.server.news.presentation.SlackInteractionController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,7 +52,7 @@ class NewsWiringTest {
             assertThat(context).hasSingleBean(NewsCollectService.class).hasSingleBean(NewsSlackMessageBuilder.class)
                     .hasSingleBean(NewsBatchService.class);
             assertThat(context).doesNotHaveBean(NewsScheduler.class).doesNotHaveBean(NewsInteractionService.class)
-                    .doesNotHaveBean(SlackInteractionController.class);
+                    .doesNotHaveBean(NewsSlackReporter.class).doesNotHaveBean(SlackInteractionController.class);
         });
     }
 
@@ -58,7 +63,7 @@ class NewsWiringTest {
                 "news.slack.bot-token=t", "news.slack.channel-id=C1").run(context -> {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(NewsScheduler.class).hasSingleBean(NewsInteractionService.class)
-                    .hasSingleBean(SlackInteractionController.class);
+                    .hasSingleBean(NewsSlackReporter.class).hasSingleBean(SlackInteractionController.class);
         });
     }
 
@@ -74,8 +79,9 @@ class NewsWiringTest {
 
     @Configuration
     @EnableConfigurationProperties(NewsProperties.class)
-    @Import({NewsConfig.class, NewsBatchService.class, NewsCollectService.class, NewsSlackMessageBuilder.class,
-            NewsScheduler.class, NewsInteractionService.class, SlackInteractionController.class})
+    @Import({NewsConfig.class, NewsBatchService.class, NewsApprovalService.class, NewsCollectService.class,
+            NewsSlackMessageBuilder.class, NewsSlackReporter.class, NewsScheduler.class, NewsInteractionService.class,
+            SlackInteractionController.class})
     static class Beans {
 
         @Bean
@@ -96,6 +102,21 @@ class NewsWiringTest {
         @Bean
         NewsCandidateJpaRepository candidateRepository() {
             return mock(NewsCandidateJpaRepository.class);
+        }
+
+        @Bean
+        NewsItemJpaRepository itemRepository() {
+            return mock(NewsItemJpaRepository.class);
+        }
+
+        @Bean
+        NewsExclusionJpaRepository exclusionRepository() {
+            return mock(NewsExclusionJpaRepository.class);
+        }
+
+        @Bean
+        NewsApprovalJpaRepository approvalRepository() {
+            return mock(NewsApprovalJpaRepository.class);
         }
     }
 }

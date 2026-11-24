@@ -163,6 +163,61 @@ class NewsBatchTest {
         assertThatThrownBy(batch::discard).isInstanceOf(NewsBatchStateException.class);
     }
 
+    @Test
+    @DisplayName("승인하면 승인됨이 되고 승인 시각과 발송 예정 시각이 남으며, 한 번만 승인된다. 승인된 회차는 이월하지 않는다")
+    void approvesOnce() {
+        NewsBatch batch = awaiting();
+        LocalDateTime now = LocalDateTime.of(2026, 11, 12, 10, 0);
+
+        batch.approve(now, now.plusHours(1));
+
+        assertThat(batch.getStatus()).isEqualTo(NewsBatchStatus.APPROVED);
+        assertThat(batch.getApprovedAt()).isEqualTo(now);
+        assertThat(batch.getSendAt()).isEqualTo(now.plusHours(1));
+        assertThat(batch.getStatus().isCarryOverSource()).isFalse();
+        assertThatThrownBy(() -> batch.approve(now, null)).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(batch::expire).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(batch::discard).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(() -> batch.markChangedAfterVote("U1")).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    @Test
+    @DisplayName("푸시 대상이 없으면 발송 예정 시각 없이 승인된다")
+    void approvesWithoutSendAt() {
+        NewsBatch batch = awaiting();
+
+        batch.approve(LocalDateTime.of(2026, 11, 12, 10, 0), null);
+
+        assertThat(batch.getSendAt()).isNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = NewsBatchStatus.class, names = {"NO_NEWS", "FAILED", "EXPIRED", "DISCARDED"})
+    @DisplayName("승인 대기가 아닌 회차는 승인하거나 소식을 바꿀 수 없다")
+    void onlyAwaitingBatchCanBeApprovedOrChanged(final NewsBatchStatus status) {
+        NewsBatch batch = inStatus(status);
+
+        assertThatThrownBy(() -> batch.approve(LocalDateTime.now(), null)).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(() -> batch.markChangedAfterVote("U1")).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    @Test
+    @DisplayName("수집 중인 회차는 승인할 수 없다")
+    void collectingCannotBeApproved() {
+        assertThatThrownBy(() -> twoAccounts().approve(LocalDateTime.now(), null)).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    @Test
+    @DisplayName("표가 들어온 뒤 소식을 바꾼 사람은 마지막 한 명만 기억한다")
+    void remembersLastChanger() {
+        NewsBatch batch = awaiting();
+
+        batch.markChangedAfterVote("U1");
+        batch.markChangedAfterVote("U2");
+
+        assertThat(batch.getChangedAfterVoteBy()).isEqualTo("U2");
+    }
+
     private NewsBatch twoAccounts() {
         return NewsBatch.start("CHIIKAWA", "THURSDAY", List.of(
                 CollectPeriod.notCollected("chiikawashop_kr", FROM, TO),

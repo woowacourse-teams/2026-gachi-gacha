@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 수집 회차. 수집 한 번과 그 결과의 승인·공개·발송 흐름을 관리한다. 상태 전이는 {@link NewsBatchStatus} 를 따른다.
@@ -65,6 +66,19 @@ public class NewsBatch extends BaseTimeEntity {
 
     @Column(length = 30)
     private String slackMessageTs;
+
+    private LocalDateTime approvedAt;
+
+    /**
+     * 푸시를 보낼 예정 시각. 목록 공개 시각도 같다. 푸시 대상이 없으면 null 이고, 이때는 승인한 시각에 바로 공개한다.
+     */
+    private LocalDateTime sendAt;
+
+    /**
+     * 첫 표가 들어온 뒤 [제외]·[되돌리기]를 마지막으로 누른 사람의 슬랙 회원 ID. 다음 승인자가 바뀐 내용을 보고 누르게 한다.
+     */
+    @Column(length = 30)
+    private String changedAfterVoteBy;
 
     @Getter(AccessLevel.NONE)
     @JdbcTypeCode(SqlTypes.JSON)
@@ -184,6 +198,26 @@ public class NewsBatch extends BaseTimeEntity {
     public void discard() {
         requireStatus(NewsBatchStatus.AWAITING_APPROVAL, "다시 수집");
         this.status = NewsBatchStatus.DISCARDED;
+    }
+
+    /**
+     * 승인 표가 모였다. 이 전이는 한 번만 일어난다.
+     *
+     * @param pushSendAt 푸시 발송 예정 시각. 푸시 대상이 없으면 null
+     */
+    public void approve(final LocalDateTime now, @Nullable final LocalDateTime pushSendAt) {
+        requireStatus(NewsBatchStatus.AWAITING_APPROVAL, "승인");
+        this.status = NewsBatchStatus.APPROVED;
+        this.approvedAt = Objects.requireNonNull(now, "now");
+        this.sendAt = pushSendAt;
+    }
+
+    /**
+     * 승인 대기 중에 소식을 제외하거나 되돌렸다. 이미 들어온 표가 있으면 다음 승인자에게 변경이 있었다고 알린다.
+     */
+    public void markChangedAfterVote(final String slackUserId) {
+        requireStatus(NewsBatchStatus.AWAITING_APPROVAL, "소식 변경");
+        this.changedAfterVoteBy = Objects.requireNonNull(slackUserId, "slackUserId");
     }
 
     private void recordUsage(final GrokUsage collectedUsage, final List<String> collectedWarnings) {
