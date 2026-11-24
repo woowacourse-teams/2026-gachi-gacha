@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.gachi.gacha.server.news.domain.NewsCandidate;
 import com.gachi.gacha.server.news.domain.NewsKind;
+import com.gachi.gacha.server.news.domain.NewsReview;
 import com.gachi.gacha.server.news.domain.NewsSection;
 import com.gachi.gacha.server.news.domain.NewsTiming;
 import com.gachi.gacha.server.news.evaluation.NewsEvaluator.Answer;
@@ -125,6 +126,22 @@ class NewsEvaluatorTest {
             assertThat(report.unlistedPushTargets()).extracting(NewsCandidate::linkKey).containsExactly("x:9");
             assertThat(report.missRate()).contains(0.0);
             assertThat(report.meetsMissTarget()).isTrue();
+        }
+
+        @Test
+        @DisplayName("이전 규칙으로 탭 공개로만 저장된 후보도 현재 규칙의 푸시 대상이면 푸시 대상으로 평가한다")
+        void reappliesCurrentPushRuleToStoredTabOnly() {
+            List<Answer> answers = evaluator.parse(HEADER
+                    + answer(1, "japan_official", "release", "2026-11-05T09:00", "2026-11-12", "O")
+                    + answer(2, "japan_official", "notice", "2026-11-05T09:00", "2026-11-12", "O"));
+            NewsCandidate release = candidate(1, NewsSection.JAPAN_OFFICIAL, NewsKind.RELEASE, true, null);
+            NewsCandidate notice = candidate(2, NewsSection.JAPAN_OFFICIAL, NewsKind.NOTICE, true, null);
+            org.springframework.test.util.ReflectionTestUtils.setField(release, "review", NewsReview.TAB_ONLY);
+
+            Report report = evaluator.evaluate(answers, List.of(release, notice));
+
+            assertThat(report.misses()).extracting(miss -> miss.answer().linkKey(), miss -> miss.reason())
+                    .containsExactly(org.assertj.core.api.Assertions.tuple("x:2", MissReason.TAB_ONLY));
         }
 
         @Test

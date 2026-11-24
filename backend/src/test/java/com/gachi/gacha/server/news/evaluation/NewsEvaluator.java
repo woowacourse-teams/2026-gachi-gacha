@@ -93,14 +93,14 @@ public final class NewsEvaluator {
             }
             pushAnswers++;
             NewsCandidate candidate = found.get(answer.linkKey());
-            if (candidate == null || candidate.getReview() != NewsReview.PUSH_TARGET) {
+            if (candidate == null || currentReview(candidate) != NewsReview.PUSH_TARGET) {
                 misses.add(new Miss(answer, missReason(candidate)));
             }
             arrivals.add(arrival(answer));
         }
 
         List<NewsCandidate> pushed = found.values().stream()
-                .filter(candidate -> candidate.getReview() == NewsReview.PUSH_TARGET).toList();
+                .filter(candidate -> currentReview(candidate) == NewsReview.PUSH_TARGET).toList();
         List<NewsCandidate> falsePositives = pushed.stream()
                 .filter(candidate -> answerByKey.containsKey(candidate.linkKey())
                         && !answerByKey.get(candidate.linkKey()).pushTarget()).toList();
@@ -154,11 +154,23 @@ public final class NewsEvaluator {
         return new Arrival(answer, collectedAt, collectedAt.isBefore(answer.startDate().atStartOfDay()));
     }
 
+    /**
+     * 저장된 review 는 수집 당시 푸시 규칙으로 정해졌다. 규칙이 바뀐 뒤에도 이전 회차를 평가할 수 있도록, 공개 대상으로만
+     * 저장된 후보(링크 검증 완료, 끝나지 않음)는 구분과 종류를 현재 규칙으로 다시 본다.
+     */
+    private NewsReview currentReview(final NewsCandidate candidate) {
+        NewsReview stored = candidate.getReview();
+        if (stored == NewsReview.TAB_ONLY && candidate.getSection().isPushTarget() && candidate.getKind().isPushTarget()) {
+            return NewsReview.PUSH_TARGET;
+        }
+        return stored;
+    }
+
     private MissReason missReason(@Nullable final NewsCandidate candidate) {
         if (candidate == null) {
             return MissReason.NOT_COLLECTED;
         }
-        return switch (candidate.getReview()) {
+        return switch (currentReview(candidate)) {
             case NEEDS_CHECK -> MissReason.NEEDS_CHECK;
             case ENDED -> MissReason.ENDED;
             default -> MissReason.TAB_ONLY;
@@ -357,7 +369,7 @@ public final class NewsEvaluator {
         NOT_COLLECTED("수집하지 못함"),
         NEEDS_CHECK("링크를 확인하지 못해 확인 필요로 분류됨"),
         ENDED("종료로 분류됨"),
-        TAB_ONLY("푸시 대상이 아닌 구분(section)으로 분류됨");
+        TAB_ONLY("푸시 대상이 아닌 구분(section)이나 종류(kind)로 분류됨");
 
         private final String label;
 

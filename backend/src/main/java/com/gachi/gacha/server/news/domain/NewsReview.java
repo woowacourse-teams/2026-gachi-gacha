@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
  * 수집한 후보를 승인 요청에서 어떻게 다룰지 나눈 결과.
  *
  * <ul>
- *   <li>PUSH_TARGET: 링크가 검증된, 끝나지 않은 한국 매장·온라인 소식. 승인하면 탭에 공개하고 요약 푸시에 넣는다</li>
+ *   <li>PUSH_TARGET: 링크가 검증된, 끝나지 않은 한국 매장·온라인·일본 공식 소식 중 행동이 필요한 종류(공지·기타 제외). 승인하면 탭에 공개하고 요약 푸시에 넣는다</li>
  *   <li>TAB_ONLY: 링크가 검증된, 끝나지 않은 그 밖의 소식. 승인하면 탭에만 공개한다</li>
  *   <li>NEEDS_CHECK: 링크가 비었거나 응답에서 확인되지 않은 소식. 공개도 푸시도 하지 않고 "확인 필요"로만 보여준다</li>
  *   <li>ENDED: 수집 시점에 이미 끝난 소식. 공개도 푸시도 하지 않고 "지난 소식"으로만 보여준다</li>
@@ -24,6 +24,7 @@ public enum NewsReview {
      */
     public static NewsReview classify(
             final NewsSection section,
+            final NewsKind kind,
             @Nullable final NewsTiming timing,
             @Nullable final Boolean linkVerified,
             @Nullable final String link
@@ -34,7 +35,7 @@ public enum NewsReview {
         if (!Boolean.TRUE.equals(linkVerified) || link == null || link.isBlank()) {
             return NEEDS_CHECK;
         }
-        return section.isPushTarget() ? PUSH_TARGET : TAB_ONLY;
+        return section.isPushTarget() && kind.isPushTarget() ? PUSH_TARGET : TAB_ONLY;
     }
 
     public boolean isPublishable() {

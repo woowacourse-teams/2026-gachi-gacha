@@ -36,11 +36,20 @@ class NewsKindAndSectionTest {
     }
 
     @Test
-    @DisplayName("한국 매장·온라인만 푸시 대상 구분이다")
-    void onlyKoreanSectionsArePushTargets() {
+    @DisplayName("한국 매장·온라인과 일본 공식만 푸시 대상 구분이다")
+    void onlyKoreanAndJapanOfficialSectionsArePushTargets() {
         assertThat(NewsSection.values())
                 .filteredOn(NewsSection::isPushTarget)
-                .containsExactlyInAnyOrder(NewsSection.KOREA_STORE, NewsSection.KOREA_ONLINE);
+                .containsExactlyInAnyOrder(NewsSection.KOREA_STORE, NewsSection.KOREA_ONLINE,
+                        NewsSection.JAPAN_OFFICIAL);
+    }
+
+    @Test
+    @DisplayName("공지와 기타를 뺀 종류가 푸시 대상 종류다")
+    void noticeAndOtherAreNotPushTargetKinds() {
+        assertThat(NewsKind.values())
+                .filteredOn(kind -> !kind.isPushTarget())
+                .containsExactlyInAnyOrder(NewsKind.NOTICE, NewsKind.OTHER);
     }
 
     @ParameterizedTest

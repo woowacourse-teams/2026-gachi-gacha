@@ -44,7 +44,7 @@ class NewsSlackMessageBuilderTest {
                 candidate(NewsSection.KOREA_STORE, NewsKind.NOTICE, "링크 없음", null, null, null, null),
                 candidate(NewsSection.KOREA_STORE, NewsKind.NOTICE, "예약 마감 안내", null, null, "https://x.com/a/status/3", true)));
 
-        assertThat(builder.summary(result)).isEqualTo("목요일 수집 완료 · 게시물 23건 확인 · 새 푸시 대상 1건 · 탭 공개 대상 2건 · "
+        assertThat(builder.summary(result)).isEqualTo("목요일 수집 완료 · 게시물 23건 확인 · 새 푸시 대상 2건 · 탭 공개 대상 2건 · "
                 + "확인 필요 1건 · 비용 $0.1500 · 프롬프트 chiikawa-v2");
     }
 

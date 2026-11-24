@@ -25,7 +25,7 @@ public record CollectedNews(
 ) {
 
     public NewsReview review() {
-        return NewsReview.classify(section, timing, linkVerified, link);
+        return NewsReview.classify(section, kind, timing, linkVerified, link);
     }
 
     /**
