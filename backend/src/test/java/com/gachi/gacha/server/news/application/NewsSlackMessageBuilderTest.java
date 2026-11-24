@@ -17,6 +17,7 @@ import com.gachi.gacha.server.news.domain.NewsTiming;
 import com.gachi.gacha.server.news.infra.SlackClient.SlackMessage;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -320,7 +321,7 @@ class NewsSlackMessageBuilderTest {
         NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
         NewsBatch scheduled = batch(false);
         scheduled.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
-        scheduled.approve(LocalDateTime.of(2026, 11, 12, 22, 0), LocalDateTime.of(2026, 11, 13, 8, 0));
+        scheduled.approve(LocalDateTime.of(2026, 11, 12, 22, 0), serverTime(2026, 11, 13, 8, 0));
         NewsBatch tabOnly = batch(false);
         tabOnly.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
         tabOnly.approve(LocalDateTime.of(2026, 11, 12, 22, 0), null);
@@ -386,12 +387,12 @@ class NewsSlackMessageBuilderTest {
     void showsSendingStates() {
         NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
         NewsBatch sending = scheduledBatch();
-        sending.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        sending.startSending(serverTime(2026, 11, 13, 8, 1));
         NewsBatch sent = scheduledBatch();
-        sent.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        sent.startSending(serverTime(2026, 11, 13, 8, 1));
         sent.finishSending(true);
         NewsBatch failed = scheduledBatch();
-        failed.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        failed.startSending(serverTime(2026, 11, 13, 8, 1));
         failed.finishSending(false);
 
         BatchView failedView = new BatchView(failed, List.of(pushTarget), List.of("U1", "U2"), Set.of());
@@ -406,10 +407,19 @@ class NewsSlackMessageBuilderTest {
                 .blocks().forEach(block -> assertThat(block.path("type").asString()).isNotEqualTo("actions")));
     }
 
+    /**
+     * 시각 컬럼은 서버 기본 시간대로 저장하고 슬랙에는 news.zone(KST)으로 바꿔 보여준다. 서버 시간대가 KST 가 아니어도(CI 는 UTC)
+     * 같은 결과가 나오도록, KST 기준 시각을 서버 시간대의 값으로 바꿔서 넣는다.
+     */
+    private static LocalDateTime serverTime(final int year, final int month, final int day, final int hour, final int minute) {
+        return LocalDateTime.of(year, month, day, hour, minute).atZone(ZoneId.of("Asia/Seoul"))
+                .withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+    }
+
     private NewsBatch scheduledBatch() {
         NewsBatch batch = batch(false);
         batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
-        batch.approve(LocalDateTime.of(2026, 11, 12, 22, 0), LocalDateTime.of(2026, 11, 13, 8, 0));
+        batch.approve(LocalDateTime.of(2026, 11, 12, 22, 0), serverTime(2026, 11, 13, 8, 0));
         return batch;
     }
 
