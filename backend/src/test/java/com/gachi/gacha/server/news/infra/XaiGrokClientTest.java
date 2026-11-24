@@ -93,7 +93,7 @@ class XaiGrokClientTest {
     }
 
     @Test
-    @DisplayName("2xx 가 아니면 상태 코드와 응답 앞부분으로 실패를 알리고, API 키는 메시지에 넣지 않는다")
+    @DisplayName("2xx 가 아니면 상태 코드와 오류 메시지로 실패를 알리고, API 키는 메시지에 넣지 않는다")
     void failsOnErrorStatus() {
         server.expect(requestTo(BASE_URL + "/responses"))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
@@ -102,8 +102,37 @@ class XaiGrokClientTest {
 
         assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
                 .isInstanceOf(XaiGrokClient.CallException.class)
-                .hasMessage("[KR_shop_2026-11-09] HTTP 429 {\"error\":\"rate limited\"}")
+                .hasMessage("[KR_shop_2026-11-09] HTTP 429: rate limited")
                 .hasMessageNotContaining(API_KEY);
+    }
+
+    @Test
+    @DisplayName("xAI 의 긴 오류 응답은 코드와 첫 문장만 남기고 안내 링크는 뺀다")
+    void summarizesXaiErrorBody() {
+        server.expect(requestTo(BASE_URL + "/responses"))
+                .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"code\":\"resource-exhausted\",\"error\":\"The model is currently at capacity due to high demand. "
+                                + "Please try again in a few minutes, or use a higher service tier: https://docs.x.ai/developers/priority\"}"));
+
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3))
+                .hasMessage("[KR_shop_2026-11-09] HTTP 429 resource-exhausted: The model is currently at capacity due to high demand.");
+    }
+
+    @Test
+    @DisplayName("error 가 객체인 응답은 그 안의 message 를 쓰고, JSON 이 아니거나 메시지가 없으면 응답 앞부분을 그대로 쓴다")
+    void summarizesNestedAndNonJsonErrorBody() {
+        server.expect(requestTo(BASE_URL + "/responses"))
+                .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.APPLICATION_JSON)
+                        .body("{\"error\":{\"message\":\"Invalid from_date\",\"type\":\"invalid_request\"}}"));
+        server.expect(requestTo(BASE_URL + "/responses"))
+                .andRespond(withStatus(HttpStatus.BAD_GATEWAY).body("<html>Bad Gateway</html>"));
+        server.expect(requestTo(BASE_URL + "/responses"))
+                .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE).contentType(MediaType.APPLICATION_JSON).body("{\"status\":\"down\"}"));
+
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3)).hasMessage("[KR_shop_2026-11-09] HTTP 400: Invalid from_date");
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3)).hasMessage("[KR_shop_2026-11-09] HTTP 502 <html>Bad Gateway</html>");
+        assertThatThrownBy(() -> client.respond(call(), "시스템", "사용자", 3)).hasMessage("[KR_shop_2026-11-09] HTTP 503 {\"status\":\"down\"}");
     }
 
     @Test

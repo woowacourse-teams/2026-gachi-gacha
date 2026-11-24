@@ -3,6 +3,7 @@ package com.gachi.gacha.server.news.infra;
 import com.gachi.gacha.server.news.domain.CollectCall;
 import java.time.Duration;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -11,6 +12,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -35,6 +37,8 @@ import tools.jackson.databind.node.ObjectNode;
 public class XaiGrokClient {
 
     private static final int ERROR_PREVIEW_LENGTH = 300;
+    private static final int MESSAGE_LENGTH = 150;
+    private static final Pattern URL = Pattern.compile("https?://\\S+");
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -76,7 +80,7 @@ public class XaiGrokClient {
         } catch (HttpStatusCodeException e) {
             int status = e.getStatusCode().value();
             boolean retryable = status == 429 || status >= 500;
-            throw new CallException("[" + call.label() + "] HTTP " + status + " " + preview(e.getResponseBodyAsString()),
+            throw new CallException("[" + call.label() + "] HTTP " + status + errorSummary(e.getResponseBodyAsString()),
                     retryable, RetryBackoff.retryAfter(e.getResponseHeaders()), false);
         } catch (ResourceAccessException e) {
             throw new CallException("[" + call.label() + "] 호출 실패 (네트워크/타임아웃)", true, null, true);
@@ -104,6 +108,28 @@ public class XaiGrokClient {
         }
         body.put("max_turns", maxTurns);
         return body;
+    }
+
+    /**
+     * 오류 응답에서 사람이 읽을 부분만 뽑는다. 예) {"code":"resource-exhausted","error":"The model is ... Please try ... https://..."}
+     * → " resource-exhausted: The model is currently at capacity due to high demand."
+     * 실행 보고에 그대로 올라가므로 첫 문장만 남기고 안내 링크는 뺀다. JSON 이 아니거나 메시지가 없으면 응답 앞부분을 그대로 쓴다.
+     */
+    private String errorSummary(final String responseBody) {
+        try {
+            JsonNode json = objectMapper.readTree(responseBody == null ? "" : responseBody);
+            JsonNode error = json.path("error");
+            String message = error.isObject() ? error.path("message").asString("") : error.asString("");
+            String firstSentence = URL.matcher(message).replaceAll("").strip().split("(?<=[.!?])\\s", 2)[0].strip();
+            if (firstSentence.isEmpty()) {
+                return " " + preview(responseBody);
+            }
+            String code = json.path("code").asString("");
+            return (code.isEmpty() ? "" : " " + code) + ": "
+                    + (firstSentence.length() > MESSAGE_LENGTH ? firstSentence.substring(0, MESSAGE_LENGTH) + "…" : firstSentence);
+        } catch (RuntimeException e) {
+            return " " + preview(responseBody);
+        }
     }
 
     private String preview(final String responseBody) {
