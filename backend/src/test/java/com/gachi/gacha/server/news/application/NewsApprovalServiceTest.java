@@ -175,15 +175,16 @@ class NewsApprovalServiceTest {
         @Test
         @DisplayName("수집한 뒤 승인까지 사이에 끝난 소식, 이미 공개된 링크, 확인 필요 소식은 공개하지 않는다")
         void doesNotPublishEndedPublishedOrUnverified() {
+            NewsBatch older = batchRepository.saveAndFlush(NewsBatch.start(TOPIC, "THURSDAY", periods(), false, "v"));
+            older.complete(Set.of("chiikawashop_kr"), true, GrokUsage.NONE, List.of());
+            older.expire();
+            batchRepository.flush();
+            NewsCandidate publishedBefore = candidate(older, NewsSection.KOREA_STORE, "이미 공개", "x:4", FUTURE, null, true, null);
+            itemRepository.save(NewsItem.publish(TOPIC, publishedBefore, LocalDateTime.now()));
             NewsBatch batch = awaitingBatch();
             NewsCandidate fine = push(batch, "정상", "x:1");
             candidate(batch, NewsSection.KOREA_STORE, "그 사이 끝남", "x:2", PAST, PAST, true, NewsTiming.UPCOMING);
             candidate(batch, NewsSection.KOREA_STORE, "링크 미확인", "x:3", FUTURE, null, false, null);
-            NewsBatch older = batchRepository.saveAndFlush(NewsBatch.start(TOPIC, "THURSDAY", periods(), false, "v"));
-            older.complete(Set.of("chiikawashop_kr"), true, GrokUsage.NONE, List.of());
-            older.expire();
-            NewsCandidate publishedBefore = candidate(older, NewsSection.KOREA_STORE, "이미 공개", "x:4", FUTURE, null, true, null);
-            itemRepository.save(NewsItem.publish(TOPIC, publishedBefore, LocalDateTime.now()));
             candidate(batch, NewsSection.KOREA_STORE, "이미 공개된 링크", "x:4", FUTURE, null, true, null);
 
             service.approve(batch.getId(), "U1");
@@ -225,6 +226,7 @@ class NewsApprovalServiceTest {
             push(approved, "푸시", "x:1");
             service.approve(approved.getId(), "U1");
             service.approve(approved.getId(), "U2");
+            entityManager.flush();
             NewsBatch dryRun = batchRepository.saveAndFlush(NewsBatch.start(TOPIC, "THURSDAY", periods(), true, "v"));
             dryRun.complete(Set.of("chiikawashop_kr"), true, GrokUsage.NONE, List.of());
             entityManager.flush();
@@ -279,6 +281,7 @@ class NewsApprovalServiceTest {
             NewsCandidate approvedPush = push(approved, "푸시", "x:1");
             service.approve(approved.getId(), "U1");
             service.approve(approved.getId(), "U2");
+            entityManager.flush();
             NewsBatch open = awaitingBatch();
             NewsCandidate openPush = push(open, "다른 회차 푸시", "x:2");
             NewsCandidate unverified = candidate(open, NewsSection.KOREA_STORE, "링크 미확인", "x:3", FUTURE, null, false, null);
