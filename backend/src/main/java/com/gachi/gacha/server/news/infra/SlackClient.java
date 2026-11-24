@@ -55,6 +55,14 @@ public class SlackClient {
         return response == null ? null : response.path("ts").asString(null);
     }
 
+    /**
+     * 그 사람에게만 보이는 안내. 승인자가 아닌 사람이 버튼을 눌렀을 때 쓴다.
+     */
+    public void postEphemeral(final String channel, final String userId, final String text) {
+        call("chat.postEphemeral", objectMapper.createObjectNode()
+                .put("channel", channel).put("user", userId).put("text", text));
+    }
+
     private @Nullable JsonNode call(final String method, final ObjectNode body) {
         if (botToken == null || botToken.isBlank()) {
             log.info("[슬랙 미발송] 봇 토큰 없음. method = {}, message = {}", method, body);

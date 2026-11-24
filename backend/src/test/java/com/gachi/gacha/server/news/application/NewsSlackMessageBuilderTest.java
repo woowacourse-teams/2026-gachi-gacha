@@ -82,6 +82,98 @@ class NewsSlackMessageBuilderTest {
     }
 
     @Test
+    @DisplayName("승인 요청에는 푸시 대상마다 [제외] 버튼, 맨 아래에 [승인] [다시 수집] [나에게 테스트 발송] 버튼을 단다")
+    void approvalRequestHasButtons() {
+        NewsCandidate first = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "첫째", LocalDate.of(2026, 11, 13), null,
+                "https://x.com/a/status/1", true);
+        NewsCandidate second = candidate(NewsSection.KOREA_ONLINE, NewsKind.RESTOCK, "둘째", LocalDate.of(2026, 11, 20), null,
+                "https://x.com/a/status/2", true);
+        ReflectionTestUtils.setField(first, "id", 101L);
+        ReflectionTestUtils.setField(second, "id", 102L);
+
+        SlackMessage message = builder.build(finished(false, true, List.of(second, first)));
+
+        List<JsonNode> accessories = new ArrayList<>();
+        message.blocks().forEach(block -> {
+            if (block.has("accessory")) {
+                accessories.add(block);
+            }
+        });
+        assertThat(accessories).hasSize(2);
+        assertThat(accessories.getFirst().path("text").path("text").asString()).contains("첫째");
+        assertThat(accessories.getFirst().path("accessory").path("action_id").asString()).isEqualTo("news_exclude");
+        assertThat(accessories.getFirst().path("accessory").path("value").asString()).isEqualTo("7:101");
+        assertThat(accessories.get(1).path("accessory").path("value").asString()).isEqualTo("7:102");
+
+        JsonNode actions = message.blocks().get(message.blocks().size() - 1);
+        assertThat(actions.path("type").asString()).isEqualTo("actions");
+        assertThat(actions.path("elements")).hasSize(3);
+        assertThat(actions.path("elements").get(0).path("text").path("text").asString()).isEqualTo("승인");
+        assertThat(actions.path("elements").get(0).path("action_id").asString()).isEqualTo("news_approve");
+        assertThat(actions.path("elements").get(0).path("value").asString()).isEqualTo("7");
+        assertThat(actions.path("elements").get(1).path("action_id").asString()).isEqualTo("news_recollect");
+        assertThat(actions.path("elements").get(2).path("action_id").asString()).isEqualTo("news_test_send");
+        assertThat(text(message)).contains("서로 다른 2명이 [승인]을 누르면 승인됩니다");
+    }
+
+    @Test
+    @DisplayName("푸시 대상이 없으면 [승인(탭만 공개)] 만 달고, 보낼 푸시가 없으니 [나에게 테스트 발송]은 달지 않는다")
+    void tabOnlyApprovalHasNoTestSend() {
+        SlackMessage message = builder.build(finished(false, true, List.of(candidate(NewsSection.OVERSEAS, NewsKind.POPUP,
+                "하와이 팝업", LocalDate.of(2026, 11, 14), null, "https://x.com/c/status/3", true))));
+
+        JsonNode actions = message.blocks().get(message.blocks().size() - 1);
+        assertThat(actions.path("elements")).hasSize(2);
+        assertThat(actions.path("elements").get(0).path("text").path("text").asString()).isEqualTo("승인(탭만 공개)");
+        assertThat(actions.path("elements").get(1).path("action_id").asString()).isEqualTo("news_recollect");
+    }
+
+    @Test
+    @DisplayName("dry-run 이거나 승인할 소식이 없거나 수집이 실패한 보고에는 버튼을 달지 않는다")
+    void noButtonsOutsideApprovalRequest() {
+        NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null,
+                "https://x.com/a/status/1", true);
+        NewsBatch noNews = batch(false);
+        noNews.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), false, USAGE, List.of());
+        NewsBatch failed = batch(false);
+        failed.fail(USAGE, List.of("모든 계정의 수집에 실패함"));
+
+        List<SlackMessage> messages = List.of(
+                builder.build(finished(true, true, List.of(pushTarget))),
+                builder.build(new NewsRunResult.Finished(noNews, List.of(), NewsRunResult.Stats.NONE)),
+                builder.build(new NewsRunResult.Finished(failed, List.of(), NewsRunResult.Stats.NONE)),
+                builder.skipped(new NewsRunResult.Skipped("CHIIKAWA", "THURSDAY", "이미 수집 중인 회차가 있음")));
+
+        messages.forEach(message -> {
+            assertThat(text(message)).doesNotContain("[승인]");
+            message.blocks().forEach(block -> {
+                assertThat(block.has("accessory")).isFalse();
+                assertThat(block.path("type").asString()).isNotEqualTo("actions");
+            });
+        });
+    }
+
+    @Test
+    @DisplayName("푸시 대상이 30건을 넘으면 버튼은 30건까지만 달고, 승인 버튼 줄은 블록이 많아도 잘리지 않는다")
+    void keepsActionsWithinBlockLimit() {
+        List<NewsCandidate> candidates = new ArrayList<>();
+        for (int index = 0; index < 60; index++) {
+            NewsCandidate candidate = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "소식 " + index, null, null,
+                    "https://x.com/a/status/" + (2000 + index), true);
+            ReflectionTestUtils.setField(candidate, "id", 500L + index);
+            candidates.add(candidate);
+        }
+
+        SlackMessage message = builder.build(finished(false, true, candidates));
+
+        long buttons = message.blocks().findValues("accessory").size();
+        assertThat(buttons).isEqualTo(30);
+        assertThat(message.blocks().size()).isLessThanOrEqualTo(50);
+        assertThat(message.blocks().get(message.blocks().size() - 1).path("type").asString()).isEqualTo("actions");
+        assertThat(text(message)).contains("… 외 30건 (이 소식들은 [제외]를 달지 못했습니다)");
+    }
+
+    @Test
     @DisplayName("환경 표시와 DRY-RUN 표시를 제목 앞에 붙이고, dry-run 이면 공개·푸시를 하지 않는다고 알린다")
     void showsEnvironmentAndDryRun() {
         String dryRun = text(builder.build(finished(true, true, List.of())));

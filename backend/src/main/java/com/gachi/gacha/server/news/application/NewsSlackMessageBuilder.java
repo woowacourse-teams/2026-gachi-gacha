@@ -32,6 +32,11 @@ import tools.jackson.databind.node.ObjectNode;
 @RequiredArgsConstructor
 public class NewsSlackMessageBuilder {
 
+    public static final String ACTION_EXCLUDE = "news_exclude";
+    public static final String ACTION_APPROVE = "news_approve";
+    public static final String ACTION_RECOLLECT = "news_recollect";
+    public static final String ACTION_TEST_SEND = "news_test_send";
+
     private static final int MAX_BLOCKS = 45;
     private static final int MAX_SECTION_LENGTH = 2900;
     private static final int MAX_TITLE_LENGTH = 100;
@@ -53,24 +58,33 @@ public class NewsSlackMessageBuilder {
         List<NewsCandidate> candidates = result.candidates();
         String summary = summary(result);
 
-        List<String> sections = new ArrayList<>();
-        sections.add("*" + title(batch.getTopic(), batch.isDryRun()) + "*\n" + summary);
-        sections.add("*수집 기간 (UTC)*\n" + periodLines(batch.periods()));
-        addList(sections, "푸시 대상", candidates, NewsReview.PUSH_TARGET, PUSH_TARGET_LINES, false);
-        addList(sections, "탭에만 공개", candidates, NewsReview.TAB_ONLY, TAB_ONLY_LINES, false);
-        addList(sections, "확인 필요 (링크 미확인)", candidates, NewsReview.NEEDS_CHECK, NEEDS_CHECK_LINES, true);
-        addList(sections, "지난 소식", candidates, NewsReview.ENDED, ENDED_LINES, false);
-        addNotes(sections, batch.warnings(), result.stats());
-        if (batch.isDryRun()) {
-            sections.add("_dry-run 이라 공개와 푸시를 하지 않습니다._");
+        boolean approvalRequest = !batch.isDryRun() && batch.getStatus() == NewsBatchStatus.AWAITING_APPROVAL;
+        List<ObjectNode> blocks = new ArrayList<>();
+        addText(blocks, "*" + title(batch.getTopic(), batch.isDryRun()) + "*\n" + summary);
+        addText(blocks, "*수집 기간 (UTC)*\n" + periodLines(batch.periods()));
+        if (approvalRequest) {
+            addPushTargetsWithButtons(blocks, batch.getId(), candidates);
+        } else {
+            addList(blocks, "푸시 대상", candidates, NewsReview.PUSH_TARGET, PUSH_TARGET_LINES, false);
         }
-        return new SlackMessage(fallbackText(summary), toBlocks(sections));
+        addList(blocks, "탭에만 공개", candidates, NewsReview.TAB_ONLY, TAB_ONLY_LINES, false);
+        addList(blocks, "확인 필요 (링크 미확인)", candidates, NewsReview.NEEDS_CHECK, NEEDS_CHECK_LINES, true);
+        addList(blocks, "지난 소식", candidates, NewsReview.ENDED, ENDED_LINES, false);
+        addNotes(blocks, batch.warnings(), result.stats());
+        if (batch.isDryRun()) {
+            addText(blocks, "_dry-run 이라 공개와 푸시를 하지 않습니다._");
+        }
+        if (approvalRequest) {
+            addText(blocks, "_서로 다른 2명이 [승인]을 누르면 승인됩니다. 푸시 대상은 [제외]로 뺄 수 있습니다._");
+        }
+        ObjectNode actions = approvalRequest ? approvalActions(batch.getId(), count(candidates, NewsReview.PUSH_TARGET)) : null;
+        return new SlackMessage(fallbackText(summary), toBlocks(blocks, actions));
     }
 
     public SlackMessage skipped(final NewsRunResult.Skipped skipped) {
         String text = prefix(false) + displayName(skipped.topic()) + " 신상 소식 · " + runLabel(skipped.runName())
                 + " 수집을 건너뜀: " + skipped.reason();
-        return new SlackMessage(text, toBlocks(List.of(escape(text))));
+        return new SlackMessage(text, toBlocks(List.of(sectionBlock(escape(text))), null));
     }
 
     /**
@@ -132,7 +146,7 @@ public class NewsSlackMessageBuilder {
     }
 
     private void addList(
-            final List<String> sections,
+            final List<ObjectNode> blocks,
             final String heading,
             final List<NewsCandidate> candidates,
             final NewsReview review,
@@ -151,7 +165,56 @@ public class NewsSlackMessageBuilder {
         if (matched.size() > maxLines) {
             lines.add("… 외 " + (matched.size() - maxLines) + "건");
         }
-        sections.add("*" + heading + " " + matched.size() + "건*\n" + String.join("\n", lines));
+        addText(blocks, "*" + heading + " " + matched.size() + "건*\n" + String.join("\n", lines));
+    }
+
+    /**
+     * 승인 요청에서는 푸시 대상마다 줄 끝에 [제외] 버튼을 단다. 슬랙은 메시지 하나에 블록 50개까지라 30건까지만 버튼을 단다.
+     */
+    private void addPushTargetsWithButtons(final List<ObjectNode> blocks, final Long batchId, final List<NewsCandidate> candidates) {
+        List<NewsCandidate> pushTargets = candidates.stream()
+                .filter(candidate -> candidate.getReview() == NewsReview.PUSH_TARGET)
+                .sorted(EARLIEST_START_FIRST)
+                .toList();
+        if (pushTargets.isEmpty()) {
+            return;
+        }
+        addText(blocks, "*푸시 대상 " + pushTargets.size() + "건*");
+        pushTargets.stream().limit(PUSH_TARGET_LINES).forEach(candidate -> blocks.add(
+                sectionWithButton(candidateLine(candidate, false), button("제외", ACTION_EXCLUDE, batchId + ":" + candidate.getId(), null))));
+        if (pushTargets.size() > PUSH_TARGET_LINES) {
+            addText(blocks, "… 외 " + (pushTargets.size() - PUSH_TARGET_LINES) + "건 (이 소식들은 [제외]를 달지 못했습니다)");
+        }
+    }
+
+    /**
+     * 푸시 대상이 없으면 탭에만 공개하는 승인이고, 보낼 푸시가 없으니 테스트 발송 버튼도 달지 않는다.
+     */
+    private ObjectNode approvalActions(final Long batchId, final int pushTargetCount) {
+        ObjectNode actions = objectMapper.createObjectNode().put("type", "actions");
+        ArrayNode elements = actions.putArray("elements");
+        elements.add(button(pushTargetCount > 0 ? "승인" : "승인(탭만 공개)", ACTION_APPROVE, String.valueOf(batchId), "primary"));
+        elements.add(button("다시 수집", ACTION_RECOLLECT, String.valueOf(batchId), null));
+        if (pushTargetCount > 0) {
+            elements.add(button("나에게 테스트 발송", ACTION_TEST_SEND, String.valueOf(batchId), null));
+        }
+        return actions;
+    }
+
+    private ObjectNode button(final String label, final String actionId, final String value, @Nullable final String style) {
+        ObjectNode button = objectMapper.createObjectNode().put("type", "button");
+        button.putObject("text").put("type", "plain_text").put("text", label);
+        button.put("action_id", actionId).put("value", value);
+        if (style != null) {
+            button.put("style", style);
+        }
+        return button;
+    }
+
+    private ObjectNode sectionWithButton(final String text, final ObjectNode button) {
+        ObjectNode block = sectionBlock(text);
+        block.set("accessory", button);
+        return block;
     }
 
     private String candidateLine(final NewsCandidate candidate, final boolean showLinkStatus) {
@@ -187,7 +250,7 @@ public class NewsSlackMessageBuilder {
         return label == null ? "" : escape(limit(label, 30));
     }
 
-    private void addNotes(final List<String> sections, final List<String> warnings, final NewsRunResult.Stats stats) {
+    private void addNotes(final List<ObjectNode> blocks, final List<String> warnings, final NewsRunResult.Stats stats) {
         List<String> lines = new ArrayList<>();
         warnings.stream().limit(WARNING_LINES).forEach(warning -> lines.add("• " + escape(limit(warning, 300))));
         if (warnings.size() > WARNING_LINES) {
@@ -198,23 +261,28 @@ public class NewsSlackMessageBuilder {
                     + " · 굿즈 아님 " + stats.skippedPosts() + "_");
         }
         if (!lines.isEmpty()) {
-            sections.add("*확인할 내용*\n" + String.join("\n", lines));
+            addText(blocks, "*확인할 내용*\n" + String.join("\n", lines));
         }
     }
 
     /**
-     * 글 블록 하나가 3000자를 넘지 않게 줄 단위로 나누고, 블록이 너무 많으면 뒤쪽을 생략한다.
+     * 글은 블록 하나가 3000자를 넘지 않게 줄 단위로 나눠 담는다.
      */
-    private ArrayNode toBlocks(final List<String> sections) {
-        List<String> texts = new ArrayList<>();
-        sections.forEach(section -> texts.addAll(chunk(section)));
+    private void addText(final List<ObjectNode> blocks, final String text) {
+        chunk(text).forEach(chunk -> blocks.add(sectionBlock(chunk)));
+    }
+
+    /**
+     * 블록이 너무 많으면 뒤쪽을 생략한다. 승인 버튼 줄은 잘리지 않게 마지막에 붙인다.
+     */
+    private ArrayNode toBlocks(final List<ObjectNode> content, @Nullable final ObjectNode actions) {
         ArrayNode blocks = objectMapper.createArrayNode();
-        int shown = Math.min(texts.size(), MAX_BLOCKS);
-        for (int index = 0; index < shown; index++) {
-            blocks.add(sectionBlock(texts.get(index)));
+        content.stream().limit(MAX_BLOCKS).forEach(blocks::add);
+        if (content.size() > MAX_BLOCKS) {
+            blocks.add(sectionBlock("_길이 제한으로 나머지 " + (content.size() - MAX_BLOCKS) + "개 블록은 생략했습니다._"));
         }
-        if (texts.size() > MAX_BLOCKS) {
-            blocks.add(sectionBlock("_길이 제한으로 나머지 " + (texts.size() - MAX_BLOCKS) + "개 블록은 생략했습니다._"));
+        if (actions != null) {
+            blocks.add(actions);
         }
         return blocks;
     }

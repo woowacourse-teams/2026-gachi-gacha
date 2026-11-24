@@ -199,6 +199,8 @@ news:
   slack:
     bot-token: ${SLACK_BOT_TOKEN:}
     channel-id: ${SLACK_NEWS_CHANNEL_ID:}
+    signing-secret: ${SLACK_SIGNING_SECRET:}   # 버튼 요청의 서명 검증용. 슬랙 앱 설정의 Signing Secret
+    approvers: ${SLACK_NEWS_APPROVERS:}        # 승인자. 슬랙회원ID:가치가챠회원ID 를 쉼표로 (예: U01ABC:12,U02DEF:34)
   topics:
     CHIIKAWA:
       display-name: 치이카와

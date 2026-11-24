@@ -5,10 +5,12 @@ import static org.mockito.Mockito.mock;
 
 import com.gachi.gacha.server.news.application.NewsBatchService;
 import com.gachi.gacha.server.news.application.NewsCollectService;
+import com.gachi.gacha.server.news.application.NewsInteractionService;
 import com.gachi.gacha.server.news.application.NewsScheduler;
 import com.gachi.gacha.server.news.application.NewsSlackMessageBuilder;
 import com.gachi.gacha.server.news.domain.NewsBatchJpaRepository;
 import com.gachi.gacha.server.news.domain.NewsCandidateJpaRepository;
+import com.gachi.gacha.server.news.presentation.SlackInteractionController;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -44,7 +46,8 @@ class NewsWiringTest {
             assertThat(context).hasNotFailed();
             assertThat(context).hasSingleBean(NewsCollectService.class).hasSingleBean(NewsSlackMessageBuilder.class)
                     .hasSingleBean(NewsBatchService.class);
-            assertThat(context).doesNotHaveBean(NewsScheduler.class);
+            assertThat(context).doesNotHaveBean(NewsScheduler.class).doesNotHaveBean(NewsInteractionService.class)
+                    .doesNotHaveBean(SlackInteractionController.class);
         });
     }
 
@@ -54,7 +57,8 @@ class NewsWiringTest {
         runner.withPropertyValues(TOPIC).withPropertyValues("news.enabled=true", "news.xai.api-key=k",
                 "news.slack.bot-token=t", "news.slack.channel-id=C1").run(context -> {
             assertThat(context).hasNotFailed();
-            assertThat(context).hasSingleBean(NewsScheduler.class);
+            assertThat(context).hasSingleBean(NewsScheduler.class).hasSingleBean(NewsInteractionService.class)
+                    .hasSingleBean(SlackInteractionController.class);
         });
     }
 
@@ -71,7 +75,7 @@ class NewsWiringTest {
     @Configuration
     @EnableConfigurationProperties(NewsProperties.class)
     @Import({NewsConfig.class, NewsBatchService.class, NewsCollectService.class, NewsSlackMessageBuilder.class,
-            NewsScheduler.class})
+            NewsScheduler.class, NewsInteractionService.class, SlackInteractionController.class})
     static class Beans {
 
         @Bean

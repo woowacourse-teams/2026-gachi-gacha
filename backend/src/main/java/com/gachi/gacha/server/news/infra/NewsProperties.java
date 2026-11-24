@@ -49,6 +49,7 @@ public record NewsProperties(
     /**
      * 기능을 켰는데 비어 있는 필수 값. 앱이 뜰 때 확인해서 빠진 값을 바로 알 수 있게 한다.
      * 슬랙 값은 dry-run 일 때 비워 둘 수 있다(로컬에서 슬랙 없이 수집만 확인). 봇 토큰을 넣었다면 채널도 있어야 한다.
+     * 버튼을 받는 서명 시크릿과 승인자는 dry-run 이 아닐 때(승인 요청에 버튼이 달릴 때)만 필요하다.
      */
     public List<String> missingRequiredSettings() {
         List<String> missing = new ArrayList<>();
@@ -59,6 +60,12 @@ public record NewsProperties(
         if (!dryRun || (slack.botToken() != null && !slack.botToken().isBlank())) {
             addIfBlank(missing, slack.botToken(), "SLACK_BOT_TOKEN");
             addIfBlank(missing, slack.channelId(), "SLACK_NEWS_CHANNEL_ID");
+        }
+        if (!dryRun) {
+            addIfBlank(missing, slack.signingSecret(), "SLACK_SIGNING_SECRET");
+            if (slack.approvers().isEmpty()) {
+                missing.add("SLACK_NEWS_APPROVERS");
+            }
         }
         if (topics.isEmpty()) {
             missing.add("news.topics");
@@ -99,10 +106,53 @@ public record NewsProperties(
     ) {
     }
 
+    /**
+     * @param signingSecret 버튼 요청의 서명을 검증하는 비밀값
+     * @param approvers     승인할 수 있는 사람. {@code 슬랙회원ID:가치가챠회원ID} 를 쉼표로 이어서 환경변수에 넣는다
+     */
     public record Slack(
             @Nullable String botToken,
-            @Nullable String channelId
+            @Nullable String channelId,
+            @Nullable String signingSecret,
+            @DefaultValue List<String> approvers
     ) {
+
+        public Slack {
+            approvers = approvers == null ? List.of() : approvers.stream()
+                    .map(String::strip)
+                    .filter(approver -> !approver.isEmpty())
+                    .toList();
+            approvers.forEach(Slack::parseMemberId);
+        }
+
+        public boolean isApprover(@Nullable final String slackUserId) {
+            return approverMemberId(slackUserId).isPresent();
+        }
+
+        /**
+         * 승인자의 가치가챠 회원 ID. [나에게 테스트 발송]을 그 사람의 기기로 보낼 때 쓴다.
+         */
+        public Optional<Long> approverMemberId(@Nullable final String slackUserId) {
+            if (slackUserId == null) {
+                return Optional.empty();
+            }
+            return approvers.stream()
+                    .filter(approver -> approver.substring(0, approver.indexOf(':')).equals(slackUserId))
+                    .map(Slack::parseMemberId)
+                    .findFirst();
+        }
+
+        private static long parseMemberId(final String approver) {
+            int separator = approver.indexOf(':');
+            if (separator <= 0 || separator == approver.length() - 1) {
+                throw new IllegalStateException("news.slack.approvers 는 '슬랙회원ID:가치가챠회원ID' 형식이어야 한다: " + approver);
+            }
+            try {
+                return Long.parseLong(approver.substring(separator + 1));
+            } catch (NumberFormatException e) {
+                throw new IllegalStateException("news.slack.approvers 의 가치가챠 회원 ID 가 숫자가 아니다: " + approver, e);
+            }
+        }
     }
 
     /**

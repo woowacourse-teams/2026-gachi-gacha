@@ -49,6 +49,17 @@ public final class NewsFixtures {
             final int maxCallsPerRun,
             final double maxCostUsd
     ) {
+        return properties(dryRun, environmentLabel, maxCallsPerRun, maxCostUsd,
+                new NewsProperties.Slack(null, "C0NEWS", null, List.of("U_APPROVER:12")));
+    }
+
+    public static NewsProperties properties(
+            final boolean dryRun,
+            final String environmentLabel,
+            final int maxCallsPerRun,
+            final double maxCostUsd,
+            final NewsProperties.Slack slack
+    ) {
         NewsProperties.Topic chiikawa = new NewsProperties.Topic("치이카와", "ちいかわ", "news/prompts/chiikawa",
                 "chiikawa-v2", "10:30 ~ 22:00", List.of(KR_SHOP, JP_KOUHOU),
                 Map.of("THURSDAY", List.of("KR_shop", "JP_kouhou")));
@@ -56,8 +67,7 @@ public final class NewsFixtures {
                 new NewsProperties.Collect(7, 14, maxCallsPerRun, maxCostUsd, Duration.ofHours(6)),
                 new NewsProperties.Xai("https://api.x.ai/v1", "key", "grok-4.3", Duration.ofSeconds(10),
                         Duration.ofSeconds(300), 2, 3),
-                new NewsProperties.Slack(null, "C0NEWS"),
-                Map.of("CHIIKAWA", chiikawa));
+                slack, Map.of("CHIIKAWA", chiikawa));
     }
 
     public static NewsDetail detail(final List<String> notes, @Nullable final String refUrl) {

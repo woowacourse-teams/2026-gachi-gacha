@@ -90,6 +90,11 @@ public class NewsConfig {
     }
 
     @Bean
+    public SlackSignatureVerifier slackSignatureVerifier(final NewsProperties properties) {
+        return new SlackSignatureVerifier(properties.slack().signingSecret());
+    }
+
+    @Bean
     public GrokResponseParser grokResponseParser(final ObjectMapper objectMapper) {
         return new GrokResponseParser(objectMapper);
     }

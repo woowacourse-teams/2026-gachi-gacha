@@ -73,6 +73,15 @@ class NewsPropertiesTest {
     }
 
     @Test
+    @DisplayName("승인자는 쉼표로 이은 환경변수에서 읽는다")
+    void approversFromEnvironment() {
+        NewsProperties.Slack slack = bind(Map.of("SLACK_NEWS_APPROVERS", "U01ABC:12, U02DEF:34")).slack();
+
+        assertThat(slack.approvers()).containsExactly("U01ABC:12", "U02DEF:34");
+        assertThat(bind(Map.of()).slack().approvers()).isEmpty();
+    }
+
+    @Test
     @DisplayName("환경 표시와 dry-run 은 환경변수로 바꾼다")
     void environmentValues() {
         NewsProperties properties = bind(Map.of("NEWS_ENVIRONMENT_LABEL", " [개발] ", "NEWS_DRY_RUN", "false"));
@@ -85,9 +94,14 @@ class NewsPropertiesTest {
     @DisplayName("기능을 켰는데 필수 값이 비어 있으면 무엇이 빠졌는지 알려준다")
     void reportsMissingRequiredSettings() {
         assertThat(bind(Map.of("NEWS_ENABLED", "true", "NEWS_DRY_RUN", "false", "SLACK_BOT_TOKEN", "xoxb-test"))
-                .missingRequiredSettings()).containsExactly("XAI_API_KEY", "SLACK_NEWS_CHANNEL_ID");
+                .missingRequiredSettings()).containsExactly("XAI_API_KEY", "SLACK_NEWS_CHANNEL_ID", "SLACK_SIGNING_SECRET",
+                "SLACK_NEWS_APPROVERS");
         assertThat(bind(Map.of("NEWS_ENABLED", "true", "NEWS_DRY_RUN", "false")).missingRequiredSettings())
-                .containsExactly("XAI_API_KEY", "SLACK_BOT_TOKEN", "SLACK_NEWS_CHANNEL_ID");
+                .containsExactly("XAI_API_KEY", "SLACK_BOT_TOKEN", "SLACK_NEWS_CHANNEL_ID", "SLACK_SIGNING_SECRET",
+                        "SLACK_NEWS_APPROVERS");
+        assertThat(bind(Map.of("NEWS_ENABLED", "true", "NEWS_DRY_RUN", "false", "XAI_API_KEY", "x", "SLACK_BOT_TOKEN", "x",
+                "SLACK_NEWS_CHANNEL_ID", "C1", "SLACK_SIGNING_SECRET", "s", "SLACK_NEWS_APPROVERS", "U1:12"))
+                .missingRequiredSettings()).isEmpty();
         assertThat(bind(Map.of("NEWS_ENABLED", "true", "XAI_API_KEY", "x", "SLACK_BOT_TOKEN", "x",
                 "SLACK_NEWS_CHANNEL_ID", "C1")).missingRequiredSettings()).isEmpty();
     }
