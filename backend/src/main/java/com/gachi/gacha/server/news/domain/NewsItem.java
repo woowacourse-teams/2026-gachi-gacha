@@ -52,6 +52,13 @@ public class NewsItem extends BaseTimeEntity {
     }
 
     /**
+     * 발송이 미뤄지면 목록 공개 시각도 같이 미룬다. 목록과 푸시는 같은 시각에 나가야 한다.
+     */
+    public void reschedule(final LocalDateTime newPublishedAt) {
+        this.publishedAt = Objects.requireNonNull(newPublishedAt, "newPublishedAt");
+    }
+
+    /**
      * 링크가 검증된 공개 대상만 공개 소식이 될 수 있다. 확인 필요나 지난 소식은 공개하지 않는다.
      */
     public static NewsItem publish(final String topic, final NewsCandidate candidate, final LocalDateTime publishedAt) {

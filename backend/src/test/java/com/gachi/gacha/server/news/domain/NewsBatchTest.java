@@ -218,6 +218,60 @@ class NewsBatchTest {
         assertThat(batch.getChangedAfterVoteBy()).isEqualTo("U2");
     }
 
+    @Test
+    @DisplayName("승인된 회차는 발송 중으로 표시하고, 발송을 마치면 성공(SENT) 또는 결과를 알 수 없는 실패(FAILED)가 된다")
+    void sendingLifecycle() {
+        NewsBatch sent = approvedWithSendAt();
+        NewsBatch failed = approvedWithSendAt();
+        LocalDateTime now = LocalDateTime.of(2026, 11, 13, 8, 1);
+
+        sent.startSending(now);
+        failed.startSending(now);
+        assertThat(sent.getStatus()).isEqualTo(NewsBatchStatus.SENDING);
+        assertThat(sent.getSendStartedAt()).isEqualTo(now);
+        sent.finishSending(true);
+        failed.finishSending(false);
+
+        assertThat(sent.getStatus()).isEqualTo(NewsBatchStatus.SENT);
+        assertThat(failed.getStatus()).isEqualTo(NewsBatchStatus.FAILED);
+        assertThat(failed.getApprovedAt()).isNotNull();
+        assertThat(sent.getStatus().isCarryOverSource()).isFalse();
+    }
+
+    @Test
+    @DisplayName("발송은 한 번만 시작하고, 발송 중이 아닌 회차는 끝낼 수 없다")
+    void sendingTransitionsAreGuarded() {
+        NewsBatch batch = approvedWithSendAt();
+
+        assertThatThrownBy(() -> batch.finishSending(true)).isInstanceOf(NewsBatchStateException.class);
+        batch.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        assertThatThrownBy(() -> batch.startSending(LocalDateTime.of(2026, 11, 13, 8, 2))).isInstanceOf(NewsBatchStateException.class);
+        batch.finishSending(true);
+        assertThatThrownBy(() -> batch.finishSending(false)).isInstanceOf(NewsBatchStateException.class);
+        assertThatThrownBy(() -> awaiting().startSending(LocalDateTime.now())).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    @Test
+    @DisplayName("발송 시각은 승인됐고 아직 발송하지 않은 회차만 미룰 수 있다")
+    void postponesOnlyApprovedBatchWithSendAt() {
+        NewsBatch batch = approvedWithSendAt();
+        NewsBatch tabOnly = awaiting();
+        tabOnly.approve(LocalDateTime.of(2026, 11, 12, 22, 0), null);
+
+        batch.postpone(LocalDateTime.of(2026, 11, 14, 8, 0));
+
+        assertThat(batch.getSendAt()).isEqualTo(LocalDateTime.of(2026, 11, 14, 8, 0));
+        assertThatThrownBy(() -> tabOnly.postpone(LocalDateTime.of(2026, 11, 14, 8, 0))).isInstanceOf(NewsBatchStateException.class);
+        batch.startSending(LocalDateTime.of(2026, 11, 14, 8, 1));
+        assertThatThrownBy(() -> batch.postpone(LocalDateTime.of(2026, 11, 15, 8, 0))).isInstanceOf(NewsBatchStateException.class);
+    }
+
+    private NewsBatch approvedWithSendAt() {
+        NewsBatch batch = awaiting();
+        batch.approve(LocalDateTime.of(2026, 11, 12, 22, 0), LocalDateTime.of(2026, 11, 13, 8, 0));
+        return batch;
+    }
+
     private NewsBatch twoAccounts() {
         return NewsBatch.start("CHIIKAWA", "THURSDAY", List.of(
                 CollectPeriod.notCollected("chiikawashop_kr", FROM, TO),

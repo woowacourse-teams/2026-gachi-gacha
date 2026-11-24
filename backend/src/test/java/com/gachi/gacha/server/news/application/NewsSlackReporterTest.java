@@ -158,6 +158,27 @@ class NewsSlackReporterTest {
         assertThat(current.getSlackMessageTs()).isEqualTo("1.1");
     }
 
+    @Test
+    @DisplayName("스레드 답글은 승인 요청 메시지의 스레드에 남기고, 메시지를 알린 적 없으면 생략하며, 실패해도 던지지 않는다")
+    void repliesInThread() {
+        NewsBatch current = batch(7L);
+        current.recordSlackMessage(CHANNEL, "1.1");
+        given(approvalService.view(7L)).willReturn(Optional.of(new BatchView(current, List.of(), List.of(), Set.of())));
+        given(approvalService.view(8L)).willReturn(Optional.of(new BatchView(batch(8L), List.of(), List.of(), Set.of())));
+        NewsBatch failing = batch(9L);
+        failing.recordSlackMessage(CHANNEL, "3.3");
+        given(approvalService.view(9L)).willReturn(Optional.of(new BatchView(failing, List.of(), List.of(), Set.of())));
+        willThrow(new SlackClient.SlackException("chat.postMessage 실패: thread_not_found"))
+                .given(slackClient).postThreadReply(eq(CHANNEL), eq("3.3"), anyString());
+
+        reporter.replyInThread(7L, "발송 완료");
+        reporter.replyInThread(8L, "알린 적 없는 회차");
+        reporter.replyInThread(9L, "실패해도 던지지 않음");
+
+        then(slackClient).should().postThreadReply(CHANNEL, "1.1", "발송 완료");
+        then(slackClient).should(never()).postThreadReply(eq(CHANNEL), eq("2.2"), anyString());
+    }
+
     private NewsRunResult.Finished finished(final Long id) {
         return new NewsRunResult.Finished(batch(id), List.of(), null);
     }

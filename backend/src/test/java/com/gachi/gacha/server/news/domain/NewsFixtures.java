@@ -87,7 +87,7 @@ public final class NewsFixtures {
                 "chiikawa-v2", "10:30 ~ 22:00", List.of(KR_SHOP, JP_KOUHOU),
                 Map.of("THURSDAY", List.of("KR_shop", "JP_kouhou")));
         return new NewsProperties(false, dryRun, environmentLabel, ZoneId.of("Asia/Seoul"), 30, requiredApprovals,
-                new NewsProperties.Send(LocalTime.of(8, 0), LocalTime.of(21, 0), 1, 3),
+                new NewsProperties.Send(LocalTime.of(8, 0), LocalTime.of(21, 0), 1, 3, Duration.ofMinutes(30)),
                 new NewsProperties.Collect(7, 14, maxCallsPerRun, maxCostUsd, Duration.ofHours(6)),
                 new NewsProperties.Xai("https://api.x.ai/v1", "key", "grok-4.3", Duration.ofSeconds(10),
                         Duration.ofSeconds(300), 2, 3),

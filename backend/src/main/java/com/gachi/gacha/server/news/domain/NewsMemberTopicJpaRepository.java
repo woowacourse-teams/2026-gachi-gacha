@@ -1,6 +1,7 @@
 package com.gachi.gacha.server.news.domain;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -23,4 +24,10 @@ public interface NewsMemberTopicJpaRepository extends JpaRepository<NewsMemberTo
             ON CONFLICT (member_id, topic) DO NOTHING
             """, nativeQuery = true)
     void insertIfAbsent(@Param("memberId") Long memberId, @Param("topic") String topic, @Param("now") LocalDateTime now);
+
+    /**
+     * 그 주제를 구독 중인 회원. 푸시를 받을 사람이다.
+     */
+    @Query("select topic.memberId from NewsMemberTopic topic where topic.topic = :topic and topic.subscribed = true")
+    List<Long> findSubscribedMemberIds(@Param("topic") String topic);
 }

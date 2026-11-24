@@ -40,4 +40,10 @@ public interface NewsItemJpaRepository extends JpaRepository<NewsItem, Long> {
      */
     @Query("select item.linkKey from NewsItem item where item.topic = :topic and item.linkKey in :linkKeys")
     List<String> findPublishedLinkKeys(@Param("topic") String topic, @Param("linkKeys") Collection<String> linkKeys);
+
+    /**
+     * 한 회차에서 공개한 소식. 발송할 푸시 문구를 만들 때 쓴다.
+     */
+    @Query("select item from NewsItem item join fetch item.candidate candidate where candidate.batchId = :batchId")
+    List<NewsItem> findAllByBatchId(@Param("batchId") Long batchId);
 }

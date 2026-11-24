@@ -381,6 +381,38 @@ class NewsSlackMessageBuilderTest {
         assertThat(text).contains("*승인 0/1*").contains("서로 다른 1명이 [승인]을 누르면 승인됩니다");
     }
 
+    @Test
+    @DisplayName("발송 중·발송 완료·발송 실패 상태를 보여주고, 발송 실패를 수집 실패로 착각하지 않는다")
+    void showsSendingStates() {
+        NewsCandidate pushTarget = candidate(NewsSection.KOREA_STORE, NewsKind.RELEASE, "입고", null, null, "https://x.com/a/status/1", true);
+        NewsBatch sending = scheduledBatch();
+        sending.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        NewsBatch sent = scheduledBatch();
+        sent.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        sent.finishSending(true);
+        NewsBatch failed = scheduledBatch();
+        failed.startSending(LocalDateTime.of(2026, 11, 13, 8, 1));
+        failed.finishSending(false);
+
+        BatchView failedView = new BatchView(failed, List.of(pushTarget), List.of("U1", "U2"), Set.of());
+
+        assertThat(text(builder.render(new BatchView(sending, List.of(pushTarget), List.of("U1", "U2"), Set.of()))))
+                .contains("✅ *승인됨* · <@U1>, <@U2> · 📤 발송 중");
+        assertThat(text(builder.render(new BatchView(sent, List.of(pushTarget), List.of("U1", "U2"), Set.of()))))
+                .contains("📨 발송 완료 11/13(금) 08:01");
+        assertThat(text(builder.render(failedView))).contains("❌ 발송 상태 확인 필요 (재발송 안 함)");
+        assertThat(builder.summary(failedView)).startsWith("목요일 수집 완료 · ").doesNotContain("수집 실패");
+        List.of(sending, sent, failed).forEach(batch -> builder.render(new BatchView(batch, List.of(pushTarget), List.of(), Set.of()))
+                .blocks().forEach(block -> assertThat(block.path("type").asString()).isNotEqualTo("actions")));
+    }
+
+    private NewsBatch scheduledBatch() {
+        NewsBatch batch = batch(false);
+        batch.complete(Set.of("chiikawashop_kr", "chiikawa_kouhou"), true, USAGE, List.of());
+        batch.approve(LocalDateTime.of(2026, 11, 12, 22, 0), LocalDateTime.of(2026, 11, 13, 8, 0));
+        return batch;
+    }
+
     private BatchView view(final NewsRunResult.Finished result) {
         return new BatchView(result.batch(), result.candidates(), List.of(), Set.of());
     }

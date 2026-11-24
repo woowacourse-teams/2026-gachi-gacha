@@ -75,6 +75,11 @@ public class NewsBatch extends BaseTimeEntity {
     private LocalDateTime sendAt;
 
     /**
+     * SENDING 으로 표시한 시각. 서버가 발송 중에 멈춰 SENDING 에 오래 남은 회차를 찾는 기준이다.
+     */
+    private LocalDateTime sendStartedAt;
+
+    /**
      * 첫 표가 들어온 뒤 [제외]·[되돌리기]를 마지막으로 누른 사람의 슬랙 회원 ID. 다음 승인자가 바뀐 내용을 보고 누르게 한다.
      */
     @Column(length = 30)
@@ -210,6 +215,35 @@ public class NewsBatch extends BaseTimeEntity {
         this.status = NewsBatchStatus.APPROVED;
         this.approvedAt = Objects.requireNonNull(now, "now");
         this.sendAt = pushSendAt;
+    }
+
+    /**
+     * 발송 시각이 지난 승인된 회차를 발송 중으로 표시한다. 이 표시를 먼저 하고 FCM 을 부르므로, 서버가 호출 중에 멈춰도
+     * 이 회차를 다시 발송하지 않는다.
+     */
+    public void startSending(final LocalDateTime now) {
+        requireStatus(NewsBatchStatus.APPROVED, "발송 시작");
+        this.status = NewsBatchStatus.SENDING;
+        this.sendStartedAt = Objects.requireNonNull(now, "now");
+    }
+
+    /**
+     * 발송을 마친다. 성공은 FCM 이 요청을 받아들였다는 뜻이고, 실패는 호출이 예외로 끝나 받아들였는지 알 수 없다는 뜻이다.
+     */
+    public void finishSending(final boolean succeeded) {
+        requireStatus(NewsBatchStatus.SENDING, "발송 종료");
+        this.status = succeeded ? NewsBatchStatus.SENT : NewsBatchStatus.FAILED;
+    }
+
+    /**
+     * 발송 시각이 허용 시간 밖에 지나갔을 때(서버가 꺼져 있었던 경우 등) 다음 발송 가능 시각으로 미룬다.
+     */
+    public void postpone(final LocalDateTime newSendAt) {
+        requireStatus(NewsBatchStatus.APPROVED, "발송 미루기");
+        if (sendAt == null) {
+            throw new NewsBatchStateException(status, "발송 예정이 없는 회차 미루기");
+        }
+        this.sendAt = Objects.requireNonNull(newSendAt, "newSendAt");
     }
 
     /**

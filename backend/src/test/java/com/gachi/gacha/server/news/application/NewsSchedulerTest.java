@@ -15,8 +15,9 @@ import org.junit.jupiter.api.Test;
 class NewsSchedulerTest {
 
     private final NewsCollectService collectService = mock(NewsCollectService.class);
+    private final NewsPushService pushService = mock(NewsPushService.class);
     private final NewsSlackReporter reporter = mock(NewsSlackReporter.class);
-    private final NewsScheduler scheduler = new NewsScheduler(collectService, reporter,
+    private final NewsScheduler scheduler = new NewsScheduler(collectService, pushService, reporter,
             NewsFixtures.properties(false, "", 40, 0.6));
 
     @Test
@@ -68,5 +69,23 @@ class NewsSchedulerTest {
         scheduler.recollect("CHIIKAWA", List.of("chiikawashop_kr"));
 
         then(reporter).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("1분마다 발송 시각이 지난 승인된 회차를 보내도록 발송 서비스를 부른다")
+    void sendsDue() {
+        scheduler.sendDue();
+
+        then(pushService).should().sendDue();
+    }
+
+    @Test
+    @DisplayName("발송 중 예외가 나도 스케줄러 밖으로 던지지 않아 다음 분에도 계속 돈다")
+    void swallowsSendFailure() {
+        org.mockito.BDDMockito.willThrow(new IllegalStateException("db down")).given(pushService).sendDue();
+
+        scheduler.sendDue();
+
+        then(pushService).should().sendDue();
     }
 }

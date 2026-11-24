@@ -116,6 +116,24 @@ class SlackClientTest {
     }
 
     @Test
+    @DisplayName("스레드 답글은 thread_ts 를 붙여 chat.postMessage 로 보내고, 일시 오류에도 다시 시도하지 않는다")
+    void postsThreadReplyWithoutRetry() {
+        server.expect(requestTo(API + "/chat.postMessage"))
+                .andExpect(content().json("""
+                        {"channel": "C0NEWS", "thread_ts": "1.1", "text": "발송 완료"}
+                        """, true))
+                .andRespond(withSuccess("{\"ok\": true, \"ts\": \"1.2\"}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(API + "/chat.postMessage")).andRespond(withServerError());
+
+        client.postThreadReply("C0NEWS", "1.1", "발송 완료");
+        assertThatThrownBy(() -> client.postThreadReply("C0NEWS", "1.1", "또 발송"))
+                .isInstanceOf(SlackClient.SlackException.class).hasMessage("chat.postMessage 호출 실패: HTTP 500");
+
+        server.verify();
+        assertThat(waited).isEmpty();
+    }
+
+    @Test
     @DisplayName("5xx 는 2초, 4초 뒤에 다시 시도하고, 성공하면 그 결과를 돌려준다")
     void retriesServerErrors() {
         server.expect(requestTo(API + "/chat.postMessage")).andRespond(withServerError());

@@ -20,6 +20,13 @@ public final class NewsDateFormat {
         return date.getMonthValue() + "/" + date.getDayOfMonth() + "(" + dayOfWeek + ")";
     }
 
+    /**
+     * 요일 없이 월/일만. 예: 11/30
+     */
+    public static String monthDay(final LocalDate date) {
+        return date.getMonthValue() + "/" + date.getDayOfMonth();
+    }
+
     public static String shortDateTime(final LocalDateTime dateTime) {
         return shortDate(dateTime.toLocalDate()) + " " + TIME.format(dateTime);
     }

@@ -12,6 +12,7 @@ import com.gachi.gacha.server.news.application.dto.SlackInteraction;
 import com.gachi.gacha.server.news.infra.NewsProperties;
 import com.gachi.gacha.server.news.infra.SlackClient;
 import com.gachi.gacha.server.notification.infra.NotificationExecutorConfig;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
@@ -36,13 +37,15 @@ public class NewsInteractionService {
     static final String CLOSED_MESSAGE = "이미 승인되었거나 만료되었거나 다시 수집으로 버려진 묶음이라 바꿀 수 없습니다.";
     static final String NOT_FOUND_MESSAGE = "찾을 수 없는 소식입니다. 이미 다른 묶음으로 넘어갔을 수 있습니다.";
     static final String INVALID_BUTTON_MESSAGE = "버튼 정보가 올바르지 않습니다. 메시지가 오래됐다면 새 승인 요청을 확인해 주세요.";
-    static final String TEST_SEND_NOT_READY_MESSAGE = "테스트 발송은 아직 연결되지 않았습니다.";
+    static final String NO_MEMBER_MESSAGE = "승인자에 연결된 가치가챠 회원 정보가 없어 테스트 발송을 할 수 없습니다.";
+    static final String TEST_SEND_STARTED_MESSAGE = "테스트 발송을 시작합니다. 결과는 이 메시지의 스레드에 남깁니다.";
     static final String RECOLLECT_STARTED_MESSAGE = "다시 수집을 시작합니다. 몇 분 뒤 새 승인 요청이 올라옵니다.";
 
     private final SlackClient slackClient;
     private final NewsApprovalService approvalService;
     private final NewsSlackReporter reporter;
     private final NewsScheduler scheduler;
+    private final NewsPushService pushService;
     private final NewsProperties properties;
 
     @Async(NotificationExecutorConfig.EXECUTOR_NAME)
@@ -65,7 +68,7 @@ public class NewsInteractionService {
             case ACTION_UNDO_EXCLUDE -> changeExclusion(interaction, action, false);
             case ACTION_APPROVE -> approve(interaction, action);
             case ACTION_RECOLLECT -> recollect(interaction, action);
-            case ACTION_TEST_SEND -> reply(interaction, TEST_SEND_NOT_READY_MESSAGE);
+            case ACTION_TEST_SEND -> testSend(interaction, action);
             default -> log.warn("알 수 없는 신상 소식 버튼이다. actionId = {}", action.actionId());
         }
     }
@@ -103,6 +106,27 @@ public class NewsInteractionService {
             case ALREADY_VOTED -> reply(interaction, "이미 승인하셨습니다 (" + vote.votes() + "/" + required + ").");
             case APPROVED -> reporter.refresh(ids[0]);
             case NOT_AWAITING -> reply(interaction, CLOSED_MESSAGE);
+            case NOT_FOUND -> reply(interaction, NOT_FOUND_MESSAGE);
+        }
+    }
+
+    /**
+     * 실제로 보낼 푸시와 같은 내용을 누른 사람의 기기로만 보낸다. 결과는 스레드 답글로 남는다.
+     */
+    private void testSend(final SlackInteraction interaction, final SlackInteraction.Action action) {
+        long[] ids = parseIds(action.value(), 1);
+        if (ids == null) {
+            reply(interaction, INVALID_BUTTON_MESSAGE);
+            return;
+        }
+        Optional<Long> memberId = properties.slack().approverMemberId(interaction.userId());
+        if (memberId.isEmpty()) {
+            reply(interaction, NO_MEMBER_MESSAGE);
+            return;
+        }
+        switch (pushService.sendTest(ids[0], memberId.get(), interaction.userId())) {
+            case DONE -> reply(interaction, TEST_SEND_STARTED_MESSAGE);
+            case CLOSED -> reply(interaction, CLOSED_MESSAGE);
             case NOT_FOUND -> reply(interaction, NOT_FOUND_MESSAGE);
         }
     }

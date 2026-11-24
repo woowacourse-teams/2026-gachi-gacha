@@ -185,6 +185,7 @@ news:
     window-end: "21:00"     # 이 시각부터는 보내지 않는다
     daily-limit: 1          # 하루에 보낼 수 있는 푸시 수. 넘으면 다음으로 보낼 수 있는 시각으로 미룬다
     weekly-limit: 3         # 한 주(월~일)에 보낼 수 있는 푸시 수
+    stuck-after: 30m        # 발송 중으로 이 시간 넘게 남은 회차는 서버가 발송 중에 멈춘 것으로 보고 슬랙으로 경고한다 (다시 보내지 않는다)
   schedule:
     monday-cron: ${NEWS_MONDAY_CRON:0 30 18 * * MON}       # 한국 계정
     thursday-cron: ${NEWS_THURSDAY_CRON:0 30 12 * * THU}   # 한국·일본 계정

@@ -108,12 +108,14 @@ public record NewsProperties(
      * @param windowEnd   푸시를 보낼 수 있는 끝 시각. 이 시각부터는 보내지 않는다
      * @param dailyLimit  하루에 보낼 수 있는 푸시 수
      * @param weeklyLimit 한 주(월~일)에 보낼 수 있는 푸시 수
+     * @param stuckAfter  발송 중으로 이 시간 넘게 남은 회차는 서버가 발송 중에 멈춘 것으로 보고 경고한다(다시 보내지 않는다)
      */
     public record Send(
             @DefaultValue("08:00") LocalTime windowStart,
             @DefaultValue("21:00") LocalTime windowEnd,
             @DefaultValue("1") int dailyLimit,
-            @DefaultValue("3") int weeklyLimit
+            @DefaultValue("3") int weeklyLimit,
+            @DefaultValue("30m") Duration stuckAfter
     ) {
     }
 

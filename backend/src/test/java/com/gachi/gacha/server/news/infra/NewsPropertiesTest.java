@@ -60,7 +60,7 @@ class NewsPropertiesTest {
         NewsProperties solo = bind(Map.of("NEWS_REQUIRED_APPROVALS", "1"));
 
         assertThat(defaults.requiredApprovals()).isEqualTo(2);
-        assertThat(defaults.send()).isEqualTo(new NewsProperties.Send(LocalTime.of(8, 0), LocalTime.of(21, 0), 1, 3));
+        assertThat(defaults.send()).isEqualTo(new NewsProperties.Send(LocalTime.of(8, 0), LocalTime.of(21, 0), 1, 3, Duration.ofMinutes(30)));
         assertThat(solo.requiredApprovals()).isEqualTo(1);
     }
 

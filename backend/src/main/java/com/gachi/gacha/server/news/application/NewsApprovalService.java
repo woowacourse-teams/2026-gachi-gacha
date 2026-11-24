@@ -31,7 +31,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 슬랙 버튼이 일으키는 상태 변화의 DB 작업. 제외·되돌리기, 승인(표 모으기와 공개), 다시 수집(회차 버리기)을 한다.
+ * 슬랙 버튼이 일으키는 상태 변화와 발송 시작·종료의 DB 작업. 제외·되돌리기, 승인(표 모으기와 공개), 다시 수집(회차 버리기),
+ * 발송 중 표시와 결과 기록, 발송 미루기를 한다.
  * 슬랙 호출은 하지 않는다. 호출하는 쪽이 트랜잭션이 끝난 뒤에 메시지를 다시 그린다.
  *
  * <p>모든 메서드는 회차 행을 잠그고 시작한다. 같은 회차에 버튼이 동시에 들어와도 한 줄로 처리돼서,
@@ -42,6 +43,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class NewsApprovalService {
+
+    private static final Long NO_BATCH = -1L;
 
     private final NewsBatchJpaRepository batchRepository;
     private final NewsCandidateJpaRepository candidateRepository;
@@ -176,7 +179,7 @@ public class NewsApprovalService {
                 .toList();
 
         LocalDateTime now = LocalDateTime.now(clock);
-        LocalDateTime sendAt = publishable.stream().anyMatch(NewsCandidate::isPushTarget) ? nextSendAt(topic) : null;
+        LocalDateTime sendAt = publishable.stream().anyMatch(NewsCandidate::isPushTarget) ? nextSendAt(topic, NO_BATCH) : null;
         batch.approve(now, sendAt);
         LocalDateTime publishedAt = sendAt != null ? sendAt : now;
         itemRepository.saveAll(publishable.stream().map(candidate -> NewsItem.publish(topic, candidate, publishedAt)).toList());
@@ -186,14 +189,77 @@ public class NewsApprovalService {
     /**
      * 허용 시간과 하루·주 상한을 지키는 가장 이른 발송 시각. 시각 컬럼은 서버 기본 시간대로 저장한다.
      */
-    private LocalDateTime nextSendAt(final String topic) {
+    private LocalDateTime nextSendAt(final String topic, final Long excludeBatchId) {
         Instant now = clock.instant();
         LocalDate monday = LocalDate.now(clock.withZone(properties.zone())).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDateTime weekStart = LocalDateTime.ofInstant(monday.atStartOfDay(properties.zone()).toInstant(), clock.getZone());
-        List<Instant> scheduled = batchRepository.findSendAtFrom(topic, weekStart).stream()
+        List<Instant> scheduled = batchRepository.findSendAtFrom(topic, weekStart, excludeBatchId).stream()
                 .map(sendAt -> sendAt.atZone(clock.getZone()).toInstant())
                 .toList();
         return LocalDateTime.ofInstant(sendPolicy.nextSendAt(now, scheduled), clock.getZone());
+    }
+
+    /**
+     * 발송 시각이 지난 승인된 회차의 ID.
+     */
+    @Transactional(readOnly = true)
+    public List<Long> findDueForSending(final LocalDateTime now) {
+        return batchRepository.findDueForSending(now).stream().map(NewsBatch::getId).toList();
+    }
+
+    /**
+     * 발송하기 전에 발송 중으로 표시한다. 표시는 행을 잠그고 상태를 확인한 뒤 하므로 같은 회차를 두 곳에서 발송하는 일이 없다.
+     *
+     * @return 이번에 표시했으면 true. 이미 다른 곳이 가져갔거나 승인된 상태가 아니면 false
+     */
+    @Transactional
+    public boolean claimForSending(final Long batchId, final LocalDateTime now) {
+        Optional<NewsBatch> locked = batchRepository.findByIdForUpdate(batchId).filter(batch -> batch.getStatus() == NewsBatchStatus.APPROVED);
+        locked.ifPresent(batch -> batch.startSending(now));
+        return locked.isPresent();
+    }
+
+    /**
+     * 발송 결과를 남긴다. 성공은 FCM 이 요청을 받아들였다는 뜻이고, 실패는 받아들였는지 알 수 없다는 뜻이다.
+     * 어느 쪽이든 다시 발송하지 않는다.
+     */
+    @Transactional
+    public void finishSending(final Long batchId, final boolean succeeded) {
+        batchRepository.findByIdForUpdate(batchId).filter(batch -> batch.getStatus() == NewsBatchStatus.SENDING)
+                .ifPresent(batch -> batch.finishSending(succeeded));
+    }
+
+    /**
+     * 발송 시각이 허용 시간 밖에 지나갔으면(서버가 꺼져 있었던 경우 등) 다음 발송 가능 시각으로 미룬다.
+     * 목록 공개 시각도 같이 미뤄서 목록이 푸시보다 먼저 보이지 않게 한다.
+     */
+    @Transactional
+    public void postpone(final Long batchId) {
+        batchRepository.findByIdForUpdate(batchId)
+                .filter(batch -> batch.getStatus() == NewsBatchStatus.APPROVED && batch.getSendAt() != null)
+                .ifPresent(batch -> {
+                    LocalDateTime next = nextSendAt(batch.getTopic(), batchId);
+                    batch.postpone(next);
+                    itemRepository.findAllByBatchId(batchId).forEach(item -> item.reschedule(next));
+                    log.info("신상 소식 발송 시각을 미룸. batchId = {}, 다음 발송 = {}", batchId, next);
+                });
+    }
+
+    /**
+     * 발송 중으로 오래 남은 회차를 발송 결과를 알 수 없는 실패로 정리한다. 다시 보내지 않는다.
+     *
+     * @return 이번에 정리한 회차. 다른 곳이 먼저 정리했거나 끝났으면 비어 있다
+     */
+    @Transactional
+    public Optional<NewsBatch> failStuckSending(final Long batchId) {
+        Optional<NewsBatch> locked = batchRepository.findByIdForUpdate(batchId).filter(batch -> batch.getStatus() == NewsBatchStatus.SENDING);
+        locked.ifPresent(batch -> batch.finishSending(false));
+        return locked;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findStuckSending(final LocalDateTime before) {
+        return batchRepository.findAllByStatusAndSendStartedAtBefore(NewsBatchStatus.SENDING, before).stream().map(NewsBatch::getId).toList();
     }
 
     private boolean isOpen(final NewsBatch batch) {

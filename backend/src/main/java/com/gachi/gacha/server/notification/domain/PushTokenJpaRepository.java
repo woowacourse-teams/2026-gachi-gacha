@@ -15,6 +15,8 @@ public interface PushTokenJpaRepository extends JpaRepository<PushToken, Long> {
 
     List<PushToken> findAllByMemberId(Long memberId);
 
+    List<PushToken> findAllByMemberIdIn(Collection<Long> memberIds);
+
     void deleteAllByMemberId(Long memberId);
 
     @Modifying

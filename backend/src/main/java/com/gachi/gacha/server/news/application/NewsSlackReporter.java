@@ -61,6 +61,25 @@ public class NewsSlackReporter {
         approvalService.view(batchId).ifPresent(view -> update(view, messageBuilder.render(view)));
     }
 
+    /**
+     * 회차의 승인 요청 메시지 스레드에 자세한 결과를 남긴다. 실패해도 던지지 않고 로그만 남긴다.
+     */
+    public void replyInThread(final Long batchId, final String text) {
+        approvalService.view(batchId).ifPresent(view -> {
+            String channel = view.batch().getSlackChannelId();
+            String messageTs = view.batch().getSlackMessageTs();
+            if (channel == null || messageTs == null) {
+                log.info("[슬랙 스레드 답글 생략] 메시지를 알린 적 없는 회차. batchId = {}, text = {}", batchId, text);
+                return;
+            }
+            try {
+                slackClient.postThreadReply(channel, messageTs, text);
+            } catch (RuntimeException e) {
+                log.warn("신상 소식 스레드 답글을 남기지 못했다. batchId = {} : {}", batchId, e.getMessage());
+            }
+        });
+    }
+
     private void update(final BatchView view, final SlackMessage message) {
         String channel = view.batch().getSlackChannelId();
         String messageTs = view.batch().getSlackMessageTs();

@@ -254,6 +254,26 @@ class NewsBatchServiceTest {
     }
 
     @Test
+    @DisplayName("승인된 뒤 발송에 실패한 회차 다음에도 이월하지 않는다. 그 소식은 이미 공개됐다")
+    void doesNotCarryFromSendFailedBatch() {
+        // given
+        NewsBatch sendFailed = awaitingBatch();
+        candidate(sendFailed, NewsSection.KOREA_STORE, "푸시", "x:1", FUTURE, null, true);
+        sendFailed.approve(LocalDateTime.now(), LocalDateTime.now().minusMinutes(5));
+        sendFailed.startSending(LocalDateTime.now());
+        sendFailed.finishSending(false);
+        entityManager.flush();
+
+        // when
+        Started started = batchService.begin(TOPIC, "THURSDAY", config.targetsOf("THURSDAY"), config, TODAY).orElseThrow();
+
+        // then
+        assertThat(sendFailed.getStatus()).isEqualTo(NewsBatchStatus.FAILED);
+        assertThat(candidateRepository.findAllByBatchIdOrderByIdAsc(started.batchId())).isEmpty();
+        assertThat(started.expired()).isNull();
+    }
+
+    @Test
     @DisplayName("새로 수집한 소식이 이미 공개됐거나 제외됐거나 이월된 링크이면 올리지 않고, 중복으로 센다")
     void dropsNewNewsWithKnownLinks() {
         // given: 이월된 후보 1건 + 이미 공개한 링크 + 제외한 링크

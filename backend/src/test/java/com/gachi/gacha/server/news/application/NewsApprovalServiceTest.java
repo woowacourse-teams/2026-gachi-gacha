@@ -325,6 +325,110 @@ class NewsApprovalServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("발송 상태 변화")
+    class Sending {
+
+        @Test
+        @DisplayName("발송 시각이 지난 승인된 회차만 찾고, 발송 중으로 표시는 한 번만 성공한다")
+        void findsDueAndClaimsOnce() {
+            NewsBatch batch = approvedBatchWithPush();
+            LocalDateTime sendAt = batch.getSendAt();
+
+            assertThat(service.findDueForSending(sendAt.minusSeconds(1))).doesNotContain(batch.getId());
+            assertThat(service.findDueForSending(sendAt)).contains(batch.getId());
+            boolean first = service.claimForSending(batch.getId(), sendAt);
+            boolean second = service.claimForSending(batch.getId(), sendAt);
+            entityManager.flush();
+            entityManager.clear();
+
+            assertThat(first).isTrue();
+            assertThat(second).isFalse();
+            NewsBatch sending = batchRepository.findById(batch.getId()).orElseThrow();
+            assertThat(sending.getStatus()).isEqualTo(NewsBatchStatus.SENDING);
+            assertThat(sending.getSendStartedAt()).isEqualTo(sendAt);
+            assertThat(service.findDueForSending(sendAt.plusDays(1))).doesNotContain(batch.getId());
+        }
+
+        @Test
+        @DisplayName("탭에만 공개한 승인 회차는 발송 대상이 아니다")
+        void tabOnlyBatchIsNeverDue() {
+            NewsBatch batch = awaitingBatch();
+            tabOnly(batch, "탭만 소식", "x:2");
+            service.approve(batch.getId(), "U1");
+            service.approve(batch.getId(), "U2");
+            entityManager.flush();
+
+            assertThat(service.findDueForSending(LocalDateTime.now().plusYears(1))).doesNotContain(batch.getId());
+        }
+
+        @Test
+        @DisplayName("발송을 마치면 성공은 SENT, 결과를 알 수 없으면 FAILED 로 남기고, 발송 중이 아니면 바꾸지 않는다")
+        void finishesSending() {
+            NewsBatch sent = approvedBatchWithPush();
+            service.claimForSending(sent.getId(), LocalDateTime.now());
+            service.finishSending(sent.getId(), true);
+            service.finishSending(sent.getId(), false);
+            entityManager.flush();
+            NewsBatch failed = approvedBatchWithPush();
+            service.claimForSending(failed.getId(), LocalDateTime.now());
+            service.finishSending(failed.getId(), false);
+            entityManager.flush();
+            entityManager.clear();
+
+            assertThat(batchRepository.findById(sent.getId()).orElseThrow().getStatus()).isEqualTo(NewsBatchStatus.SENT);
+            assertThat(batchRepository.findById(failed.getId()).orElseThrow().getStatus()).isEqualTo(NewsBatchStatus.FAILED);
+        }
+
+        @Test
+        @DisplayName("발송 시각을 미루면 목록 공개 시각도 같이 미뤄서 목록이 푸시보다 먼저 보이지 않는다")
+        void postponeMovesPublishTimeToo() {
+            NewsBatch batch = approvedBatchWithPush();
+            LocalDateTime originalSendAt = batch.getSendAt();
+
+            service.postpone(batch.getId());
+            entityManager.flush();
+            entityManager.clear();
+
+            NewsBatch postponed = batchRepository.findById(batch.getId()).orElseThrow();
+            assertThat(postponed.getStatus()).isEqualTo(NewsBatchStatus.APPROVED);
+            assertThat(postponed.getSendAt()).isAfterOrEqualTo(originalSendAt);
+            assertThat(itemRepository.findAll()).filteredOn(item -> item.getTopic().equals(TOPIC))
+                    .allSatisfy(item -> assertThat(item.getPublishedAt()).isEqualTo(postponed.getSendAt()));
+            assertThat(sendPolicy.isWithinWindow(postponed.getSendAt().atZone(ZoneId.systemDefault()).toInstant())).isTrue();
+        }
+
+        @Test
+        @DisplayName("발송 중으로 오래 남은 회차를 찾아 실패로 정리하고, 이미 정리했으면 다시 정리하지 않는다")
+        void failsStuckSendingOnce() {
+            NewsBatch batch = approvedBatchWithPush();
+            LocalDateTime startedAt = LocalDateTime.now().minusHours(1);
+            service.claimForSending(batch.getId(), startedAt);
+            entityManager.flush();
+
+            assertThat(service.findStuckSending(startedAt.minusMinutes(1))).doesNotContain(batch.getId());
+            assertThat(service.findStuckSending(startedAt.plusMinutes(1))).contains(batch.getId());
+            Optional<NewsBatch> first = service.failStuckSending(batch.getId());
+            Optional<NewsBatch> again = service.failStuckSending(batch.getId());
+            entityManager.flush();
+            entityManager.clear();
+
+            assertThat(first).isPresent();
+            assertThat(again).isEmpty();
+            assertThat(batchRepository.findById(batch.getId()).orElseThrow().getStatus()).isEqualTo(NewsBatchStatus.FAILED);
+            assertThat(service.findStuckSending(startedAt.plusMinutes(1))).doesNotContain(batch.getId());
+        }
+
+        private NewsBatch approvedBatchWithPush() {
+            NewsBatch batch = awaitingBatch();
+            push(batch, "푸시 소식 " + batch.getId(), "x:" + (100 + batch.getId() % 1000));
+            service.approve(batch.getId(), "U1");
+            service.approve(batch.getId(), "U2");
+            entityManager.flush();
+            return batch;
+        }
+    }
+
     @Test
     @DisplayName("슬랙 메시지를 다시 그리는 데 쓰는 회차의 현재 모습: 승인한 사람과 제외한 링크를 담는다")
     void viewHasApproversAndExclusions() {

@@ -151,6 +151,9 @@ public class NewsBatchService {
             return 0;
         }
         NewsBatch previous = recent.getFirst();
+        if (previous.getApprovedAt() != null) {
+            return 0;   // 승인된 뒤 발송에 실패한 회차다. 후보는 이미 공개됐다
+        }
         boolean onlyCarried = previous.getStatus() == NewsBatchStatus.DISCARDED;
         if (!previous.getStatus().isCarryOverSource() && !onlyCarried) {
             return 0;

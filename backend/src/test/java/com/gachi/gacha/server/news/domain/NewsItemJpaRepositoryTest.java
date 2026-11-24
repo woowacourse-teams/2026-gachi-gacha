@@ -7,6 +7,9 @@ import com.gachi.gacha.server.member.domain.Member;
 import com.gachi.gacha.server.member.domain.MemberJpaRepository;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthId;
 import com.gachi.gacha.server.member.domain.auth.vo.OauthProviderType;
+import com.gachi.gacha.server.notification.domain.PushPlatform;
+import com.gachi.gacha.server.notification.domain.PushToken;
+import com.gachi.gacha.server.notification.domain.PushTokenJpaRepository;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -49,6 +52,9 @@ class NewsItemJpaRepositoryTest {
 
     @Autowired
     private MemberJpaRepository memberJpaRepository;
+
+    @Autowired
+    private PushTokenJpaRepository pushTokenRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -140,6 +146,59 @@ class NewsItemJpaRepositoryTest {
             assertThat(row.getSubscribedAt()).isEqualTo(NOW);
             assertThat(row.getCreatedAt()).isNotNull();
         });
+    }
+
+    @Test
+    @DisplayName("구독 중인 회원만 푸시 수신 대상으로 찾고, 그 회원들의 기기 토큰을 모두 읽는다")
+    void findsSubscribedMembersAndTheirTokens() {
+        Long subscriber = newMember();
+        Long unsubscribed = newMember();
+        Long notYet = newMember();
+        subscribe(subscriber, true);
+        subscribe(unsubscribed, false);
+        pushTokenRepository.save(PushToken.of(subscriber, "token-a", PushPlatform.ANDROID));
+        pushTokenRepository.save(PushToken.of(subscriber, "token-b", PushPlatform.IOS));
+        pushTokenRepository.save(PushToken.of(unsubscribed, "token-c", PushPlatform.ANDROID));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Long> subscribed = memberTopicRepository.findSubscribedMemberIds(TOPIC);
+
+        assertThat(subscribed).contains(subscriber).doesNotContain(unsubscribed, notYet);
+        assertThat(pushTokenRepository.findAllByMemberIdIn(List.of(subscriber, notYet))).extracting(PushToken::getToken)
+                .containsExactlyInAnyOrder("token-a", "token-b");
+        assertThat(memberTopicRepository.findSubscribedMemberIds("OTHER_TOPIC")).doesNotContain(subscriber);
+    }
+
+    @Test
+    @DisplayName("한 회차에서 공개한 소식만 후보와 함께 읽는다")
+    void findsItemsOfBatch() {
+        NewsItem inBatch = save(TOPIC, "이 회차 소식", null, null, NOW.minusDays(1));
+        NewsBatch other = batchRepository.saveAndFlush(NewsBatch.start("OTHER_TOPIC", "THURSDAY",
+                List.of(CollectPeriod.notCollected("chiikawashop_kr", TODAY.minusDays(7), TODAY)), false, "chiikawa-v2"));
+        NewsCandidate otherCandidate = candidateRepository.save(NewsCandidate.collected(other.getId(), news(NewsSection.KOREA_STORE,
+                NewsKind.RELEASE, "다른 회차 소식", null, null, "https://x.com/a/status/999", true, null)));
+        itemRepository.save(NewsItem.publish("OTHER_TOPIC", otherCandidate, NOW.minusDays(1)));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(itemRepository.findAllByBatchId(batchId)).extracting(NewsItem::getId).containsExactly(inBatch.getId());
+        assertThat(itemRepository.findAllByBatchId(batchId).getFirst().getCandidate().getTitle()).isEqualTo("이 회차 소식");
+    }
+
+    private Long newMember() {
+        return memberJpaRepository.save(Member.builder()
+                .oauthId(new OauthId("news" + UUID.randomUUID(), OauthProviderType.KAKAO))
+                .oauthUsername("news-oauth")
+                .nickname("news-member")
+                .build()).getId();
+    }
+
+    private void subscribe(final Long memberId, final boolean on) {
+        NewsMemberTopic topic = memberTopicRepository.save(NewsMemberTopic.of(memberId, TOPIC));
+        if (on) {
+            topic.subscribe(NOW);
+        }
     }
 
     private List<NewsItem> visible(final String topic) {

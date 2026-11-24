@@ -128,7 +128,7 @@ public class NewsSlackMessageBuilder {
         String run = runLabel(batch.getRunName());
         String tail = " · 비용 $" + usage.formattedCostUsd() + " · 프롬프트 " + batch.getPromptVersion();
 
-        if (batch.getStatus() == NewsBatchStatus.FAILED) {
+        if (batch.getStatus() == NewsBatchStatus.FAILED && batch.getApprovedAt() == null) {
             List<String> warnings = batch.warnings();
             String reason = warnings.isEmpty() ? "알 수 없음" : warnings.getLast();
             return escape(run + " 수집 실패 · 원인: " + reason + tail);
@@ -157,7 +157,8 @@ public class NewsSlackMessageBuilder {
         NewsBatch batch = view.batch();
         return switch (batch.getStatus()) {
             case AWAITING_APPROVAL -> batch.isDryRun() ? null : progressLine(view);
-            case APPROVED -> approvedLine(view);
+            case APPROVED, SENDING, SENT -> approvedLine(view);
+            case FAILED -> batch.getApprovedAt() == null ? null : approvedLine(view);
             case DISCARDED -> "🔁 *다시 수집으로 버려짐* · 같은 기간을 다시 수집해 새 승인 요청을 보냅니다";
             case EXPIRED -> expiredLine != null ? expiredLine : "⏰ *만료됨*";
             default -> null;
@@ -178,25 +179,36 @@ public class NewsSlackMessageBuilder {
     }
 
     private String approvedLine(final BatchView view) {
+        NewsBatch batch = view.batch();
         StringBuilder line = new StringBuilder("✅ *승인됨* · ").append(mentions(view.approverIds()));
-        LocalDateTime sendAt = view.batch().getSendAt();
-        if (sendAt == null) {
-            line.append(" · 탭에 공개됨");
-        } else {
-            LocalDateTime inZone = sendAt.atZone(ZoneId.systemDefault()).withZoneSameInstant(properties.zone()).toLocalDateTime();
-            line.append(" · 발송 예정 ").append(NewsDateFormat.shortDateTime(inZone)).append(" (이때 탭에 공개)");
+        LocalDateTime sendAt = batch.getSendAt();
+        switch (batch.getStatus()) {
+            case SENDING -> line.append(" · 📤 발송 중");
+            case SENT -> line.append(" · 📨 발송 완료 ").append(NewsDateFormat.shortDateTime(inZone(batch.getSendStartedAt())));
+            case FAILED -> line.append(" · ❌ 발송 상태 확인 필요 (재발송 안 함)");
+            default -> {
+                if (sendAt == null) {
+                    line.append(" · 탭에 공개됨");
+                } else {
+                    line.append(" · 발송 예정 ").append(NewsDateFormat.shortDateTime(inZone(sendAt))).append(" (이때 탭에 공개)");
+                }
+            }
         }
         return line.toString();
     }
 
+    private LocalDateTime inZone(final LocalDateTime serverTime) {
+        return serverTime.atZone(ZoneId.systemDefault()).withZoneSameInstant(properties.zone()).toLocalDateTime();
+    }
+
     private String mentions(final List<String> userIds) {
-        return String.join(", ", userIds.stream().map(this::mention).toList());
+        return String.join(", ", userIds.stream().map(NewsSlackMessageBuilder::mention).toList());
     }
 
     /**
      * 슬랙 회원 ID 는 멘션으로 보여줘서 이름이 나오게 한다. 형식이 다르면 그대로 글자로 보여준다.
      */
-    private String mention(final String userId) {
+    static String mention(final String userId) {
         return SLACK_USER_ID.matcher(userId).matches() ? "<@" + userId + ">" : escape(userId);
     }
 

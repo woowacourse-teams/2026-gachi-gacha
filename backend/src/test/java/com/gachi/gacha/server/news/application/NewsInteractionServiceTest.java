@@ -32,8 +32,9 @@ class NewsInteractionServiceTest {
     private final NewsApprovalService approvalService = mock(NewsApprovalService.class);
     private final NewsSlackReporter reporter = mock(NewsSlackReporter.class);
     private final NewsScheduler scheduler = mock(NewsScheduler.class);
+    private final NewsPushService pushService = mock(NewsPushService.class);
     private final NewsInteractionService service = new NewsInteractionService(slackClient, approvalService, reporter,
-            scheduler, NewsFixtures.properties(false, "", 40, 0.6));
+            scheduler, pushService, NewsFixtures.properties(false, "", 40, 0.6));
 
     @Test
     @DisplayName("승인자가 아닌 사람이 누르면 아무것도 바꾸지 않고, 그 사람에게만 보이는 안내를 남긴다")
@@ -178,13 +179,42 @@ class NewsInteractionServiceTest {
         }
     }
 
-    @Test
-    @DisplayName("테스트 발송은 아직 연결되지 않았다고 안내한다 (발송 단계에서 구현)")
-    void testSendNotReady() {
-        service.handle(interaction(APPROVER, "news_test_send", "7"));
+    @Nested
+    @DisplayName("나에게 테스트 발송")
+    class TestSendButton {
 
-        then(slackClient).should().postEphemeral(eq(CHANNEL), eq(APPROVER), eq(NewsInteractionService.TEST_SEND_NOT_READY_MESSAGE));
-        then(approvalService).shouldHaveNoInteractions();
+        @Test
+        @DisplayName("누른 승인자의 가치가챠 회원 ID 로 테스트 발송을 하고, 결과는 스레드에 남긴다고 안내한다")
+        void sendsToApproverMember() {
+            given(pushService.sendTest(7L, 12L, APPROVER)).willReturn(NewsPushService.TestSend.DONE);
+
+            service.handle(interaction(APPROVER, "news_test_send", "7"));
+
+            then(pushService).should().sendTest(7L, 12L, APPROVER);
+            then(slackClient).should().postEphemeral(CHANNEL, APPROVER, NewsInteractionService.TEST_SEND_STARTED_MESSAGE);
+        }
+
+        @Test
+        @DisplayName("승인 대기가 아니거나 없는 회차면 안내만 한다")
+        void closedOrMissing() {
+            given(pushService.sendTest(7L, 12L, APPROVER)).willReturn(NewsPushService.TestSend.CLOSED);
+            given(pushService.sendTest(8L, 12L, APPROVER)).willReturn(NewsPushService.TestSend.NOT_FOUND);
+
+            service.handle(interaction(APPROVER, "news_test_send", "7"));
+            service.handle(interaction(APPROVER, "news_test_send", "8"));
+
+            then(slackClient).should().postEphemeral(CHANNEL, APPROVER, NewsInteractionService.CLOSED_MESSAGE);
+            then(slackClient).should().postEphemeral(CHANNEL, APPROVER, NewsInteractionService.NOT_FOUND_MESSAGE);
+        }
+
+        @Test
+        @DisplayName("버튼 값이 올바르지 않으면 보내지 않는다")
+        void invalidValue() {
+            service.handle(interaction(APPROVER, "news_test_send", "abc"));
+
+            then(pushService).shouldHaveNoInteractions();
+            then(slackClient).should().postEphemeral(CHANNEL, APPROVER, NewsInteractionService.INVALID_BUTTON_MESSAGE);
+        }
     }
 
     private SlackInteraction interaction(final String userId, final String actionId, final String value) {

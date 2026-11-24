@@ -42,6 +42,19 @@ public interface NewsBatchJpaRepository extends JpaRepository<NewsBatch, Long> {
     /**
      * 이미 정해진 발송 예정 시각. 발송 상한(하루·주)을 지키면서 다음 발송 시각을 정할 때 센다.
      */
-    @Query("select batch.sendAt from NewsBatch batch where batch.topic = :topic and batch.sendAt is not null and batch.sendAt >= :from")
-    List<LocalDateTime> findSendAtFrom(@Param("topic") String topic, @Param("from") LocalDateTime from);
+    @Query("select batch.sendAt from NewsBatch batch where batch.topic = :topic and batch.sendAt is not null "
+            + "and batch.sendAt >= :from and batch.id <> :excludeId")
+    List<LocalDateTime> findSendAtFrom(@Param("topic") String topic, @Param("from") LocalDateTime from, @Param("excludeId") Long excludeId);
+
+    /**
+     * 발송 시각이 지난 승인된 회차. 발송 스케줄러가 1분마다 찾는다.
+     */
+    @Query("select batch from NewsBatch batch where batch.status = com.gachi.gacha.server.news.domain.NewsBatchStatus.APPROVED "
+            + "and batch.sendAt is not null and batch.sendAt <= :now order by batch.sendAt")
+    List<NewsBatch> findDueForSending(@Param("now") LocalDateTime now);
+
+    /**
+     * 발송 중으로 오래 남은 회차. 서버가 FCM 을 부르는 중에 멈춘 것이다.
+     */
+    List<NewsBatch> findAllByStatusAndSendStartedAtBefore(NewsBatchStatus status, LocalDateTime before);
 }

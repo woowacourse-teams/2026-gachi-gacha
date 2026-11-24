@@ -66,6 +66,14 @@ public class SlackClient {
     }
 
     /**
+     * 승인 요청 메시지의 스레드에 답글을 단다. 발송 결과처럼 자세한 내용을 남길 때 쓴다. 보조 표시라서 실패해도 다시 시도하지 않는다.
+     */
+    public void postThreadReply(final String channel, final String threadTs, final String text) {
+        call("chat.postMessage", objectMapper.createObjectNode()
+                .put("channel", channel).put("thread_ts", threadTs).put("text", text), 0);
+    }
+
+    /**
      * 그 사람에게만 보이는 안내. 승인자가 아닌 사람이 버튼을 눌렀을 때 쓴다.
      */
     public void postEphemeral(final String channel, final String userId, final String text) {

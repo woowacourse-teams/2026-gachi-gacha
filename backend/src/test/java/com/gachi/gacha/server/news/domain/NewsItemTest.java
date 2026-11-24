@@ -30,6 +30,16 @@ class NewsItemTest {
     }
 
     @Test
+    @DisplayName("발송이 미뤄지면 공개 시각도 같이 미룬다")
+    void reschedulesPublishTime() {
+        NewsItem item = NewsItem.publish("CHIIKAWA", candidate(NewsSection.KOREA_STORE, true, null, LINK), PUBLISH_AT);
+
+        item.reschedule(PUBLISH_AT.plusDays(1));
+
+        assertThat(item.getPublishedAt()).isEqualTo(PUBLISH_AT.plusDays(1));
+    }
+
+    @Test
     @DisplayName("링크를 확인하지 못했거나 끝난 후보는 공개할 수 없다")
     void rejectsUnpublishableCandidates() {
         NewsCandidate needsCheck = candidate(NewsSection.KOREA_STORE, null, null, LINK);
