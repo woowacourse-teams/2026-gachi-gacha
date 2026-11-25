@@ -12,10 +12,8 @@ import com.gachi.gacha.server.news.domain.NewsPostProcessor;
 import com.gachi.gacha.server.news.infra.GrokResponseParser;
 import com.gachi.gacha.server.news.infra.NewsProperties;
 import com.gachi.gacha.server.news.infra.NewsPromptRenderer;
-import com.gachi.gacha.server.news.infra.RetryBackoff;
 import com.gachi.gacha.server.news.infra.XaiGrokClient;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -28,6 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -48,15 +47,13 @@ public class NewsCollectService {
 
     public static final String RECOLLECT = "RECOLLECT";
 
-    private static final int MAX_ATTEMPTS = 1 + RetryBackoff.MAX_RETRIES;
-
     private final NewsBatchService batchService;
     private final XaiGrokClient grokClient;
     private final GrokResponseParser responseParser;
     private final NewsPromptRenderer promptRenderer;
     private final NewsPostProcessor postProcessor;
     private final CollectionPlanner planner;
-    private final RetryBackoff backoff;
+    private final RetryTemplate retryTemplate;
     private final NewsProperties properties;
     private final Clock clock;
 
@@ -128,40 +125,44 @@ public class NewsCollectService {
     }
 
     /**
-     * 호출 하나를 실행한다. 실패하면 그 계정을 실패 목록에 넣는다.
+     * 호출 하나를 실행한다. 일시 오류(타임아웃, 429, 5xx)는 {@link RetryTemplate} 이 정책대로 다시 시도하고,
+     * 모두 실패하면 그 계정을 실패 목록에 넣는다. 다시 시도하는 것도 호출 수와 비용 상한에 포함한다.
      */
     private void collectOne(final NewsProperties.Topic config, final CollectCall call, final Progress progress) {
         String handle = call.target().handle();
-        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-            String limit = limitReached(progress.usage);
-            if (limit != null) {
-                progress.stop(limit);
-                progress.failedHandles.add(handle);
-                return;
+        try {
+            retryTemplate.invoke(() -> attempt(config, call, progress));
+        } catch (LimitReachedException e) {
+            progress.stop(e.getMessage());
+            progress.failedHandles.add(handle);
+        } catch (XaiGrokClient.CallException e) {
+            progress.fail(handle, e.getMessage());
+        }
+    }
+
+    /**
+     * 시도 한 번. 시도마다 상한을 먼저 확인하고, 호출 오류는 비용을 집계한 뒤 던져서 재시도 여부를 정책에 맡긴다.
+     */
+    private void attempt(final NewsProperties.Topic config, final CollectCall call, final Progress progress) {
+        String handle = call.target().handle();
+        String limit = limitReached(progress.usage);
+        if (limit != null) {
+            throw new LimitReachedException(limit);
+        }
+        try {
+            GrokResponseParser.Result parsed = responseParser.parse(call.label(), handle, respond(config, call));
+            if (parsed instanceof GrokResponseParser.Result.Failure failure) {
+                progress.usage = progress.usage.plus(failure.usage());
+                progress.fail(handle, failure.reason());
+            } else {
+                GrokResponseParser.Result.Success success = (GrokResponseParser.Result.Success) parsed;
+                progress.add(success);
+                log.info("[{}] 게시물 {}건, 소식 {}건", call.label(), success.usage().postsFetched(), success.items().size());
             }
-            try {
-                GrokResponseParser.Result parsed = responseParser.parse(call.label(), handle, respond(config, call));
-                if (parsed instanceof GrokResponseParser.Result.Failure failure) {
-                    progress.usage = progress.usage.plus(failure.usage());
-                    progress.fail(handle, failure.reason());
-                } else {
-                    GrokResponseParser.Result.Success success = (GrokResponseParser.Result.Success) parsed;
-                    progress.add(success);
-                    log.info("[{}] 게시물 {}건, 소식 {}건", call.label(), success.usage().postsFetched(), success.items().size());
-                }
-                return;
-            } catch (XaiGrokClient.CallException e) {
-                progress.usage = progress.usage.plus(GrokUsage.FAILED_CALL);
-                progress.timedOutCalls += e.isTimedOut() ? 1 : 0;
-                if (e.isRetryable() && attempt < MAX_ATTEMPTS) {
-                    Duration delay = backoff.delay(attempt, e.retryAfter());
-                    log.warn("{} — {}초 뒤 다시 시도 ({}/{}회)", e.getMessage(), delay.toSeconds(), attempt, MAX_ATTEMPTS - 1);
-                    backoff.await(delay);
-                    continue;
-                }
-                progress.fail(handle, e.getMessage());
-                return;
-            }
+        } catch (XaiGrokClient.CallException e) {
+            progress.usage = progress.usage.plus(GrokUsage.FAILED_CALL);
+            progress.timedOutCalls += e.isTimedOut() ? 1 : 0;
+            throw e;
         }
     }
 
@@ -218,6 +219,16 @@ public class NewsCollectService {
 
     private LocalDate todayKst() {
         return LocalDate.now(clock.withZone(properties.zone()));
+    }
+
+    /**
+     * 호출 수나 비용 상한에 닿아 더 호출할 수 없다. 재시도 대상이 아니라서 곧바로 collectOne 으로 올라간다.
+     */
+    private static final class LimitReachedException extends RuntimeException {
+
+        private LimitReachedException(final String message) {
+            super(message);
+        }
     }
 
     /**

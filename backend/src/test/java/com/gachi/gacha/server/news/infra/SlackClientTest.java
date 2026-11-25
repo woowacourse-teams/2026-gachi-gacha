@@ -19,6 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,13 +35,14 @@ class SlackClientTest {
 
     private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private final RestTemplate restTemplate = new RestTemplate();
+    /**
+     * 테스트에서는 첫 대기를 1ms 로 줄인다. 대기 시간이 2초 → 4초로 늘어나는 정책은 ExternalCallRetryTest 에서 확인한다.
+     * waited 에는 Retry-After 때문에 백오프 뒤에 더 기다린 시간만 기록된다.
+     */
+    private static final Duration BASE_DELAY = Duration.ofMillis(1);
+
     private final List<Duration> waited = new ArrayList<>();
-    private final RetryBackoff backoff = new RetryBackoff() {
-        @Override
-        public void await(final Duration delay) {
-            waited.add(delay);
-        }
-    };
+    private final RetryTemplate retryTemplate = ExternalCallRetry.template(BASE_DELAY, waited::add);
 
     private MockRestServiceServer server;
     private SlackClient client;
@@ -48,7 +50,7 @@ class SlackClientTest {
     @BeforeEach
     void setUp() {
         server = MockRestServiceServer.bindTo(restTemplate).build();
-        client = new SlackClient(restTemplate, objectMapper, API, TOKEN, backoff);
+        client = new SlackClient(restTemplate, objectMapper, API, TOKEN, retryTemplate);
     }
 
     @Test
@@ -108,7 +110,7 @@ class SlackClientTest {
     @Test
     @DisplayName("봇 토큰이 없으면 chat.update 도 호출하지 않고 로그만 남긴다")
     void updateWithoutTokenDoesNotCall() {
-        SlackClient withoutToken = new SlackClient(restTemplate, objectMapper, API, "", backoff);
+        SlackClient withoutToken = new SlackClient(restTemplate, objectMapper, API, "", retryTemplate);
 
         withoutToken.updateMessage("C0NEWS", "1.1", message());
 
@@ -134,7 +136,7 @@ class SlackClientTest {
     }
 
     @Test
-    @DisplayName("5xx 는 2초, 4초 뒤에 다시 시도하고, 성공하면 그 결과를 돌려준다")
+    @DisplayName("5xx 는 2번까지 다시 시도하고, 성공하면 그 결과를 돌려준다")
     void retriesServerErrors() {
         server.expect(requestTo(API + "/chat.postMessage")).andRespond(withServerError());
         server.expect(requestTo(API + "/chat.postMessage")).andRespond(withStatus(HttpStatus.BAD_GATEWAY));
@@ -144,7 +146,7 @@ class SlackClientTest {
         assertThat(client.postMessage("C0NEWS", message())).isEqualTo("1.1");
 
         server.verify();
-        assertThat(waited).containsExactly(Duration.ofSeconds(2), Duration.ofSeconds(4));
+        assertThat(waited).isEmpty();
     }
 
     @Test
@@ -160,11 +162,11 @@ class SlackClientTest {
                 .hasMessageNotContaining(TOKEN);
 
         server.verify();
-        assertThat(waited).containsExactly(Duration.ofSeconds(2), Duration.ofSeconds(4));
+        assertThat(waited).isEmpty();
     }
 
     @Test
-    @DisplayName("429 는 Retry-After 만큼 기다리고 (최대 30초), 재시도를 모두 써도 실패하면 예외로 알린다")
+    @DisplayName("429 는 Retry-After 만큼 기다리고 (최대 30초), 재시도를 모두 써도 실패하면 예외로 알린다. 백오프로 이미 기다린 시간은 뺀다")
     void retriesRateLimitAndGivesUp() {
         server.expect(requestTo(API + "/chat.postMessage"))
                 .andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After", "10"));
@@ -179,7 +181,7 @@ class SlackClientTest {
                 .hasMessageNotContaining(TOKEN);
 
         server.verify();
-        assertThat(waited).containsExactly(Duration.ofSeconds(10), Duration.ofSeconds(30));
+        assertThat(waited).containsExactly(Duration.ofSeconds(10).minus(BASE_DELAY), Duration.ofSeconds(30).minus(BASE_DELAY.multipliedBy(2)));
     }
 
     @Test
@@ -203,7 +205,7 @@ class SlackClientTest {
     @Test
     @DisplayName("봇 토큰이 없으면 호출하지 않고 ts 없이 끝난다 (로컬·테스트)")
     void skipsWithoutToken() {
-        SlackClient withoutToken = new SlackClient(restTemplate, objectMapper, API, null, backoff);
+        SlackClient withoutToken = new SlackClient(restTemplate, objectMapper, API, null, retryTemplate);
 
         assertThat(withoutToken.postMessage("C0NEWS", message())).isNull();
         server.verify();

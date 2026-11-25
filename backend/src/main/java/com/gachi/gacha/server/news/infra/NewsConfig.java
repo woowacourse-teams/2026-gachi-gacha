@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.client.RestTemplate;
@@ -60,9 +61,12 @@ public class NewsConfig {
         return executor;
     }
 
+    /**
+     * 외부 호출(Grok, 슬랙)을 다시 시도하는 정책. 호출마다 따로 상태를 들고 있지 않아 하나를 같이 쓴다.
+     */
     @Bean
-    public RetryBackoff retryBackoff() {
-        return new RetryBackoff();
+    public RetryTemplate externalCallRetryTemplate() {
+        return ExternalCallRetry.template();
     }
 
     /**
@@ -85,9 +89,9 @@ public class NewsConfig {
             final RestTemplate restTemplate,
             final ObjectMapper objectMapper,
             final NewsProperties properties,
-            final RetryBackoff backoff
+            final RetryTemplate externalCallRetryTemplate
     ) {
-        return new SlackClient(restTemplate, objectMapper, SLACK_API_URL, properties.slack().botToken(), backoff);
+        return new SlackClient(restTemplate, objectMapper, SLACK_API_URL, properties.slack().botToken(), externalCallRetryTemplate);
     }
 
     @Bean

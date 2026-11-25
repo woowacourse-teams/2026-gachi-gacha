@@ -27,7 +27,7 @@ import com.gachi.gacha.server.news.domain.NewsPostProcessor;
 import com.gachi.gacha.server.news.infra.GrokResponseParser;
 import com.gachi.gacha.server.news.infra.NewsProperties;
 import com.gachi.gacha.server.news.infra.NewsPromptRenderer;
-import com.gachi.gacha.server.news.infra.RetryBackoff;
+import com.gachi.gacha.server.news.infra.ExternalCallRetry;
 import com.gachi.gacha.server.news.infra.XaiGrokClient;
 import java.time.Clock;
 import java.time.Duration;
@@ -43,6 +43,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import tools.jackson.databind.ObjectMapper;
@@ -65,13 +66,14 @@ class NewsCollectServiceTest {
     private final ObjectMapper objectMapper = JsonMapper.builder().build();
     private final NewsBatchService batchService = mock(NewsBatchService.class);
     private final XaiGrokClient grokClient = mock(XaiGrokClient.class);
+    /**
+     * 테스트에서는 첫 대기를 1ms 로 줄인다. 대기 시간이 2초 → 4초로 늘어나는 정책은 ExternalCallRetryTest 에서 확인한다.
+     * waited 에는 Retry-After 때문에 백오프 뒤에 더 기다린 시간만 기록된다.
+     */
+    private static final Duration BASE_DELAY = Duration.ofMillis(1);
+
     private final List<Duration> waited = new ArrayList<>();
-    private final RetryBackoff backoff = new RetryBackoff() {
-        @Override
-        public void await(final Duration delay) {
-            waited.add(delay);
-        }
-    };
+    private final RetryTemplate retryTemplate = ExternalCallRetry.template(BASE_DELAY, waited::add);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-12T03:30:00Z"), ZoneOffset.UTC);
 
     private NewsProperties properties = NewsFixtures.properties(false, "", 40, 0.6);
@@ -127,7 +129,7 @@ class NewsCollectServiceTest {
     class Retry {
 
         @Test
-        @DisplayName("일시 오류는 2초 뒤 다시 시도하고, 성공하면 그 계정은 수집한 것이다. 실패한 시도도 호출 수에 센다")
+        @DisplayName("일시 오류는 다시 시도하고, 성공하면 그 계정은 수집한 것이다. 실패한 시도도 호출 수에 센다")
         void retriesTransientError() {
             given(grokClient.respond(any(), anyString(), anyString(), anyInt()))
                     .willThrow(new XaiGrokClient.CallException("[KR_shop_2026-11-05] HTTP 503", true, null, false))
@@ -136,7 +138,6 @@ class NewsCollectServiceTest {
             service().collect(TOPIC, RUN);
 
             then(grokClient).should(times(PLANNED_CALLS + 1)).respond(any(), anyString(), anyString(), anyInt());
-            assertThat(waited).containsExactly(Duration.ofSeconds(2));
             assertThat(capturedHandles()).containsExactlyInAnyOrder(SHOP, KOUHOU);
             assertThat(capturedUsage().calls()).isEqualTo(PLANNED_CALLS + 1);
         }
@@ -155,7 +156,8 @@ class NewsCollectServiceTest {
 
             service().collect(TOPIC, RUN);
 
-            assertThat(waited).containsExactly(Duration.ofSeconds(2), Duration.ofSeconds(4));
+            // 첫 시도 + 재시도 2번 = 3번 호출한 뒤 포기하고, 나머지 구간은 계속 호출한다
+            then(grokClient).should(times(PLANNED_CALLS + 2)).respond(any(), anyString(), anyString(), anyInt());
             assertThat(capturedHandles()).containsExactly(KOUHOU);
             assertThat(capturedWarnings()).contains("[KR_shop_2026-11-05] HTTP 503");
             then(batchService).should(never()).fail(anyLong(), any(), anyList());
@@ -189,7 +191,7 @@ class NewsCollectServiceTest {
 
             service().collect(TOPIC, RUN);
 
-            assertThat(waited).containsExactly(Duration.ofSeconds(10));
+            assertThat(waited).containsExactly(Duration.ofSeconds(10).minus(BASE_DELAY));
         }
 
         @Test
@@ -332,7 +334,7 @@ class NewsCollectServiceTest {
 
     private NewsCollectService service() {
         return new NewsCollectService(batchService, grokClient, new GrokResponseParser(objectMapper),
-                new NewsPromptRenderer(), new NewsPostProcessor(), new CollectionPlanner(7, 14), backoff, properties, clock);
+                new NewsPromptRenderer(), new NewsPostProcessor(), new CollectionPlanner(7, 14), retryTemplate, properties, clock);
     }
 
     private Started started() {

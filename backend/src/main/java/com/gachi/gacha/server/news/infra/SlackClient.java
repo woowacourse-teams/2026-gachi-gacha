@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -31,20 +32,20 @@ public class SlackClient {
     private final ObjectMapper objectMapper;
     private final String baseUrl;
     private final @Nullable String botToken;
-    private final RetryBackoff backoff;
+    private final RetryTemplate retryTemplate;
 
     public SlackClient(
             final RestTemplate restTemplate,
             final ObjectMapper objectMapper,
             final String baseUrl,
             @Nullable final String botToken,
-            final RetryBackoff backoff
+            final RetryTemplate retryTemplate
     ) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.baseUrl = baseUrl;
         this.botToken = botToken;
-        this.backoff = backoff;
+        this.retryTemplate = retryTemplate;
     }
 
     /**
@@ -52,7 +53,7 @@ public class SlackClient {
      */
     public @Nullable String postMessage(final String channel, final SlackMessage message) {
         ObjectNode body = message.toBody(objectMapper).put("channel", channel);
-        JsonNode response = call("chat.postMessage", body, RetryBackoff.MAX_RETRIES);
+        JsonNode response = call("chat.postMessage", body, true);
         return response == null ? null : response.path("ts").asString(null);
     }
 
@@ -62,7 +63,7 @@ public class SlackClient {
      */
     public void updateMessage(final String channel, final String messageTs, final SlackMessage message) {
         ObjectNode body = message.toBody(objectMapper).put("channel", channel).put("ts", messageTs);
-        call("chat.update", body, 0);
+        call("chat.update", body, false);
     }
 
     /**
@@ -70,7 +71,7 @@ public class SlackClient {
      */
     public void postThreadReply(final String channel, final String threadTs, final String text) {
         call("chat.postMessage", objectMapper.createObjectNode()
-                .put("channel", channel).put("thread_ts", threadTs).put("text", text), 0);
+                .put("channel", channel).put("thread_ts", threadTs).put("text", text), false);
     }
 
     /**
@@ -78,10 +79,10 @@ public class SlackClient {
      */
     public void postEphemeral(final String channel, final String userId, final String text) {
         call("chat.postEphemeral", objectMapper.createObjectNode()
-                .put("channel", channel).put("user", userId).put("text", text), RetryBackoff.MAX_RETRIES);
+                .put("channel", channel).put("user", userId).put("text", text), true);
     }
 
-    private @Nullable JsonNode call(final String method, final ObjectNode body, final int maxRetries) {
+    private @Nullable JsonNode call(final String method, final ObjectNode body, final boolean retry) {
         if (botToken == null || botToken.isBlank()) {
             log.info("[슬랙 미발송] 봇 토큰 없음. method = {}, message = {}", method, body);
             return null;
@@ -91,7 +92,7 @@ public class SlackClient {
         headers.setBearerAuth(botToken);
         HttpEntity<String> request = new HttpEntity<>(body.toString(), headers);
 
-        String response = post(method, request, maxRetries);
+        String response = retry ? retryTemplate.invoke(() -> post(method, request)) : post(method, request);
         JsonNode json = objectMapper.readTree(response == null ? "{}" : response);
         if (!json.path("ok").asBoolean(false)) {
             throw new SlackException(method + " 실패: " + json.path("error").asString("unknown"));
@@ -99,31 +100,21 @@ public class SlackClient {
         return json;
     }
 
-    private @Nullable String post(final String method, final HttpEntity<String> request, final int maxRetries) {
-        for (int attempt = 0; ; attempt++) {
-            try {
-                return restTemplate.postForObject(baseUrl + "/" + method, request, String.class);
-            } catch (HttpStatusCodeException e) {
-                int status = e.getStatusCode().value();
-                if (!(status == 429 || status >= 500) || attempt >= maxRetries) {
-                    throw new SlackException(method + " 호출 실패: HTTP " + status);
-                }
-                waitBeforeRetry(method, attempt + 1, RetryBackoff.retryAfter(e.getResponseHeaders()));
-            } catch (ResourceAccessException e) {
-                if (attempt >= maxRetries) {
-                    throw new SlackException(method + " 호출 실패: 네트워크/타임아웃");
-                }
-                waitBeforeRetry(method, attempt + 1, null);
-            } catch (RestClientException e) {
-                throw new SlackException(method + " 호출 실패: " + e.getClass().getSimpleName());
-            }
+    /**
+     * 한 번 보낸다. 429, 5xx, 네트워크 오류는 다시 해 볼 만한 실패로 던지고, 재시도는 호출하는 쪽이 정한다.
+     */
+    private @Nullable String post(final String method, final HttpEntity<String> request) {
+        try {
+            return restTemplate.postForObject(baseUrl + "/" + method, request, String.class);
+        } catch (HttpStatusCodeException e) {
+            int status = e.getStatusCode().value();
+            boolean retryable = status == 429 || status >= 500;
+            throw new SlackException(method + " 호출 실패: HTTP " + status, retryable, ExternalCallRetry.retryAfter(e.getResponseHeaders()));
+        } catch (ResourceAccessException e) {
+            throw new SlackException(method + " 호출 실패: 네트워크/타임아웃", true, null);
+        } catch (RestClientException e) {
+            throw new SlackException(method + " 호출 실패: " + e.getClass().getSimpleName());
         }
-    }
-
-    private void waitBeforeRetry(final String method, final int retryNumber, @Nullable final Duration retryAfter) {
-        Duration delay = backoff.delay(retryNumber, retryAfter);
-        log.warn("슬랙 호출을 다시 시도한다. method = {}, 재시도 = {}회, 대기 = {}초", method, retryNumber, delay.toSeconds());
-        backoff.await(delay);
     }
 
     /**
@@ -138,10 +129,29 @@ public class SlackClient {
         }
     }
 
-    public static class SlackException extends RuntimeException {
+    public static class SlackException extends RuntimeException implements ExternalCallFailure {
+
+        private final boolean retryable;
+        private final @Nullable Duration retryAfter;
 
         public SlackException(final String message) {
+            this(message, false, null);
+        }
+
+        public SlackException(final String message, final boolean retryable, @Nullable final Duration retryAfter) {
             super(message);
+            this.retryable = retryable;
+            this.retryAfter = retryAfter;
+        }
+
+        @Override
+        public boolean isRetryable() {
+            return retryable;
+        }
+
+        @Override
+        public @Nullable Duration retryAfter() {
+            return retryAfter;
         }
     }
 }

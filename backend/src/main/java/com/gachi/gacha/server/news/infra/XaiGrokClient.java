@@ -81,7 +81,7 @@ public class XaiGrokClient {
             int status = e.getStatusCode().value();
             boolean retryable = status == 429 || status >= 500;
             throw new CallException("[" + call.label() + "] HTTP " + status + errorSummary(e.getResponseBodyAsString()),
-                    retryable, RetryBackoff.retryAfter(e.getResponseHeaders()), false);
+                    retryable, ExternalCallRetry.retryAfter(e.getResponseHeaders()), false);
         } catch (ResourceAccessException e) {
             throw new CallException("[" + call.label() + "] 호출 실패 (네트워크/타임아웃)", true, null, true);
         } catch (RestClientException e) {
@@ -140,7 +140,7 @@ public class XaiGrokClient {
     /**
      * Grok 호출 자체가 실패했다. 어느 구간이 실패했는지 메시지에 호출 이름이 들어 있다.
      */
-    public static class CallException extends RuntimeException {
+    public static class CallException extends RuntimeException implements ExternalCallFailure {
 
         private final boolean retryable;
         private final @Nullable Duration retryAfter;
@@ -167,10 +167,12 @@ public class XaiGrokClient {
             this.timedOut = timedOut;
         }
 
+        @Override
         public boolean isRetryable() {
             return retryable;
         }
 
+        @Override
         public @Nullable Duration retryAfter() {
             return retryAfter;
         }
