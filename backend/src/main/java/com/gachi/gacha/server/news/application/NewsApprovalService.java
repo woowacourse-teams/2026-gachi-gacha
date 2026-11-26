@@ -20,6 +20,7 @@ import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Optional;
@@ -178,7 +179,7 @@ public class NewsApprovalService {
                 .filter(candidate -> !candidate.isEndedOn(todayKst))
                 .toList();
 
-        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDateTime now = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
         LocalDateTime sendAt = publishable.stream().anyMatch(NewsCandidate::isPushTarget) ? nextSendAt(topic, NO_BATCH) : null;
         batch.approve(now, sendAt);
         LocalDateTime publishedAt = sendAt != null ? sendAt : now;
@@ -190,7 +191,7 @@ public class NewsApprovalService {
      * 허용 시간과 하루·주 상한을 지키는 가장 이른 발송 시각. 시각 컬럼은 서버 기본 시간대로 저장한다.
      */
     private LocalDateTime nextSendAt(final String topic, final Long excludeBatchId) {
-        Instant now = clock.instant();
+        Instant now = clock.instant().truncatedTo(ChronoUnit.SECONDS);
         LocalDate monday = LocalDate.now(clock.withZone(properties.zone())).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDateTime weekStart = LocalDateTime.ofInstant(monday.atStartOfDay(properties.zone()).toInstant(), clock.getZone());
         List<Instant> scheduled = batchRepository.findSendAtFrom(topic, weekStart, excludeBatchId).stream()
