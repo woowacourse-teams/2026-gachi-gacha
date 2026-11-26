@@ -99,7 +99,11 @@ public enum ErrorCode {
     APPLE_SERVER_ERROR(HttpStatus.BAD_GATEWAY, "APE03", "애플 서버와 통신에 실패했습니다."),
 
     //elastic search
-    ELASTICSEARCH_INDEX_FAILED(HttpStatus.BAD_GATEWAY, "ES001", "검색 색인 처리에 실패했습니다.")
+    ELASTICSEARCH_INDEX_FAILED(HttpStatus.BAD_GATEWAY, "ES001", "검색 색인 처리에 실패했습니다."),
+
+    //news
+    NEWS_BATCH_STATE_CONFLICT(HttpStatus.CONFLICT, "NWE001", "신상 소식 회차 상태가 맞지 않아 처리할 수 없습니다."),
+    NEWS_TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, "NWE002", "존재하지 않는 신상 소식 주제입니다.")
     ;
 
     private final HttpStatus status;

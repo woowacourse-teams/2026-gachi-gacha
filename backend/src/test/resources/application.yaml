@@ -106,3 +106,12 @@ notification:
     minimum-score: ${TRADE_RECOMMENDATION_MINIMUM_SCORE:0.02}
     max-recipients: ${TRADE_RECOMMENDATION_MAX_RECIPIENTS:100}
     dry-run: ${TRADE_RECOMMENDATION_DRY_RUN:false}
+
+news:
+  enabled: false
+  # 컨트롤러 테스트가 주제를 확인할 수 있게 주제만 둔다. 수집 대상 계정은 필요 없다
+  topics:
+    CHIIKAWA:
+      display-name: 치이카와
+      prompt-dir: news/prompts/chiikawa
+      prompt-version: chiikawa-v2

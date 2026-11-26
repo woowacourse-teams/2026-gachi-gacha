@@ -1,0 +1,41 @@
+{
+  "id": "resp_jp_market",
+  "output": [
+    {
+      "type": "custom_tool_call",
+      "name": "x_keyword_search",
+      "input": {
+        "query": "from:chiikawa_market -filter:replies -filter:retweets",
+        "limit": 10,
+        "mode": "Latest"
+      }
+    },
+    {
+      "type": "message",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "```json\n{\n  \"items\": [\n    {\n      \"section\": \"japan_official\",\n      \"kind\": \"release\",\n      \"title\": \"11월 6일(금) 11시 발매 & 재입하\",\n      \"start_date\": \"2026-11-06\",\n      \"end_date\": null,\n      \"date_label\": \"11/6(금) 11시 발매\",\n      \"products\": [\n        {\n          \"name\": \"메모폰4 (전 6종)\",\n          \"name_ja\": \"メモポン4（全6種）\",\n          \"price\": \"각 2,200엔(세금 포함)\"\n        }\n      ],\n      \"reservation\": null,\n      \"notes\": [\n        \"11/16(월) 출하 재개 이후 순차 출하 예정\"\n      ],\n      \"link\": \"https://x.com/chiikawa_market/status/2118523764224782564\",\n      \"ref_url\": \"https://chiikawamarket.jp/collections/20261106-newre\",\n      \"location\": \"치이카와 마켓\"\n    },\n    {\n      \"section\": \"other_goods\",\n      \"kind\": \"lottery\",\n      \"title\": \"시사다라케 쿠지 종료 안내\",\n      \"start_date\": null,\n      \"end_date\": \"2026-11-03\",\n      \"date_label\": \"11/3(화) 23:59 종료\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawa_market/status/2117413980046237773\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 마켓\"\n    },\n    {\n      \"section\": \"japan_official\",\n      \"kind\": \"preorder\",\n      \"title\": \"치이카와 연하엽서 3매 세트\",\n      \"start_date\": \"2026-11-13\",\n      \"end_date\": null,\n      \"date_label\": \"11/13(금) 15:00 수주 시작\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawa_market/status/2119641129515954324\",\n      \"ref_url\": \"https://chiikawamarket.jp/products/nenga?utm_campaign=winter\",\n      \"location\": \"치이카와 마켓\"\n    },\n    {\n      \"section\": \"japan_official\",\n      \"kind\": \"notice\",\n      \"title\": \"프리즌 포테토 판매 마감 안내\",\n      \"start_date\": null,\n      \"end_date\": null,\n      \"date_label\": null,\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawa_market/status/2118000000000000003\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 마켓\"\n    }\n  ],\n  \"skipped\": [\n    {\n      \"link\": \"https://x.com/chiikawa_market/status/2118000000000000009\",\n      \"reason\": \"일러스트 게시물\"\n    }\n  ]\n}\n```",
+          "annotations": []
+        }
+      ]
+    }
+  ],
+  "citations": [
+    "https://x.com/chiikawa_market/status/2118523764224782564",
+    "https://x.com/chiikawa_market/status/2117413980046237773",
+    "https://x.com/chiikawa_market/status/2119641129515954324",
+    "https://x.com/chiikawa_market/status/2118000000000000003"
+  ],
+  "usage": {
+    "input_tokens": 12000,
+    "output_tokens": 2000,
+    "cost_in_usd_ticks": 250000000,
+    "server_side_tool_usage_details": {
+      "x_search_calls": 1,
+      "web_search_calls": 0,
+      "x_posts_fetched": 10,
+      "x_users_fetched": 0
+    }
+  }
+}

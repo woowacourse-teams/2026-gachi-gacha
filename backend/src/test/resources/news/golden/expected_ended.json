@@ -1,0 +1,81 @@
+[
+  {
+    "section": "korea_store",
+    "kind": "entry_reservation",
+    "title": "치이카와샵 용산점 네이버 예약 입장 안내",
+    "start_date": "2026-11-05",
+    "end_date": "2026-11-08",
+    "date_label": "11/5(목) ~ 11/8(일)",
+    "products": [],
+    "reservation": {
+      "method": "네이버 예약",
+      "period": "11/5~11/8",
+      "open_at": null,
+      "note": "예약자 우선 입장"
+    },
+    "notes": [],
+    "link": "https://x.com/chiikawashop_kr/status/2117134618503926221",
+    "ref_url": null,
+    "location": "치이카와샵 용산점",
+    "source_account": "chiikawashop_kr",
+    "link_verified": true,
+    "timing": "종료"
+  },
+  {
+    "section": "korea_store",
+    "kind": "restock",
+    "title": "영화 치이카와 인어섬의비밀 인기 상품 재입고",
+    "start_date": "2026-11-05",
+    "end_date": "2026-11-08",
+    "date_label": "11/5(목) ~ 11/8(일)",
+    "products": [
+      {
+        "name": "인어 치이카와 인형",
+        "name_ja": null,
+        "price": null
+      }
+    ],
+    "reservation": null,
+    "notes": [],
+    "link": "https://twitter.com/chiikawashop_kr/status/2118131184446124112?s=20",
+    "ref_url": null,
+    "location": "치이카와샵 용산점",
+    "source_account": "chiikawashop_kr",
+    "link_verified": true,
+    "timing": "종료"
+  },
+  {
+    "section": "other_goods",
+    "kind": "lottery",
+    "title": "시사다라케 쿠지 종료 안내",
+    "start_date": null,
+    "end_date": "2026-11-03",
+    "date_label": "11/3(화) 23:59 종료",
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawa_market/status/2117413980046237773",
+    "ref_url": null,
+    "location": "치이카와 마켓",
+    "source_account": "chiikawa_market",
+    "link_verified": true,
+    "timing": "종료"
+  },
+  {
+    "section": "japan_official",
+    "kind": "notice",
+    "title": "프리즌 포테토 판매 마감 안내",
+    "start_date": null,
+    "end_date": null,
+    "date_label": null,
+    "products": [],
+    "reservation": null,
+    "notes": [],
+    "link": "https://x.com/chiikawa_market/status/2118000000000000003",
+    "ref_url": null,
+    "location": "치이카와 마켓",
+    "source_account": "chiikawa_market",
+    "link_verified": true,
+    "timing": "종료"
+  }
+]

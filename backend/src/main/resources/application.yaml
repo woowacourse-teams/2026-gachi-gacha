@@ -171,3 +171,57 @@ notification:
     minimum-score: ${TRADE_RECOMMENDATION_MINIMUM_SCORE:0.02}
     max-recipients: ${TRADE_RECOMMENDATION_MAX_RECIPIENTS:100}
     dry-run: ${TRADE_RECOMMENDATION_DRY_RUN:false}
+
+news:
+  # 신상 소식. 꺼져 있으면 수집하지 않는다. dry-run 이면 수집·검증·저장까지만 하고 공개와 푸시를 하지 않는다
+  enabled: ${NEWS_ENABLED:false}
+  dry-run: ${NEWS_DRY_RUN:true}
+  environment-label: ${NEWS_ENVIRONMENT_LABEL:}   # 슬랙 메시지 맨 앞 표시. 개발 서버는 [개발], 운영은 비운다
+  zone: Asia/Seoul
+  hide-ended-after-days: 30   # 끝난 소식을 목록에서 숨기기까지의 일수 (종료일이 없으면 시작일, 없으면 공개일 기준)
+  required-approvals: ${NEWS_REQUIRED_APPROVALS:2}   # 승인에 필요한 서로 다른 승인자 수. 혼자 확인할 때만 1로 낮춘다
+  send:
+    window-start: "08:00"   # 푸시 발송 허용 시간(news.zone 기준). 승인 시각이 시간 밖이면 다음 시작 시각으로 예약한다
+    window-end: "21:00"     # 이 시각부터는 보내지 않는다
+    daily-limit: 1          # 하루에 보낼 수 있는 푸시 수. 넘으면 다음으로 보낼 수 있는 시각으로 미룬다
+    weekly-limit: 3         # 한 주(월~일)에 보낼 수 있는 푸시 수
+    stuck-after: 30m        # 발송 중으로 이 시간 넘게 남은 회차는 서버가 발송 중에 멈춘 것으로 보고 슬랙으로 경고한다 (다시 보내지 않는다)
+  schedule:
+    monday-cron: ${NEWS_MONDAY_CRON:0 30 18 * * MON}       # 한국 계정
+    thursday-cron: ${NEWS_THURSDAY_CRON:0 30 12 * * THU}   # 한국·일본 계정
+  collect:
+    default-period-days: 7    # 계정의 수집 기록이 없을 때 기간
+    max-period-days: 14       # 수집 기간 상한
+    max-calls-per-run: 40     # 실행 1회당 Grok 호출 상한 (재시도 포함)
+    max-cost-usd: 0.6         # 실행 1회당 비용 상한. 넘으면 남은 호출을 하지 않는다
+    stuck-after: 6h           # 수집 중으로 이 시간 넘게 남은 회차는 서버가 멈춘 것으로 보고 실패 처리한다
+  xai:
+    base-url: https://api.x.ai/v1
+    api-key: ${XAI_API_KEY:}
+    model: grok-4.3
+    connect-timeout: 10s
+    read-timeout: 300s
+    max-turns: 2
+    max-turns-with-web-search: 3
+  slack:
+    bot-token: ${SLACK_BOT_TOKEN:}
+    channel-id: ${SLACK_NEWS_CHANNEL_ID:}
+    signing-secret: ${SLACK_SIGNING_SECRET:}   # 버튼 요청의 서명 검증용. 슬랙 앱 설정의 Signing Secret
+    approvers: ${SLACK_NEWS_APPROVERS:}        # 승인자. 슬랙회원ID:가치가챠회원ID 를 쉼표로 (예: U01ABC:12,U02DEF:34)
+  topics:
+    CHIIKAWA:
+      display-name: 치이카와
+      name-ja: ちいかわ
+      prompt-dir: news/prompts/chiikawa
+      prompt-version: chiikawa-v2.1
+      # 매장 평소 운영시간. 같은 운영시간을 반복한 공지(notes)를 지울 때 쓴다. 공식 페이지에서 확인한 값으로 관리한다
+      store-hours: "10:30 ~ 22:00"
+      # 계정마다 따로 호출한다. Grok 의 X 검색은 한 번에 최대 10건이라 게시물이 많은 계정은 분할 일수를 작게 잡는다
+      targets:
+        - { label: KR_shop,   handle: chiikawashop_kr, chunk-days: 2, web-search: true,  query: "" }
+        - { label: KR_market, handle: chiikawa_m_kr,   chunk-days: 2, web-search: true,  query: "" }
+        - { label: JP_market, handle: chiikawa_market, chunk-days: 1, web-search: false, query: "-filter:replies -filter:retweets" }
+        - { label: JP_kouhou, handle: chiikawa_kouhou, chunk-days: 7, web-search: false, query: "-filter:replies -filter:retweets" }
+      runs:
+        MONDAY: [KR_shop, KR_market]
+        THURSDAY: [KR_shop, KR_market, JP_market, JP_kouhou]

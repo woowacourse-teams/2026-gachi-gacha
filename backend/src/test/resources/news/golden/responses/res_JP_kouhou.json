@@ -1,0 +1,44 @@
+{
+  "id": "resp_jp_kouhou",
+  "output": [
+    {
+      "type": "custom_tool_call",
+      "name": "x_keyword_search",
+      "input": {
+        "query": "from:chiikawa_kouhou -filter:replies -filter:retweets",
+        "limit": 10,
+        "mode": "Latest"
+      }
+    },
+    {
+      "type": "message",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "```json\n{\n  \"items\": [\n    {\n      \"section\": \"japan_official\",\n      \"kind\": \"release\",\n      \"title\": \"11월 6일 발매 (중복)\",\n      \"start_date\": \"2026-11-06\",\n      \"end_date\": null,\n      \"date_label\": \"11/6\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/i/status/2118523764224782564\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 마켓\"\n    },\n    {\n      \"section\": \"overseas\",\n      \"kind\": \"release\",\n      \"title\": \"하와이 한정 치이카와 마스코트 키링\",\n      \"start_date\": \"2026-11-09\",\n      \"end_date\": null,\n      \"date_label\": \"11월 9일 판매 시작\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawa_kouhou/status/2118508673865551977\",\n      \"ref_url\": null,\n      \"location\": \"ABC 스토어 (하와이)\"\n    },\n    {\n      \"section\": \"other_goods\",\n      \"kind\": \"release\",\n      \"title\": \"애니메 치이카와 코스코 한정 스웨트\",\n      \"start_date\": null,\n      \"end_date\": null,\n      \"date_label\": \"11월 상순 순차 발매\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": null,\n      \"ref_url\": \"https://www.costco.co.jp/\",\n      \"location\": \"코스코\"\n    },\n    {\n      \"section\": \"other_goods\",\n      \"kind\": \"release\",\n      \"title\": \"애니메 치이카와 주머니 S 3매 세트\",\n      \"start_date\": null,\n      \"end_date\": null,\n      \"date_label\": \"11월 하순 순차 발매\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawa_kouhou/status/2119595827966759013\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 마켓\"\n    },\n    {\n      \"section\": \"other_goods\",\n      \"kind\": \"release\",\n      \"title\": \"긴팔 티셔츠 (치이카와 랜드)\",\n      \"start_date\": \"2026-11-06\",\n      \"end_date\": null,\n      \"date_label\": \"11월 6일(금) 순차 발매\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://chiikawa-info.jp/ck_land.html/\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 랜드\"\n    }\n  ],\n  \"skipped\": []\n}\n```",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "url": "https://Chiikawa-Info.jp/ck_land.html?ref=x"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "citations": [
+    "https://x.com/chiikawa_kouhou/status/2118508673865551977",
+    "https://x.com/chiikawa_kouhou/status/2119595827966759013"
+  ],
+  "usage": {
+    "input_tokens": 11000,
+    "output_tokens": 1800,
+    "cost_in_usd_ticks": 200000000,
+    "server_side_tool_usage_details": {
+      "x_search_calls": 1,
+      "web_search_calls": 0,
+      "x_posts_fetched": 6,
+      "x_users_fetched": 0
+    }
+  }
+}

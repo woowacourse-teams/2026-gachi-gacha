@@ -20,6 +20,8 @@ public record PushMessage(
 
     private static final String CHAT_TYPE = "CHAT";
     private static final String CHAT_COLLAPSE_KEY_PREFIX = "chat-";
+    private static final String NEWS_TYPE = "NEWS";
+    private static final String NEWS_COLLAPSE_KEY_PREFIX = "news-";
 
     /**
      * 알림 목록과 같은 문구를 쓰고, 앱이 눌렀을 때 이동하고 읽음 처리할 수 있도록 대상 ID를 담는다.
@@ -46,5 +48,20 @@ public record PushMessage(
                 "roomId", roomIdValue
         );
         return new PushMessage(senderName, preview, data, CHAT_COLLAPSE_KEY_PREFIX + roomIdValue);
+    }
+
+    /**
+     * 신상 소식 요약 푸시. 앱이 눌렀을 때 그 주제의 신상 소식 탭으로 이동할 수 있게 주제를 담고, 같은 주제의 푸시는 기기에서
+     * 최신 것 하나로 교체되도록 주제 단위로 묶는다. 알림 목록(Notification)에는 저장하지 않는다.
+     * 테스트 발송은 {@code test=true} 를 담아 구분하고, 진짜 알림을 교체하지 않도록 묶지 않는다.
+     */
+    public static PushMessage ofNews(final String topic, final String title, final String body, final boolean test) {
+        Map<String, String> data = new HashMap<>();
+        data.put("type", NEWS_TYPE);
+        data.put("topic", topic);
+        if (test) {
+            data.put("test", "true");
+        }
+        return new PushMessage(title, body, data, test ? null : NEWS_COLLAPSE_KEY_PREFIX + topic);
     }
 }

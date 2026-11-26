@@ -1,0 +1,36 @@
+{
+  "id": "resp_kr_market",
+  "output": [
+    {
+      "type": "custom_tool_call",
+      "name": "x_keyword_search",
+      "input": {
+        "query": "from:chiikawa_m_kr",
+        "limit": 10,
+        "mode": "Latest"
+      }
+    },
+    {
+      "type": "message",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "{\n  \"items\": [\n    {\n      \"section\": \"korea_online\",\n      \"kind\": \"release\",\n      \"title\": \"치이카와 마켓 한국 신상품 발매\",\n      \"start_date\": \"2026-11-10\",\n      \"end_date\": null,\n      \"date_label\": \"11/10(화) 11시 발매\",\n      \"products\": [],\n      \"reservation\": null,\n      \"notes\": [],\n      \"link\": \"https://x.com/chiikawa_m_kr/status/2119000000000000001\",\n      \"ref_url\": null,\n      \"location\": \"치이카와 마켓 한국\"\n    }\n  ],\n  \"skipped\": []\n}",
+          "annotations": []
+        }
+      ]
+    }
+  ],
+  "citations": [],
+  "usage": {
+    "input_tokens": 5000,
+    "output_tokens": 400,
+    "cost_in_usd_ticks": 60000000,
+    "server_side_tool_usage_details": {
+      "x_search_calls": 1,
+      "web_search_calls": 0,
+      "x_posts_fetched": 1,
+      "x_users_fetched": 0
+    }
+  }
+}
